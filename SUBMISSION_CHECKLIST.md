@@ -6,7 +6,7 @@ Use this checklist before syncing this listing to the public `socialdatax-skills
 
 - Repository name: `socialdatax-skills`
 - Project URL: `https://socialdatax.com`
-- Public repository: pending GitHub creation
+- Public repository: <https://github.com/DevinChen2014/socialdatax-skills>
 - Repository description: `SocialDataX skills for media search, content details, comments/replies, creator profiles, creator content lists, Douyin hot search, and creator short-drama series. Current tools support Xiaohongshu / XHS / RedNote and Douyin through hosted platform MCP services.`
 - Current repository topics: `agentskills`, `skills`, `social-media`, `social-insights`, `xiaohongshu`, `xhs`, `rednote`, `douyin`
 - Optional expansion topics: `marketing-research`, `comment-analysis`, `media-search`, `xiaohongshu-data`, `xhs-data`, `rednote-data`, `douyin-data`
