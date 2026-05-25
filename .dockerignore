@@ -1,0 +1,6 @@
+node_modules
+.git
+.mcp-auth
+npm-debug.log*
+.DS_Store
+*.tgz

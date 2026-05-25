@@ -1,0 +1,59 @@
+{
+  "name": "socialdatax-skills",
+  "version": "0.2.3",
+  "description": "SocialDataX / 社媒数据助手 skill installer and direct CLI helper for hosted platform social media MCP services.",
+  "license": "MIT",
+  "type": "module",
+  "bin": {
+    "socialdatax-skills": "cli.mjs"
+  },
+  "files": [
+    "cli.mjs",
+    "README.md",
+    "LICENSE",
+    "skills/**",
+    "assets/logo.png"
+  ],
+  "scripts": {
+    "start": "node ./cli.mjs",
+    "pack:check": "npm pack --dry-run --json",
+    "test": "node --test test/*.test.mjs"
+  },
+  "keywords": [
+    "socialdatax",
+    "socialdatax-skills",
+    "agentskills",
+    "skills",
+    "skill-installer",
+    "xiaohongshu",
+    "xhs",
+    "rednote",
+    "rednote-data",
+    "douyin",
+    "douyin-data",
+    "douyin-search",
+    "xiaohongshu-data",
+    "xiaohongshu-search",
+    "xhs-data",
+    "xhs-search",
+    "social-insights",
+    "social-media",
+    "media-search",
+    "content-analysis",
+    "creator-analytics"
+  ],
+  "homepage": "https://socialdatax.com",
+  "bugs": {
+    "url": "https://socialdatax.com"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/DevinChen2014/socialdatax-skills.git"
+  },
+  "engines": {
+    "node": ">=20.18.1"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.29.0"
+  }
+}

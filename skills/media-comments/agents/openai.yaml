@@ -1,0 +1,7 @@
+interface:
+  display_name: "Media Comments"
+  short_description: "Fetch social comments"
+  default_prompt: "Use $media-comments to fetch and analyze XHS comments/replies or Douyin comments/replies."
+
+policy:
+  allow_implicit_invocation: true

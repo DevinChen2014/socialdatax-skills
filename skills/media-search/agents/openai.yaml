@@ -1,0 +1,7 @@
+interface:
+  display_name: "Media Search"
+  short_description: "Search content by keyword"
+  default_prompt: "Use $media-search to search supported social media content by keyword and choose an appropriate sort when useful."
+
+policy:
+  allow_implicit_invocation: true
