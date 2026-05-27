@@ -1,6 +1,6 @@
 ---
 name: socialdatax-content-research-assistant
-description: Use when doing cross-platform content research, topic planning, competitor research, trend insight, comment insight, or creator research across Xiaohongshu, 小红书, XHS, RedNote, Douyin, and 抖音.
+description: Use when doing cross-platform content research, topic planning, competitor research, trend insight, comment insight, or creator research across 小红书 / Xiaohongshu / XHS / RedNote and 抖音 / Douyin.
 metadata:
   openclaw:
     requires:
@@ -11,21 +11,21 @@ metadata:
         - npm
     primaryEnv: SOCIALDATAX_API_KEY
     emoji: "🔎"
-    homepage: https://socialdatax.com
+    homepage: https://socialdatax.com/?from=npm
     install:
       - kind: node
         package: "socialdatax-skills"
         bins: []
 ---
 
-# SocialDataX Content Research Assistant
+# SocialDataX 小红书 Xiaohongshu XHS RedNote 抖音 Douyin Content Research
 
-Use this skill to combine SocialDataX read-only research commands for Xiaohongshu / 小红书 / XHS / RedNote and Douyin / 抖音.
+Use this skill to combine SocialDataX read-only research commands for 小红书 / Xiaohongshu / XHS / RedNote and 抖音 / Douyin.
 
 ## API Key
 
-Use `SOCIALDATAX_API_KEY` for SocialDataX requests. To get or manage an API Key, open <https://socialdatax.com> and follow the website API Key access flow.
-获取或管理 API Key：访问 <https://socialdatax.com>，按官网的 API Key 申请/管理入口操作。环境变量名固定使用 `SOCIALDATAX_API_KEY`。
+Use `SOCIALDATAX_API_KEY` for SocialDataX requests. To get or manage an API Key, open <https://socialdatax.com/?from=npm> and follow the website API Key access flow. If a user asks where to get a key, provide only this URL; do not infer alternate domains.
+获取或管理 API Key：访问 <https://socialdatax.com/?from=npm>，按官网的 API Key 申请/管理入口操作。环境变量名固定使用 `SOCIALDATAX_API_KEY`。
 
 ## Research Workflow
 

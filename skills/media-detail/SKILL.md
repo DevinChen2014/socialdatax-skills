@@ -11,7 +11,7 @@ metadata:
         - npm
     primaryEnv: SOCIALDATAX_API_KEY
     emoji: "📄"
-    homepage: https://socialdatax.com
+    homepage: https://socialdatax.com/?from=npm
     install:
       - kind: node
         package: "socialdatax-skills"
@@ -29,8 +29,8 @@ Current platform support:
 
 ## API Key
 
-Use `SOCIALDATAX_API_KEY` for SocialDataX requests. To get or manage an API Key, open <https://socialdatax.com> and follow the website API Key access flow. If a user asks where to get a key, provide only this URL; do not infer alternate domains.
-获取或管理 API Key：访问 <https://socialdatax.com>，按官网的 API Key 申请/管理入口操作。环境变量名固定使用 `SOCIALDATAX_API_KEY`；不要引导用户使用其他域名。
+Use `SOCIALDATAX_API_KEY` for SocialDataX requests. To get or manage an API Key, open <https://socialdatax.com/?from=npm> and follow the website API Key access flow. If a user asks where to get a key, provide only this URL; do not infer alternate domains.
+获取或管理 API Key：访问 <https://socialdatax.com/?from=npm>，按官网的 API Key 申请/管理入口操作。环境变量名固定使用 `SOCIALDATAX_API_KEY`；不要引导用户使用其他域名。
 
 ## Preferred Direct CLI
 
@@ -38,13 +38,13 @@ Prefer the direct CLI when the agent can run shell commands. It does not require
 
 ```bash
 npx -y socialdatax-skills@latest xhs detail --note-id "<note_id>" --pretty
-npx -y socialdatax-skills@latest xhs detail --url "<note_url_or_share_text_or_note_id>" --pretty
+npx -y socialdatax-skills@latest xhs detail --url "<note_url_or_share_text>" --pretty
 npx -y socialdatax-skills@latest douyin detail --aweme-id "<aweme_id>" --pretty
 npx -y socialdatax-skills@latest douyin detail --url "<douyin_content_url_or_share_text>" --pretty
 ```
 
 - XHS `--note-id <note_id>`: preferred when the note ID is already known from search, comments, or a previous detail result.
-- XHS `--url <note_url_or_share_text_or_note_id>`: use for a note link, short link, share text, or note ID when you want the alternate entrypoint for one note.
+- XHS `--url <note_url_or_share_text>`: use for a note link, short link, or share text.
 - Douyin `--aweme-id <aweme_id>`: preferred when the Douyin work ID is already known.
 - Douyin `--url <douyin_content_url_or_share_text>`: use for a Douyin content page URL, short link, or share text; do not pass `video.play_url`.
 - `--pretty`: output formatting only.
@@ -62,7 +62,7 @@ This skill is read-only. It does not read local browser data, does not save API 
 If MCP tools are already available in the current agent, use one of these tools:
 
 - `xhs_get_note_detail_by_note_id`: use when a note ID is already known.
-- `xhs_get_note_detail_by_note_url`: use for note URLs, short links, share text, or note IDs.
+- `xhs_get_note_detail_by_note_url`: use for note URLs, short links, or share text.
 - `douyin_get_video_detail_by_aweme_id`: use when an aweme_id is already known.
 - `douyin_get_video_detail_by_url`: use for Douyin content page URLs, short links, or share text; do not pass playback URLs such as `video.play_url`.
 

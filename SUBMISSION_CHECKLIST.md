@@ -78,8 +78,8 @@ Use this checklist before syncing this listing to the public `socialdatax-skills
 ## Agent Skill Directory Checks
 
 - MCP.Directory skill source URL: `https://github.com/DevinChen2014/socialdatax-skills/tree/main/skills/socialdatax-content-research-assistant`
-- MCP.Directory title: `SocialDataX Content Research Assistant`
-- MCP.Directory description: `Research Xiaohongshu / 小红书 / XHS / RedNote and Douyin / 抖音 content with SocialDataX: keyword discovery, details, comments, creator profiles, and creator content lists through read-only agent commands.`
+- MCP.Directory title: `SocialDataX 小红书 Xiaohongshu XHS RedNote 抖音 Douyin Content Research`
+- MCP.Directory description: `Research 小红书 / Xiaohongshu / XHS / RedNote and 抖音 / Douyin content with SocialDataX: keyword discovery, details, comments, replies, creator profiles, creator content lists, and trend insights through read-only agent commands.`
 - MCP.Directory category suggestion: `Research`
 - Smithery skill namespace/slug suggestion: `DevinChen2014/socialdatax-content-research-assistant`
 - Smithery `gitUrl`: `https://github.com/DevinChen2014/socialdatax-skills`

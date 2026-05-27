@@ -7,7 +7,7 @@ import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const PACKAGE_NAME = "socialdatax-skills";
-const PACKAGE_VERSION = "0.2.3";
+const PACKAGE_VERSION = "0.2.4";
 const PACKAGE_SPEC = `${PACKAGE_NAME}@latest`;
 const LOG_PREFIX = `[${PACKAGE_NAME}]`;
 const MIN_NODE_VERSION = "20.18.1";
@@ -150,7 +150,7 @@ const PLATFORMS = {
       {
         name: "xhs_get_note_detail_by_note_url",
         description:
-          "Resolve a note link, short link, share text, or note ID into structured details.",
+          "Resolve a note link, short link, or share text into structured details.",
       },
       {
         name: "xhs_get_note_detail_by_note_id",

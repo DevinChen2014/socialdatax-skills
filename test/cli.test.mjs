@@ -938,10 +938,10 @@ test("douyin openclaw plugin only exposes profile-url user tools", () => {
   );
   const readme = readFileSync(join(openclawDir, "README.md"), "utf8");
 
-  assert.equal(packageJson.version, "0.2.4");
-  assert.equal(pluginManifest.version, "0.2.4");
-  assert.match(pluginSource, /const PLUGIN_VERSION = "0\.2\.4";/);
-  assert.match(readme, /Version: `0\.2\.4`/);
+  assert.equal(packageJson.version, "0.2.5");
+  assert.equal(pluginManifest.version, "0.2.5");
+  assert.match(pluginSource, /const PLUGIN_VERSION = "0\.2\.5";/);
+  assert.match(readme, /Version: `0\.2\.5`/);
   assert.deepEqual(Object.keys(pluginManifest.configSchema.properties), [
     "connectionTimeoutMs",
   ]);
@@ -1037,7 +1037,7 @@ test("douyin openclaw plugin only exposes profile-url user tools", () => {
     JSON.stringify(pluginManifest),
     /douyin_get_user_info_by_url|douyin_get_user_posted_videos_by_url/
   );
-  assert.match(pluginSource, /Douyin 抖音 Content Insights MCP/);
+  assert.match(pluginSource, /社媒数据助手 抖音 MCP \| Douyin MCP/);
   assert.match(pluginSource, /Search Douyin works by keyword/);
   assert.match(pluginSource, /structured work details/);
   assert.match(pluginSource, /video and image\/text works/);
@@ -1045,8 +1045,13 @@ test("douyin openclaw plugin only exposes profile-url user tools", () => {
   assert.doesNotMatch(JSON.stringify(pluginManifest), /short video research/);
   assert.doesNotMatch(readme, /short video research/);
   assert.match(pluginSource, /Creator Works/);
-  assert.match(JSON.stringify(pluginManifest), /Content Insights MCP/);
-  assert.match(JSON.stringify(pluginManifest), /search video and image\/text works/);
+  assert.match(JSON.stringify(pluginManifest), /社媒数据助手 抖音 MCP \| Douyin MCP/);
+  assert.doesNotMatch(JSON.stringify(pluginManifest), /Content Insights MCP/);
+  assert.match(JSON.stringify(pluginManifest), /作品搜索/);
+  assert.doesNotMatch(
+    JSON.stringify(pluginManifest),
+    /search video and image\/text works/
+  );
   assert.doesNotMatch(
     pluginSource,
     /Search Douyin Videos|Video Detail|Creator Videos|structured video details|creator video lists/
@@ -1097,10 +1102,10 @@ test("xhs openclaw search schema documents semantic sort enums", () => {
   );
   const readme = readFileSync(join(openclawDir, "README.md"), "utf8");
 
-  assert.equal(packageJson.version, "0.1.12");
-  assert.equal(pluginManifest.version, "0.1.12");
-  assert.match(pluginSource, /const PLUGIN_VERSION = "0\.1\.12";/);
-  assert.match(readme, /Version: `0\.1\.12`/);
+  assert.equal(packageJson.version, "0.1.13");
+  assert.equal(pluginManifest.version, "0.1.13");
+  assert.match(pluginSource, /const PLUGIN_VERSION = "0\.1\.13";/);
+  assert.match(readme, /Version: `0\.1\.13`/);
 
   assert.deepEqual(pluginManifest.providerAuthChoices[0], {
     provider: "xhs-insights",
@@ -1130,6 +1135,10 @@ test("xhs openclaw search schema documents semantic sort enums", () => {
   assert.match(
     pluginSource,
     /Missing API Key\. Set \$\{DEFAULT_API_KEY_ENV\} before using \$\{PLUGIN_NAME\}\./
+  );
+  assert.match(
+    pluginSource,
+    /社媒数据助手 小红书 MCP \| Xiaohongshu XHS RedNote MCP/
   );
 
   assert.match(
@@ -1259,7 +1268,7 @@ test("doctor prints human-readable safety summary", () => {
   assert.equal(result.status, 0);
   assert.equal(result.stderr, "");
   assert.match(result.stdout, /socialdatax-skills doctor/);
-  assert.match(result.stdout, /Package: socialdatax-skills@0\.2\.3/);
+  assert.match(result.stdout, /Package: socialdatax-skills@0\.2\.4/);
   assert.match(result.stdout, /Website: https:\/\/socialdatax\.com/);
   assert.doesNotMatch(result.stdout, /Source: https:\/\/socialdatax\.com/);
   assert.match(result.stdout, /npm lifecycle scripts: none declared by this package/);
@@ -1285,7 +1294,7 @@ test("doctor json prints parseable safety summary", () => {
   assert.equal(result.stderr, "");
   const report = JSON.parse(result.stdout);
   assert.equal(report.package.name, "socialdatax-skills");
-  assert.equal(report.package.version, "0.2.3");
+  assert.equal(report.package.version, "0.2.4");
   assert.equal(report.package.homepage, "https://socialdatax.com");
   assert.equal(report.package.repository, undefined);
   assert.deepEqual(report.package.npmLifecycleScripts, []);
@@ -1324,7 +1333,8 @@ test("doctor json prints parseable safety summary", () => {
   const commentsByUrlTool = report.platform.toolDetails.find(
     (tool) => tool.name === "xhs_get_note_comments_by_note_url"
   );
-  assert.match(detailByUrlTool.description, /short link, share text, or note ID/);
+  assert.match(detailByUrlTool.description, /short link, or share text/);
+  assert.doesNotMatch(detailByUrlTool.description, /note ID/);
   assert.match(commentsByUrlTool.description, /note URL, short link, or share text/);
   assert.doesNotMatch(result.stdout, /69cf45899948d391e7b5e879/);
 });

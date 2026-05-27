@@ -42,7 +42,7 @@ Common search phrases for this skill package:
 - Douyin current platform MCP registry name: `com.52choujiang/douyin-insights`
 - Douyin future platform MCP registry name: `com.socialdatax/douyin-insights`
 - Unified MCP registry name: none; this package installs skills and calls explicit platform services.
-- Current public capability version: `0.2.3`
+- Current public capability version: `0.2.4`
 
 ## Direct CLI
 
@@ -184,7 +184,7 @@ The current platform MCP services are designed for read-only social media intell
 Current XHS workflows include:
 
 - Search related Xiaohongshu notes by keyword, with optional sort, note type, and publish-time filters.
-- Resolve a shared note link, short link, share text, or note ID into structured note details.
+- Resolve a shared note link, short link, or share text into structured note details.
 - Read note details when the caller already has a note ID.
 - Fetch paginated first-level comments for comment analysis.
 - Fetch paginated replies under a first-level comment.
@@ -208,7 +208,7 @@ Current Douyin workflows include:
 | Tool | Public purpose |
 | --- | --- |
 | `xhs_search_notes` | Search Xiaohongshu / 小红书 notes by keyword with optional sort, note type, and publish-time filters. |
-| `xhs_get_note_detail_by_note_url` | Resolve a shared XHS link, short link, share text, or note ID into structured note details. |
+| `xhs_get_note_detail_by_note_url` | Resolve a shared XHS link, short link, or share text into structured note details. |
 | `xhs_get_note_detail_by_note_id` | Fetch structured note details when the caller already has a note ID. |
 | `xhs_get_note_comments_by_note_id` | Fetch paginated first-level comments when the caller already has a note ID. |
 | `xhs_get_note_comments_by_note_url` | Fetch paginated first-level comments directly from a shared note URL, short link, or share text. |
@@ -254,7 +254,7 @@ Aily is treated as an OpenClaw / AgentSkills ecosystem channel for this package.
 
 Request or manage API access from the product website:
 
-<https://socialdatax.com>
+<https://socialdatax.com/?from=npm>
 
 Use the key as a Bearer token in the `Authorization` request header. Do not commit real API keys to code, docs, issues, or screenshots.
 
