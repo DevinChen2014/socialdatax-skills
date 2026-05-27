@@ -938,10 +938,10 @@ test("douyin openclaw plugin only exposes profile-url user tools", () => {
   );
   const readme = readFileSync(join(openclawDir, "README.md"), "utf8");
 
-  assert.equal(packageJson.version, "0.2.5");
-  assert.equal(pluginManifest.version, "0.2.5");
-  assert.match(pluginSource, /const PLUGIN_VERSION = "0\.2\.5";/);
-  assert.match(readme, /Version: `0\.2\.5`/);
+  assert.equal(packageJson.version, "0.2.6");
+  assert.equal(pluginManifest.version, "0.2.6");
+  assert.match(pluginSource, /const PLUGIN_VERSION = "0\.2\.6";/);
+  assert.match(readme, /Version: `0\.2\.6`/);
   assert.deepEqual(Object.keys(pluginManifest.configSchema.properties), [
     "connectionTimeoutMs",
   ]);
@@ -1102,10 +1102,10 @@ test("xhs openclaw search schema documents semantic sort enums", () => {
   );
   const readme = readFileSync(join(openclawDir, "README.md"), "utf8");
 
-  assert.equal(packageJson.version, "0.1.13");
-  assert.equal(pluginManifest.version, "0.1.13");
-  assert.match(pluginSource, /const PLUGIN_VERSION = "0\.1\.13";/);
-  assert.match(readme, /Version: `0\.1\.13`/);
+  assert.equal(packageJson.version, "0.1.14");
+  assert.equal(pluginManifest.version, "0.1.14");
+  assert.match(pluginSource, /const PLUGIN_VERSION = "0\.1\.14";/);
+  assert.match(readme, /Version: `0\.1\.14`/);
 
   assert.deepEqual(pluginManifest.providerAuthChoices[0], {
     provider: "xhs-insights",
