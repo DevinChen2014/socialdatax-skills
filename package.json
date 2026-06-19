@@ -1,6 +1,6 @@
 {
   "name": "socialdatax-skills",
-  "version": "0.2.4",
+  "version": "0.2.9",
   "description": "SocialDataX / 社媒数据助手 skill installer and direct CLI helper for hosted platform social media MCP services.",
   "license": "MIT",
   "type": "module",
@@ -40,11 +40,23 @@
     "social-media",
     "media-search",
     "content-analysis",
-    "creator-analytics"
+    "creator-analytics",
+    "kuaishou",
+    "kuaishou-data",
+    "kuaishou-search",
+    "kwai",
+    "kwai-data",
+    "weibo",
+    "weibo-data",
+    "weibo-search",
+    "wechat",
+    "wechat-channels",
+    "wechat-channels-data",
+    "wechat-channels-search"
   ],
-  "homepage": "https://socialdatax.com",
+  "homepage": "https://socialdatax.52choujiang.com",
   "bugs": {
-    "url": "https://socialdatax.com"
+    "url": "https://socialdatax.52choujiang.com"
   },
   "repository": {
     "type": "git",

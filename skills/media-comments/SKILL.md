@@ -1,22 +1,23 @@
 ---
-name: media-comments
-description: Fetch and analyze XHS comments/replies and Douyin comments/replies. This version is backed by hosted platform MCP services and supports Xiaohongshu, 小红书, XHS, RedNote, and Douyin / 抖音.
+name: "media-comments"
+description: "Fetch and analyze XHS comments/replies, Douyin comments/replies, Kuaishou comments/replies, Weibo comments/replies, and WeChat Channels / 视频号 comments/replies. This version is backed by hosted platform MCP services and supports Xiaohongshu, 小红书, XHS, RedNote, Douyin / 抖音, Kuaishou / 快手 / Kwai, Weibo / 微博, and WeChat Channels / 视频号."
 metadata:
   openclaw:
     requires:
       env:
-        - SOCIALDATAX_API_KEY
+        - "SOCIALDATAX_API_KEY"
       bins:
-        - node
-        - npm
-    primaryEnv: SOCIALDATAX_API_KEY
-    emoji: "💬"
-    homepage: https://socialdatax.com/?from=npm
+        - "node"
+        - "npm"
+    primaryEnv: "SOCIALDATAX_API_KEY"
     install:
-      - kind: node
+      - kind: "node"
         package: "socialdatax-skills"
         bins: []
+    emoji: "💬"
+    homepage: "https://socialdatax.52choujiang.com/?from=npm"
 ---
+<!-- AUTO-GENERATED from socialdatax-skill-source. Do not edit directly; run `node scripts/generate_socialdatax_skills.mjs`. -->
 
 # Media Comments
 
@@ -26,11 +27,14 @@ Current platform support:
 
 - Xiaohongshu / XHS / RedNote notes through the `xhs_get_note_comments_by_*` and `xhs_get_note_sub_comments_by_comment_id` tools.
 - Douyin / 抖音 works, including video and image/text posts, through the `douyin_get_video_comments_by_*` and `douyin_get_video_comment_replies_by_comment_id` tools.
+- Kuaishou / 快手 works through the `kuaishou_get_video_comments_by_*` and `kuaishou_get_video_comment_replies_by_comment_id` tools.
+- Weibo / 微博 posts through the `weibo_get_post_comments_by_*` and `weibo_get_post_comment_replies_by_comment_id` tools.
+- WeChat Channels / 视频号 videos through the `wechat_get_video_comments_by_*` and `wechat_get_video_comment_replies_by_comment_id` tools.
 
 ## API Key
 
-Use `SOCIALDATAX_API_KEY` for SocialDataX requests. To get or manage an API Key, open <https://socialdatax.com/?from=npm> and follow the website API Key access flow. If a user asks where to get a key, provide only this URL; do not infer alternate domains.
-获取或管理 API Key：访问 <https://socialdatax.com/?from=npm>，按官网的 API Key 申请/管理入口操作。环境变量名固定使用 `SOCIALDATAX_API_KEY`；不要引导用户使用其他域名。
+Use `SOCIALDATAX_API_KEY` for SocialDataX requests. The only official website for requesting or managing API access is <https://socialdatax.52choujiang.com/?from=npm>. If a user asks where to get a key, provide only this URL; do not infer alternate domains.
+获取或管理 API Key：访问 <https://socialdatax.52choujiang.com/?from=npm>，按官网的 API Key 申请/管理入口操作。环境变量名固定使用 `SOCIALDATAX_API_KEY`；不要引导用户使用其他域名。
 
 ## Preferred Direct CLI
 
@@ -38,23 +42,49 @@ Prefer the direct CLI when the agent can run shell commands. It does not require
 
 ```bash
 npx -y socialdatax-skills@latest xhs comments --note-id "<note_id>" --pretty
+npx -y socialdatax-skills@latest xhs comments --note-id "<note_id>" --all --include-replies --pretty
 npx -y socialdatax-skills@latest xhs comments --url "<note_url_or_share_text>" --pretty
 npx -y socialdatax-skills@latest xhs sub-comments --note-id "<note_id>" --comment-id "<comment_id>" --pretty
 npx -y socialdatax-skills@latest douyin comments --aweme-id "<aweme_id>" --pretty
+npx -y socialdatax-skills@latest douyin comments --aweme-id "<aweme_id>" --all --include-replies --pretty
 npx -y socialdatax-skills@latest douyin comments --url "<douyin_content_url_or_share_text>" --pretty
 npx -y socialdatax-skills@latest douyin replies --aweme-id "<aweme_id>" --comment-id "<comment_id>" --pretty
+npx -y socialdatax-skills@latest kuaishou comments --photo-id "<photo_id>" --pretty
+npx -y socialdatax-skills@latest kuaishou comments --photo-id "<photo_id>" --all --include-replies --pretty
+npx -y socialdatax-skills@latest kuaishou comments --url "<kuaishou_content_url_or_share_text>" --pretty
+npx -y socialdatax-skills@latest kuaishou replies --photo-id "<photo_id>" --comment-id "<comment_id>" --pretty
+npx -y socialdatax-skills@latest weibo comments --post-id "<post_id>" --pretty
+npx -y socialdatax-skills@latest weibo comments --post-id "<post_id>" --all --include-replies --pretty
+npx -y socialdatax-skills@latest weibo comments --post-url "<weibo_post_url_or_share_text>" --pretty
+npx -y socialdatax-skills@latest weibo replies --post-id "<post_id>" --comment-id "<comment_id>" --pretty
+npx -y socialdatax-skills@latest wechat comments --object-id "<object_id>" --object-nonce-id "<object_nonce_id>" --pretty
+npx -y socialdatax-skills@latest wechat comments --object-id "<object_id>" --object-nonce-id "<object_nonce_id>" --all --include-replies --pretty
+npx -y socialdatax-skills@latest wechat comments --url "<wechat_video_url_or_share_text>" --pretty
+npx -y socialdatax-skills@latest wechat replies --object-id "<object_id>" --object-nonce-id "<object_nonce_id>" --comment-id "<comment_id>" --pretty
 ```
 
-- XHS `--note-id <note_id>`: preferred when the note ID is already known and should anchor the comment thread.
+Optional arguments:
+
+- XHS `--note-id <note_id>`: use the complete 24-character lowercase hexadecimal `note_id` returned from search, detail, comments, or creator note lists; do not pass only a prefix.
 - Douyin `--aweme-id <aweme_id>`: preferred when the video ID is already known and should anchor the comment thread.
-- `--url <url_or_share_text>`: use for a content page URL, short link, or share text for first-level comments; for Douyin, do not pass `video.play_url`.
-- `--comment-id <comment_id>`: required for XHS and Douyin reply commands; use the first-level comment ID under the same content item.
-- `--page-token <next_page_token>`: opaque pagination token; pass back exactly the token returned by the previous page and do not reuse it across content items or comments.
+- `--url <url_or_share_text>`: use for a content page URL, short link, or share text for first-level comments.
+- Douyin URL safety: do not pass `video.play_url`; use a Douyin content page URL, short link, or share text instead.
+- `--comment-id <comment_id>`: required for reply commands; use the first-level comment ID under the same content item.
+- `--page-token <next_page_token>`: opaque pagination token; pass the complete returned `next_page_token` back unchanged for the same content item or comment chain. Do not modify, truncate, redact, mask, omit, normalize, rebuild, generate, or replace the middle with ellipses.
+- `--pages <n>`: fetch and merge N pages of first-level comments or replies.
+- `--all`: continue first-level comments or replies until `next_page_token` is empty; there is no default item or page cap.
+- `--max-items <n>`: stop after collecting N primary comments or replies.
+- `--include-replies`: for first-level `comments` commands only, also fetch all second-level replies under each returned first-level comment.
 - `--pretty`: output formatting only.
+- Kuaishou `--photo-id <photo_id>`: preferred when the Kuaishou work photo_id is already known and should anchor the comment thread.
+- Weibo `--post-id <post_id>`: preferred when the Weibo post ID is already known and should anchor the comment thread.
+- Weibo `--post-url <weibo_post_url_or_share_text>`: use for a Weibo post URL, short link, or share text for first-level comments.
+- WeChat Channels / 视频号 `--object-id <object_id>` and `--object-nonce-id <object_nonce_id>`: use together when both values are already known and should anchor the comment thread.
+- WeChat Channels / 视频号 `--url <wechat_video_url_or_share_text>`: use for a WeChat Channels video link or share text for first-level comments.
 
-For XHS `comments`, use either `--note-id` or `--url`, not both. For Douyin `comments`, use either `--aweme-id` or `--url`, not both. For reply commands, use the content ID together with `--comment-id`.
+Use either the content ID option or the URL option for first-level comments, not both. For reply commands, use the content ID together with `--comment-id`.
 
-The command prints JSON with `platform`, `tool`, `arguments`, and `data`.
+The command prints JSON with `platform`, `tool`, `arguments`, and `data`. Multi-page output keeps merged primary comments in `data.items` and adds `page_count`, `item_count`, and the next-page marker. With `--include-replies`, each first-level comment includes `replies`, `replies_page_count`, and `replies_next_page_token`.
 
 ## Safety Boundary
 
@@ -62,17 +92,50 @@ This skill is read-only. It does not read local browser data, does not save API 
 
 ## MCP Tools
 
-If MCP tools are already available in the current agent, use one of these tools:
+MCP tools matching the direct CLI commands above:
 
-- `xhs_get_note_comments_by_note_id`: use when the note ID is known.
+- `xhs_get_note_comments_by_note_id`
+- `xhs_get_note_comments_by_note_url`
+- `xhs_get_note_sub_comments_by_comment_id`
+- `douyin_get_video_comments_by_aweme_id`
+- `douyin_get_video_comments_by_url`
+- `douyin_get_video_comment_replies_by_comment_id`
+- `kuaishou_get_video_comments_by_photo_id`
+- `kuaishou_get_video_comments_by_url`
+- `kuaishou_get_video_comment_replies_by_comment_id`
+- `weibo_get_post_comments_by_post_id`
+- `weibo_get_post_comments_by_post_url`
+- `weibo_get_post_comment_replies_by_comment_id`
+- `wechat_get_video_comments_by_object_id`
+- `wechat_get_video_comments_by_url`
+- `wechat_get_video_comment_replies_by_comment_id`
+
+If MCP tools are already available in the current agent, use one of these tools:
+- `xhs_get_note_comments_by_note_id`: use when the complete 24-character lowercase hexadecimal `note_id` is known; do not pass only a prefix.
 - `xhs_get_note_comments_by_note_url`: use for note URLs, short links, or share text.
-- `xhs_get_note_sub_comments_by_comment_id`: use when the note ID and first-level comment ID are known.
+- `xhs_get_note_sub_comments_by_comment_id`: use when the complete 24-character lowercase hexadecimal `note_id` and first-level comment ID are known; do not pass only a note ID prefix.
 - `douyin_get_video_comments_by_aweme_id`: use when the aweme_id is known.
 - `douyin_get_video_comments_by_url`: use for Douyin content page URLs, short links, or share text; do not pass playback URLs such as `video.play_url`.
-- `douyin_get_video_comment_replies_by_comment_id`: use when the aweme_id and first-level comment ID are known.
+- `douyin_get_video_comment_replies_by_comment_id`: use when both aweme_id and first-level comment ID are known; use page_token to continue pagination.
 
-Comment pagination uses `page_token`. Pass back exactly the returned `next_page_token`; tokens are bound to the current content item and should not be reused across objects. For Douyin comments and replies, continue only when `next_page_token` is non-empty; an empty string means there are no more comments or replies to request. XHS reply pagination also uses `page_token` and is bound to the current comment.
+Comment pagination uses opaque `page_token` values. Pass the complete returned `next_page_token` back unchanged for the same content item or comment chain. Do not modify, truncate, redact, mask, omit, normalize, rebuild, generate, or replace the middle with ellipses. Prefer CLI `--pages`, `--all`, and `--include-replies` when the user asks for multiple pages or a full first-level plus second-level comment tree.
+For Douyin comments and replies, continue only when `next_page_token` is non-empty; an empty string means there are no more comments or replies to request.
+XHS reply pagination also uses `page_token` and is bound to the current comment.
+- `kuaishou_get_video_comments_by_photo_id`: use when the photo_id is known.
+- `kuaishou_get_video_comments_by_url`: use for Kuaishou work page URLs, short links, or share text.
+- `kuaishou_get_video_comment_replies_by_comment_id`: use when the photo_id and first-level comment ID are known.
+For Kuaishou comments and replies, continue only when `next_page_token` is non-empty; an empty string means there are no more comments or replies to request.
+- `weibo_get_post_comments_by_post_id`: use when the post_id is known.
+- `weibo_get_post_comments_by_post_url`: use for Weibo post URLs, short links, or share text.
+- `weibo_get_post_comment_replies_by_comment_id`: use when the post_id and first-level comment ID are known.
+For Weibo comments and replies, continue only when `next_page_token` is non-empty; an empty string means there are no more comments or replies to request.
+- `wechat_get_video_comments_by_object_id`: use when both object_id and object_nonce_id are known.
+- `wechat_get_video_comments_by_url`: use for WeChat Channels / 视频号 video links or share text.
+- `wechat_get_video_comment_replies_by_comment_id`: use when object_id, object_nonce_id, and first-level comment ID are known.
+For WeChat Channels / 视频号 comments and replies, continue only when `next_page_token` is non-empty; an empty string means there are no more comments or replies to request.
 
 ## Output Guidance
 
 Group comments by observed themes before inferring sentiment or demand. Mention whether the result is one page or multiple pages. Empty comments can be a valid successful result.
+For Douyin comment media, use `image_urls` for attached pictures. When `sticker` is present, `sticker.static_url` is a static preview when non-empty, and `sticker.animated_url` is the animated resource when non-empty.
+For Weibo and WeChat Channels / 视频号 comments, preserve returned content IDs from first-level comments so reply commands can use the same content item and comment chain.

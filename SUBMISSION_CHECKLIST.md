@@ -5,21 +5,24 @@ Use this checklist before syncing this listing to the public `socialdatax-skills
 ## Public Repository
 
 - Repository name: `socialdatax-skills`
-- Project URL: `https://socialdatax.com`
+- Project URL: `https://socialdatax.52choujiang.com`
 - Public repository: <https://github.com/DevinChen2014/socialdatax-skills>
-- Repository description: `SocialDataX skills for media search, content details, comments/replies, creator profiles, creator content lists, Douyin hot search, and creator short-drama series. Current tools support Xiaohongshu / XHS / RedNote and Douyin through hosted platform MCP services.`
-- Current repository topics: `agentskills`, `skills`, `social-media`, `social-insights`, `xiaohongshu`, `xhs`, `rednote`, `douyin`
-- Optional expansion topics: `marketing-research`, `comment-analysis`, `media-search`, `xiaohongshu-data`, `xhs-data`, `rednote-data`, `douyin-data`
+- Repository description: `SocialDataX skills for media search, content details, comments/replies, creator profiles, creator content lists, Xiaohongshu search hot list, Douyin hot search, Kuaishou hot search, and creator short-drama series. Current tools support Xiaohongshu / XHS / RedNote, Douyin, and Kuaishou through hosted platform MCP services.`
+- Current repository topics: `agentskills`, `skills`, `social-media`, `social-insights`, `xiaohongshu`, `xhs`, `rednote`, `douyin`, `kuaishou`, `kwai`
+- Optional expansion topics: `marketing-research`, `comment-analysis`, `media-search`, `xiaohongshu-data`, `xhs-data`, `rednote-data`, `douyin-data`, `kuaishou-data`, `kwai-data`
 - Root README title: `SocialDataX Skills | 社媒数据助手 Skills`
 - Product name: `SocialDataX` / `社媒数据助手`
-- Website: `https://socialdatax.com`
+- Website: `https://socialdatax.52choujiang.com`
 - XHS hosted MCP endpoint: `https://mcp.52choujiang.com/xhs/mcp`
 - Douyin hosted MCP endpoint: `https://mcp.52choujiang.com/douyin/mcp`
+- Kuaishou hosted MCP endpoint: `https://mcp.52choujiang.com/kuaishou/mcp`
 - Hosted auth: `Authorization: Bearer <SOCIALDATAX_API_KEY>`
 - XHS current platform MCP registry name: `com.52choujiang/xhs-insights`
 - XHS future platform MCP registry name: `com.socialdatax/xhs-insights`
 - Douyin current platform MCP registry name: `com.52choujiang/douyin-insights`
 - Douyin future platform MCP registry name: `com.socialdatax/douyin-insights`
+- Kuaishou current platform MCP registry name: `com.52choujiang/kuaishou-insights`
+- Kuaishou future platform MCP registry name: `com.socialdatax/kuaishou-insights`
 - Unified MCP registry name: none
 - Direct CLI startup: `npx -y socialdatax-skills@latest xhs search --keyword "露营桌" --pretty`
 - Runtime env: `SOCIALDATAX_API_KEY=<SOCIALDATAX_API_KEY>`
@@ -37,10 +40,14 @@ Use this checklist before syncing this listing to the public `socialdatax-skills
   - Claude Code detail skill: `npx -y socialdatax-skills@latest install media-detail --target claude-code`
   - Shared AgentSkills creator posts skill: `npx -y socialdatax-skills@latest install media-user-posts --target agents`
   - Direct XHS search: `npx -y socialdatax-skills@latest xhs search --keyword "露营桌" --pretty`
+  - Direct XHS search hot list: `npx -y socialdatax-skills@latest xhs hot-search --pretty`
   - Direct Douyin hot search: `npx -y socialdatax-skills@latest douyin hot-search --pretty`
   - Direct Douyin search: `npx -y socialdatax-skills@latest douyin search --keyword "露营桌" --pretty`
   - Direct Douyin replies: `npx -y socialdatax-skills@latest douyin replies --aweme-id "<aweme_id>" --comment-id "<comment_id>" --pretty`
   - Direct Douyin creator series: `npx -y socialdatax-skills@latest douyin user-series --sec-user-id "<sec_user_id>" --pretty`
+  - Direct Kuaishou hot search: `npx -y socialdatax-skills@latest kuaishou hot-search --pretty`
+  - Direct Kuaishou search: `npx -y socialdatax-skills@latest kuaishou search --keyword "露营桌" --pretty`
+  - Direct Kuaishou replies: `npx -y socialdatax-skills@latest kuaishou replies --photo-id "<photo_id>" --comment-id "<comment_id>" --pretty`
 - OpenClaw default skill directory: `~/.openclaw/workspace/skills`, overridable with `OPENCLAW_SKILLS_DIR`
 - License: MIT for the public CLI wrapper, documentation, and skill files only
 
@@ -78,8 +85,8 @@ Use this checklist before syncing this listing to the public `socialdatax-skills
 ## Agent Skill Directory Checks
 
 - MCP.Directory skill source URL: `https://github.com/DevinChen2014/socialdatax-skills/tree/main/skills/socialdatax-content-research-assistant`
-- MCP.Directory title: `SocialDataX 小红书 Xiaohongshu XHS RedNote 抖音 Douyin Content Research`
-- MCP.Directory description: `Research 小红书 / Xiaohongshu / XHS / RedNote and 抖音 / Douyin content with SocialDataX: keyword discovery, details, comments, replies, creator profiles, creator content lists, and trend insights through read-only agent commands.`
+- MCP.Directory title: `SocialDataX 小红书 Xiaohongshu XHS RedNote 抖音 Douyin 快手 Kuaishou Content Research`
+- MCP.Directory description: `Research 小红书 / Xiaohongshu / XHS / RedNote, 抖音 / Douyin, and 快手 / Kuaishou content with SocialDataX: keyword discovery, details, comments, replies, creator profiles, creator content lists, and trend insights through agent commands.`
 - MCP.Directory category suggestion: `Research`
 - Smithery skill namespace/slug suggestion: `DevinChen2014/socialdatax-content-research-assistant`
 - Smithery `gitUrl`: `https://github.com/DevinChen2014/socialdatax-skills`
@@ -94,19 +101,26 @@ Use this checklist before syncing this listing to the public `socialdatax-skills
 - From the private source repository, `node scripts/publish_socialdatax_skills.mjs --dry-run` succeeds with an npm granular access token that has publish permission and two-factor bypass enabled.
 - From the private source repository, `node scripts/publish_socialdatax_skills.mjs` publishes `socialdatax-skills` first, then the legacy `social-media-insights-skills` wrapper, with a temporary npm config outside the repository that is removed after publishing.
 - `node cli.mjs list` lists each available capability skill.
-- `node cli.mjs doctor` prints package source, runtime, endpoint, and read-only safety summary.
+- `node cli.mjs doctor` prints package source, runtime, endpoint, and account-action safety summary.
 - `node cli.mjs doctor --json` prints parseable JSON and does not include real API keys.
 - `node cli.mjs` prints help instead of silently running a local MCP server.
-- `node cli.mjs --help` documents direct `xhs` and `douyin` commands, multi-skill install, OpenClaw, Hermes Agent, Codex, Claude Code, and shared AgentSkills commands.
+- `node cli.mjs --help` documents direct `xhs`, `douyin`, and `kuaishou` commands, multi-skill install, OpenClaw, Hermes Agent, Codex, Claude Code, and shared AgentSkills commands.
 - `node cli.mjs xhs search --keyword "露营桌" --pretty` fails clearly without `SOCIALDATAX_API_KEY`.
+- `node cli.mjs xhs hot-search --pretty` fails clearly without `SOCIALDATAX_API_KEY`.
 - `node cli.mjs xhs detail --note-id a --url b` fails with the one-input validation error.
 - `node cli.mjs douyin hot-search --pretty` fails clearly without `SOCIALDATAX_API_KEY`.
 - `node cli.mjs douyin search --keyword "露营桌" --pretty` fails clearly without `SOCIALDATAX_API_KEY`.
 - `node cli.mjs douyin detail --aweme-id a --url b` fails with the one-input validation error.
 - `node cli.mjs douyin replies --aweme-id "<aweme_id>" --comment-id "<comment_id>" --pretty` fails clearly without `SOCIALDATAX_API_KEY`.
 - `node cli.mjs douyin user-series --sec-user-id "<sec_user_id>" --pretty` fails clearly without `SOCIALDATAX_API_KEY`.
+- `node cli.mjs kuaishou hot-search --pretty` fails clearly without `SOCIALDATAX_API_KEY`.
+- `node cli.mjs kuaishou search --keyword "露营桌" --pretty` fails clearly without `SOCIALDATAX_API_KEY`.
+- `node cli.mjs kuaishou detail --photo-id a --url b` fails with the one-input validation error.
+- `node cli.mjs kuaishou replies --photo-id "<photo_id>" --comment-id "<comment_id>" --pretty` fails clearly without `SOCIALDATAX_API_KEY`.
 - With a valid key, `node cli.mjs xhs search --keyword "露营桌" --pretty` returns a JSON envelope with `platform`, `tool`, `arguments`, and `data`.
+- With a valid key, `node cli.mjs xhs hot-search --pretty` returns a JSON envelope with `platform`, `tool`, `arguments`, and `data`.
 - With a valid key, `node cli.mjs douyin search --keyword "露营桌" --pretty` returns a JSON envelope with `platform`, `tool`, `arguments`, and `data`.
+- With a valid key, `node cli.mjs kuaishou search --keyword "露营桌" --pretty` returns a JSON envelope with `platform`, `tool`, `arguments`, and `data`.
 - `node cli.mjs xhs search --keyword "露营桌"` prints a clear Node.js version error on runtimes older than 20.18.1.
 - `node cli.mjs install media-search --target openclaw --path <temp-dir>` installs a valid `SKILL.md` skill.
 - `node cli.mjs install media-search --target openclaw --path <temp-dir> --dry-run` previews the destination and does not create the directory.
@@ -128,11 +142,14 @@ Use this checklist before syncing this listing to the public `socialdatax-skills
 - XHS platform server card remains `com.52choujiang/xhs-insights`; `com.socialdatax/xhs-insights` is kept only as a future namespace draft while the public endpoint remains on `mcp.52choujiang.com`.
 - Douyin current platform listing remains in `registry/douyin/server.json` until a dedicated public listing directory is added.
 - Douyin server metadata is publicly listed as `com.52choujiang/douyin-insights`; future `com.socialdatax/douyin-insights` metadata remains a draft until the endpoint namespace changes.
+- Kuaishou current platform listing remains in `public-listings/kuaishou-insights`.
+- Kuaishou server metadata is publicly listed as `com.52choujiang/kuaishou-insights`; future `com.socialdatax/kuaishou-insights` metadata remains a draft until the endpoint namespace changes.
 - No `public-listings/socialdatax-skills/server-card.json` is published.
-- Hosted streamable HTTP clients can connect directly to `https://mcp.52choujiang.com/xhs/mcp` and `https://mcp.52choujiang.com/douyin/mcp` with `Authorization: Bearer <SOCIALDATAX_API_KEY>`.
+- Hosted streamable HTTP clients can connect directly to `https://mcp.52choujiang.com/xhs/mcp`, `https://mcp.52choujiang.com/douyin/mcp`, and `https://mcp.52choujiang.com/kuaishou/mcp` with `Authorization: Bearer <SOCIALDATAX_API_KEY>`.
 - With a valid key, hosted MCP `initialize` succeeds.
 - With a valid key, XHS hosted MCP `tools/list` returns the current 11 public XHS tools.
 - With a valid key, Douyin hosted MCP `tools/list` returns the current 13 public Douyin tools.
+- With a valid key, Kuaishou hosted MCP `tools/list` returns the current 11 public Kuaishou tools.
 
 ## Directory Submission Order
 
@@ -141,7 +158,8 @@ Use this checklist before syncing this listing to the public `socialdatax-skills
 3. Verify OpenClaw, Hermes Agent, Codex, Claude Code, and shared AgentSkills installs.
 4. Submit or refresh the XHS platform MCP listing from `public-listings/xhs-insights`.
 5. Submit or refresh the Douyin platform MCP listing from `registry/douyin/server.json` or a future dedicated public listing directory.
-6. Add future platform listings only after their MCP endpoints and tools are public.
+6. Submit or refresh the Kuaishou platform MCP listing from `public-listings/kuaishou-insights`.
+7. Add future platform listings only after their MCP endpoints and tools are public.
 
 ## Search Keywords To Verify After Approval
 
@@ -149,16 +167,19 @@ Use this checklist before syncing this listing to the public `socialdatax-skills
 - `xiaohongshu mcp`
 - `xiaohongshu data mcp`
 - `xiaohongshu note search mcp`
+- `xiaohongshu search hot list mcp`
 - `XHS`
 - `xhs mcp`
 - `xhs data mcp`
 - `xhs note search mcp`
+- `xhs hot search mcp`
 - `RedNote`
 - `rednote mcp`
 - `rednote data mcp`
 - `小红书`
 - `小红书 mcp`
 - `小红书 数据 MCP`
+- `小红书 搜索热榜 MCP`
 - `social insights`
 - `Douyin`
 - `douyin mcp`
@@ -171,5 +192,17 @@ Use this checklist before syncing this listing to the public `socialdatax-skills
 - `抖音 数据 MCP`
 - `抖音 热榜 MCP`
 - `抖音 达人短剧 MCP`
+- `Kuaishou`
+- `kuaishou mcp`
+- `kuaishou data mcp`
+- `kuaishou video search mcp`
+- `kuaishou hot search mcp`
+- `Kwai`
+- `kwai mcp`
+- `kwai data mcp`
+- `快手`
+- `快手 mcp`
+- `快手 数据 MCP`
+- `快手 热榜 MCP`
 
 Do not add future-platform search keywords to package metadata or directory tags until those tools are publicly exposed.

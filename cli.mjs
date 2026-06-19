@@ -7,11 +7,11 @@ import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const PACKAGE_NAME = "socialdatax-skills";
-const PACKAGE_VERSION = "0.2.4";
+const PACKAGE_VERSION = "0.2.9";
 const PACKAGE_SPEC = `${PACKAGE_NAME}@latest`;
 const LOG_PREFIX = `[${PACKAGE_NAME}]`;
 const MIN_NODE_VERSION = "20.18.1";
-const HOMEPAGE_URL = "https://socialdatax.com";
+const HOMEPAGE_URL = "https://socialdatax.52choujiang.com";
 const PRIMARY_API_KEY_ENV = "SOCIALDATAX_API_KEY";
 const LEGACY_API_KEY_ENV = "SOCIAL_MEDIA_MCP_API_KEY";
 const API_KEY_ENV_NAMES = [PRIMARY_API_KEY_ENV, LEGACY_API_KEY_ENV];
@@ -19,48 +19,90 @@ const AVAILABLE_SKILLS = [
   {
     name: "socialdatax-content-research-assistant",
     summary:
-      "Coordinate cross-platform content research across XHS and Douyin.",
+      "Coordinate cross-platform content research across XHS, Douyin, Kuaishou, Weibo, and WeChat Channels.",
     emoji: "🔎",
   },
   {
     name: "media-search",
-    summary: "Search XHS notes and Douyin works by keyword with optional filters.",
+    summary:
+      "Search XHS notes, Douyin works, Kuaishou works, Weibo posts, and WeChat Channels videos by keyword.",
     emoji: "🔍",
   },
   {
     name: "media-detail",
-    summary: "Read structured content details and metrics for XHS and Douyin.",
+    summary:
+      "Read structured content details and metrics for XHS, Douyin, Kuaishou, Weibo, and WeChat Channels.",
     emoji: "📄",
   },
   {
     name: "media-comments",
-    summary: "Fetch and analyze XHS comments/replies and Douyin comments/replies.",
+    summary:
+      "Fetch and analyze XHS, Douyin, Kuaishou, Weibo, and WeChat Channels comments/replies.",
     emoji: "💬",
   },
   {
     name: "media-user-info",
-    summary: "Retrieve creator profile information for XHS and Douyin.",
+    summary:
+      "Retrieve creator profile information for XHS, Douyin, Kuaishou, Weibo, and WeChat Channels.",
     emoji: "👤",
   },
   {
     name: "media-user-posts",
     summary:
-      "Retrieve creator content lists for XHS and Douyin, including Douyin creator short-drama series.",
+      "Retrieve creator content lists for XHS, Douyin, Kuaishou, Weibo, and WeChat Channels, including Douyin creator short-drama series.",
     emoji: "🗂️",
   },
 ];
 const AVAILABLE_SKILL_NAMES = AVAILABLE_SKILLS.map((skill) => skill.name);
-const BOOLEAN_OPTIONS = new Set(["dryRun", "force", "json", "pretty"]);
+const BOOLEAN_OPTIONS = new Set([
+  "all",
+  "dryRun",
+  "force",
+  "includeReplies",
+  "json",
+  "pretty",
+]);
+const DIRECT_BOOLEAN_OPTIONS = new Set(["all", "includeReplies", "pretty"]);
 const INSTALL_TARGETS = ["openclaw", "hermes", "agents", "codex", "claude-code", "claude"];
 const VALID_SCOPES = ["user", "workspace", "shared"];
 const XHS_DIRECT_ACTION_OPTIONS = {
-  search: ["keyword", "page", "sortType", "noteType", "publishTimeRange", "pretty"],
+  "hot-search": ["pretty"],
+  search: [
+    "keyword",
+    "page",
+    "pages",
+    "all",
+    "maxItems",
+    "sortType",
+    "noteType",
+    "publishTimeRange",
+    "pretty",
+  ],
   detail: ["noteId", "url", "pretty"],
-  comments: ["noteId", "url", "pageToken", "pretty"],
-  "sub-comments": ["noteId", "commentId", "pageToken", "pretty"],
+  comments: [
+    "noteId",
+    "url",
+    "pageToken",
+    "pages",
+    "all",
+    "maxItems",
+    "includeReplies",
+    "pretty",
+  ],
+  "sub-comments": [
+    "noteId",
+    "commentId",
+    "pageToken",
+    "pages",
+    "all",
+    "maxItems",
+    "includeReplies",
+    "pretty",
+  ],
   "user-info": ["userId", "profileUrl", "pretty"],
-  "user-posts": ["userId", "profileUrl", "pageToken", "pretty"],
+  "user-posts": ["userId", "profileUrl", "pageToken", "pages", "all", "maxItems", "pretty"],
 };
+const XHS_DIRECT_ACTION_NAMES = Object.keys(XHS_DIRECT_ACTION_OPTIONS).join(", ");
 const XHS_OPTION_DISPLAY_NAMES = {
   keyword: "--keyword",
   page: "--page",
@@ -71,6 +113,10 @@ const XHS_OPTION_DISPLAY_NAMES = {
   noteId: "--note-id",
   commentId: "--comment-id",
   pageToken: "--page-token",
+  pages: "--pages",
+  maxItems: "--max-items",
+  all: "--all",
+  includeReplies: "--include-replies",
   profileUrl: "--profile-url",
   userId: "--user-id",
 };
@@ -91,6 +137,9 @@ const DOUYIN_DIRECT_ACTION_OPTIONS = {
   search: [
     "keyword",
     "pageToken",
+    "pages",
+    "all",
+    "maxItems",
     "sortType",
     "publishTimeRange",
     "durationRange",
@@ -98,11 +147,29 @@ const DOUYIN_DIRECT_ACTION_OPTIONS = {
     "pretty",
   ],
   detail: ["awemeId", "url", "pretty"],
-  comments: ["awemeId", "url", "pageToken", "pretty"],
-  replies: ["awemeId", "commentId", "pageToken", "pretty"],
+  comments: [
+    "awemeId",
+    "url",
+    "pageToken",
+    "pages",
+    "all",
+    "maxItems",
+    "includeReplies",
+    "pretty",
+  ],
+  replies: [
+    "awemeId",
+    "commentId",
+    "pageToken",
+    "pages",
+    "all",
+    "maxItems",
+    "includeReplies",
+    "pretty",
+  ],
   "user-info": ["secUserId", "profileUrl", "pretty"],
-  "user-posts": ["secUserId", "profileUrl", "pageToken", "pretty"],
-  "user-series": ["secUserId", "profileUrl", "pageToken", "pretty"],
+  "user-posts": ["secUserId", "profileUrl", "pageToken", "pages", "all", "maxItems", "pretty"],
+  "user-series": ["secUserId", "profileUrl", "pageToken", "pages", "all", "maxItems", "pretty"],
 };
 const DOUYIN_DIRECT_ACTION_NAMES = Object.keys(DOUYIN_DIRECT_ACTION_OPTIONS).join(", ");
 const DOUYIN_SEARCH_SORT_TYPES = ["general", "time_descending", "like_count_descending"];
@@ -117,6 +184,10 @@ const DOUYIN_SEARCH_CONTENT_TYPES = ["all", "video", "image"];
 const DOUYIN_OPTION_DISPLAY_NAMES = {
   keyword: "--keyword",
   pageToken: "--page-token",
+  pages: "--pages",
+  maxItems: "--max-items",
+  all: "--all",
+  includeReplies: "--include-replies",
   sortType: "--sort-type",
   publishTimeRange: "--publish-time-range",
   durationRange: "--duration-range",
@@ -126,6 +197,150 @@ const DOUYIN_OPTION_DISPLAY_NAMES = {
   awemeId: "--aweme-id",
   commentId: "--comment-id",
   secUserId: "--sec-user-id",
+};
+const KUAISHOU_DIRECT_ACTION_OPTIONS = {
+  "hot-search": ["pretty"],
+  search: ["keyword", "pageToken", "pages", "all", "maxItems", "pretty"],
+  detail: ["photoId", "url", "pretty"],
+  comments: [
+    "photoId",
+    "url",
+    "pageToken",
+    "pages",
+    "all",
+    "maxItems",
+    "includeReplies",
+    "pretty",
+  ],
+  replies: [
+    "photoId",
+    "commentId",
+    "pageToken",
+    "pages",
+    "all",
+    "maxItems",
+    "includeReplies",
+    "pretty",
+  ],
+  "user-info": ["userId", "profileUrl", "pretty"],
+  "user-posts": ["userId", "profileUrl", "pageToken", "pages", "all", "maxItems", "pretty"],
+};
+const KUAISHOU_DIRECT_ACTION_NAMES = Object.keys(KUAISHOU_DIRECT_ACTION_OPTIONS).join(", ");
+const KUAISHOU_OPTION_DISPLAY_NAMES = {
+  keyword: "--keyword",
+  pageToken: "--page-token",
+  pages: "--pages",
+  maxItems: "--max-items",
+  all: "--all",
+  includeReplies: "--include-replies",
+  url: "--url",
+  profileUrl: "--profile-url",
+  photoId: "--photo-id",
+  commentId: "--comment-id",
+  userId: "--user-id",
+};
+const WEIBO_DIRECT_ACTION_OPTIONS = {
+  "hot-search": ["pretty"],
+  search: ["keyword", "pageToken", "pages", "all", "maxItems", "pretty"],
+  detail: ["postId", "postUrl", "pretty"],
+  comments: [
+    "postId",
+    "postUrl",
+    "pageToken",
+    "pages",
+    "all",
+    "maxItems",
+    "includeReplies",
+    "pretty",
+  ],
+  replies: [
+    "postId",
+    "commentId",
+    "pageToken",
+    "pages",
+    "all",
+    "maxItems",
+    "includeReplies",
+    "pretty",
+  ],
+  "user-info": ["userId", "profileUrl", "pretty"],
+  "user-posts": ["userId", "profileUrl", "pageToken", "pages", "all", "maxItems", "pretty"],
+};
+const WEIBO_DIRECT_ACTION_NAMES = Object.keys(WEIBO_DIRECT_ACTION_OPTIONS).join(", ");
+const WEIBO_OPTION_DISPLAY_NAMES = {
+  keyword: "--keyword",
+  pageToken: "--page-token",
+  pages: "--pages",
+  maxItems: "--max-items",
+  all: "--all",
+  includeReplies: "--include-replies",
+  postId: "--post-id",
+  postUrl: "--post-url",
+  commentId: "--comment-id",
+  profileUrl: "--profile-url",
+  userId: "--user-id",
+};
+const WECHAT_DIRECT_ACTION_OPTIONS = {
+  "hot-search": ["pretty"],
+  search: [
+    "keyword",
+    "pageToken",
+    "pages",
+    "all",
+    "maxItems",
+    "sortType",
+    "durationRange",
+    "pretty",
+  ],
+  detail: ["encryptedObjectId", "url", "pretty"],
+  comments: [
+    "objectId",
+    "objectNonceId",
+    "url",
+    "pageToken",
+    "pages",
+    "all",
+    "maxItems",
+    "includeReplies",
+    "pretty",
+  ],
+  replies: [
+    "objectId",
+    "objectNonceId",
+    "commentId",
+    "pageToken",
+    "pages",
+    "all",
+    "maxItems",
+    "includeReplies",
+    "pretty",
+  ],
+  "user-info": ["userId", "pretty"],
+  "user-posts": ["userId", "url", "pageToken", "pages", "all", "maxItems", "pretty"],
+};
+const WECHAT_DIRECT_ACTION_NAMES = Object.keys(WECHAT_DIRECT_ACTION_OPTIONS).join(", ");
+const WECHAT_SEARCH_SORT_TYPES = ["all", "latest", "popular"];
+const WECHAT_SEARCH_DURATION_RANGES = [
+  "all",
+  "under_5_min",
+  "between_5_and_20_min",
+  "over_20_min",
+];
+const WECHAT_OPTION_DISPLAY_NAMES = {
+  keyword: "--keyword",
+  pageToken: "--page-token",
+  pages: "--pages",
+  maxItems: "--max-items",
+  all: "--all",
+  includeReplies: "--include-replies",
+  sortType: "--sort-type",
+  durationRange: "--duration-range",
+  url: "--url",
+  encryptedObjectId: "--encrypted-object-id",
+  objectId: "--object-id",
+  objectNonceId: "--object-nonce-id",
+  commentId: "--comment-id",
+  userId: "--user-id",
 };
 const PLATFORMS = {
   xhs: {
@@ -142,6 +357,11 @@ const PLATFORMS = {
       "XHS_MCP_UPSTREAM_URL",
     ],
     tools: [
+      {
+        name: "xhs_get_search_hot_list",
+        description:
+          "Fetch the Xiaohongshu / XHS / RedNote search hot list with title and heat value.",
+      },
       {
         name: "xhs_search_notes",
         description:
@@ -188,6 +408,21 @@ const PLATFORMS = {
         description:
           "Fetch creator notes from a profile link, short link, or share text.",
       },
+      {
+        name: "xhs_submit_video_speech_text_by_note_url",
+        description:
+          "Submit a video note speech-to-text transcript task from a note link, short link, or share text; 提交完成后最多短等 15 秒.",
+      },
+      {
+        name: "xhs_submit_video_speech_text_by_note_id",
+        description:
+          "Submit a video note speech-to-text transcript task from a note_id; 提交完成后最多短等 15 秒.",
+      },
+      {
+        name: "xhs_get_video_speech_text_job",
+        description:
+          "Check a video note speech-to-text transcript job by job_id without starting a new task.",
+      },
     ],
   },
   douyin: {
@@ -226,7 +461,7 @@ const PLATFORMS = {
       },
       {
         name: "douyin_get_video_comment_replies_by_comment_id",
-        description: "Fetch paginated replies under a first-level Douyin comment by aweme_id and comment_id.",
+        description: "Fetch paginated replies under a first-level Douyin comment; pass both aweme_id and comment_id, and use page_token to continue pagination.",
       },
       {
         name: "douyin_get_user_info_by_sec_user_id",
@@ -254,7 +489,217 @@ const PLATFORMS = {
       },
       {
         name: "douyin_search_videos",
-        description: "Search Douyin works by keyword with optional paging and filters.",
+        description:
+          "Search Douyin works by keyword with optional page_token continuation and filters; do not pass page.",
+      },
+      {
+        name: "douyin_submit_video_speech_text_by_video_url",
+        description:
+          "Submit a Douyin work video speech-to-text transcript task from a work page link, short link, or share text; 提交完成后最多短等 15 秒.",
+      },
+      {
+        name: "douyin_submit_video_speech_text_by_aweme_id",
+        description:
+          "Submit a Douyin work video speech-to-text transcript task from an aweme_id; 提交完成后最多短等 15 秒.",
+      },
+      {
+        name: "douyin_get_video_speech_text_job",
+        description:
+          "Check a Douyin video speech-to-text transcript job by job_id without starting a new task.",
+      },
+    ],
+  },
+  kuaishou: {
+    id: "kuaishou",
+    displayName: "Kuaishou / 快手 / Kwai",
+    status: "public",
+    registryName: "com.52choujiang/kuaishou-insights",
+    futureRegistryName: "com.socialdatax/kuaishou-insights",
+    endpoint: "https://mcp.52choujiang.com/kuaishou/mcp",
+    apiKeyEnv: API_KEY_ENV_NAMES,
+    upstreamEnv: [
+      "SOCIAL_MEDIA_KUAISHOU_MCP_UPSTREAM_URL",
+      "SOCIAL_MEDIA_MCP_UPSTREAM_URL",
+      "KUAISHOU_MCP_UPSTREAM_URL",
+    ],
+    tools: [
+      {
+        name: "kuaishou_get_hot_search_list",
+        description: "Get the current Kuaishou / 快手 short-video hot list.",
+      },
+      {
+        name: "kuaishou_search_videos",
+        description:
+          "Search Kuaishou works by natural-language keyword with optional page_token continuation; do not pass page.",
+      },
+      {
+        name: "kuaishou_get_video_detail_by_photo_id",
+        description: "Fetch structured Kuaishou work details when the caller already has a photo_id.",
+      },
+      {
+        name: "kuaishou_get_video_detail_by_url",
+        description: "Resolve a Kuaishou work page link, short link, or share text into structured work details.",
+      },
+      {
+        name: "kuaishou_get_video_comments_by_photo_id",
+        description: "Fetch paginated first-level comments when the caller already has a photo_id.",
+      },
+      {
+        name: "kuaishou_get_video_comments_by_url",
+        description: "Fetch paginated first-level comments directly from a Kuaishou work page link, short link, or share text.",
+      },
+      {
+        name: "kuaishou_get_video_comment_replies_by_comment_id",
+        description: "Fetch paginated replies under a first-level comment by photo_id and comment_id.",
+      },
+      {
+        name: "kuaishou_get_user_info_by_user_id",
+        description: "Fetch creator profile data when the caller already has a user_id.",
+      },
+      {
+        name: "kuaishou_get_user_info_by_profile_url",
+        description: "Resolve a Kuaishou profile link, short link, or share text into creator profile data.",
+      },
+      {
+        name: "kuaishou_get_user_posted_videos_by_user_id",
+        description: "Fetch a paginated list of works published by a creator when the caller already has a user_id.",
+      },
+      {
+        name: "kuaishou_get_user_posted_videos_by_profile_url",
+        description: "Fetch a paginated list of works published by a creator from a profile link, short link, or share text.",
+      },
+      {
+        name: "kuaishou_submit_video_speech_text_by_video_url",
+        description:
+          "Submit a Kuaishou work video speech-to-text transcript task from a work page link, short link, or share text; 提交完成后最多短等 15 秒.",
+      },
+      {
+        name: "kuaishou_submit_video_speech_text_by_photo_id",
+        description:
+          "Submit a Kuaishou work video speech-to-text transcript task from a photo_id; 提交完成后最多短等 15 秒.",
+      },
+      {
+        name: "kuaishou_get_video_speech_text_job",
+        description:
+          "Check a Kuaishou video speech-to-text transcript job by job_id without starting a new task.",
+      },
+    ],
+  },
+  weibo: {
+    id: "weibo",
+    displayName: "Weibo / 微博",
+    status: "public",
+    registryName: "com.52choujiang/weibo-insights",
+    futureRegistryName: "com.socialdatax/weibo-insights",
+    endpoint: "https://mcp.52choujiang.com/weibo/mcp",
+    apiKeyEnv: API_KEY_ENV_NAMES,
+    upstreamEnv: [
+      "SOCIAL_MEDIA_WEIBO_MCP_UPSTREAM_URL",
+      "SOCIAL_MEDIA_MCP_UPSTREAM_URL",
+      "WEIBO_MCP_UPSTREAM_URL",
+    ],
+    tools: [
+      {
+        name: "weibo_get_hot_search_list",
+        description: "Fetch the current Weibo / 微博 hot-search list.",
+      },
+      {
+        name: "weibo_search_posts",
+        description:
+          "Search Weibo posts by keyword with optional page_token continuation; do not pass page.",
+      },
+      {
+        name: "weibo_get_post_detail_by_post_id",
+        description: "Fetch structured Weibo post details when the caller already has a post_id.",
+      },
+      {
+        name: "weibo_get_post_detail_by_post_url",
+        description: "Resolve a Weibo post URL, short link, or share text into structured post details.",
+      },
+      {
+        name: "weibo_get_post_comments_by_post_id",
+        description: "Fetch paginated first-level comments when the caller already has a post_id.",
+      },
+      {
+        name: "weibo_get_post_comments_by_post_url",
+        description: "Fetch paginated first-level comments from a Weibo post URL, short link, or share text.",
+      },
+      {
+        name: "weibo_get_post_comment_replies_by_comment_id",
+        description: "Fetch paginated replies under a first-level comment by post_id and comment_id.",
+      },
+      {
+        name: "weibo_get_user_info_by_user_id",
+        description: "Fetch creator profile data when the caller already has a user_id.",
+      },
+      {
+        name: "weibo_get_user_info_by_profile_url",
+        description: "Resolve a Weibo profile URL, short link, or share text into creator profile data.",
+      },
+      {
+        name: "weibo_get_user_posts_by_user_id",
+        description: "Fetch a paginated list of posts published by a creator when the caller already has a user_id.",
+      },
+      {
+        name: "weibo_get_user_posts_by_profile_url",
+        description: "Fetch creator posts from a profile URL, short link, or profile share text.",
+      },
+    ],
+  },
+  wechat: {
+    id: "wechat",
+    displayName: "WeChat Channels / 视频号",
+    status: "public",
+    registryName: "com.52choujiang/wechat-channels-insights",
+    futureRegistryName: "com.socialdatax/wechat-channels-insights",
+    endpoint: "https://mcp.52choujiang.com/wechat/mcp",
+    apiKeyEnv: API_KEY_ENV_NAMES,
+    upstreamEnv: [
+      "SOCIAL_MEDIA_WECHAT_MCP_UPSTREAM_URL",
+      "SOCIAL_MEDIA_MCP_UPSTREAM_URL",
+      "WECHAT_MCP_UPSTREAM_URL",
+    ],
+    tools: [
+      {
+        name: "wechat_get_hot_search_list",
+        description: "Fetch the current WeChat Channels / 视频号 hot-search list.",
+      },
+      {
+        name: "wechat_search_videos",
+        description:
+          "Search WeChat Channels / 视频号 videos by keyword with optional page_token continuation and filters; do not pass page.",
+      },
+      {
+        name: "wechat_get_video_detail_by_encrypted_object_id",
+        description: "Fetch structured video details when encrypted_object_id is already known.",
+      },
+      {
+        name: "wechat_get_video_detail_by_url",
+        description: "Resolve a WeChat Channels / 视频号 video link or share text into structured video details.",
+      },
+      {
+        name: "wechat_get_video_comments_by_object_id",
+        description: "Fetch paginated first-level comments when object_id and object_nonce_id are known.",
+      },
+      {
+        name: "wechat_get_video_comments_by_url",
+        description: "Fetch paginated first-level comments from a WeChat Channels / 视频号 video link or share text.",
+      },
+      {
+        name: "wechat_get_video_comment_replies_by_comment_id",
+        description: "Fetch paginated replies under a first-level comment by object_id, object_nonce_id, and comment_id.",
+      },
+      {
+        name: "wechat_get_user_info_by_user_id",
+        description: "Fetch creator profile data when the finder user_id is already known.",
+      },
+      {
+        name: "wechat_get_user_posted_videos_by_user_id",
+        description: "Fetch a paginated list of videos published by a creator when the finder user_id is already known.",
+      },
+      {
+        name: "wechat_get_user_posted_videos_by_url",
+        description: "Fetch creator videos from a WeChat Channels / 视频号 video link or share text.",
       },
     ],
   },
@@ -291,6 +736,12 @@ if (isMainModule()) {
       await runXhsDirectCommand(cliArgs.slice(1));
     } else if (command === "douyin") {
       await runDouyinDirectCommand(cliArgs.slice(1));
+    } else if (command === "kuaishou") {
+      await runKuaishouDirectCommand(cliArgs.slice(1));
+    } else if (command === "weibo") {
+      await runWeiboDirectCommand(cliArgs.slice(1));
+    } else if (command === "wechat") {
+      await runWechatDirectCommand(cliArgs.slice(1));
     } else if (command === "--platform" || command?.startsWith("--platform=") || command === "print-config") {
       printRemovedMcpConfigHelp(command);
       process.exitCode = 1;
@@ -383,9 +834,9 @@ function validateXhsDirectActionOptions(action, options) {
   }
 
   validateKnownOptions(options, allowedOptions);
-  validateFlagOption(options, "pretty", "--pretty");
+  validateDirectPaginationOptions("xhs", action, options);
   for (const key of allowedOptions) {
-    if (key !== "pretty") {
+    if (!DIRECT_BOOLEAN_OPTIONS.has(key)) {
       requireOptionValue(options, key, XHS_OPTION_DISPLAY_NAMES[key]);
     }
   }
@@ -398,11 +849,77 @@ function validateDouyinDirectActionOptions(action, options) {
   }
 
   validateKnownOptions(options, allowedOptions);
-  validateFlagOption(options, "pretty", "--pretty");
+  validateDirectPaginationOptions("douyin", action, options);
   for (const key of allowedOptions) {
-    if (key !== "pretty") {
+    if (!DIRECT_BOOLEAN_OPTIONS.has(key)) {
       requireOptionValue(options, key, DOUYIN_OPTION_DISPLAY_NAMES[key]);
     }
+  }
+}
+
+function validateKuaishouDirectActionOptions(action, options) {
+  const allowedOptions = KUAISHOU_DIRECT_ACTION_OPTIONS[action];
+  if (!allowedOptions) {
+    return;
+  }
+
+  validateKnownOptions(options, allowedOptions);
+  validateDirectPaginationOptions("kuaishou", action, options);
+  for (const key of allowedOptions) {
+    if (!DIRECT_BOOLEAN_OPTIONS.has(key)) {
+      requireOptionValue(options, key, KUAISHOU_OPTION_DISPLAY_NAMES[key]);
+    }
+  }
+}
+
+function validateWeiboDirectActionOptions(action, options) {
+  const allowedOptions = WEIBO_DIRECT_ACTION_OPTIONS[action];
+  if (!allowedOptions) {
+    return;
+  }
+
+  validateKnownOptions(options, allowedOptions);
+  validateDirectPaginationOptions("weibo", action, options);
+  for (const key of allowedOptions) {
+    if (!DIRECT_BOOLEAN_OPTIONS.has(key)) {
+      requireOptionValue(options, key, WEIBO_OPTION_DISPLAY_NAMES[key]);
+    }
+  }
+}
+
+function validateWechatDirectActionOptions(action, options) {
+  const allowedOptions = WECHAT_DIRECT_ACTION_OPTIONS[action];
+  if (!allowedOptions) {
+    return;
+  }
+
+  validateKnownOptions(options, allowedOptions);
+  validateDirectPaginationOptions("wechat", action, options);
+  for (const key of allowedOptions) {
+    if (!DIRECT_BOOLEAN_OPTIONS.has(key)) {
+      requireOptionValue(options, key, WECHAT_OPTION_DISPLAY_NAMES[key]);
+    }
+  }
+}
+
+function validateDirectPaginationOptions(platformId, action, options) {
+  validateFlagOption(options, "pretty", "--pretty");
+  validateFlagOption(options, "all", "--all");
+  validateFlagOption(options, "includeReplies", "--include-replies");
+  if (options.all && options.pages !== undefined) {
+    throw new Error("Use only one of --all or --pages.");
+  }
+  if (options.pages !== undefined) {
+    parsePositiveIntegerOption(options.pages, "--pages");
+  }
+  if (options.maxItems !== undefined) {
+    parsePositiveIntegerOption(options.maxItems, "--max-items");
+  }
+  if (options.all && action === "search") {
+    throw new Error(`--all is not supported for ${platformId} search. Use --pages instead.`);
+  }
+  if (options.includeReplies && action !== "comments") {
+    throw new Error(`--include-replies is only supported for ${platformId} comments.`);
   }
 }
 
@@ -657,7 +1174,8 @@ async function installSkills(args) {
   console.log("No API key was stored by this installer.");
   console.log("No MCP server configuration was changed.");
   console.log("Installed files are AgentSkills files only.");
-  console.log(`Data calls are read-only and require ${PRIMARY_API_KEY_ENV} at runtime.`);
+  console.log(`Authenticated data calls require ${PRIMARY_API_KEY_ENV} at runtime.`);
+  console.log("Data calls do not perform login, posting, editing, liking, commenting, or account actions.");
   console.log("Configure your API Key before making authenticated calls:");
   console.log(`  export ${PRIMARY_API_KEY_ENV}="<${PRIMARY_API_KEY_ENV}>"`);
   console.log("");
@@ -811,7 +1329,9 @@ function buildDoctorReport() {
       supportsDryRun: true,
     },
     security: {
-      readOnly: true,
+      readOnly: false,
+      directCliReadOnly: true,
+      platformMcpMaySubmitAnalysisJobs: true,
       accountActions: false,
       readsLocalBrowserData: false,
       requiresApiKeyAtRuntime: true,
@@ -852,7 +1372,7 @@ function printDoctor(args) {
   console.log("- install --dry-run previews destinations without writing files.");
   console.log("");
   console.log("Runtime data calls:");
-  console.log("- read-only social media intelligence workflows.");
+  console.log("- social media content intelligence workflows.");
   console.log("- no login, posting, editing, liking, commenting, or other account actions.");
   console.log("- no local browser data access.");
   console.log(`- requires ${PRIMARY_API_KEY_ENV} only when making authenticated data calls.`);
@@ -880,11 +1400,17 @@ function printHelp() {
   console.log(`  npx -y ${PACKAGE_SPEC} xhs search --keyword "露营桌" --pretty`);
   console.log("      Call the XHS search tool directly and print JSON.");
   console.log("");
+  console.log(`  npx -y ${PACKAGE_SPEC} xhs hot-search --pretty`);
+  console.log("      Call the XHS search hot list tool directly and print JSON.");
+  console.log("");
   console.log(`  npx -y ${PACKAGE_SPEC} xhs detail --note-id "<note_id>" --pretty`);
   console.log("      Call the XHS note detail tool directly and print JSON.");
   console.log("");
   console.log(`  npx -y ${PACKAGE_SPEC} xhs comments --note-id "<note_id>" --pretty`);
   console.log("      Call the XHS comments tool directly and print JSON.");
+  console.log("");
+  console.log(`  npx -y ${PACKAGE_SPEC} xhs comments --note-id "<note_id>" --all --include-replies --pretty`);
+  console.log("      Fetch all XHS first-level comments and nested replies.");
   console.log("");
   console.log(
     `  npx -y ${PACKAGE_SPEC} xhs sub-comments --note-id "<note_id>" --comment-id "<comment_id>" --pretty`
@@ -909,10 +1435,13 @@ function printHelp() {
   console.log(`  npx -y ${PACKAGE_SPEC} douyin comments --aweme-id "<aweme_id>" --pretty`);
   console.log("      Call the Douyin work comments tool directly and print JSON.");
   console.log("");
+  console.log(`  npx -y ${PACKAGE_SPEC} douyin comments --aweme-id "<aweme_id>" --all --include-replies --pretty`);
+  console.log("      Fetch all Douyin first-level comments and nested replies.");
+  console.log("");
   console.log(
     `  npx -y ${PACKAGE_SPEC} douyin replies --aweme-id "<aweme_id>" --comment-id "<comment_id>" --pretty`
   );
-  console.log("      Call the Douyin comment replies tool directly and print JSON.");
+  console.log("      Call the Douyin comment replies tool with aweme_id and comment_id; use page_token for pagination.");
   console.log("");
   console.log(`  npx -y ${PACKAGE_SPEC} douyin user-info --sec-user-id "<sec_user_id>" --pretty`);
   console.log("      Call the Douyin creator profile tool directly and print JSON.");
@@ -931,6 +1460,109 @@ function printHelp() {
   console.log("");
   console.log(`  npx -y ${PACKAGE_SPEC} douyin user-series --profile-url "<profile_url_or_share_text>" --pretty`);
   console.log("      Call the Douyin creator short-drama series tool from a profile link or share text.");
+  console.log("");
+  console.log(`  npx -y ${PACKAGE_SPEC} kuaishou hot-search --pretty`);
+  console.log("      Call the Kuaishou short-video hot list tool directly and print JSON.");
+  console.log("");
+  console.log(`  npx -y ${PACKAGE_SPEC} kuaishou search --keyword "露营桌" --pretty`);
+  console.log("      Call the Kuaishou work search tool directly and print JSON.");
+  console.log("");
+  console.log(`  npx -y ${PACKAGE_SPEC} kuaishou detail --photo-id "<photo_id>" --pretty`);
+  console.log("      Call the Kuaishou work detail tool directly and print JSON.");
+  console.log("");
+  console.log(`  npx -y ${PACKAGE_SPEC} kuaishou detail --url "<kuaishou_content_url_or_share_text>" --pretty`);
+  console.log("      Call the Kuaishou work detail tool from a work link or share text.");
+  console.log("");
+  console.log(`  npx -y ${PACKAGE_SPEC} kuaishou comments --photo-id "<photo_id>" --pretty`);
+  console.log("      Call the Kuaishou work comments tool directly and print JSON.");
+  console.log("");
+  console.log(`  npx -y ${PACKAGE_SPEC} kuaishou comments --photo-id "<photo_id>" --all --include-replies --pretty`);
+  console.log("      Fetch all Kuaishou first-level comments and nested replies.");
+  console.log("");
+  console.log(`  npx -y ${PACKAGE_SPEC} kuaishou comments --url "<kuaishou_content_url_or_share_text>" --pretty`);
+  console.log("      Call the Kuaishou work comments tool from a work link or share text.");
+  console.log("");
+  console.log(
+    `  npx -y ${PACKAGE_SPEC} kuaishou replies --photo-id "<photo_id>" --comment-id "<comment_id>" --pretty`
+  );
+  console.log("      Call the Kuaishou comment replies tool directly and print JSON.");
+  console.log("");
+  console.log(`  npx -y ${PACKAGE_SPEC} kuaishou user-info --user-id "<user_id>" --pretty`);
+  console.log("      Call the Kuaishou creator profile tool directly and print JSON.");
+  console.log("");
+  console.log(`  npx -y ${PACKAGE_SPEC} kuaishou user-info --profile-url "<profile_url_or_share_text>" --pretty`);
+  console.log("      Call the Kuaishou creator profile tool from a profile link or share text.");
+  console.log("");
+  console.log(`  npx -y ${PACKAGE_SPEC} kuaishou user-posts --user-id "<user_id>" --pretty`);
+  console.log("      Call the Kuaishou creator works tool directly and print JSON.");
+  console.log("");
+  console.log(`  npx -y ${PACKAGE_SPEC} kuaishou user-posts --profile-url "<profile_url_or_share_text>" --pretty`);
+  console.log("      Call the Kuaishou creator works tool from a profile link or share text.");
+  console.log("");
+  console.log(`  npx -y ${PACKAGE_SPEC} weibo hot-search --pretty`);
+  console.log("      Call the Weibo hot-search list tool directly and print JSON.");
+  console.log("");
+  console.log(`  npx -y ${PACKAGE_SPEC} weibo search --keyword "露营桌" --pretty`);
+  console.log("      Call the Weibo post search tool directly and print JSON.");
+  console.log("");
+  console.log(`  npx -y ${PACKAGE_SPEC} weibo detail --post-id "<post_id>" --pretty`);
+  console.log("      Call the Weibo post detail tool directly and print JSON.");
+  console.log("");
+  console.log(`  npx -y ${PACKAGE_SPEC} weibo detail --post-url "<weibo_post_url_or_share_text>" --pretty`);
+  console.log("      Call the Weibo post detail tool from a post link or share text.");
+  console.log("");
+  console.log(`  npx -y ${PACKAGE_SPEC} weibo comments --post-id "<post_id>" --pretty`);
+  console.log("      Call the Weibo post comments tool directly and print JSON.");
+  console.log("");
+  console.log(`  npx -y ${PACKAGE_SPEC} weibo comments --post-url "<weibo_post_url_or_share_text>" --pretty`);
+  console.log("      Call the Weibo post comments tool from a post link or share text.");
+  console.log("");
+  console.log(`  npx -y ${PACKAGE_SPEC} weibo replies --post-id "<post_id>" --comment-id "<comment_id>" --pretty`);
+  console.log("      Call the Weibo comment replies tool directly and print JSON.");
+  console.log("");
+  console.log(`  npx -y ${PACKAGE_SPEC} weibo user-info --user-id "<user_id>" --pretty`);
+  console.log("      Call the Weibo creator profile tool directly and print JSON.");
+  console.log("");
+  console.log(`  npx -y ${PACKAGE_SPEC} weibo user-info --profile-url "<profile_url_or_share_text>" --pretty`);
+  console.log("      Call the Weibo creator profile tool from a profile link or share text.");
+  console.log("");
+  console.log(`  npx -y ${PACKAGE_SPEC} weibo user-posts --user-id "<user_id>" --pretty`);
+  console.log("      Call the Weibo creator posts tool directly and print JSON.");
+  console.log("");
+  console.log(`  npx -y ${PACKAGE_SPEC} weibo user-posts --profile-url "<profile_url_or_share_text>" --pretty`);
+  console.log("      Call the Weibo creator posts tool from a profile link or share text.");
+  console.log("");
+  console.log(`  npx -y ${PACKAGE_SPEC} wechat hot-search --pretty`);
+  console.log("      Call the WeChat Channels / 视频号 hot-search list tool directly and print JSON.");
+  console.log("");
+  console.log(`  npx -y ${PACKAGE_SPEC} wechat search --keyword "露营桌" --pretty`);
+  console.log("      Call the WeChat Channels / 视频号 video search tool directly and print JSON.");
+  console.log("");
+  console.log(`  npx -y ${PACKAGE_SPEC} wechat detail --encrypted-object-id "<encrypted_object_id>" --pretty`);
+  console.log("      Call the WeChat Channels / 视频号 video detail tool directly and print JSON.");
+  console.log("");
+  console.log(`  npx -y ${PACKAGE_SPEC} wechat detail --url "<wechat_video_url_or_share_text>" --pretty`);
+  console.log("      Call the WeChat Channels / 视频号 video detail tool from a video link or share text.");
+  console.log("");
+  console.log(`  npx -y ${PACKAGE_SPEC} wechat comments --object-id "<object_id>" --object-nonce-id "<object_nonce_id>" --pretty`);
+  console.log("      Call the WeChat Channels / 视频号 video comments tool directly and print JSON.");
+  console.log("");
+  console.log(`  npx -y ${PACKAGE_SPEC} wechat comments --url "<wechat_video_url_or_share_text>" --pretty`);
+  console.log("      Call the WeChat Channels / 视频号 video comments tool from a video link or share text.");
+  console.log("");
+  console.log(
+    `  npx -y ${PACKAGE_SPEC} wechat replies --object-id "<object_id>" --object-nonce-id "<object_nonce_id>" --comment-id "<comment_id>" --pretty`
+  );
+  console.log("      Call the WeChat Channels / 视频号 comment replies tool directly and print JSON.");
+  console.log("");
+  console.log(`  npx -y ${PACKAGE_SPEC} wechat user-info --user-id "<finder_user_id>" --pretty`);
+  console.log("      Call the WeChat Channels / 视频号 creator profile tool directly and print JSON.");
+  console.log("");
+  console.log(`  npx -y ${PACKAGE_SPEC} wechat user-posts --user-id "<finder_user_id>" --pretty`);
+  console.log("      Call the WeChat Channels / 视频号 creator videos tool directly and print JSON.");
+  console.log("");
+  console.log(`  npx -y ${PACKAGE_SPEC} wechat user-posts --url "<wechat_video_url_or_share_text>" --pretty`);
+  console.log("      Call the WeChat Channels / 视频号 creator videos tool from a video link or share text.");
   console.log("");
   console.log(`  npx -y ${PACKAGE_SPEC} list`);
   console.log("      List available skills.");
@@ -1001,11 +1633,26 @@ function printHelp() {
   console.log("      For Douyin detail/comments, pass a content page link, short link, or share text, not video.play_url.");
   console.log("  --note-id <note_id>");
   console.log("  --aweme-id <aweme_id>");
+  console.log("  --photo-id <photo_id>");
+  console.log("  --post-id <post_id>");
+  console.log("  --post-url <weibo-post-url-or-share-text>");
+  console.log("  --encrypted-object-id <encrypted_object_id>");
+  console.log("  --object-id <object_id>");
+  console.log("  --object-nonce-id <object_nonce_id>");
   console.log("  --comment-id <comment_id>");
   console.log("  --profile-url <profile-url-or-share-text>");
   console.log("  --user-id <user_id>");
   console.log("  --sec-user-id <sec_user_id>");
   console.log("  --page <number>");
+  console.log("      XHS search only. Douyin, Kuaishou, Weibo, and WeChat Channels search do not accept --page.");
+  console.log("  --pages <number>");
+  console.log("      Fetch and merge N pages from the current starting point for search, comments, replies, creator content lists, and creator series.");
+  console.log("  --all");
+  console.log("      Continue comments, replies, creator content lists, and creator series until next_page_token is empty; not supported for search.");
+  console.log("  --max-items <number>");
+  console.log("      Stop after collecting this many primary items.");
+  console.log("  --include-replies");
+  console.log("      For comments commands, also fetch nested second-level replies for each returned first-level comment.");
   console.log("  --sort-type <general|time_descending|like_count_descending|comment_count_descending|collect_count_descending>");
   console.log("      XHS sort meanings: general=default, time_descending=newest, like_count_descending=most liked, comment_count_descending=most commented, collect_count_descending=most collected.");
   console.log("  --note-type <all|image|video>  XHS search note type filter; default is all.");
@@ -1020,6 +1667,11 @@ function printHelp() {
   console.log("  --content-type <all|video|image>");
   console.log("      Douyin content type filter; omit for all content types.");
   console.log("  --page-token <token>");
+  console.log("      Continue token-paginated commands with the complete returned next_page_token. For Douyin, Kuaishou, Weibo, and WeChat Channels search, omit it on the first request.");
+  console.log("  --sort-type <all|latest|popular>");
+  console.log("      WeChat Channels / 视频号 search sort; omit for default sort.");
+  console.log("  --duration-range <all|under_5_min|between_5_and_20_min|over_20_min>");
+  console.log("      WeChat Channels / 视频号 duration filter; omit for no duration filter.");
   console.log("  --pretty            Pretty-print direct CLI JSON output.");
   console.log("  --json              Print doctor output as JSON.");
   console.log("  --target <openclaw|hermes|agents|codex|claude-code|claude>");
@@ -1037,17 +1689,29 @@ function printRemovedMcpConfigHelp(command) {
   console.error("For MCP client configuration, use the platform MCP listings:");
   console.error("  com.52choujiang/xhs-insights");
   console.error("  com.52choujiang/douyin-insights");
+  console.error("  com.52choujiang/kuaishou-insights");
+  console.error("  com.52choujiang/weibo-insights");
+  console.error("  com.52choujiang/wechat-channels-insights");
   console.error("Future SocialDataX namespace drafts are kept for a later endpoint migration:");
   console.error("  com.socialdatax/xhs-insights");
   console.error("  com.socialdatax/douyin-insights");
+  console.error("  com.socialdatax/kuaishou-insights");
+  console.error("  com.socialdatax/weibo-insights");
+  console.error("  com.socialdatax/wechat-channels-insights");
   console.error("");
   console.error("Use hosted streamable HTTP when your client supports remote MCP:");
   console.error("  https://mcp.52choujiang.com/xhs/mcp");
   console.error("  https://mcp.52choujiang.com/douyin/mcp");
+  console.error("  https://mcp.52choujiang.com/kuaishou/mcp");
+  console.error("  https://mcp.52choujiang.com/weibo/mcp");
+  console.error("  https://mcp.52choujiang.com/wechat/mcp");
   console.error("");
   console.error("For command/stdio-only clients, use mcp-remote:");
   console.error(`  npx -y mcp-remote https://mcp.52choujiang.com/xhs/mcp --header "Authorization: Bearer <${PRIMARY_API_KEY_ENV}>"`);
   console.error(`  npx -y mcp-remote https://mcp.52choujiang.com/douyin/mcp --header "Authorization: Bearer <${PRIMARY_API_KEY_ENV}>"`);
+  console.error(`  npx -y mcp-remote https://mcp.52choujiang.com/kuaishou/mcp --header "Authorization: Bearer <${PRIMARY_API_KEY_ENV}>"`);
+  console.error(`  npx -y mcp-remote https://mcp.52choujiang.com/weibo/mcp --header "Authorization: Bearer <${PRIMARY_API_KEY_ENV}>"`);
+  console.error(`  npx -y mcp-remote https://mcp.52choujiang.com/wechat/mcp --header "Authorization: Bearer <${PRIMARY_API_KEY_ENV}>"`);
 }
 
 async function runXhsDirectCommand(args) {
@@ -1055,7 +1719,7 @@ async function runXhsDirectCommand(args) {
   const action = positional[0];
   if (!action) {
     throw new Error(
-      `Missing XHS command. Use search, detail, comments, sub-comments, user-info, or user-posts.`
+      `Missing XHS command. Use ${XHS_DIRECT_ACTION_NAMES}.`
     );
   }
   if (positional.length > 1) {
@@ -1064,7 +1728,9 @@ async function runXhsDirectCommand(args) {
   validateXhsDirectActionOptions(action, options);
 
   const operation = buildXhsOperation(action, options);
-  const data = await callDirectOperation(operation);
+  const data = shouldUsePaginatedDirectOutput(options)
+    ? await callPaginatedDirectOperation(operation, options)
+    : await callDirectOperation(operation);
   const envelope = {
     platform: operation.platform.id,
     tool: operation.tool,
@@ -1089,7 +1755,90 @@ async function runDouyinDirectCommand(args) {
   validateDouyinDirectActionOptions(action, options);
 
   const operation = buildDouyinOperation(action, options);
-  const data = await callDirectOperation(operation);
+  const data = shouldUsePaginatedDirectOutput(options)
+    ? await callPaginatedDirectOperation(operation, options)
+    : await callDirectOperation(operation);
+  const envelope = {
+    platform: operation.platform.id,
+    tool: operation.tool,
+    arguments: operation.arguments,
+    data,
+  };
+  process.stdout.write(JSON.stringify(envelope, null, options.pretty ? 2 : 0));
+  process.stdout.write("\n");
+}
+
+async function runKuaishouDirectCommand(args) {
+  const { options, positional } = parseCommandArgs(args);
+  const action = positional[0];
+  if (!action) {
+    throw new Error(
+      `Missing Kuaishou command. Use ${KUAISHOU_DIRECT_ACTION_NAMES}.`
+    );
+  }
+  if (positional.length > 1) {
+    throw new Error(`Unexpected argument: ${positional[1]}`);
+  }
+  validateKuaishouDirectActionOptions(action, options);
+
+  const operation = buildKuaishouOperation(action, options);
+  const data = shouldUsePaginatedDirectOutput(options)
+    ? await callPaginatedDirectOperation(operation, options)
+    : await callDirectOperation(operation);
+  const envelope = {
+    platform: operation.platform.id,
+    tool: operation.tool,
+    arguments: operation.arguments,
+    data,
+  };
+  process.stdout.write(JSON.stringify(envelope, null, options.pretty ? 2 : 0));
+  process.stdout.write("\n");
+}
+
+async function runWeiboDirectCommand(args) {
+  const { options, positional } = parseCommandArgs(args);
+  const action = positional[0];
+  if (!action) {
+    throw new Error(
+      `Missing Weibo command. Use ${WEIBO_DIRECT_ACTION_NAMES}.`
+    );
+  }
+  if (positional.length > 1) {
+    throw new Error(`Unexpected argument: ${positional[1]}`);
+  }
+  validateWeiboDirectActionOptions(action, options);
+
+  const operation = buildWeiboOperation(action, options);
+  const data = shouldUsePaginatedDirectOutput(options)
+    ? await callPaginatedDirectOperation(operation, options)
+    : await callDirectOperation(operation);
+  const envelope = {
+    platform: operation.platform.id,
+    tool: operation.tool,
+    arguments: operation.arguments,
+    data,
+  };
+  process.stdout.write(JSON.stringify(envelope, null, options.pretty ? 2 : 0));
+  process.stdout.write("\n");
+}
+
+async function runWechatDirectCommand(args) {
+  const { options, positional } = parseCommandArgs(args);
+  const action = positional[0];
+  if (!action) {
+    throw new Error(
+      `Missing WeChat Channels command. Use ${WECHAT_DIRECT_ACTION_NAMES}.`
+    );
+  }
+  if (positional.length > 1) {
+    throw new Error(`Unexpected argument: ${positional[1]}`);
+  }
+  validateWechatDirectActionOptions(action, options);
+
+  const operation = buildWechatOperation(action, options);
+  const data = shouldUsePaginatedDirectOutput(options)
+    ? await callPaginatedDirectOperation(operation, options)
+    : await callDirectOperation(operation);
   const envelope = {
     platform: operation.platform.id,
     tool: operation.tool,
@@ -1102,6 +1851,11 @@ async function runDouyinDirectCommand(args) {
 
 function buildXhsOperation(action, options) {
   switch (action) {
+    case "hot-search":
+      return buildDirectOperation("hot-search", {
+        tool: "xhs_get_search_hot_list",
+        toolArguments: {},
+      });
     case "search":
       return buildDirectOperation("search", buildXhsSearchCall(options));
     case "detail":
@@ -1169,7 +1923,7 @@ function buildXhsOperation(action, options) {
       );
     default:
       throw new Error(
-        `Unsupported XHS command "${action}". Use search, detail, comments, sub-comments, user-info, or user-posts.`
+        `Unsupported XHS command "${action}". Use ${XHS_DIRECT_ACTION_NAMES}.`
       );
   }
 }
@@ -1282,6 +2036,269 @@ function buildDouyinOperation(action, options) {
   }
 }
 
+function buildKuaishouOperation(action, options) {
+  switch (action) {
+    case "hot-search":
+      return buildDirectOperation(
+        "hot-search",
+        {
+          tool: "kuaishou_get_hot_search_list",
+          toolArguments: {},
+        },
+        PLATFORMS.kuaishou
+      );
+    case "search":
+      return buildDirectOperation(
+        "search",
+        buildKuaishouSearchCall(options),
+        PLATFORMS.kuaishou
+      );
+    case "detail":
+      return buildDirectOperation(
+        "detail",
+        buildOneOfCall(options, {
+          idOption: "photoId",
+          urlOption: "url",
+          idTool: "kuaishou_get_video_detail_by_photo_id",
+          urlTool: "kuaishou_get_video_detail_by_url",
+          idArgument: "photo_id",
+          urlArgument: "url",
+          idDisplay: "--photo-id",
+          urlDisplay: "--url",
+        }),
+        PLATFORMS.kuaishou
+      );
+    case "comments":
+      return buildDirectOperation(
+        "comments",
+        buildOneOfCall(options, {
+          idOption: "photoId",
+          urlOption: "url",
+          idTool: "kuaishou_get_video_comments_by_photo_id",
+          urlTool: "kuaishou_get_video_comments_by_url",
+          idArgument: "photo_id",
+          urlArgument: "url",
+          idDisplay: "--photo-id",
+          urlDisplay: "--url",
+          pageToken: options.pageToken,
+        }),
+        PLATFORMS.kuaishou
+      );
+    case "replies":
+      return buildDirectOperation(
+        "replies",
+        buildKuaishouRepliesCall(options),
+        PLATFORMS.kuaishou
+      );
+    case "user-info":
+      return buildDirectOperation(
+        "user-info",
+        buildOneOfCall(options, {
+          idOption: "userId",
+          urlOption: "profileUrl",
+          idTool: "kuaishou_get_user_info_by_user_id",
+          urlTool: "kuaishou_get_user_info_by_profile_url",
+          idArgument: "user_id",
+          urlArgument: "profile_url",
+          idDisplay: "--user-id",
+          urlDisplay: "--profile-url",
+        }),
+        PLATFORMS.kuaishou
+      );
+    case "user-posts":
+      return buildDirectOperation(
+        "user-posts",
+        buildOneOfCall(options, {
+          idOption: "userId",
+          urlOption: "profileUrl",
+          idTool: "kuaishou_get_user_posted_videos_by_user_id",
+          urlTool: "kuaishou_get_user_posted_videos_by_profile_url",
+          idArgument: "user_id",
+          urlArgument: "profile_url",
+          idDisplay: "--user-id",
+          urlDisplay: "--profile-url",
+          pageToken: options.pageToken,
+        }),
+        PLATFORMS.kuaishou
+      );
+    default:
+      throw new Error(
+        `Unsupported Kuaishou command "${action}". Use ${KUAISHOU_DIRECT_ACTION_NAMES}.`
+      );
+  }
+}
+
+function buildWeiboOperation(action, options) {
+  switch (action) {
+    case "hot-search":
+      return buildDirectOperation(
+        "hot-search",
+        {
+          tool: "weibo_get_hot_search_list",
+          toolArguments: {},
+        },
+        PLATFORMS.weibo
+      );
+    case "search":
+      return buildDirectOperation(
+        "search",
+        buildWeiboSearchCall(options),
+        PLATFORMS.weibo
+      );
+    case "detail":
+      return buildDirectOperation(
+        "detail",
+        buildOneOfCall(options, {
+          idOption: "postId",
+          urlOption: "postUrl",
+          idTool: "weibo_get_post_detail_by_post_id",
+          urlTool: "weibo_get_post_detail_by_post_url",
+          idArgument: "post_id",
+          urlArgument: "post_url",
+          idDisplay: "--post-id",
+          urlDisplay: "--post-url",
+        }),
+        PLATFORMS.weibo
+      );
+    case "comments":
+      return buildDirectOperation(
+        "comments",
+        buildOneOfCall(options, {
+          idOption: "postId",
+          urlOption: "postUrl",
+          idTool: "weibo_get_post_comments_by_post_id",
+          urlTool: "weibo_get_post_comments_by_post_url",
+          idArgument: "post_id",
+          urlArgument: "post_url",
+          idDisplay: "--post-id",
+          urlDisplay: "--post-url",
+          pageToken: options.pageToken,
+        }),
+        PLATFORMS.weibo
+      );
+    case "replies":
+      return buildDirectOperation(
+        "replies",
+        buildWeiboRepliesCall(options),
+        PLATFORMS.weibo
+      );
+    case "user-info":
+      return buildDirectOperation(
+        "user-info",
+        buildOneOfCall(options, {
+          idOption: "userId",
+          urlOption: "profileUrl",
+          idTool: "weibo_get_user_info_by_user_id",
+          urlTool: "weibo_get_user_info_by_profile_url",
+          idArgument: "user_id",
+          urlArgument: "profile_url",
+          idDisplay: "--user-id",
+          urlDisplay: "--profile-url",
+        }),
+        PLATFORMS.weibo
+      );
+    case "user-posts":
+      return buildDirectOperation(
+        "user-posts",
+        buildOneOfCall(options, {
+          idOption: "userId",
+          urlOption: "profileUrl",
+          idTool: "weibo_get_user_posts_by_user_id",
+          urlTool: "weibo_get_user_posts_by_profile_url",
+          idArgument: "user_id",
+          urlArgument: "profile_url",
+          idDisplay: "--user-id",
+          urlDisplay: "--profile-url",
+          pageToken: options.pageToken,
+        }),
+        PLATFORMS.weibo
+      );
+    default:
+      throw new Error(
+        `Unsupported Weibo command "${action}". Use ${WEIBO_DIRECT_ACTION_NAMES}.`
+      );
+  }
+}
+
+function buildWechatOperation(action, options) {
+  switch (action) {
+    case "hot-search":
+      return buildDirectOperation(
+        "hot-search",
+        {
+          tool: "wechat_get_hot_search_list",
+          toolArguments: {},
+        },
+        PLATFORMS.wechat
+      );
+    case "search":
+      return buildDirectOperation(
+        "search",
+        buildWechatSearchCall(options),
+        PLATFORMS.wechat
+      );
+    case "detail":
+      return buildDirectOperation(
+        "detail",
+        buildOneOfCall(options, {
+          idOption: "encryptedObjectId",
+          urlOption: "url",
+          idTool: "wechat_get_video_detail_by_encrypted_object_id",
+          urlTool: "wechat_get_video_detail_by_url",
+          idArgument: "encrypted_object_id",
+          urlArgument: "url",
+          idDisplay: "--encrypted-object-id",
+          urlDisplay: "--url",
+        }),
+        PLATFORMS.wechat
+      );
+    case "comments":
+      return buildDirectOperation(
+        "comments",
+        buildWechatCommentsCall(options),
+        PLATFORMS.wechat
+      );
+    case "replies":
+      return buildDirectOperation(
+        "replies",
+        buildWechatRepliesCall(options),
+        PLATFORMS.wechat
+      );
+    case "user-info":
+      return buildDirectOperation(
+        "user-info",
+        buildRequiredIdCall(options, {
+          idOption: "userId",
+          tool: "wechat_get_user_info_by_user_id",
+          idArgument: "user_id",
+          idDisplay: "--user-id",
+          platformLabel: "wechat user-info",
+        }),
+        PLATFORMS.wechat
+      );
+    case "user-posts":
+      return buildDirectOperation(
+        "user-posts",
+        buildOneOfCall(options, {
+          idOption: "userId",
+          urlOption: "url",
+          idTool: "wechat_get_user_posted_videos_by_user_id",
+          urlTool: "wechat_get_user_posted_videos_by_url",
+          idArgument: "user_id",
+          urlArgument: "url",
+          idDisplay: "--user-id",
+          urlDisplay: "--url",
+          pageToken: options.pageToken,
+        }),
+        PLATFORMS.wechat
+      );
+    default:
+      throw new Error(
+        `Unsupported WeChat Channels command "${action}". Use ${WECHAT_DIRECT_ACTION_NAMES}.`
+      );
+  }
+}
+
 function buildDirectOperation(operation, { tool, toolArguments }, platform = PLATFORMS.xhs) {
   return {
     platform,
@@ -1371,6 +2388,30 @@ function buildOneOfCall(
   return { tool, toolArguments };
 }
 
+function buildRequiredIdCall(
+  options,
+  {
+    idOption,
+    tool,
+    idArgument,
+    idDisplay,
+    platformLabel,
+    pageToken,
+  }
+) {
+  const idValue = options[idOption];
+  if (!idValue) {
+    throw new Error(`Missing ${idDisplay} for ${platformLabel}.`);
+  }
+  const toolArguments = {
+    [idArgument]: idValue,
+  };
+  if (pageToken) {
+    toolArguments.page_token = pageToken;
+  }
+  return { tool, toolArguments };
+}
+
 function buildDouyinSearchCall(options) {
   if (!options.keyword) {
     throw new Error("Missing --keyword for douyin search.");
@@ -1419,6 +2460,70 @@ function buildDouyinSearchCall(options) {
   };
 }
 
+function buildKuaishouSearchCall(options) {
+  if (!options.keyword) {
+    throw new Error("Missing --keyword for kuaishou search.");
+  }
+  const toolArguments = {
+    keyword: options.keyword,
+  };
+  if (options.pageToken) {
+    toolArguments.page_token = options.pageToken;
+  }
+  return {
+    tool: "kuaishou_search_videos",
+    toolArguments,
+  };
+}
+
+function buildWeiboSearchCall(options) {
+  if (!options.keyword) {
+    throw new Error("Missing --keyword for weibo search.");
+  }
+  const toolArguments = {
+    keyword: options.keyword,
+  };
+  if (options.pageToken) {
+    toolArguments.page_token = options.pageToken;
+  }
+  return {
+    tool: "weibo_search_posts",
+    toolArguments,
+  };
+}
+
+function buildWechatSearchCall(options) {
+  if (!options.keyword) {
+    throw new Error("Missing --keyword for wechat search.");
+  }
+  const toolArguments = {
+    keyword: options.keyword,
+  };
+  if (options.sortType !== undefined) {
+    toolArguments.sort_type = parseAllowedStringOption(
+      options.sortType,
+      "--sort-type",
+      WECHAT_SEARCH_SORT_TYPES,
+      WECHAT_SEARCH_SORT_TYPES.join(", ")
+    );
+  }
+  if (options.durationRange !== undefined) {
+    toolArguments.duration_range = parseAllowedStringOption(
+      options.durationRange,
+      "--duration-range",
+      WECHAT_SEARCH_DURATION_RANGES,
+      WECHAT_SEARCH_DURATION_RANGES.join(", ")
+    );
+  }
+  if (options.pageToken) {
+    toolArguments.page_token = options.pageToken;
+  }
+  return {
+    tool: "wechat_search_videos",
+    toolArguments,
+  };
+}
+
 function buildDouyinRepliesCall(options) {
   if (!options.awemeId) {
     throw new Error("Missing --aweme-id for douyin replies.");
@@ -1435,6 +2540,107 @@ function buildDouyinRepliesCall(options) {
   }
   return {
     tool: "douyin_get_video_comment_replies_by_comment_id",
+    toolArguments,
+  };
+}
+
+function buildKuaishouRepliesCall(options) {
+  if (!options.photoId) {
+    throw new Error("Missing --photo-id for kuaishou replies.");
+  }
+  if (!options.commentId) {
+    throw new Error("Missing --comment-id for kuaishou replies.");
+  }
+  const toolArguments = {
+    photo_id: options.photoId,
+    comment_id: options.commentId,
+  };
+  if (options.pageToken) {
+    toolArguments.page_token = options.pageToken;
+  }
+  return {
+    tool: "kuaishou_get_video_comment_replies_by_comment_id",
+    toolArguments,
+  };
+}
+
+function buildWeiboRepliesCall(options) {
+  if (!options.postId) {
+    throw new Error("Missing --post-id for weibo replies.");
+  }
+  if (!options.commentId) {
+    throw new Error("Missing --comment-id for weibo replies.");
+  }
+  const toolArguments = {
+    post_id: options.postId,
+    comment_id: options.commentId,
+  };
+  if (options.pageToken) {
+    toolArguments.page_token = options.pageToken;
+  }
+  return {
+    tool: "weibo_get_post_comment_replies_by_comment_id",
+    toolArguments,
+  };
+}
+
+function buildWechatCommentsCall(options) {
+  const hasObjectInput = Boolean(options.objectId || options.objectNonceId);
+  const hasUrlInput = Boolean(options.url);
+  if (hasObjectInput && hasUrlInput) {
+    throw new Error("Use only one of --object-id/--object-nonce-id or --url.");
+  }
+  if (hasUrlInput) {
+    const toolArguments = {
+      url: options.url,
+    };
+    if (options.pageToken) {
+      toolArguments.page_token = options.pageToken;
+    }
+    return {
+      tool: "wechat_get_video_comments_by_url",
+      toolArguments,
+    };
+  }
+  if (!options.objectId) {
+    throw new Error("Missing --object-id for wechat comments.");
+  }
+  if (!options.objectNonceId) {
+    throw new Error("Missing --object-nonce-id for wechat comments.");
+  }
+  const toolArguments = {
+    object_id: options.objectId,
+    object_nonce_id: options.objectNonceId,
+  };
+  if (options.pageToken) {
+    toolArguments.page_token = options.pageToken;
+  }
+  return {
+    tool: "wechat_get_video_comments_by_object_id",
+    toolArguments,
+  };
+}
+
+function buildWechatRepliesCall(options) {
+  if (!options.objectId) {
+    throw new Error("Missing --object-id for wechat replies.");
+  }
+  if (!options.objectNonceId) {
+    throw new Error("Missing --object-nonce-id for wechat replies.");
+  }
+  if (!options.commentId) {
+    throw new Error("Missing --comment-id for wechat replies.");
+  }
+  const toolArguments = {
+    object_id: options.objectId,
+    object_nonce_id: options.objectNonceId,
+    comment_id: options.commentId,
+  };
+  if (options.pageToken) {
+    toolArguments.page_token = options.pageToken;
+  }
+  return {
+    tool: "wechat_get_video_comment_replies_by_comment_id",
     toolArguments,
   };
 }
@@ -1466,6 +2672,525 @@ async function callDirectOperation(operation) {
       return callMcpBackend(operation);
     default:
       throw new Error(`Unsupported direct CLI backend: ${operation.backend}.`);
+  }
+}
+
+function shouldUsePaginatedDirectOutput(options) {
+  return Boolean(
+    options.all ||
+      options.pages !== undefined ||
+      options.maxItems !== undefined ||
+      options.includeReplies
+  );
+}
+
+async function callPaginatedDirectOperation(operation, options) {
+  const pagination = parseDirectPaginationOptions(options);
+  return collectPaginatedDirectData(operation, pagination, {
+    includeReplies: Boolean(options.includeReplies),
+  });
+}
+
+function parseDirectPaginationOptions(options) {
+  return {
+    all: Boolean(options.all),
+    pages:
+      options.pages === undefined
+        ? undefined
+        : parsePositiveIntegerOption(options.pages, "--pages"),
+    maxItems:
+      options.maxItems === undefined
+        ? undefined
+        : parsePositiveIntegerOption(options.maxItems, "--max-items"),
+  };
+}
+
+async function collectPaginatedDirectData(
+  operation,
+  pagination,
+  { includeReplies = false } = {}
+) {
+  const pageLimit = pagination.all ? Number.POSITIVE_INFINITY : pagination.pages || 1;
+  const collectedItems = [];
+  const itemDedupeState = createPaginatedItemDedupeState();
+  const seenNextMarkers = initialPaginationMarkers(operation);
+  let pageCount = 0;
+  let lastPageData;
+  let nextMarker;
+  let parentContextData = {};
+  let currentOperation = cloneDirectOperation(operation);
+
+  while (pageCount < pageLimit) {
+    const pageData = await callDirectOperation(currentOperation);
+    pageCount += 1;
+    lastPageData = pageData;
+    parentContextData = mergeParentContextData(parentContextData, pageData);
+
+    const pageItems = uniquePaginatedPageItems(
+      operation,
+      directPageItems(pageData),
+      itemDedupeState
+    );
+    const candidateItems = itemsForRemainingLimit(
+      pageItems,
+      collectedItems.length,
+      pagination.maxItems
+    );
+    const decoratedItems =
+      includeReplies && operation.operation === "comments"
+        ? await attachRepliesToCommentItems(
+            currentOperation,
+            candidateItems,
+            parentContextData
+          )
+        : candidateItems;
+    appendItemsWithLimit(collectedItems, decoratedItems, pagination.maxItems);
+
+    nextMarker = readNextPageMarker(currentOperation, pageData);
+    const markerKey = nextMarker === undefined ? undefined : String(nextMarker);
+    const markerRepeated =
+      markerKey !== undefined && seenNextMarkers.has(markerKey);
+    if (
+      !nextMarker ||
+      reachedMaxItems(collectedItems, pagination.maxItems) ||
+      pageCount >= pageLimit
+    ) {
+      if (markerRepeated) {
+        nextMarker = undefined;
+      }
+      break;
+    }
+    if (markerRepeated) {
+      throw new Error(
+        `Pagination stopped because ${nextMarkerName(currentOperation)} repeated.`
+      );
+    }
+    seenNextMarkers.add(markerKey);
+    currentOperation = operationWithNextPageMarker(currentOperation, nextMarker);
+  }
+
+  return buildPaginatedData({
+    operation,
+    lastPageData,
+    parentContextData,
+    items: collectedItems,
+    pageCount,
+    nextMarker,
+  });
+}
+
+function cloneDirectOperation(operation) {
+  return {
+    ...operation,
+    arguments: { ...operation.arguments },
+  };
+}
+
+function directPageItems(pageData) {
+  return Array.isArray(pageData?.items) ? pageData.items : [];
+}
+
+function createPaginatedItemDedupeState() {
+  return { seenKeys: new Set() };
+}
+
+function uniquePaginatedPageItems(operation, items, itemDedupeState) {
+  const uniqueItems = [];
+  for (const item of items) {
+    const dedupeKeys = paginatedItemDedupeKeys(operation, item);
+    if (dedupeKeys.length === 0) {
+      uniqueItems.push(item);
+      continue;
+    }
+    if (dedupeKeys.some((key) => itemDedupeState.seenKeys.has(key))) {
+      recordPaginatedItemDedupeKeys(itemDedupeState, dedupeKeys);
+      continue;
+    }
+    recordPaginatedItemDedupeKeys(itemDedupeState, dedupeKeys);
+    uniqueItems.push(item);
+  }
+  return uniqueItems;
+}
+
+function recordPaginatedItemDedupeKeys(itemDedupeState, dedupeKeys) {
+  for (const key of dedupeKeys) {
+    itemDedupeState.seenKeys.add(key);
+  }
+}
+
+function paginatedItemDedupeKeys(operation, item) {
+  if (shouldDeduplicateCommentItems(operation)) {
+    const commentId = itemStringField(item, "comment_id");
+    return commentId ? [`comment:${commentId}`] : [];
+  }
+  if (!shouldDeduplicateContentItems(operation)) {
+    return [];
+  }
+  const keys = [];
+  const itemId = contentItemId(operation, item);
+  if (itemId) {
+    keys.push(`${operation.operation}:${operation.platform.id}:id:${itemId}`);
+  }
+  const xhsFingerprint = xhsContentItemFingerprint(operation, item);
+  if (xhsFingerprint) {
+    keys.push(`${operation.operation}:xhs:fingerprint:${xhsFingerprint}`);
+  }
+  return keys;
+}
+
+function shouldDeduplicateCommentItems(operation) {
+  return ["comments", "replies", "sub-comments"].includes(operation.operation);
+}
+
+function shouldDeduplicateContentItems(operation) {
+  return ["search", "user-posts", "user-series"].includes(operation.operation);
+}
+
+function contentItemId(operation, item) {
+  switch (operation.platform.id) {
+    case "xhs":
+      return itemStringField(item, "note_id");
+    case "douyin":
+      if (operation.operation === "user-series") {
+        return itemStringField(item, "series_id");
+      }
+      return itemStringField(item, "aweme_id");
+    case "kuaishou":
+      return itemStringField(item, "photo_id");
+    case "weibo":
+      return itemStringField(item, "post_id");
+    case "wechat":
+      return (
+        itemStringField(item, "encrypted_object_id") ||
+        itemStringField(item, "object_id")
+      );
+    default:
+      return undefined;
+  }
+}
+
+function xhsContentItemFingerprint(operation, item) {
+  if (
+    operation.platform.id !== "xhs" ||
+    !shouldDeduplicateContentItems(operation)
+  ) {
+    return undefined;
+  }
+  const authorId = itemStringField(item?.author, "user_id");
+  const publishTime = itemStringField(item, "publish_time");
+  const publishTimeNumber = Number(publishTime);
+  const coverToken = xhsImageUrlToken(item?.cover_image_url);
+  if (
+    !authorId ||
+    !publishTime ||
+    !Number.isFinite(publishTimeNumber) ||
+    publishTimeNumber <= 0 ||
+    !coverToken
+  ) {
+    return undefined;
+  }
+  return `${authorId}\t${publishTime}\t${coverToken}`;
+}
+
+function xhsImageUrlToken(imageUrl) {
+  const urlValue = stringValue(imageUrl);
+  if (!urlValue) {
+    return undefined;
+  }
+  let pathname;
+  try {
+    pathname = new URL(urlValue).pathname;
+  } catch {
+    return undefined;
+  }
+  let token = pathname.replace(/^\/+/, "");
+  const webpicContentIndex = token.indexOf("/c/");
+  if (webpicContentIndex !== -1) {
+    token = token.slice(webpicContentIndex + 3);
+  }
+  token = token.split("!", 1)[0];
+  return token || undefined;
+}
+
+function itemStringField(item, field) {
+  if (!item || typeof item !== "object") {
+    return undefined;
+  }
+  return stringValue(item[field]);
+}
+
+function stringValue(value) {
+  if (value === undefined || value === null || value === "") {
+    return undefined;
+  }
+  return String(value);
+}
+
+function mergeParentContextData(current, pageData) {
+  return {
+    ...current,
+    ...pickDefinedFields(pageData, [
+      "note_id",
+      "aweme_id",
+      "photo_id",
+      "post_id",
+      "object_id",
+      "object_nonce_id",
+    ]),
+  };
+}
+
+function pickDefinedFields(source, fields) {
+  if (!source || typeof source !== "object") {
+    return {};
+  }
+  const picked = {};
+  for (const field of fields) {
+    if (source[field] !== undefined && source[field] !== null && source[field] !== "") {
+      picked[field] = source[field];
+    }
+  }
+  return picked;
+}
+
+function itemsForRemainingLimit(items, collectedItemCount, maxItems) {
+  if (maxItems === undefined) {
+    return items;
+  }
+  const remaining = maxItems - collectedItemCount;
+  return remaining > 0 ? items.slice(0, remaining) : [];
+}
+
+function appendItemsWithLimit(target, source, maxItems) {
+  if (maxItems === undefined) {
+    target.push(...source);
+    return;
+  }
+  const remaining = maxItems - target.length;
+  if (remaining <= 0) {
+    return;
+  }
+  target.push(...source.slice(0, remaining));
+}
+
+function reachedMaxItems(items, maxItems) {
+  return maxItems !== undefined && items.length >= maxItems;
+}
+
+function readNextPageMarker(operation, pageData) {
+  if (operation.platform.id === "xhs" && operation.operation === "search") {
+    const page = pageData?.next_page;
+    return page === undefined || page === null || page === "" ? undefined : page;
+  }
+  const token = pageData?.next_page_token;
+  return typeof token === "string" && token ? token : undefined;
+}
+
+function nextMarkerName(operation) {
+  return operation.platform.id === "xhs" && operation.operation === "search"
+    ? "next_page"
+    : "next_page_token";
+}
+
+function initialPaginationMarkers(operation) {
+  const marker = currentPageMarker(operation);
+  return marker === undefined ? new Set() : new Set([String(marker)]);
+}
+
+function currentPageMarker(operation) {
+  if (operation.platform.id === "xhs" && operation.operation === "search") {
+    return operation.arguments.page;
+  }
+  return operation.arguments.page_token;
+}
+
+function operationWithNextPageMarker(operation, nextMarker) {
+  const nextOperation = cloneDirectOperation(operation);
+  if (operation.platform.id === "xhs" && operation.operation === "search") {
+    nextOperation.arguments.page = nextMarker;
+  } else {
+    nextOperation.arguments.page_token = nextMarker;
+  }
+  return nextOperation;
+}
+
+function buildPaginatedData({
+  operation,
+  lastPageData,
+  parentContextData,
+  items,
+  pageCount,
+  nextMarker,
+}) {
+  const data = {
+    ...(lastPageData && typeof lastPageData === "object" ? lastPageData : {}),
+    ...parentContextData,
+    items,
+    page_count: pageCount,
+    item_count: items.length,
+  };
+  if (operation.platform.id === "xhs" && operation.operation === "search") {
+    data.next_page = nextMarker ?? null;
+  } else {
+    data.next_page_token = nextMarker || "";
+  }
+  return data;
+}
+
+async function attachRepliesToCommentItems(operation, items, pageData) {
+  const decorated = [];
+  for (const item of items) {
+    const comment = { ...item };
+    if (commentMayHaveReplies(comment)) {
+      const repliesOperation = buildRepliesOperationForComment(
+        operation.platform,
+        comment,
+        operation.arguments,
+        pageData
+      );
+      const repliesData = await collectPaginatedDirectData(
+        repliesOperation,
+        { all: true, pages: undefined, maxItems: undefined },
+        { includeReplies: false }
+      );
+      comment.replies = repliesData.items;
+      comment.replies_page_count = repliesData.page_count;
+      comment.replies_next_page_token = repliesData.next_page_token || "";
+    } else {
+      comment.replies = [];
+      comment.replies_page_count = 0;
+      comment.replies_next_page_token = "";
+    }
+    decorated.push(comment);
+  }
+  return decorated;
+}
+
+function commentMayHaveReplies(comment) {
+  if (typeof comment.reply_count === "number") {
+    return comment.reply_count > 0;
+  }
+  const replyCount = parseNonNegativeIntegerString(comment.reply_count);
+  if (replyCount !== undefined) {
+    return replyCount > 0;
+  }
+  if (typeof comment.has_replies === "boolean") {
+    return comment.has_replies;
+  }
+  return true;
+}
+
+function parseNonNegativeIntegerString(value) {
+  if (typeof value !== "string" || !/^\d+$/.test(value)) {
+    return undefined;
+  }
+  const parsed = Number(value);
+  return Number.isSafeInteger(parsed) ? parsed : undefined;
+}
+
+function buildRepliesOperationForComment(platform, comment, parentArguments, parentData) {
+  if (!comment.comment_id) {
+    throw new Error("Cannot fetch comment replies because comment_id is missing.");
+  }
+  switch (platform.id) {
+    case "xhs":
+      {
+        const noteId = comment.note_id || parentArguments.note_id || parentData?.note_id;
+        if (!noteId) {
+          throw new Error("Cannot fetch XHS comment replies because note_id is missing.");
+        }
+        return buildDirectOperation(
+          "sub-comments",
+          {
+            tool: "xhs_get_note_sub_comments_by_comment_id",
+            toolArguments: {
+              note_id: noteId,
+              comment_id: comment.comment_id,
+            },
+          },
+          platform
+        );
+      }
+    case "douyin":
+      {
+        const awemeId = comment.aweme_id || parentArguments.aweme_id || parentData?.aweme_id;
+        if (!awemeId) {
+          throw new Error("Cannot fetch Douyin comment replies because aweme_id is missing.");
+        }
+        return buildDirectOperation(
+          "replies",
+          {
+            tool: "douyin_get_video_comment_replies_by_comment_id",
+            toolArguments: {
+              aweme_id: awemeId,
+              comment_id: comment.comment_id,
+            },
+          },
+          platform
+        );
+      }
+    case "kuaishou":
+      {
+        const photoId = comment.photo_id || parentArguments.photo_id || parentData?.photo_id;
+        if (!photoId) {
+          throw new Error("Cannot fetch Kuaishou comment replies because photo_id is missing.");
+        }
+        return buildDirectOperation(
+          "replies",
+          {
+            tool: "kuaishou_get_video_comment_replies_by_comment_id",
+            toolArguments: {
+              photo_id: photoId,
+              comment_id: comment.comment_id,
+            },
+          },
+          platform
+        );
+      }
+    case "weibo":
+      {
+        const postId = comment.post_id || parentArguments.post_id || parentData?.post_id;
+        if (!postId) {
+          throw new Error("Cannot fetch Weibo comment replies because post_id is missing.");
+        }
+        return buildDirectOperation(
+          "replies",
+          {
+            tool: "weibo_get_post_comment_replies_by_comment_id",
+            toolArguments: {
+              post_id: postId,
+              comment_id: comment.comment_id,
+            },
+          },
+          platform
+        );
+      }
+    case "wechat":
+      {
+        const objectId =
+          comment.object_id || parentArguments.object_id || parentData?.object_id;
+        const objectNonceId =
+          comment.object_nonce_id ||
+          parentArguments.object_nonce_id ||
+          parentData?.object_nonce_id;
+        if (!objectId || !objectNonceId) {
+          throw new Error("Cannot fetch WeChat Channels comment replies because object_id or object_nonce_id is missing.");
+        }
+        return buildDirectOperation(
+          "replies",
+          {
+            tool: "wechat_get_video_comment_replies_by_comment_id",
+            toolArguments: {
+              object_id: objectId,
+              object_nonce_id: objectNonceId,
+              comment_id: comment.comment_id,
+            },
+          },
+          platform
+        );
+      }
+    default:
+      throw new Error(`Unsupported comment reply platform: ${platform.id}.`);
   }
 }
 
