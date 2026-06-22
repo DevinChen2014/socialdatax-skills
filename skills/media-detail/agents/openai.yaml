@@ -1,7 +1,7 @@
 interface:
   display_name: "Media Detail"
   short_description: "Read content details"
-  default_prompt: "Use $media-detail to read structured details and metrics for supported social media content."
+  default_prompt: "Use $media-detail to read structured details and metrics for supported XHS, Douyin, Kuaishou, Weibo, or WeChat Channels content."
 
 policy:
   allow_implicit_invocation: true

@@ -1,0 +1,7 @@
+interface:
+  display_name: "Media Transcript"
+  short_description: "Submit video transcripts"
+  default_prompt: "Use $media-transcript to submit and check video speech-to-text transcript jobs for XHS, Douyin, Kuaishou, Weibo, and WeChat Channels content."
+
+policy:
+  allow_implicit_invocation: true

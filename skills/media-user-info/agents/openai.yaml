@@ -1,7 +1,7 @@
 interface:
   display_name: "Media User Info"
   short_description: "Retrieve creator profiles"
-  default_prompt: "Use $media-user-info to retrieve creator profile information from a user ID, profile URL, short link, or share text."
+  default_prompt: "Use $media-user-info to retrieve creator profile information from supported XHS, Douyin, Kuaishou, Weibo, or WeChat Channels user IDs, profile URLs, short links, or share text."
 
 policy:
   allow_implicit_invocation: true

@@ -29,9 +29,23 @@ function readGeneratedSkill(tempRoot, host, slug, hosts) {
   );
 }
 
+function readGeneratedAgent(tempRoot, host, slug, hosts) {
+  return readFileSync(
+    join(tempRoot, hosts[host].outputDir, slug, "agents", "openai.yaml"),
+    "utf8"
+  );
+}
+
 function readRepoSkill(projectRoot, host, slug, hosts) {
   return readFileSync(
     join(projectRoot, hosts[host].outputDir, slug, "SKILL.md"),
+    "utf8"
+  );
+}
+
+function readRepoAgent(projectRoot, host, slug, hosts) {
+  return readFileSync(
+    join(projectRoot, hosts[host].outputDir, slug, "agents", "openai.yaml"),
     "utf8"
   );
 }
@@ -147,8 +161,13 @@ test("skill generator emits valid host-specific skill files", async () => {
       assert.match(skill, /SOCIALDATAX_API_KEY/);
       assert.match(skill, new RegExp(escapeRegExp(host.homepage)));
       assert.match(skill, new RegExp(`\\?from=${escapeRegExp(listing.host)}`));
-      assert.match(skill, /read-only/i);
-      assert.match(skill, /npx -y socialdatax-skills@latest/);
+      assert.match(skill, /read-only|bounded analysis jobs/i);
+      if (listing.slug === "media-transcript") {
+        assert.match(skill, /MCP-only/i);
+        assert.doesNotMatch(skill, /npx -y socialdatax-skills@latest/);
+      } else {
+        assert.match(skill, /npx -y socialdatax-skills@latest/);
+      }
 
       assert.doesNotMatch(skill, /SOCIAL_MEDIA_MCP_API_KEY/);
       assert.doesNotMatch(skill, /XHS_MCP_API_KEY/);
@@ -206,11 +225,26 @@ test("skill generator emits valid host-specific skill files", async () => {
       source.hosts.hosts
     );
 
-    assert.doesNotMatch(xhsDetail, /Douyin|抖音|video\.play_url|aweme-id/);
-    assert.doesNotMatch(xhsCreatorNotes, /Douyin|抖音|short-drama|video playback URL|sec-user-id/);
-    assert.doesNotMatch(douyinSearch, /XHS|Xiaohongshu|小红书|RedNote|note type|Kuaishou|快手|photo-id|\bnext_page\b/);
-    assert.doesNotMatch(kuaishouSearch, /XHS|Xiaohongshu|小红书|RedNote|Douyin|抖音|note type|aweme-id|sec-user-id|short-drama/);
-    assert.doesNotMatch(kuaishouComments, /XHS|Xiaohongshu|小红书|RedNote|Douyin|抖音|note-id|aweme-id|video\.play_url/);
+    assert.doesNotMatch(
+      xhsDetail,
+      /Douyin|抖音|video\.play_url|aweme-id|Weibo|微博|WeChat Channels|视频号|post-id|encrypted-object-id/
+    );
+    assert.doesNotMatch(
+      xhsCreatorNotes,
+      /Douyin|抖音|short-drama|video playback URL|sec-user-id|Weibo|微博|WeChat Channels|视频号|post-id|finder-user-id/
+    );
+    assert.doesNotMatch(
+      douyinSearch,
+      /XHS|Xiaohongshu|小红书|RedNote|note type|Kuaishou|快手|photo-id|Weibo|微博|WeChat Channels|视频号|post-id|encrypted-object-id|\bnext_page\b/
+    );
+    assert.doesNotMatch(
+      kuaishouSearch,
+      /XHS|Xiaohongshu|小红书|RedNote|Douyin|抖音|note type|aweme-id|sec-user-id|short-drama|Weibo|微博|WeChat Channels|视频号|post-id|encrypted-object-id/
+    );
+    assert.doesNotMatch(
+      kuaishouComments,
+      /XHS|Xiaohongshu|小红书|RedNote|Douyin|抖音|note-id|aweme-id|video\.play_url|Weibo|微博|WeChat Channels|视频号|post-id|object-id/
+    );
     assert.match(
       douyinSearch,
       /Douyin `--pages <n>`: fetch and merge N search pages from the current starting point; continue with returned `next_page_token`\./
@@ -400,6 +434,64 @@ test("creator research combines profile, posts, series commands and output guida
   }
 });
 
+test("generated media transcript skill documents MCP-only transcript jobs", async () => {
+  const tempRoot = mkdtempSync(join(tmpdir(), "socialdatax-skills-"));
+
+  try {
+    const source = await loadSkillSource({ repoRoot: projectRoot });
+    await generateSkills({
+      repoRoot: projectRoot,
+      outRoot: tempRoot,
+      quiet: true,
+    });
+
+    const skill = readGeneratedSkill(
+      tempRoot,
+      "npm",
+      "media-transcript",
+      source.hosts.hosts
+    );
+
+    assert.match(skill, /speech-to-text transcript jobs/);
+    assert.match(skill, /口播转文字/);
+    assert.match(skill, /MCP-only/i);
+    assert.match(skill, /not available through the direct CLI/i);
+    assert.match(
+      skill,
+      /This skill can submit bounded analysis jobs through hosted MCP tools/
+    );
+    assert.doesNotMatch(skill, /This skill is read-only\./);
+    assert.doesNotMatch(skill, /npx -y socialdatax-skills@latest .*speech/);
+    assert.doesNotMatch(skill, /npx -y socialdatax-skills@latest .*transcript/);
+
+    for (const tool of [
+      "xhs_submit_video_speech_text_by_note_url",
+      "xhs_submit_video_speech_text_by_note_id",
+      "xhs_get_video_speech_text_job",
+      "douyin_submit_video_speech_text_by_video_url",
+      "douyin_submit_video_speech_text_by_aweme_id",
+      "douyin_get_video_speech_text_job",
+      "kuaishou_submit_video_speech_text_by_video_url",
+      "kuaishou_submit_video_speech_text_by_photo_id",
+      "kuaishou_get_video_speech_text_job",
+      "weibo_submit_video_speech_text_by_post_url",
+      "weibo_submit_video_speech_text_by_post_id",
+      "weibo_get_video_speech_text_job",
+      "wechat_submit_video_speech_text_by_video_url",
+      "wechat_submit_video_speech_text_by_encrypted_object_id",
+      "wechat_get_video_speech_text_job",
+    ]) {
+      assert.match(
+        skill,
+        new RegExp(`\\\`${escapeRegExp(tool)}\\\``),
+        `media-transcript should document ${tool}`
+      );
+    }
+  } finally {
+    rmSync(tempRoot, { recursive: true, force: true });
+  }
+});
+
 test("generated aggregate scenario skills keep guidance concise", async () => {
   const tempRoot = mkdtempSync(join(tmpdir(), "socialdatax-skills-"));
   const noisyPhrases = [
@@ -557,6 +649,68 @@ test("generated skills separate numeric page from token pagination by platform",
       /XHS numeric `page` is only for XHS search; Douyin, Kuaishou, Weibo, and WeChat Channels search use `page_token` only/
     );
     assert.doesNotMatch(aggregateResearch, /`--page` and `--page-token`/);
+  } finally {
+    rmSync(tempRoot, { recursive: true, force: true });
+  }
+});
+
+test("generated media skills document weibo and wechat channel support", async () => {
+  const tempRoot = mkdtempSync(join(tmpdir(), "socialdatax-skills-"));
+
+  try {
+    const source = await loadSkillSource({ repoRoot: projectRoot });
+    await generateSkills({
+      repoRoot: projectRoot,
+      outRoot: tempRoot,
+      quiet: true,
+    });
+
+    const mediaSearch = readGeneratedSkill(
+      tempRoot,
+      "npm",
+      "media-search",
+      source.hosts.hosts
+    );
+    const mediaDetail = readGeneratedSkill(
+      tempRoot,
+      "npm",
+      "media-detail",
+      source.hosts.hosts
+    );
+    const mediaTranscript = readGeneratedSkill(
+      tempRoot,
+      "npm",
+      "media-transcript",
+      source.hosts.hosts
+    );
+
+    for (const skill of [mediaSearch, mediaDetail, mediaTranscript]) {
+      assert.match(skill, /Weibo \/ 微博/);
+      assert.match(skill, /WeChat Channels \/ 视频号/);
+    }
+    assert.match(mediaSearch, /weibo_search_posts/);
+    assert.match(mediaSearch, /wechat_search_videos/);
+    assert.match(mediaDetail, /weibo_get_post_detail_by_post_id/);
+    assert.match(mediaDetail, /wechat_get_video_detail_by_encrypted_object_id/);
+    assert.match(mediaTranscript, /weibo_submit_video_speech_text_by_post_url/);
+    assert.match(
+      mediaTranscript,
+      /wechat_submit_video_speech_text_by_encrypted_object_id/
+    );
+
+    for (const skillName of [
+      "socialdatax-content-research-assistant",
+      "media-search",
+      "media-detail",
+      "media-comments",
+      "media-transcript",
+      "media-user-info",
+      "media-user-posts",
+    ]) {
+      const agent = readGeneratedAgent(tempRoot, "npm", skillName, source.hosts.hosts);
+      assert.match(agent, /Weibo/);
+      assert.match(agent, /WeChat Channels/);
+    }
   } finally {
     rmSync(tempRoot, { recursive: true, force: true });
   }
@@ -901,6 +1055,13 @@ test("generated skill files stay synchronized with the source configuration", as
         readRepoSkill(projectRoot, listing.host, listing.slug, source.hosts.hosts),
         `${listing.host}/${listing.slug} should match generated output`
       );
+      if (listing.host === "npm") {
+        assert.equal(
+          readGeneratedAgent(tempRoot, listing.host, listing.slug, source.hosts.hosts),
+          readRepoAgent(projectRoot, listing.host, listing.slug, source.hosts.hosts),
+          `${listing.host}/${listing.slug} agent metadata should match generated output`
+        );
+      }
     }
   } finally {
     rmSync(tempRoot, { recursive: true, force: true });
@@ -1009,6 +1170,10 @@ test("npm installer skill registry stays aligned with npm listings and agent met
   assert.deepEqual(cliNames, npmListingNames);
 
   for (const skillName of npmListingNames) {
+    const listing = source.listings.listings.find(
+      (candidate) => candidate.host === "npm" && candidate.slug === skillName
+    );
+    assert.ok(listing, `${skillName} should have npm listing source`);
     const agentSource = readFileSync(
       join(packageDir, "skills", skillName, "agents", "openai.yaml"),
       "utf8"
@@ -1019,6 +1184,22 @@ test("npm installer skill registry stays aligned with npm listings and agent met
 
     assert.ok(displayName.trim(), `${skillName} display_name should be non-empty`);
     assert.ok(shortDescription.trim(), `${skillName} short_description should be non-empty`);
+    assert.equal(
+      displayName,
+      listing.agentDisplayName ?? listing.title,
+      `${skillName} display_name should come from source listing`
+    );
+    assert.equal(
+      shortDescription,
+      listing.agentShortDescription ?? listing.title.slice(0, 80),
+      `${skillName} short_description should come from source listing`
+    );
+    assert.equal(
+      defaultPrompt,
+      listing.agentDefaultPrompt ??
+        `Use $${skillName} when this skill matches the user's SocialDataX request.`,
+      `${skillName} default_prompt should come from source listing`
+    );
     assert.match(
       defaultPrompt,
       new RegExp(`\\$${escapeRegExp(skillName)}\\b`),
@@ -1227,7 +1408,7 @@ test("generator rejects listings whose commands resolve to empty arrays", async 
         outRoot: tempRoot,
         quiet: true,
       }),
-      /Listing clawhub:socialdatax-xhs commands must resolve to a non-empty array/
+      /Listing clawhub:socialdatax-xhs commands or mcpOnlyTools must resolve to a non-empty array/
     );
   } finally {
     rmSync(tempRoot, { recursive: true, force: true });

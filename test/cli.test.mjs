@@ -347,6 +347,28 @@ test("README preserves returned XHS note URLs", () => {
   assertDoesNotSynthesizeNoteUrlFromIdWhenMissing(readme, "README");
 });
 
+test("public package discovery terms include transcript workflows", () => {
+  const packageJson = JSON.parse(
+    readFileSync(join(packageDir, "package.json"), "utf8")
+  );
+  const readme = readFileSync(join(packageDir, "README.md"), "utf8");
+
+  for (const keyword of [
+    "media-transcript",
+    "speech-to-text",
+    "transcript",
+    "video-transcript",
+  ]) {
+    assert.ok(
+      packageJson.keywords.includes(keyword),
+      `package keywords should include ${keyword}`
+    );
+  }
+  assert.match(readme, /media transcript skill/);
+  assert.match(readme, /speech-to-text transcript skill/);
+  assert.match(readme, /口播转文字 skill/);
+});
+
 test("direct CLI keeps legacy shared API key env as runtime fallback", async () => {
   const { result, toolCalls, toolCallAuthorizationHeaders } = await runCliWithMockMcp(
     [
@@ -434,6 +456,8 @@ test("npm pack only includes public skill package files", () => {
     "skills/media-detail/agents/openai.yaml",
     "skills/media-search/SKILL.md",
     "skills/media-search/agents/openai.yaml",
+    "skills/media-transcript/SKILL.md",
+    "skills/media-transcript/agents/openai.yaml",
     "skills/media-user-info/SKILL.md",
     "skills/media-user-info/agents/openai.yaml",
     "skills/media-user-posts/SKILL.md",
@@ -486,6 +510,10 @@ test("aggregate content research skill documents safe SocialDataX entrypoints", 
   assert.match(skill, /npx -y socialdatax-skills@latest weibo hot-search/);
   assert.match(skill, /npx -y socialdatax-skills@latest wechat search/);
   assert.match(skill, /npx -y socialdatax-skills@latest wechat hot-search/);
+  assert.match(
+    readFileSync(join(packageDir, "README.md"), "utf8"),
+    /`media-transcript`: submit and check video 口播转文字 \/ speech-to-text transcript jobs/
+  );
   assert.match(skill, /Xiaohongshu|小红书/);
   assert.match(skill, /Douyin|抖音/);
   assert.match(skill, /Kuaishou|快手/);
@@ -1029,10 +1057,10 @@ test("douyin openclaw plugin only exposes profile-url user tools", () => {
   );
   const readme = readFileSync(join(openclawDir, "README.md"), "utf8");
 
-  assert.equal(packageJson.version, "0.2.6");
-  assert.equal(pluginManifest.version, "0.2.6");
-  assert.match(pluginSource, /const PLUGIN_VERSION = "0\.2\.6";/);
-  assert.match(readme, /Version: `0\.2\.6`/);
+  assert.equal(packageJson.version, "0.2.7");
+  assert.equal(pluginManifest.version, "0.2.7");
+  assert.match(pluginSource, /const PLUGIN_VERSION = "0\.2\.7";/);
+  assert.match(readme, /Version: `0\.2\.7`/);
   assert.deepEqual(Object.keys(pluginManifest.configSchema.properties), [
     "connectionTimeoutMs",
   ]);
@@ -1207,10 +1235,10 @@ test("xhs openclaw search schema documents semantic sort enums", () => {
   );
   const readme = readFileSync(join(openclawDir, "README.md"), "utf8");
 
-  assert.equal(packageJson.version, "0.1.16");
-  assert.equal(pluginManifest.version, "0.1.16");
-  assert.match(pluginSource, /const PLUGIN_VERSION = "0\.1\.16";/);
-  assert.match(readme, /Version: `0\.1\.16`/);
+  assert.equal(packageJson.version, "0.1.17");
+  assert.equal(pluginManifest.version, "0.1.17");
+  assert.match(pluginSource, /const PLUGIN_VERSION = "0\.1\.17";/);
+  assert.match(readme, /Version: `0\.1\.17`/);
 
   assert.deepEqual(pluginManifest.providerAuthChoices[0], {
     provider: "xhs-insights",
@@ -1696,6 +1724,37 @@ test("weibo direct commands map public read operations", async () => {
     arguments: {
       post_id: "post-1",
       comment_id: "comment-1",
+    },
+  });
+
+  const likers = await runCliWithMockMcp([
+    "weibo",
+    "likers",
+    "--post-id",
+    "post-1",
+    "--page-token",
+    "next",
+  ]);
+  assert.equal(likers.result.status, 0, likers.result.stderr);
+  assert.deepEqual(likers.toolCalls[0], {
+    name: "weibo_get_post_liker_list_by_post_id",
+    arguments: {
+      post_id: "post-1",
+      page_token: "next",
+    },
+  });
+
+  const reposts = await runCliWithMockMcp([
+    "weibo",
+    "reposts",
+    "--post-id",
+    "post-1",
+  ]);
+  assert.equal(reposts.result.status, 0, reposts.result.stderr);
+  assert.deepEqual(reposts.toolCalls[0], {
+    name: "weibo_get_post_repost_list_by_post_id",
+    arguments: {
+      post_id: "post-1",
     },
   });
 });
@@ -3261,7 +3320,7 @@ test("doctor prints human-readable safety summary", () => {
   assert.equal(result.status, 0);
   assert.equal(result.stderr, "");
   assert.match(result.stdout, /socialdatax-skills doctor/);
-  assert.match(result.stdout, /Package: socialdatax-skills@0\.2\.9/);
+  assert.match(result.stdout, /Package: socialdatax-skills@0\.2\.10/);
   assert.match(result.stdout, /Website: https:\/\/socialdatax\.52choujiang\.com/);
   assert.doesNotMatch(result.stdout, /Source: https:\/\/socialdatax\.52choujiang\.com/);
   assert.match(result.stdout, /npm lifecycle scripts: none declared by this package/);
@@ -3295,7 +3354,7 @@ test("doctor json prints parseable safety summary", () => {
   assert.equal(result.stderr, "");
   const report = JSON.parse(result.stdout);
   assert.equal(report.package.name, "socialdatax-skills");
-  assert.equal(report.package.version, "0.2.9");
+  assert.equal(report.package.version, "0.2.10");
   assert.equal(report.package.homepage, "https://socialdatax.52choujiang.com");
   assert.equal(report.package.repository, undefined);
   assert.deepEqual(report.package.npmLifecycleScripts, []);
@@ -3379,24 +3438,30 @@ test("doctor json prints parseable safety summary", () => {
   assert.equal(weiboPlatform.registryName, "com.52choujiang/weibo-insights");
   assert.equal(weiboPlatform.futureRegistryName, "com.socialdatax/weibo-insights");
   assert.equal(weiboPlatform.defaultEndpoint, "https://mcp.52choujiang.com/weibo/mcp");
-  assert.equal(weiboPlatform.tools.length, 11);
+  assert.equal(weiboPlatform.tools.length, 16);
   assert.ok(weiboPlatform.tools.includes("weibo_get_hot_search_list"));
   assert.ok(weiboPlatform.tools.includes("weibo_search_posts"));
   assert.ok(weiboPlatform.tools.includes("weibo_get_post_comment_replies_by_comment_id"));
+  assert.ok(weiboPlatform.tools.includes("weibo_get_post_liker_list_by_post_id"));
+  assert.ok(weiboPlatform.tools.includes("weibo_get_post_repost_list_by_post_id"));
   assert.ok(weiboPlatform.tools.includes("weibo_get_user_posts_by_profile_url"));
-  assert.ok(!weiboPlatform.tools.includes("weibo_get_post_liker_list_by_post_id"));
-  assert.ok(!weiboPlatform.tools.includes("weibo_get_post_repost_list_by_post_id"));
+  assert.ok(weiboPlatform.tools.includes("weibo_submit_video_speech_text_by_post_url"));
+  assert.ok(weiboPlatform.tools.includes("weibo_submit_video_speech_text_by_post_id"));
+  assert.ok(weiboPlatform.tools.includes("weibo_get_video_speech_text_job"));
   const wechatPlatform = report.platforms.find(
     (platform) => platform.id === "wechat"
   );
   assert.equal(wechatPlatform.registryName, "com.52choujiang/wechat-channels-insights");
   assert.equal(wechatPlatform.futureRegistryName, "com.socialdatax/wechat-channels-insights");
   assert.equal(wechatPlatform.defaultEndpoint, "https://mcp.52choujiang.com/wechat/mcp");
-  assert.equal(wechatPlatform.tools.length, 10);
+  assert.equal(wechatPlatform.tools.length, 13);
   assert.ok(wechatPlatform.tools.includes("wechat_get_hot_search_list"));
   assert.ok(wechatPlatform.tools.includes("wechat_search_videos"));
   assert.ok(wechatPlatform.tools.includes("wechat_get_video_comment_replies_by_comment_id"));
   assert.ok(wechatPlatform.tools.includes("wechat_get_user_posted_videos_by_url"));
+  assert.ok(wechatPlatform.tools.includes("wechat_submit_video_speech_text_by_video_url"));
+  assert.ok(wechatPlatform.tools.includes("wechat_submit_video_speech_text_by_encrypted_object_id"));
+  assert.ok(wechatPlatform.tools.includes("wechat_get_video_speech_text_job"));
   const detailByUrlTool = report.platform.toolDetails.find(
     (tool) => tool.name === "xhs_get_note_detail_by_note_url"
   );
@@ -3415,12 +3480,22 @@ test("doctor json prints parseable safety summary", () => {
   const kuaishouSubmitTranscriptTool = kuaishouPlatform.toolDetails.find(
     (tool) => tool.name === "kuaishou_submit_video_speech_text_by_photo_id"
   );
+  const weiboSubmitTranscriptTool = weiboPlatform.toolDetails.find(
+    (tool) => tool.name === "weibo_submit_video_speech_text_by_post_id"
+  );
+  const wechatSubmitTranscriptTool = wechatPlatform.toolDetails.find(
+    (tool) => tool.name === "wechat_submit_video_speech_text_by_encrypted_object_id"
+  );
   assert.match(xhsSubmitTranscriptTool.description, /speech-to-text transcript/);
   assert.match(xhsSubmitTranscriptTool.description, /提交完成后最多短等 15 秒/);
   assert.match(douyinSubmitTranscriptTool.description, /speech-to-text transcript/);
   assert.match(douyinSubmitTranscriptTool.description, /提交完成后最多短等 15 秒/);
   assert.match(kuaishouSubmitTranscriptTool.description, /speech-to-text transcript/);
   assert.match(kuaishouSubmitTranscriptTool.description, /提交完成后最多短等 15 秒/);
+  assert.match(weiboSubmitTranscriptTool.description, /speech-to-text transcript/);
+  assert.match(weiboSubmitTranscriptTool.description, /提交完成后最多短等 15 秒/);
+  assert.match(wechatSubmitTranscriptTool.description, /speech-to-text transcript/);
+  assert.match(wechatSubmitTranscriptTool.description, /提交完成后最多短等 15 秒/);
   assert.doesNotMatch(result.stdout, /69cf45899948d391e7b5e879/);
 });
 
@@ -3665,6 +3740,8 @@ test("direct CLI README examples include public weibo and wechat actions", () =>
     'weibo comments --post-id "<post_id>"',
     'weibo comments --post-url "<weibo_post_url_or_share_text>"',
     'weibo replies --post-id "<post_id>" --comment-id "<comment_id>"',
+    'weibo likers --post-id "<post_id>"',
+    'weibo reposts --post-id "<post_id>"',
     'weibo user-info --user-id "<user_id>"',
     'weibo user-info --profile-url "<profile_url_or_share_text>"',
     'weibo user-posts --user-id "<user_id>"',
@@ -3684,8 +3761,6 @@ test("direct CLI README examples include public weibo and wechat actions", () =>
   }
   assert.match(readme, /Weibo and WeChat Channels search use `--keyword` and optional `--page-token`/);
   assert.match(readme, /WeChat Channels search filters use semantic values/);
-  assert.doesNotMatch(readme, /weibo_get_post_liker_list_by_post_id/);
-  assert.doesNotMatch(readme, /weibo_get_post_repost_list_by_post_id/);
 });
 
 test("direct CLI docs keep search pagination platform-specific", () => {
@@ -3876,8 +3951,9 @@ test("install dry-run previews all skills under custom parent", () => {
 
   assert.equal(result.status, 0);
   assert.equal(result.stderr, "");
-  assert.match(result.stdout, /Dry run: would install 6 skills for openclaw/);
+  assert.match(result.stdout, /Dry run: would install 7 skills for openclaw/);
   assert.match(result.stdout, /media-search/);
+  assert.match(result.stdout, /media-transcript/);
   assert.match(result.stdout, /media-user-posts/);
   assert.match(result.stdout, /socialdatax-content-research-assistant/);
   assert.equal(spawnSync("test", ["-e", destination]).status, 1);
@@ -3890,6 +3966,8 @@ test("list output documents aggregate skill and Douyin creator series", () => {
   assert.equal(result.stderr, "");
   assert.match(result.stdout, /socialdatax-content-research-assistant/);
   assert.match(result.stdout, /cross-platform content research/);
+  assert.match(result.stdout, /media-transcript/);
+  assert.match(result.stdout, /speech-to-text transcript jobs/);
   assert.match(result.stdout, /media-user-posts/);
   assert.match(result.stdout, /Douyin creator short-drama series/);
   assert.match(result.stdout, /Kuaishou/);

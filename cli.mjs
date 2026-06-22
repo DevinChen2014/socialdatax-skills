@@ -7,7 +7,7 @@ import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const PACKAGE_NAME = "socialdatax-skills";
-const PACKAGE_VERSION = "0.2.9";
+const PACKAGE_VERSION = "0.2.10";
 const PACKAGE_SPEC = `${PACKAGE_NAME}@latest`;
 const LOG_PREFIX = `[${PACKAGE_NAME}]`;
 const MIN_NODE_VERSION = "20.18.1";
@@ -39,6 +39,12 @@ const AVAILABLE_SKILLS = [
     summary:
       "Fetch and analyze XHS, Douyin, Kuaishou, Weibo, and WeChat Channels comments/replies.",
     emoji: "💬",
+  },
+  {
+    name: "media-transcript",
+    summary:
+      "Submit and check video speech-to-text transcript jobs for XHS, Douyin, Kuaishou, Weibo, and WeChat Channels through hosted MCP tools.",
+    emoji: "🎙️",
   },
   {
     name: "media-user-info",
@@ -263,6 +269,8 @@ const WEIBO_DIRECT_ACTION_OPTIONS = {
     "includeReplies",
     "pretty",
   ],
+  likers: ["postId", "pageToken", "pages", "all", "maxItems", "pretty"],
+  reposts: ["postId", "pageToken", "pages", "all", "maxItems", "pretty"],
   "user-info": ["userId", "profileUrl", "pretty"],
   "user-posts": ["userId", "profileUrl", "pageToken", "pages", "all", "maxItems", "pretty"],
 };
@@ -629,6 +637,14 @@ const PLATFORMS = {
         description: "Fetch paginated replies under a first-level comment by post_id and comment_id.",
       },
       {
+        name: "weibo_get_post_liker_list_by_post_id",
+        description: "Fetch a paginated list of users who liked a Weibo post by post_id.",
+      },
+      {
+        name: "weibo_get_post_repost_list_by_post_id",
+        description: "Fetch a paginated repost list for a Weibo post by post_id.",
+      },
+      {
         name: "weibo_get_user_info_by_user_id",
         description: "Fetch creator profile data when the caller already has a user_id.",
       },
@@ -643,6 +659,21 @@ const PLATFORMS = {
       {
         name: "weibo_get_user_posts_by_profile_url",
         description: "Fetch creator posts from a profile URL, short link, or profile share text.",
+      },
+      {
+        name: "weibo_submit_video_speech_text_by_post_url",
+        description:
+          "Submit a Weibo video speech-to-text transcript task from a post URL, short link, or share text; 提交完成后最多短等 15 秒.",
+      },
+      {
+        name: "weibo_submit_video_speech_text_by_post_id",
+        description:
+          "Submit a Weibo video speech-to-text transcript task from a post_id; 提交完成后最多短等 15 秒.",
+      },
+      {
+        name: "weibo_get_video_speech_text_job",
+        description:
+          "Check a Weibo video speech-to-text transcript job by job_id without starting a new task.",
       },
     ],
   },
@@ -700,6 +731,21 @@ const PLATFORMS = {
       {
         name: "wechat_get_user_posted_videos_by_url",
         description: "Fetch creator videos from a WeChat Channels / 视频号 video link or share text.",
+      },
+      {
+        name: "wechat_submit_video_speech_text_by_video_url",
+        description:
+          "Submit a WeChat Channels / 视频号 video speech-to-text transcript task from a video link or share text; 提交完成后最多短等 15 秒.",
+      },
+      {
+        name: "wechat_submit_video_speech_text_by_encrypted_object_id",
+        description:
+          "Submit a WeChat Channels / 视频号 video speech-to-text transcript task from an encrypted_object_id; 提交完成后最多短等 15 秒.",
+      },
+      {
+        name: "wechat_get_video_speech_text_job",
+        description:
+          "Check a WeChat Channels / 视频号 video speech-to-text transcript job by job_id without starting a new task.",
       },
     ],
   },
@@ -1520,6 +1566,12 @@ function printHelp() {
   console.log(`  npx -y ${PACKAGE_SPEC} weibo replies --post-id "<post_id>" --comment-id "<comment_id>" --pretty`);
   console.log("      Call the Weibo comment replies tool directly and print JSON.");
   console.log("");
+  console.log(`  npx -y ${PACKAGE_SPEC} weibo likers --post-id "<post_id>" --pretty`);
+  console.log("      Call the Weibo post liker list tool directly and print JSON.");
+  console.log("");
+  console.log(`  npx -y ${PACKAGE_SPEC} weibo reposts --post-id "<post_id>" --pretty`);
+  console.log("      Call the Weibo post repost list tool directly and print JSON.");
+  console.log("");
   console.log(`  npx -y ${PACKAGE_SPEC} weibo user-info --user-id "<user_id>" --pretty`);
   console.log("      Call the Weibo creator profile tool directly and print JSON.");
   console.log("");
@@ -2182,6 +2234,18 @@ function buildWeiboOperation(action, options) {
         buildWeiboRepliesCall(options),
         PLATFORMS.weibo
       );
+    case "likers":
+      return buildDirectOperation(
+        "likers",
+        buildWeiboPostListByPostIdCall(options, "likers", "weibo_get_post_liker_list_by_post_id"),
+        PLATFORMS.weibo
+      );
+    case "reposts":
+      return buildDirectOperation(
+        "reposts",
+        buildWeiboPostListByPostIdCall(options, "reposts", "weibo_get_post_repost_list_by_post_id"),
+        PLATFORMS.weibo
+      );
     case "user-info":
       return buildDirectOperation(
         "user-info",
@@ -2580,6 +2644,22 @@ function buildWeiboRepliesCall(options) {
   }
   return {
     tool: "weibo_get_post_comment_replies_by_comment_id",
+    toolArguments,
+  };
+}
+
+function buildWeiboPostListByPostIdCall(options, action, tool) {
+  if (!options.postId) {
+    throw new Error(`Missing --post-id for weibo ${action}.`);
+  }
+  const toolArguments = {
+    post_id: options.postId,
+  };
+  if (options.pageToken) {
+    toolArguments.page_token = options.pageToken;
+  }
+  return {
+    tool,
     toolArguments,
   };
 }

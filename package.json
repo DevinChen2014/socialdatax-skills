@@ -1,6 +1,6 @@
 {
   "name": "socialdatax-skills",
-  "version": "0.2.9",
+  "version": "0.2.10",
   "description": "SocialDataX / 社媒数据助手 skill installer and direct CLI helper for hosted platform social media MCP services.",
   "license": "MIT",
   "type": "module",
@@ -39,6 +39,10 @@
     "social-insights",
     "social-media",
     "media-search",
+    "media-transcript",
+    "speech-to-text",
+    "transcript",
+    "video-transcript",
     "content-analysis",
     "creator-analytics",
     "kuaishou",

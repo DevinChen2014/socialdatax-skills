@@ -1,7 +1,7 @@
 interface:
   display_name: "Media User Posts"
   short_description: "Retrieve creator content"
-  default_prompt: "Use $media-user-posts to retrieve a creator's published content list from a platform user ID, profile URL, short link, or share text."
+  default_prompt: "Use $media-user-posts to retrieve supported XHS, Douyin, Kuaishou, Weibo, or WeChat Channels creator content lists from a platform user ID, profile URL, short link, or share text."
 
 policy:
   allow_implicit_invocation: true

@@ -21,6 +21,9 @@ Common search phrases for this skill package:
 - `Hermes Agent social media skills`
 - `media search skill`
 - `media comments skill`
+- `media transcript skill`
+- `speech-to-text transcript skill`
+- `口播转文字 skill`
 - `creator profile skill`
 - `Xiaohongshu skills`
 - `XHS skills`
@@ -58,7 +61,7 @@ Common search phrases for this skill package:
 - WeChat Channels current platform MCP registry name: `com.52choujiang/wechat-channels-insights`
 - WeChat Channels future platform MCP registry name: `com.socialdatax/wechat-channels-insights`
 - Unified MCP registry name: none; this package installs skills and calls explicit platform services.
-- Current public capability version: `0.2.9`
+- Current public capability version: `0.2.10`
 
 ## Direct CLI
 
@@ -107,6 +110,8 @@ npx -y socialdatax-skills@latest weibo comments --post-id "<post_id>" --pretty
 npx -y socialdatax-skills@latest weibo comments --post-id "<post_id>" --all --include-replies --pretty
 npx -y socialdatax-skills@latest weibo comments --post-url "<weibo_post_url_or_share_text>" --pretty
 npx -y socialdatax-skills@latest weibo replies --post-id "<post_id>" --comment-id "<comment_id>" --pretty
+npx -y socialdatax-skills@latest weibo likers --post-id "<post_id>" --pretty
+npx -y socialdatax-skills@latest weibo reposts --post-id "<post_id>" --pretty
 npx -y socialdatax-skills@latest weibo user-info --user-id "<user_id>" --pretty
 npx -y socialdatax-skills@latest weibo user-info --profile-url "<profile_url_or_share_text>" --pretty
 npx -y socialdatax-skills@latest weibo user-posts --user-id "<user_id>" --pretty
@@ -218,6 +223,7 @@ npx -y socialdatax-skills@latest install media-search --target openclaw
 npx -y socialdatax-skills@latest install media-search --target openclaw --dry-run
 npx -y socialdatax-skills@latest install media-user-info --target openclaw
 npx -y socialdatax-skills@latest install media-comments media-detail --target openclaw
+npx -y socialdatax-skills@latest install media-transcript --target openclaw
 npx -y socialdatax-skills@latest install media-search --target openclaw --scope workspace
 npx -y socialdatax-skills@latest install media-search --target hermes
 npx -y socialdatax-skills@latest install media-search --target hermes --scope shared
@@ -245,6 +251,7 @@ Available skills:
 - `media-search`: search social media content by keyword; supports XHS notes, Douyin works, Kuaishou works, Weibo posts, and WeChat Channels videos.
 - `media-detail`: read structured content details and metrics; supports XHS notes, Douyin works, Kuaishou works, Weibo posts, and WeChat Channels videos.
 - `media-comments`: fetch and analyze XHS comments/replies, Douyin comments/replies, Kuaishou comments/replies, Weibo comments/replies, and WeChat Channels comments/replies.
+- `media-transcript`: submit and check video 口播转文字 / speech-to-text transcript jobs through hosted MCP tools; supports XHS, Douyin, Kuaishou, Weibo, and WeChat Channels.
 - `media-user-info`: retrieve creator profile information; supports XHS, Douyin, Kuaishou, Weibo, and WeChat Channels creators.
 - `media-user-posts`: retrieve creator content lists; supports XHS notes, Douyin works, Kuaishou works, Weibo posts, WeChat Channels videos, and Douyin creator short-drama series.
 
@@ -313,6 +320,7 @@ Current Weibo workflows include:
 - Continue Weibo list pagination only when `next_page_token` is non-empty; an empty string means there are no more results to request.
 - Read creator profile data from a profile link, short link, share text, or user_id.
 - Fetch paginated creator post lists from a user_id, profile link, short link, or share text.
+- Submit and check Weibo video 口播转文字 / speech-to-text transcript jobs; submit tools 提交完成后最多短等 15 秒.
 
 Current WeChat Channels / 视频号 workflows include:
 
@@ -324,6 +332,7 @@ Current WeChat Channels / 视频号 workflows include:
 - Continue WeChat Channels list pagination only when `next_page_token` is non-empty; an empty string means there are no more results to request.
 - Read creator profile data from a finder user_id.
 - Fetch paginated creator video lists from a finder user_id or a video link/share text.
+- Submit and check WeChat Channels / 视频号 video 口播转文字 / speech-to-text transcript jobs; submit tools 提交完成后最多短等 15 秒.
 
 ## XHS Tools
 
@@ -340,6 +349,9 @@ Current WeChat Channels / 视频号 workflows include:
 | `xhs_get_user_info_by_profile_url` | Resolve a profile link, short link, or share text into creator profile data. |
 | `xhs_get_user_posted_notes_by_user_id` | Fetch a paginated list of notes published by a creator when the caller already has a user ID. |
 | `xhs_get_user_posted_notes_by_profile_url` | Fetch a paginated list of notes published by a creator from a profile link, short link, or share text. |
+| `xhs_submit_video_speech_text_by_note_url` | Submit an XHS video note speech-to-text transcript job from a note link, short link, or share text; submit waits up to 15 seconds. |
+| `xhs_submit_video_speech_text_by_note_id` | Submit an XHS video note speech-to-text transcript job when the caller already has a note ID; submit waits up to 15 seconds. |
+| `xhs_get_video_speech_text_job` | Check an XHS speech-to-text transcript job by job_id without creating a new task. |
 
 ## Douyin Tools
 
@@ -358,6 +370,9 @@ Current WeChat Channels / 视频号 workflows include:
 | `douyin_get_user_posted_videos_by_profile_url` | Fetch a paginated list of works published by a creator from a profile link, short link, or share text. |
 | `douyin_get_user_series_by_sec_user_id` | Fetch a paginated list of short-drama series by a creator when the caller already has a sec_user_id. |
 | `douyin_get_user_series_by_profile_url` | Fetch a paginated list of short-drama series by a creator from a profile link, short link, or share text. |
+| `douyin_submit_video_speech_text_by_video_url` | Submit a Douyin video speech-to-text transcript job from a content page link, short link, or share text; submit waits up to 15 seconds. |
+| `douyin_submit_video_speech_text_by_aweme_id` | Submit a Douyin video speech-to-text transcript job when the caller already has an aweme_id; submit waits up to 15 seconds. |
+| `douyin_get_video_speech_text_job` | Check a Douyin speech-to-text transcript job by job_id without creating a new task. |
 
 ## Kuaishou Tools
 
@@ -374,6 +389,9 @@ Current WeChat Channels / 视频号 workflows include:
 | `kuaishou_get_user_info_by_profile_url` | Resolve a Kuaishou profile link, short link, or share text into creator profile data. |
 | `kuaishou_get_user_posted_videos_by_user_id` | Fetch a paginated list of works published by a creator when the caller already has a user_id. |
 | `kuaishou_get_user_posted_videos_by_profile_url` | Fetch a paginated list of works published by a creator from a profile link, short link, or share text. |
+| `kuaishou_submit_video_speech_text_by_video_url` | Submit a Kuaishou video speech-to-text transcript job from a work page link, short link, or share text; submit waits up to 15 seconds. |
+| `kuaishou_submit_video_speech_text_by_photo_id` | Submit a Kuaishou video speech-to-text transcript job when the caller already has a photo_id; submit waits up to 15 seconds. |
+| `kuaishou_get_video_speech_text_job` | Check a Kuaishou speech-to-text transcript job by job_id without creating a new task. |
 
 ## Weibo Tools
 
@@ -390,6 +408,9 @@ Current WeChat Channels / 视频号 workflows include:
 | `weibo_get_user_info_by_profile_url` | Resolve a Weibo profile link, short link, or share text into creator profile data. |
 | `weibo_get_user_posts_by_user_id` | Fetch a paginated list of posts published by a creator when the caller already has a user_id. |
 | `weibo_get_user_posts_by_profile_url` | Fetch a paginated list of posts published by a creator from a profile link, short link, or share text. |
+| `weibo_submit_video_speech_text_by_post_url` | Submit a Weibo video speech-to-text transcript job from a post URL, short link, or share text; submit waits up to 15 seconds. |
+| `weibo_submit_video_speech_text_by_post_id` | Submit a Weibo video speech-to-text transcript job when the caller already has a post_id; submit waits up to 15 seconds. |
+| `weibo_get_video_speech_text_job` | Check a Weibo speech-to-text transcript job by job_id without creating a new task. |
 
 ## WeChat Channels Tools
 
@@ -405,6 +426,9 @@ Current WeChat Channels / 视频号 workflows include:
 | `wechat_get_user_info_by_user_id` | Fetch creator profile data when the finder user_id is already known. |
 | `wechat_get_user_posted_videos_by_user_id` | Fetch a paginated list of videos published by a creator when the finder user_id is already known. |
 | `wechat_get_user_posted_videos_by_url` | Fetch a paginated list of videos published by a creator from a video link or share text. |
+| `wechat_submit_video_speech_text_by_video_url` | Submit a WeChat Channels / 视频号 video speech-to-text transcript job from a video link or share text; submit waits up to 15 seconds. |
+| `wechat_submit_video_speech_text_by_encrypted_object_id` | Submit a WeChat Channels / 视频号 video speech-to-text transcript job when encrypted_object_id is already known; submit waits up to 15 seconds. |
+| `wechat_get_video_speech_text_job` | Check a WeChat Channels / 视频号 speech-to-text transcript job by job_id without creating a new task. |
 
 ## Quick Start
 
