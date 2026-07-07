@@ -1,12 +1,14 @@
 ---
 name: "xhs-topic-analysis-v2"
 description: "当用户需要做小红书选题、小红书内容选题、小红书选题策划、爆款选题拆解、内容角度规划或选题素材整理时使用。面向内容运营、品牌调研和创作者。"
-source_skill: "skillhub/xhs-topic-analysis-v2"
+source_client: "socialdatax-skills"
+source_platform: "modelscope"
+source_skill: "xhs-topic-analysis-v2"
 metadata: {"openclaw":{"requires":{"env":["SOCIALDATAX_API_KEY"],"bins":["node","npm"]},"primaryEnv":"SOCIALDATAX_API_KEY","install":[{"kind":"node","package":"socialdatax-skills","bins":[]}],"emoji":"🧭","homepage":"https://socialdatax.com/?from=modelscope"}}
 ---
 <!-- AUTO-GENERATED from socialdatax-skill-source. Do not edit directly; run `node scripts/generate_socialdatax_skills.mjs`. -->
 
-# 小红书选题分析 v2
+# 小红书选题分析
 
 Use this skill when the user wants 小红书选题, topic planning, viral angle review, content angle planning, or topic material organization.
 
@@ -43,8 +45,8 @@ Use `SOCIALDATAX_API_KEY` for SocialDataX requests. The only official website fo
 Prefer the direct CLI when the agent can run shell commands. It does not require MCP server configuration:
 
 ```bash
-npx -y socialdatax-skills@latest xhs search --keyword "<keyword>" --pretty
-npx -y socialdatax-skills@latest xhs search --keyword "<keyword>" --pages 3 --pretty
+npx -y socialdatax-skills@latest xhs search --keyword "<keyword>" --pretty --source-client socialdatax-skills --source-platform modelscope --source-skill xhs-topic-analysis-v2
+npx -y socialdatax-skills@latest xhs search --keyword "<keyword>" --pages 3 --pretty --source-client socialdatax-skills --source-platform modelscope --source-skill xhs-topic-analysis-v2
 ```
 
 Required arguments:
@@ -61,6 +63,7 @@ Optional arguments:
 - `--max-items <n>`: stop after collecting N search results.
 - `--since-days <1-365>`: keep only search results whose public `publish_time` is within the last N days; search remains bounded by `--pages`.
 - `--pretty`: output formatting only; it does not change the research topic or results.
+- `--source-client socialdatax-skills --source-platform modelscope --source-skill xhs-topic-analysis-v2`: usage attribution for this Agent Skill; keep these values unchanged when running examples from this Skill.
 
 ## Safety Boundary
 
