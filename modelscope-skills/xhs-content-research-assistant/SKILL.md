@@ -1,6 +1,7 @@
 ---
 name: "xhs-content-research-assistant"
 description: "面向内容运营、品牌调研和创作者的小红书内容研究助手。适用于内容研究、选题策划、竞品观察、趋势判断、评论洞察和创作者资料整理，来自 SocialDataX 社媒数据助手。"
+source_skill: "skillhub/xhs-content-research-assistant"
 metadata: {"openclaw":{"requires":{"env":["SOCIALDATAX_API_KEY"],"bins":["node","npm"]},"primaryEnv":"SOCIALDATAX_API_KEY","install":[{"kind":"node","package":"socialdatax-skills","bins":[]}],"emoji":"🔥","homepage":"https://socialdatax.com/?from=modelscope"}}
 ---
 <!-- AUTO-GENERATED from socialdatax-skill-source. Do not edit directly; run `node scripts/generate_socialdatax_skills.mjs`. -->

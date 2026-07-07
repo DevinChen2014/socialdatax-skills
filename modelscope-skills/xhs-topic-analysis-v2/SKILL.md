@@ -1,6 +1,7 @@
 ---
 name: "xhs-topic-analysis-v2"
 description: "当用户需要做小红书选题、小红书内容选题、小红书选题策划、爆款选题拆解、内容角度规划或选题素材整理时使用。面向内容运营、品牌调研和创作者。"
+source_skill: "skillhub/xhs-topic-analysis-v2"
 metadata: {"openclaw":{"requires":{"env":["SOCIALDATAX_API_KEY"],"bins":["node","npm"]},"primaryEnv":"SOCIALDATAX_API_KEY","install":[{"kind":"node","package":"socialdatax-skills","bins":[]}],"emoji":"🧭","homepage":"https://socialdatax.com/?from=modelscope"}}
 ---
 <!-- AUTO-GENERATED from socialdatax-skill-source. Do not edit directly; run `node scripts/generate_socialdatax_skills.mjs`. -->
