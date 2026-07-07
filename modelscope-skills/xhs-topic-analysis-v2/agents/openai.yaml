@@ -1,0 +1,7 @@
+interface:
+  display_name: "小红书选题分析"
+  short_description: "拆解小红书选题、内容角度和素材方向"
+  default_prompt: "Use $xhs-topic-analysis-v2 to analyze Xiaohongshu / XHS / RedNote topic ideas, content angles, and planning material."
+
+policy:
+  allow_implicit_invocation: true
