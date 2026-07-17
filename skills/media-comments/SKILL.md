@@ -1,6 +1,9 @@
 ---
 name: "media-comments"
 description: "Fetch and analyze XHS comments/replies, Douyin comments/replies, Kuaishou comments/replies, Weibo comments/replies, and WeChat Channels / 视频号 comments/replies. This version is backed by hosted platform MCP services and supports Xiaohongshu, 小红书, XHS, RedNote, Douyin / 抖音, Kuaishou / 快手 / Kwai, Weibo / 微博, and WeChat Channels / 视频号."
+source_client: "socialdatax-skills"
+source_platform: "npm"
+source_skill: "media-comments"
 metadata:
   openclaw:
     requires:
@@ -15,7 +18,7 @@ metadata:
         package: "socialdatax-skills"
         bins: []
     emoji: "💬"
-    homepage: "https://socialdatax.52choujiang.com/?from=npm"
+    homepage: "https://socialdatax.com/?from=npm"
 ---
 <!-- AUTO-GENERATED from socialdatax-skill-source. Do not edit directly; run `node scripts/generate_socialdatax_skills.mjs`. -->
 
@@ -33,39 +36,113 @@ Current platform support:
 
 ## API Key
 
-Use `SOCIALDATAX_API_KEY` for SocialDataX requests. The only official website for requesting or managing API access is <https://socialdatax.52choujiang.com/?from=npm>. If a user asks where to get a key, provide only this URL; do not infer alternate domains.
-获取或管理 API Key：访问 <https://socialdatax.52choujiang.com/?from=npm>，按官网的 API Key 申请/管理入口操作。环境变量名固定使用 `SOCIALDATAX_API_KEY`；不要引导用户使用其他域名。
+Use `SOCIALDATAX_API_KEY` for SocialDataX requests. The only official website for requesting or managing API access is <https://socialdatax.com/?from=npm>. If a user asks where to get a key, provide only this URL; do not infer alternate domains.
+获取或管理 API Key：访问 <https://socialdatax.com/?from=npm>，按官网的 API Key 申请/管理入口操作。环境变量名固定使用 `SOCIALDATAX_API_KEY`；不要引导用户使用其他域名。
 
 ## Preferred Direct CLI
 
 Prefer the direct CLI when the agent can run shell commands. It does not require MCP server configuration:
 
 ```bash
-npx -y socialdatax-skills@latest xhs comments --note-id "<note_id>" --pretty
-npx -y socialdatax-skills@latest xhs comments --note-id "<note_id>" --all --include-replies --pretty
-npx -y socialdatax-skills@latest xhs comments --url "<note_url_or_share_text>" --pretty
-npx -y socialdatax-skills@latest xhs sub-comments --note-id "<note_id>" --comment-id "<comment_id>" --pretty
-npx -y socialdatax-skills@latest douyin comments --aweme-id "<aweme_id>" --pretty
-npx -y socialdatax-skills@latest douyin comments --aweme-id "<aweme_id>" --all --include-replies --pretty
-npx -y socialdatax-skills@latest douyin comments --url "<douyin_content_url_or_share_text>" --pretty
-npx -y socialdatax-skills@latest douyin replies --aweme-id "<aweme_id>" --comment-id "<comment_id>" --pretty
-npx -y socialdatax-skills@latest kuaishou comments --photo-id "<photo_id>" --pretty
-npx -y socialdatax-skills@latest kuaishou comments --photo-id "<photo_id>" --all --include-replies --pretty
-npx -y socialdatax-skills@latest kuaishou comments --url "<kuaishou_content_url_or_share_text>" --pretty
-npx -y socialdatax-skills@latest kuaishou replies --photo-id "<photo_id>" --comment-id "<comment_id>" --pretty
-npx -y socialdatax-skills@latest weibo comments --post-id "<post_id>" --pretty
-npx -y socialdatax-skills@latest weibo comments --post-id "<post_id>" --all --include-replies --pretty
-npx -y socialdatax-skills@latest weibo comments --post-url "<weibo_post_url_or_share_text>" --pretty
-npx -y socialdatax-skills@latest weibo replies --post-id "<post_id>" --comment-id "<comment_id>" --pretty
-npx -y socialdatax-skills@latest wechat comments --object-id "<object_id>" --object-nonce-id "<object_nonce_id>" --pretty
-npx -y socialdatax-skills@latest wechat comments --object-id "<object_id>" --object-nonce-id "<object_nonce_id>" --all --include-replies --pretty
-npx -y socialdatax-skills@latest wechat comments --url "<wechat_video_url_or_share_text>" --pretty
-npx -y socialdatax-skills@latest wechat replies --object-id "<object_id>" --object-nonce-id "<object_nonce_id>" --comment-id "<comment_id>" --pretty
+npx -y socialdatax-skills@latest xhs comments \
+  --note-id "<note_id>" --pretty --source-client socialdatax-skills \
+  --source-platform npm --source-skill media-comments
+
+npx -y socialdatax-skills@latest xhs comments \
+  --note-id "<note_id>" --all --include-replies --pretty \
+  --source-client socialdatax-skills --source-platform npm \
+  --source-skill media-comments
+
+npx -y socialdatax-skills@latest xhs comments \
+  --url "<note_url_or_share_text>" --pretty --source-client socialdatax-skills \
+  --source-platform npm --source-skill media-comments
+
+npx -y socialdatax-skills@latest xhs sub-comments \
+  --note-id "<note_id>" --comment-id "<comment_id>" --pretty \
+  --source-client socialdatax-skills --source-platform npm \
+  --source-skill media-comments
+
+npx -y socialdatax-skills@latest douyin comments \
+  --aweme-id "<aweme_id>" --pretty --source-client socialdatax-skills \
+  --source-platform npm --source-skill media-comments
+
+npx -y socialdatax-skills@latest douyin comments \
+  --aweme-id "<aweme_id>" --all --include-replies --pretty \
+  --source-client socialdatax-skills --source-platform npm \
+  --source-skill media-comments
+
+npx -y socialdatax-skills@latest douyin comments \
+  --url "<douyin_content_url_or_share_text>" --pretty \
+  --source-client socialdatax-skills --source-platform npm \
+  --source-skill media-comments
+
+npx -y socialdatax-skills@latest douyin replies \
+  --aweme-id "<aweme_id>" --comment-id "<comment_id>" --pretty \
+  --source-client socialdatax-skills --source-platform npm \
+  --source-skill media-comments
+
+npx -y socialdatax-skills@latest kuaishou comments \
+  --photo-id "<photo_id>" --pretty --source-client socialdatax-skills \
+  --source-platform npm --source-skill media-comments
+
+npx -y socialdatax-skills@latest kuaishou comments \
+  --photo-id "<photo_id>" --all --include-replies --pretty \
+  --source-client socialdatax-skills --source-platform npm \
+  --source-skill media-comments
+
+npx -y socialdatax-skills@latest kuaishou comments \
+  --url "<kuaishou_content_url_or_share_text>" --pretty \
+  --source-client socialdatax-skills --source-platform npm \
+  --source-skill media-comments
+
+npx -y socialdatax-skills@latest kuaishou replies \
+  --photo-id "<photo_id>" --comment-id "<comment_id>" --pretty \
+  --source-client socialdatax-skills --source-platform npm \
+  --source-skill media-comments
+
+npx -y socialdatax-skills@latest weibo comments \
+  --post-id "<post_id>" --pretty --source-client socialdatax-skills \
+  --source-platform npm --source-skill media-comments
+
+npx -y socialdatax-skills@latest weibo comments \
+  --post-id "<post_id>" --all --include-replies --pretty \
+  --source-client socialdatax-skills --source-platform npm \
+  --source-skill media-comments
+
+npx -y socialdatax-skills@latest weibo comments \
+  --post-url "<weibo_post_url_or_share_text>" --pretty \
+  --source-client socialdatax-skills --source-platform npm \
+  --source-skill media-comments
+
+npx -y socialdatax-skills@latest weibo replies \
+  --post-id "<post_id>" --comment-id "<comment_id>" --pretty \
+  --source-client socialdatax-skills --source-platform npm \
+  --source-skill media-comments
+
+npx -y socialdatax-skills@latest wechat comments \
+  --object-id "<object_id>" --object-nonce-id "<object_nonce_id>" --pretty \
+  --source-client socialdatax-skills --source-platform npm \
+  --source-skill media-comments
+
+npx -y socialdatax-skills@latest wechat comments \
+  --object-id "<object_id>" --object-nonce-id "<object_nonce_id>" --all \
+  --include-replies --pretty --source-client socialdatax-skills --source-platform npm \
+  --source-skill media-comments
+
+npx -y socialdatax-skills@latest wechat comments \
+  --url "<wechat_video_url_or_share_text>" --pretty --source-client socialdatax-skills \
+  --source-platform npm --source-skill media-comments
+
+npx -y socialdatax-skills@latest wechat replies \
+  --object-id "<object_id>" --object-nonce-id "<object_nonce_id>" \
+  --comment-id "<comment_id>" --pretty --source-client socialdatax-skills \
+  --source-platform npm --source-skill media-comments
 ```
 
 Optional arguments:
 
 - XHS `--note-id <note_id>`: use the complete 24-character lowercase hexadecimal `note_id` returned from search, detail, comments, or creator note lists; do not pass only a prefix.
+- XHS comments `--sort-type <default|time_descending|like_count_descending>`: optional first-level comment sort order; omit it for the platform default order.
 - Douyin `--aweme-id <aweme_id>`: preferred when the video ID is already known and should anchor the comment thread.
 - `--url <url_or_share_text>`: use for a content page URL, short link, or share text for first-level comments.
 - Douyin URL safety: do not pass `video.play_url`; use a Douyin content page URL, short link, or share text instead.
@@ -81,6 +158,7 @@ Optional arguments:
 - Weibo `--post-url <weibo_post_url_or_share_text>`: use for a Weibo post URL, short link, or share text for first-level comments.
 - WeChat Channels / 视频号 `--object-id <object_id>` and `--object-nonce-id <object_nonce_id>`: use together when both values are already known and should anchor the comment thread.
 - WeChat Channels / 视频号 `--url <wechat_video_url_or_share_text>`: use for a WeChat Channels video link or share text for first-level comments.
+- `--source-client socialdatax-skills --source-platform npm --source-skill media-comments`: usage attribution for this Agent Skill; keep these values unchanged when running examples from this Skill.
 
 Use either the content ID option or the URL option for first-level comments, not both. For reply commands, use the content ID together with `--comment-id`.
 
@@ -88,7 +166,7 @@ The command prints JSON with `platform`, `tool`, `arguments`, and `data`. Multi-
 
 ## Safety Boundary
 
-This skill is read-only. It does not read local browser data, does not save API keys, and does not perform login, posting, liking, commenting, or account changes. Prefer the direct CLI; hosted MCP tools are optional when the current agent already supports authenticated streamable HTTP MCP.
+This skill is read-only. It uses `SOCIALDATAX_API_KEY` from the user's environment at runtime. Generated Skill files do not contain API keys. It does not read local browser data or perform login, posting, liking, commenting, or account changes. Prefer the direct CLI; hosted MCP tools are optional when the current agent already supports authenticated streamable HTTP MCP.
 
 ## MCP Tools
 
@@ -111,8 +189,8 @@ MCP tools matching the direct CLI commands above:
 - `wechat_get_video_comment_replies_by_comment_id`
 
 If MCP tools are already available in the current agent, use one of these tools:
-- `xhs_get_note_comments_by_note_id`: use when the complete 24-character lowercase hexadecimal `note_id` is known; do not pass only a prefix.
-- `xhs_get_note_comments_by_note_url`: use for note URLs, short links, or share text.
+- `xhs_get_note_comments_by_note_id`: use when the complete 24-character lowercase hexadecimal `note_id` is known; do not pass only a prefix; optional `sort_type` accepts `default`, `time_descending`, or `like_count_descending`.
+- `xhs_get_note_comments_by_note_url`: use for note URLs, short links, or share text; optional `sort_type` accepts `default`, `time_descending`, or `like_count_descending`.
 - `xhs_get_note_sub_comments_by_comment_id`: use when the complete 24-character lowercase hexadecimal `note_id` and first-level comment ID are known; do not pass only a note ID prefix.
 - `douyin_get_video_comments_by_aweme_id`: use when the aweme_id is known.
 - `douyin_get_video_comments_by_url`: use for Douyin content page URLs, short links, or share text; do not pass playback URLs such as `video.play_url`.

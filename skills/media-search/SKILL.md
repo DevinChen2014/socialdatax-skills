@@ -1,6 +1,9 @@
 ---
 name: "media-search"
 description: "Search social media content by keyword for social research, competitor research, topic discovery, content planning, market observation, and trend scanning. This version is backed by hosted platform MCP services and supports Xiaohongshu, 小红书, XHS, RedNote, Douyin / 抖音, Kuaishou / 快手 / Kwai, Weibo / 微博, and WeChat Channels / 视频号."
+source_client: "socialdatax-skills"
+source_platform: "npm"
+source_skill: "media-search"
 metadata:
   openclaw:
     requires:
@@ -15,7 +18,7 @@ metadata:
         package: "socialdatax-skills"
         bins: []
     emoji: "🔍"
-    homepage: "https://socialdatax.52choujiang.com/?from=npm"
+    homepage: "https://socialdatax.com/?from=npm"
 ---
 <!-- AUTO-GENERATED from socialdatax-skill-source. Do not edit directly; run `node scripts/generate_socialdatax_skills.mjs`. -->
 
@@ -33,24 +36,53 @@ Current platform support:
 
 ## API Key
 
-Use `SOCIALDATAX_API_KEY` for SocialDataX requests. The only official website for requesting or managing API access is <https://socialdatax.52choujiang.com/?from=npm>. If a user asks where to get a key, provide only this URL; do not infer alternate domains.
-获取或管理 API Key：访问 <https://socialdatax.52choujiang.com/?from=npm>，按官网的 API Key 申请/管理入口操作。环境变量名固定使用 `SOCIALDATAX_API_KEY`；不要引导用户使用其他域名。
+Use `SOCIALDATAX_API_KEY` for SocialDataX requests. The only official website for requesting or managing API access is <https://socialdatax.com/?from=npm>. If a user asks where to get a key, provide only this URL; do not infer alternate domains.
+获取或管理 API Key：访问 <https://socialdatax.com/?from=npm>，按官网的 API Key 申请/管理入口操作。环境变量名固定使用 `SOCIALDATAX_API_KEY`；不要引导用户使用其他域名。
 
 ## Preferred Direct CLI
 
 Prefer the direct CLI when the agent can run shell commands. It does not require MCP server configuration:
 
 ```bash
-npx -y socialdatax-skills@latest xhs search --keyword "<keyword>" --pretty
-npx -y socialdatax-skills@latest xhs search --keyword "<keyword>" --pages 3 --pretty
-npx -y socialdatax-skills@latest douyin search --keyword "<keyword>" --pretty
-npx -y socialdatax-skills@latest douyin search --keyword "<keyword>" --pages 3 --pretty
-npx -y socialdatax-skills@latest kuaishou search --keyword "<keyword>" --pretty
-npx -y socialdatax-skills@latest kuaishou search --keyword "<keyword>" --pages 3 --pretty
-npx -y socialdatax-skills@latest weibo search --keyword "<keyword>" --pretty
-npx -y socialdatax-skills@latest weibo search --keyword "<keyword>" --pages 3 --pretty
-npx -y socialdatax-skills@latest wechat search --keyword "<keyword>" --pretty
-npx -y socialdatax-skills@latest wechat search --keyword "<keyword>" --pages 3 --pretty
+npx -y socialdatax-skills@latest xhs search \
+  --keyword "<keyword>" --pretty --source-client socialdatax-skills \
+  --source-platform npm --source-skill media-search
+
+npx -y socialdatax-skills@latest xhs search \
+  --keyword "<keyword>" --pages 3 --pretty --source-client socialdatax-skills \
+  --source-platform npm --source-skill media-search
+
+npx -y socialdatax-skills@latest douyin search \
+  --keyword "<keyword>" --pretty --source-client socialdatax-skills \
+  --source-platform npm --source-skill media-search
+
+npx -y socialdatax-skills@latest douyin search \
+  --keyword "<keyword>" --pages 3 --pretty --source-client socialdatax-skills \
+  --source-platform npm --source-skill media-search
+
+npx -y socialdatax-skills@latest kuaishou search \
+  --keyword "<keyword>" --pretty --source-client socialdatax-skills \
+  --source-platform npm --source-skill media-search
+
+npx -y socialdatax-skills@latest kuaishou search \
+  --keyword "<keyword>" --pages 3 --pretty --source-client socialdatax-skills \
+  --source-platform npm --source-skill media-search
+
+npx -y socialdatax-skills@latest weibo search \
+  --keyword "<keyword>" --pretty --source-client socialdatax-skills \
+  --source-platform npm --source-skill media-search
+
+npx -y socialdatax-skills@latest weibo search \
+  --keyword "<keyword>" --pages 3 --pretty --source-client socialdatax-skills \
+  --source-platform npm --source-skill media-search
+
+npx -y socialdatax-skills@latest wechat search \
+  --keyword "<keyword>" --pretty --source-client socialdatax-skills \
+  --source-platform npm --source-skill media-search
+
+npx -y socialdatax-skills@latest wechat search \
+  --keyword "<keyword>" --pages 3 --pretty --source-client socialdatax-skills \
+  --source-platform npm --source-skill media-search
 ```
 
 Required arguments:
@@ -63,7 +95,7 @@ Required arguments:
 
 Optional arguments:
 
-- XHS `--page <number>`: 1-based page number; use `1` for the first page and only increase it when continuing pagination.
+- XHS `--page-token <next_page_token>`: opaque pagination token; omit it on the first search request. Continue only with the complete returned `next_page_token` from the same search pagination chain. Do not modify, truncate, redact, mask, omit, normalize, rebuild, generate, or replace the middle with ellipses.
 - XHS `--sort-type <general|time_descending|like_count_descending|comment_count_descending|collect_count_descending>`: optional sort value; omit it for default sorting.
 - XHS `--note-type <all|image|video>`: optional note type filter; default is `all`.
 - XHS `--publish-time-range <all|day|week|half_year>`: optional publish-time filter; default is `all`.
@@ -72,18 +104,20 @@ Optional arguments:
 - Douyin `--publish-time-range <all|day|week|half_year>`: optional publish-time filter; omit it for no publish-time filter.
 - Douyin `--duration-range <all|under_1_minute|one_to_five_minutes|over_5_minutes>`: optional duration filter; omit it for no duration filter.
 - Douyin `--content-type <all|video|image>`: optional content type filter; omit it for all content types.
-- XHS `--pages <n>`: fetch and merge N search pages from the current starting point; continue with returned `next_page`.
+- XHS `--pages <n>`: fetch and merge N search pages from the current starting point; continue with returned `next_page_token`.
 - Douyin `--pages <n>`: fetch and merge N search pages from the current starting point; continue with returned `next_page_token`.
 - Kuaishou `--pages <n>`: fetch and merge N search pages from the current starting point; continue with returned `next_page_token`.
 - `--max-items <n>`: stop after collecting N search results.
+- `--since-days <1-365>`: keep only results whose public `publish_time` is within the last N days. Search remains bounded by `--pages` and does not promise complete platform coverage.
 - `--pretty`: output formatting only.
 - Kuaishou `--page-token <next_page_token>`: opaque pagination token; omit it on the first search request. Continue only with the complete returned `next_page_token` from the same search pagination chain. Do not modify, truncate, redact, mask, omit, normalize, rebuild, generate, or replace the middle with ellipses.
 - Weibo `--page-token <next_page_token>`: opaque pagination token; omit it on the first search request. Continue only with the complete returned `next_page_token` from the same search pagination chain. Do not modify, truncate, redact, mask, omit, normalize, rebuild, generate, or replace the middle with ellipses.
 - WeChat Channels / 视频号 `--page-token <next_page_token>`: opaque pagination token; omit it on the first search request. Continue only with the complete returned `next_page_token` from the same search pagination chain. Do not modify, truncate, redact, mask, omit, normalize, rebuild, generate, or replace the middle with ellipses.
-- WeChat Channels / 视频号 `--sort-type <all|latest|popular>`: optional sort value; omit it for the default sort.
+- WeChat Channels / 视频号 `--sort-type <all|time_descending|collect_count_descending>`: optional sort value; omit it for the default sort.
 - WeChat Channels / 视频号 `--duration-range <all|under_5_min|between_5_and_20_min|over_20_min>`: optional duration filter; omit it for no duration filter.
 - Weibo `--pages <n>`: fetch and merge N search pages from the current starting point; continue with returned `next_page_token`.
 - WeChat Channels / 视频号 `--pages <n>`: fetch and merge N search pages from the current starting point; continue with returned `next_page_token`.
+- `--source-client socialdatax-skills --source-platform npm --source-skill media-search`: usage attribution for this Agent Skill; keep these values unchanged when running examples from this Skill.
 
 XHS sort values:
 - `general`: default sorting.
@@ -126,14 +160,15 @@ Douyin content type filter values:
 - `image`: image/text posts.
 
 The command prints JSON with `platform`, `tool`, `arguments`, and `data`. Search supports `--pages` and `--max-items`, but not `--all`, because search has no stable complete-result boundary. Multi-page output keeps merged results in `data.items` and adds `page_count`, `item_count`, and the next-page marker.
+With CLI `--since-days <n>`, XHS and Douyin search automatically prefer newest-first sorting and the closest native publish-time range unless the user explicitly sets sort or publish-time filters; WeChat Channels search defaults to `time_descending`; Kuaishou and Weibo only apply CLI-side `publish_time` filtering.
 Kuaishou search pagination:
 - Continue only when `next_page_token` is not empty.
 - Pass the complete returned `next_page_token` back unchanged as `page_token` for the same search pagination chain. Do not modify, truncate, redact, mask, omit, normalize, rebuild, generate, or replace the middle with ellipses.
 
 WeChat Channels / 视频号 sort values:
-- `all`: default sorting.
-- `latest`: newest first.
-- `popular`: most popular first.
+- `all`: no sort restriction.
+- `time_descending`: newest first.
+- `collect_count_descending`: hottest first / most collected first.
 
 WeChat Channels / 视频号 duration filter values:
 - `all`: no duration filter.
@@ -147,7 +182,7 @@ Weibo and WeChat Channels search pagination:
 
 ## Safety Boundary
 
-This skill is read-only. It does not read local browser data, does not save API keys, and does not perform login, posting, liking, commenting, or account changes. Prefer the direct CLI; hosted MCP tools are optional when the current agent already supports authenticated streamable HTTP MCP.
+This skill is read-only. It uses `SOCIALDATAX_API_KEY` from the user's environment at runtime. Generated Skill files do not contain API keys. It does not read local browser data or perform login, posting, liking, commenting, or account changes. Prefer the direct CLI; hosted MCP tools are optional when the current agent already supports authenticated streamable HTTP MCP.
 
 ## MCP Tools
 
@@ -159,9 +194,9 @@ MCP tools matching the direct CLI commands above:
 - `weibo_search_posts`
 - `wechat_search_videos`
 
-If MCP tools are already available in the current agent, call `xhs_search_notes` with:
+For XHS, call `xhs_search_notes` with:
 - `keyword`: required search phrase or topic; use the user's actual intent and trim whitespace.
-- `page`: optional 1-based page number; use `1` for the first page.
+- `page_token`: optional opaque pagination token. Continue only with the complete returned `next_page_token` from the same search pagination chain. Do not modify, truncate, redact, mask, omit, normalize, rebuild, generate, or replace the middle with ellipses.
 - `sort_type`: optional, one of `general`, `time_descending`, `like_count_descending`, `comment_count_descending`, `collect_count_descending`; omit it for default sorting.
 - `note_type`: optional search filter, one of `all`, `image`, `video`; default is `all`.
 - `publish_time_range`: optional search filter, one of `all`, `day`, `week`, `half_year`; default is `all`.
@@ -177,7 +212,8 @@ Do not pass `page` to `douyin_search_videos`; omit `page_token` on the first req
 - `duration_range`: optional duration filter, one of `all`, `under_1_minute`, `one_to_five_minutes`, `over_5_minutes`; omit it for no duration filter.
 - `content_type`: optional content type filter, one of `all`, `video`, `image`; omit it for all content types.
 
-Continue XHS pagination only when `next_page` is not `null`, and keep the same `keyword`, `sort_type`, `note_type`, and `publish_time_range` while changing only `page`.
+Do not pass `page` to `xhs_search_notes`; omit `page_token` on the first request.
+Continue XHS pagination only when `next_page_token` is not empty, and pass the complete returned `next_page_token` back unchanged as `page_token` for the same keyword, sort, note type, publish-time range, and caller chain.
 Continue Douyin pagination only when `next_page_token` is not empty. Pass the complete returned `next_page_token` back unchanged as `page_token` for the same keyword and filter chain.
 Do not stop only because one page has empty `items`.
 For Kuaishou, call `kuaishou_search_videos` with:
@@ -194,9 +230,10 @@ For WeChat Channels / 视频号, call `wechat_search_videos` with:
 - `keyword`: required search phrase or topic.
 - `page_token`: optional opaque pagination token. Continue only with the complete returned `next_page_token` from the same search pagination chain. Do not modify, truncate, redact, mask, omit, normalize, rebuild, generate, or replace the middle with ellipses.
 Do not pass `page` to `wechat_search_videos`; omit `page_token` on the first request.
-- `sort_type`: optional, one of `all`, `latest`, `popular`; omit it for the default sort.
+- `sort_type`: optional, one of `all`, `time_descending`, `collect_count_descending`; omit it for the default sort.
 - `duration_range`: optional duration filter, one of `all`, `under_5_min`, `between_5_and_20_min`, `over_20_min`; omit it for no duration filter.
 Continue WeChat Channels pagination only when `next_page_token` is not empty. Pass the complete returned `next_page_token` back unchanged as `page_token` for the same keyword and filter chain.
+`--since-days` uses CLI-side filtering only and is not an MCP tool argument; for MCP-only calls, request newest-first/native publish-time filters where available and filter returned `publish_time` values in your analysis.
 
 ## Output Guidance
 

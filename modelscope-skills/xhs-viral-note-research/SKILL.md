@@ -1,24 +1,24 @@
 ---
-name: "xhs-content-research"
-description: "面向内容运营、品牌调研和创作者的小红书内容研究辅助技能。适用于 RedNote / XHS / Xiaohongshu（小红书）内容研究、选题分析、关键词观察、趋势判断、竞品内容对比和素材整理。"
+name: "xhs-viral-note-research"
+description: "当用户给出小红书关键词、赛道、人群或产品方向，想看热门高互动笔记样本，并拆解标题结构、内容角度、互动信号、创作灵感和选题参考时使用。"
 source_client: "socialdatax-skills"
 source_platform: "modelscope"
-source_skill: "xhs-content-research"
-metadata: {"openclaw":{"requires":{"env":["SOCIALDATAX_API_KEY"],"bins":["node","npm"]},"primaryEnv":"SOCIALDATAX_API_KEY","install":[{"kind":"node","package":"socialdatax-skills","bins":[]}],"emoji":"📌","homepage":"https://socialdatax.com/?from=modelscope"}}
+source_skill: "xhs-viral-note-research"
+metadata: {"openclaw":{"requires":{"env":["SOCIALDATAX_API_KEY"],"bins":["node","npm"]},"primaryEnv":"SOCIALDATAX_API_KEY","install":[{"kind":"node","package":"socialdatax-skills","bins":[]}],"emoji":"🔥","homepage":"https://socialdatax.com/?from=modelscope"}}
 ---
 <!-- AUTO-GENERATED from socialdatax-skill-source. Do not edit directly; run `node scripts/generate_socialdatax_skills.mjs`. -->
 
-# 小红书内容研究
+# 小红书爆款笔记研究
 
 ## 适用场景
 
-面向内容运营、品牌调研和创作者的小红书内容研究辅助技能。适用于 RedNote / XHS / Xiaohongshu（小红书）内容研究、选题分析、关键词观察、趋势判断、竞品内容对比和素材整理。
+当用户给出小红书关键词、赛道、人群或产品方向，想看热门高互动笔记样本，并拆解标题结构、内容角度、互动信号、创作灵感和选题参考时使用。
 
 ## 快速开始
 
 - 先给出当前 skill 支持的输入：关键词或选题方向。
-- 如果你只想先看样本，先取 1 页；要继续扩大，再按参数说明使用分页或 `--max-items`。
-- 你通常会得到：相关标题、作者或账号、链接或内容 ID，以及可继续追问的角度。
+- 默认取 2 页、最多 20 条样本；如果只是试跑，可以把 `--pages` 改成 1 或降低 `--max-items`。
+- 你通常会得到：热门高互动样本、标题钩子、内容角度、互动信号和可复用选题。
 
 ## API Key 获取
 
@@ -30,12 +30,9 @@ metadata: {"openclaw":{"requires":{"env":["SOCIALDATAX_API_KEY"],"bins":["node",
 
 ```bash
 npx -y socialdatax-skills@latest xhs search \
-  --keyword "<keyword>" --pretty --source-client socialdatax-skills \
-  --source-platform modelscope --source-skill xhs-content-research
-
-npx -y socialdatax-skills@latest xhs search \
-  --keyword "<keyword>" --pages 3 --pretty --source-client socialdatax-skills \
-  --source-platform modelscope --source-skill xhs-content-research
+  --keyword "<keyword>" --sort-type like_count_descending --pages 2 --max-items 20 \
+  --pretty --source-client socialdatax-skills --source-platform modelscope \
+  --source-skill xhs-viral-note-research
 ```
 
 ## 参数说明
@@ -52,16 +49,18 @@ npx -y socialdatax-skills@latest xhs search \
 通用：
 - 可选：`--page-token <next_page_token>`：这是不透明的分页 token；第一页不要传。继续同一条搜索链路时，只能原样传回完整返回的 `next_page_token`，不能截断、改写、脱敏、重建，或用省略号替换中间内容。
 - 可选：`--pretty`：只影响输出格式，不改变实际请求结果。
-- 可选：`--source-client socialdatax-skills --source-platform modelscope --source-skill xhs-content-research`：这是当前 Agent Skill 的来源标记；按本 Skill 示例执行时保持这些值不变。
+- 可选：`--source-client socialdatax-skills --source-platform modelscope --source-skill xhs-viral-note-research`：这是当前 Agent Skill 的来源标记；按本 Skill 示例执行时保持这些值不变。
 
 ## 输出建议
 
-优先输出可直接复盘的结果：相关样本和主要角度，并标出下一步可继续追问的问题。
+优先输出可直接用于选题复盘的样本研究报告。
 
-先把可见证据和你的判断分开写；当用户需要可追溯结论时，重点整理话题模式、内容角度、受众反馈、创作者定位和可引用样本。
+输出为样本研究报告：先给样本表，再拆标题钩子、内容角度、互动信号、可复用选题和下一步建议。
+样本表里保留标题、作者、互动指标、发布时间、完整原始 URL 和完整 `note_id`；可见字段缺失时说明缺失，不补造。
 对于 XHS 搜索结果里的 `note_url`，无论是在最终回答、展示、引用、存储、输出还是转发时，都要保留完整原始 URL，包括其中的 `xsec_token` 查询参数；不要改写、截断、脱敏、重建，也不要只根据 `note_id` 去拼链接。
 对于 XHS `note_id`，要完整复制 24 位小写十六进制 ID；不要只传或只展示前缀。
-当用户要看最近话题时，优先使用 CLI 的 `--since-days 7`，或者按用户指定的天数窗口执行；不要把当前返回页范围说成全平台完整覆盖。
+只基于用户关键词和当前返回页范围内的公开结果做判断；不承诺全平台完整覆盖，也不把当前样本说成唯一结论。
+不承诺创作成稿、设计封面、诊断账号、执行发布或确定性流量结果。
 
 ## MCP 工具
 
@@ -80,7 +79,7 @@ npx -y socialdatax-skills@latest xhs search \
 
 ## 示例结果
 
-- 示例展示格式，不代表固定字段：内容样本=标题/作者/链接或 ID；判断=相关原因和下一步。
+- 示例展示格式，不代表固定字段：样本表=标题/作者/互动信号/完整链接/完整 note_id；判断=标题钩子/内容角度/可复用选题/下一步。
 
 ## 异常处理
 

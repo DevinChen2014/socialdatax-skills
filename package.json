@@ -1,6 +1,6 @@
 {
   "name": "socialdatax-skills",
-  "version": "0.2.10",
+  "version": "0.2.28",
   "description": "SocialDataX / 社媒数据助手 skill installer and direct CLI helper for hosted platform social media MCP services.",
   "license": "MIT",
   "type": "module",
@@ -11,6 +11,7 @@
     "cli.mjs",
     "README.md",
     "LICENSE",
+    "lib/**",
     "skills/**",
     "assets/logo.png"
   ],
@@ -50,17 +51,28 @@
     "kuaishou-search",
     "kwai",
     "kwai-data",
+    "bilibili",
+    "bilibili-data",
+    "bilibili-download",
     "weibo",
     "weibo-data",
     "weibo-search",
     "wechat",
     "wechat-channels",
     "wechat-channels-data",
-    "wechat-channels-search"
+    "wechat-channels-search",
+    "wechat-official-account",
+    "wechat-mp",
+    "mp-weixin",
+    "sensitive-check",
+    "sensitive-checking",
+    "content-safety",
+    "text-safety",
+    "sensitive-detection"
   ],
-  "homepage": "https://socialdatax.52choujiang.com",
+  "homepage": "https://socialdatax.com",
   "bugs": {
-    "url": "https://socialdatax.52choujiang.com"
+    "url": "https://socialdatax.com"
   },
   "repository": {
     "type": "git",
@@ -71,5 +83,9 @@
   },
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.29.0"
+  },
+  "overrides": {
+    "hono": "4.12.27",
+    "qs": "6.15.3"
   }
 }

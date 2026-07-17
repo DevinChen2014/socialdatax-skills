@@ -1,6 +1,9 @@
 ---
 name: "media-transcript"
-description: "Submit and check video speech-to-text transcript / 口播转文字 jobs for XHS, Douyin, Kuaishou, Weibo, and WeChat Channels through hosted platform MCP tools."
+description: "Submit and check video speech-to-text transcript / 口播转文字 jobs for XHS, Douyin, Kuaishou, Weibo, and WeChat Channels through direct CLI commands or hosted platform MCP tools."
+source_client: "socialdatax-skills"
+source_platform: "npm"
+source_skill: "media-transcript"
 metadata:
   openclaw:
     requires:
@@ -15,7 +18,7 @@ metadata:
         package: "socialdatax-skills"
         bins: []
     emoji: "🎙️"
-    homepage: "https://socialdatax.52choujiang.com/?from=npm"
+    homepage: "https://socialdatax.com/?from=npm"
 ---
 <!-- AUTO-GENERATED from socialdatax-skill-source. Do not edit directly; run `node scripts/generate_socialdatax_skills.mjs`. -->
 
@@ -33,33 +36,102 @@ Current platform support:
 
 ## API Key
 
-Use `SOCIALDATAX_API_KEY` for SocialDataX requests. The only official website for requesting or managing API access is <https://socialdatax.52choujiang.com/?from=npm>. If a user asks where to get a key, provide only this URL; do not infer alternate domains.
-获取或管理 API Key：访问 <https://socialdatax.52choujiang.com/?from=npm>，按官网的 API Key 申请/管理入口操作。环境变量名固定使用 `SOCIALDATAX_API_KEY`；不要引导用户使用其他域名。
+Use `SOCIALDATAX_API_KEY` for SocialDataX requests. The only official website for requesting or managing API access is <https://socialdatax.com/?from=npm>. If a user asks where to get a key, provide only this URL; do not infer alternate domains.
+获取或管理 API Key：访问 <https://socialdatax.com/?from=npm>，按官网的 API Key 申请/管理入口操作。环境变量名固定使用 `SOCIALDATAX_API_KEY`；不要引导用户使用其他域名。
+
+## Preferred Direct CLI
+
+Prefer the direct CLI when the agent can run shell commands. It does not require MCP server configuration:
+
+```bash
+npx -y socialdatax-skills@latest xhs transcript \
+  --url "<note_url_or_share_text>" --pretty --source-client socialdatax-skills \
+  --source-platform npm --source-skill media-transcript
+
+npx -y socialdatax-skills@latest xhs transcript \
+  --note-id "<note_id>" --pretty --source-client socialdatax-skills \
+  --source-platform npm --source-skill media-transcript
+
+npx -y socialdatax-skills@latest xhs transcript \
+  --job-id "<job_id>" --pretty --source-client socialdatax-skills \
+  --source-platform npm --source-skill media-transcript
+
+npx -y socialdatax-skills@latest douyin transcript \
+  --url "<douyin_content_url_or_share_text>" --pretty \
+  --source-client socialdatax-skills --source-platform npm \
+  --source-skill media-transcript
+
+npx -y socialdatax-skills@latest douyin transcript \
+  --aweme-id "<aweme_id>" --pretty --source-client socialdatax-skills \
+  --source-platform npm --source-skill media-transcript
+
+npx -y socialdatax-skills@latest douyin transcript \
+  --job-id "<job_id>" --pretty --source-client socialdatax-skills \
+  --source-platform npm --source-skill media-transcript
+
+npx -y socialdatax-skills@latest kuaishou transcript \
+  --url "<kuaishou_content_url_or_share_text>" --pretty \
+  --source-client socialdatax-skills --source-platform npm \
+  --source-skill media-transcript
+
+npx -y socialdatax-skills@latest kuaishou transcript \
+  --photo-id "<photo_id>" --pretty --source-client socialdatax-skills \
+  --source-platform npm --source-skill media-transcript
+
+npx -y socialdatax-skills@latest kuaishou transcript \
+  --job-id "<job_id>" --pretty --source-client socialdatax-skills \
+  --source-platform npm --source-skill media-transcript
+
+npx -y socialdatax-skills@latest weibo transcript \
+  --post-url "<weibo_post_url_or_share_text>" --pretty \
+  --source-client socialdatax-skills --source-platform npm \
+  --source-skill media-transcript
+
+npx -y socialdatax-skills@latest weibo transcript \
+  --post-id "<post_id>" --pretty --source-client socialdatax-skills \
+  --source-platform npm --source-skill media-transcript
+
+npx -y socialdatax-skills@latest weibo transcript \
+  --job-id "<job_id>" --pretty --source-client socialdatax-skills \
+  --source-platform npm --source-skill media-transcript
+
+npx -y socialdatax-skills@latest wechat transcript \
+  --url "<wechat_video_url_or_share_text>" --pretty --source-client socialdatax-skills \
+  --source-platform npm --source-skill media-transcript
+
+npx -y socialdatax-skills@latest wechat transcript \
+  --encrypted-object-id "<encrypted_object_id>" --pretty \
+  --source-client socialdatax-skills --source-platform npm \
+  --source-skill media-transcript
+
+npx -y socialdatax-skills@latest wechat transcript \
+  --job-id "<job_id>" --pretty --source-client socialdatax-skills \
+  --source-platform npm --source-skill media-transcript
+```
 
 Required arguments:
 
-- Use a submit-by-URL tool when the user provides a content link, short link, or share text.
-- Use a submit-by-ID tool only when the platform content ID is already known: XHS `note_id`, Douyin `aweme_id`, Kuaishou `photo_id`, Weibo `post_id`, or WeChat Channels / 视频号 `encrypted_object_id`.
-- Use the matching get-job tool with `job_id` when continuing or checking an existing transcript job.
+- Use a submit-by-URL command when the user provides a content link, short link, or share text.
+- Use a submit-by-ID command only when the platform content ID is already known: XHS `note_id`, Douyin `aweme_id`, Kuaishou `photo_id`, Weibo `post_id`, or WeChat Channels / 视频号 `encrypted_object_id`.
+- Use the matching `transcript --job-id <job_id>` command when continuing or checking an existing transcript job.
+- For one transcript command, pass exactly one entrypoint: URL/share text, platform content ID, or `job_id`.
 
-These video speech-to-text transcript / 口播转文字 workflows are MCP-only and not available through the direct CLI.
-Submit tools may wait briefly after creating the job. If the transcript is not ready, return the `job_id` and next action instead of starting a second job.
+Optional arguments:
+
+- Direct CLI transcript commands automatically wait and poll the same job by default; use positive `--max-wait-seconds <seconds>` to tune the CLI-side follow-up window after the first response.
+- `--source-client socialdatax-skills --source-platform npm --source-skill media-transcript`: usage attribution for this Agent Skill; keep these values unchanged when running examples from this Skill.
+
+Use the direct CLI first when the agent can run shell commands. These video speech-to-text transcript / 口播转文字 workflows submit a bounded analysis job or check an existing job.
+Direct CLI transcript commands try to deliver the final result in one run: submit waits server-side up to 210 seconds, then the CLI keeps querying the same `job_id` with get-job long polling of up to 240 seconds per request for a bounded follow-up window. Do not start a second submit job just to poll status.
+If the direct CLI returns a non-terminal job because the command was interrupted or reached `--max-wait-seconds`, keep the returned `job_id` and continue with the matching `transcript --job-id <job_id>` command.
 
 ## Safety Boundary
 
-This skill can submit bounded analysis jobs through hosted MCP tools. It does not read local browser data, does not save API keys, and does not perform login, posting, liking, commenting, or account changes. Use hosted MCP tools only when the current agent already supports authenticated streamable HTTP MCP.
+This skill can submit bounded video speech-to-text analysis jobs through the direct CLI or hosted MCP tools. It uses `SOCIALDATAX_API_KEY` from the user's environment at runtime. Generated Skill files do not contain API keys. It does not read local browser data or perform login, posting, liking, commenting, or account changes. Prefer the direct CLI; hosted MCP tools are optional when the current agent already supports authenticated streamable HTTP MCP.
 
 ## MCP Tools
 
-If MCP tools are already available in the current agent, choose the platform-specific submit tool by entrypoint:
-- XHS: `xhs_submit_video_speech_text_by_note_url`, `xhs_submit_video_speech_text_by_note_id`, `xhs_get_video_speech_text_job`.
-- Douyin: `douyin_submit_video_speech_text_by_video_url`, `douyin_submit_video_speech_text_by_aweme_id`, `douyin_get_video_speech_text_job`.
-- Kuaishou: `kuaishou_submit_video_speech_text_by_video_url`, `kuaishou_submit_video_speech_text_by_photo_id`, `kuaishou_get_video_speech_text_job`.
-- Weibo: `weibo_submit_video_speech_text_by_post_url`, `weibo_submit_video_speech_text_by_post_id`, `weibo_get_video_speech_text_job`.
-- WeChat Channels / 视频号: `wechat_submit_video_speech_text_by_video_url`, `wechat_submit_video_speech_text_by_encrypted_object_id`, `wechat_get_video_speech_text_job`.
-Do not start a duplicate transcript job only to poll status. Use the platform get-job tool with the returned `job_id`.
-
-MCP-only tools not available through the direct CLI:
+MCP tools matching the direct CLI commands above:
 
 - `xhs_submit_video_speech_text_by_note_url`
 - `xhs_submit_video_speech_text_by_note_id`
@@ -77,7 +149,17 @@ MCP-only tools not available through the direct CLI:
 - `wechat_submit_video_speech_text_by_encrypted_object_id`
 - `wechat_get_video_speech_text_job`
 
+If MCP tools are already available in the current agent, choose the platform-specific submit tool by entrypoint:
+- XHS: `xhs_submit_video_speech_text_by_note_url`, `xhs_submit_video_speech_text_by_note_id`, `xhs_get_video_speech_text_job`.
+- Douyin: `douyin_submit_video_speech_text_by_video_url`, `douyin_submit_video_speech_text_by_aweme_id`, `douyin_get_video_speech_text_job`.
+- Kuaishou: `kuaishou_submit_video_speech_text_by_video_url`, `kuaishou_submit_video_speech_text_by_photo_id`, `kuaishou_get_video_speech_text_job`.
+- Weibo: `weibo_submit_video_speech_text_by_post_url`, `weibo_submit_video_speech_text_by_post_id`, `weibo_get_video_speech_text_job`.
+- WeChat Channels / 视频号: `wechat_submit_video_speech_text_by_video_url`, `wechat_submit_video_speech_text_by_encrypted_object_id`, `wechat_get_video_speech_text_job`.
+Do not start a duplicate transcript job only to poll status. If an MCP response is non-terminal, call `data.next_action.tool_name` with `data.next_action.arguments` exactly as returned; those arguments include the same `job_id` and a bounded `wait_seconds` value. Continue until `is_terminal` is `true`.
+
 ## Output Guidance
 
-Return the transcript text when available. When a job is still running, include the `job_id`, status, and next action so the user or agent can check later.
+Return the transcript text and content context when available; include content IDs, titles or descriptions, author facts, and duration when the response provides them.
+This v1 surface does not return summary.
+When a job is still running, continue querying the same `job_id` until a terminal result is available; only surface `job_id`, status, and next action if the tool cannot continue, the command/session is interrupted, the bounded wait window is reached, or the user asks to stop.
 If the result says no processable video resource is available or the job failed, report that as the observed job result instead of retrying with another platform.

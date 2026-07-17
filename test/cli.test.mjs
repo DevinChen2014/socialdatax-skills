@@ -1,7 +1,11 @@
 import assert from "node:assert/strict";
 import { spawn, spawnSync } from "node:child_process";
+import { createHash } from "node:crypto";
+import { EventEmitter } from "node:events";
 import { createServer } from "node:http";
 import {
+  chmodSync,
+  existsSync,
   mkdirSync,
   mkdtempSync,
   readFileSync,
@@ -9,27 +13,61 @@ import {
   symlinkSync,
   writeFileSync,
 } from "node:fs";
+import { open as openFile } from "node:fs/promises";
 import { tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import test from "node:test";
 
+import { readToken as readPublishToken } from "../../../scripts/publish_social_media_insights_skills.mjs";
+import { decryptWechatMediaCommand } from "../cli.mjs";
+import { downloadBilibiliVideoFromManifest } from "../lib/media/bilibili-download.mjs";
+import { downloadXhsMediaFromUrl } from "../lib/media/xhs-download.mjs";
+
 const packageDir = dirname(dirname(fileURLToPath(import.meta.url)));
 const cliPath = join(packageDir, "cli.mjs");
 const removedDouyinApiKeyEnv = ["DOUYIN", "MCP", "API", "KEY"].join("_");
 
+async function listenHttpServer(server) {
+  await new Promise((resolve, reject) => {
+    server.once("error", reject);
+    server.listen(0, "127.0.0.1", () => {
+      server.off("error", reject);
+      resolve();
+    });
+  });
+}
+
+async function closeHttpServer(server) {
+  await new Promise((resolve, reject) => {
+    server.close((error) => (error ? reject(error) : resolve()));
+  });
+}
+
+function httpServerUrl(server, path = "/") {
+  const address = server.address();
+  assert.notEqual(address, null);
+  assert.notEqual(typeof address, "string");
+  return `http://127.0.0.1:${address.port}${path}`;
+}
+
 function runCli(args) {
   const env = { ...process.env };
   delete env.SOCIALDATAX_API_KEY;
+  delete env.SOCIALDATAX_SOURCE_CLIENT;
+  delete env.SOCIALDATAX_SOURCE_PLATFORM;
+  delete env.SOCIALDATAX_SOURCE_SKILL;
   delete env.SOCIAL_MEDIA_MCP_API_KEY;
   delete env.SOCIAL_MEDIA_XHS_MCP_UPSTREAM_URL;
   delete env.SOCIAL_MEDIA_DOUYIN_MCP_UPSTREAM_URL;
   delete env.SOCIAL_MEDIA_KUAISHOU_MCP_UPSTREAM_URL;
+  delete env.SOCIAL_MEDIA_BILIBILI_MCP_UPSTREAM_URL;
   delete env.SOCIAL_MEDIA_MCP_UPSTREAM_URL;
   delete env.XHS_MCP_API_KEY;
   delete env.XHS_MCP_UPSTREAM_URL;
   delete env.DOUYIN_MCP_UPSTREAM_URL;
   delete env.KUAISHOU_MCP_UPSTREAM_URL;
+  delete env.BILIBILI_MCP_UPSTREAM_URL;
 
   return spawnSync(process.execPath, [cliPath, ...args], {
     cwd: packageDir,
@@ -83,9 +121,180 @@ function runCliWithEnvAsync(args, extraEnv) {
   });
 }
 
+function extractDirectCliExamples(markdown) {
+  const examples = [];
+  let inBashBlock = false;
+  let current = [];
+
+  const flushCurrent = () => {
+    if (current.length === 0) {
+      return;
+    }
+    examples.push(
+      current
+        .map((line) => line.trim().replace(/\\$/, "").trim())
+        .filter(Boolean)
+        .join(" ")
+        .replace(/\s+/g, " ")
+    );
+    current = [];
+  };
+
+  for (const line of markdown.split("\n")) {
+    if (line === "```bash") {
+      inBashBlock = true;
+      continue;
+    }
+    if (inBashBlock && line === "```") {
+      flushCurrent();
+      inBashBlock = false;
+      continue;
+    }
+    if (!inBashBlock) {
+      continue;
+    }
+    if (line.startsWith("npx -y socialdatax-skills@latest ")) {
+      flushCurrent();
+      current = [line];
+    } else if (current.length > 0 && line.trim() !== "") {
+      current.push(line);
+    }
+  }
+  flushCurrent();
+
+  return examples;
+}
+
+function hasDirectCliExample(markdown, command) {
+  return extractDirectCliExamples(markdown).some((example) =>
+    example.includes(`npx -y socialdatax-skills@latest ${command}`)
+  );
+}
+
+function assertDirectCliExample(markdown, command, message) {
+  assert.ok(
+    hasDirectCliExample(markdown, command),
+    message ?? `expected direct CLI example for ${command}`
+  );
+}
+
+function readWechatCapture(fileName) {
+  return JSON.parse(
+    readFileSync(join(packageDir, "..", "..", "capture", "wechat", fileName), "utf8")
+  );
+}
+
+function firstWechatDetailMediaFromCapture(fileName, predicate) {
+  const raw = readWechatCapture(fileName);
+  const mediaItems = raw.data?.object?.objectDesc?.media;
+  assert.ok(Array.isArray(mediaItems), `expected detail media array in ${fileName}`);
+  const media = mediaItems.find(predicate);
+  assert.ok(media, `expected matching detail media in ${fileName}`);
+  return media;
+}
+
+function appendWechatDecodeKey(url, decodeKey) {
+  return `${url}${url.includes("?") ? "&" : "?"}k=${encodeURIComponent(decodeKey)}`;
+}
+
+function makeBilibiliDownloadManifest() {
+  return {
+    platform: "bilibili",
+    title: "测试 Bilibili 视频",
+    bvid: "BV1test",
+    aid: "123",
+    cid: "456",
+    page: 1,
+    selected_quality: "1080P 高清",
+    expires_at: null,
+    headers: {
+      Referer: "https://www.bilibili.com/",
+      "User-Agent": "SocialDataX-Test-UA",
+    },
+    download_manifest: {
+      mode: "dash",
+      tracks: [
+        {
+          type: "video",
+          url: "http://127.0.0.1/video.m4s",
+          codec: "avc1.640028",
+          quality: "1080P 高清",
+          width: 1920,
+          height: 1080,
+          ext: "m4s",
+          bandwidth: 1800000,
+        },
+        {
+          type: "audio",
+          url: "http://127.0.0.1/audio.m4s",
+          codec: "mp4a.40.2",
+          quality: "",
+          width: null,
+          height: null,
+          ext: "m4s",
+          bandwidth: 128000,
+        },
+      ],
+      merge: {
+        container: "mp4",
+        strategy: "ffmpeg_copy",
+      },
+    },
+  };
+}
+
+function mp4Box(type, payload) {
+  const box = Buffer.alloc(8 + payload.length);
+  box.writeUInt32BE(box.length, 0);
+  box.write(type, 4, 4, "ascii");
+  payload.copy(box, 8);
+  return box;
+}
+
+function makeWechatVvcMp4WithOneByteNalLengthMetadata() {
+  const vvcConfigPayload = Buffer.from([0x01, 0x00, 0x00, 0x37, 0x01, 0x02]);
+  const visualSampleEntryHeader = Buffer.alloc(78);
+  return Buffer.concat([
+    mp4Box("ftyp", Buffer.from("isom0000", "ascii")),
+    mp4Box(
+      "moov",
+      mp4Box(
+        "trak",
+        mp4Box(
+          "mdia",
+          mp4Box(
+            "minf",
+            mp4Box(
+              "stbl",
+              mp4Box(
+                "stsd",
+                Buffer.concat([
+                  Buffer.from([0x00, 0x00, 0x00, 0x00]),
+                  Buffer.from([0x00, 0x00, 0x00, 0x01]),
+                  mp4Box(
+                    "vvc1",
+                    Buffer.concat([
+                      visualSampleEntryHeader,
+                      mp4Box("vvcC", vvcConfigPayload),
+                    ])
+                  ),
+                ])
+              )
+            )
+          )
+        )
+      )
+    ),
+    mp4Box("mdat", Buffer.from([0x00, 0x00, 0x00, 0xf6, 0xaa, 0xbb])),
+  ]);
+}
+
 async function runCliWithMockMcp(args, extraEnv = {}, structuredContentForToolCall) {
   const toolCalls = [];
   const toolCallAuthorizationHeaders = [];
+  const toolCallSourceClientHeaders = [];
+  const toolCallSourcePlatformHeaders = [];
+  const toolCallSourceSkillHeaders = [];
   const server = createServer((request, response) => {
     if (request.method === "GET") {
       response.writeHead(405).end();
@@ -127,6 +336,15 @@ async function runCliWithMockMcp(args, extraEnv = {}, structuredContentForToolCa
       }
       if (payload.method === "tools/call") {
         toolCallAuthorizationHeaders.push(request.headers.authorization ?? null);
+        toolCallSourceClientHeaders.push(
+          request.headers["x-socialdatax-client"] ?? null
+        );
+        toolCallSourcePlatformHeaders.push(
+          request.headers["x-socialdatax-source-platform"] ?? null
+        );
+        toolCallSourceSkillHeaders.push(
+          request.headers["x-socialdatax-source-skill"] ?? null
+        );
         toolCalls.push(payload.params);
         const structuredContent = structuredContentForToolCall
           ? structuredContentForToolCall(payload.params, toolCalls.length)
@@ -167,11 +385,20 @@ async function runCliWithMockMcp(args, extraEnv = {}, structuredContentForToolCa
       SOCIAL_MEDIA_XHS_MCP_UPSTREAM_URL: `http://127.0.0.1:${address.port}/mcp`,
       SOCIAL_MEDIA_DOUYIN_MCP_UPSTREAM_URL: `http://127.0.0.1:${address.port}/mcp`,
       SOCIAL_MEDIA_KUAISHOU_MCP_UPSTREAM_URL: `http://127.0.0.1:${address.port}/mcp`,
+      SOCIAL_MEDIA_BILIBILI_MCP_UPSTREAM_URL: `http://127.0.0.1:${address.port}/mcp`,
       SOCIAL_MEDIA_WEIBO_MCP_UPSTREAM_URL: `http://127.0.0.1:${address.port}/mcp`,
       SOCIAL_MEDIA_WECHAT_MCP_UPSTREAM_URL: `http://127.0.0.1:${address.port}/mcp`,
+      SOCIALDATAX_SENSITIVE_CHECK_MCP_UPSTREAM_URL: `http://127.0.0.1:${address.port}/mcp`,
       ...extraEnv,
     });
-    return { result, toolCalls, toolCallAuthorizationHeaders };
+    return {
+      result,
+      toolCalls,
+      toolCallAuthorizationHeaders,
+      toolCallSourceClientHeaders,
+      toolCallSourcePlatformHeaders,
+      toolCallSourceSkillHeaders,
+    };
   } finally {
     await new Promise((resolve, reject) => {
       server.close((error) => (error ? reject(error) : resolve()));
@@ -187,6 +414,10 @@ function assertCliError(result, expectedMessage) {
 
 function escapeRegExp(text) {
   return text.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
+function unixSecondsDaysAgo(days) {
+  return Math.floor(Date.now() / 1000) - days * 86400;
 }
 
 function assertOpenClawPackageMetadataMatchesManifest({
@@ -282,6 +513,28 @@ test("public package version metadata stays aligned", () => {
   );
 });
 
+test("publish script reads npm auth token from user npmrc", async () => {
+  const tempDir = mkdtempSync(join(tmpdir(), "sdx-npm-token-config-"));
+  const npmrcPath = join(tempDir, ".npmrc");
+  writeFileSync(
+    npmrcPath,
+    "//registry.npmjs.org/:_authToken=fake-publish-token\nregistry=https://registry.npmjs.org/\n"
+  );
+
+  try {
+    const token = await readPublishToken({
+      env: {
+        ...process.env,
+        NPM_TOKEN: "",
+        NPM_CONFIG_USERCONFIG: npmrcPath,
+      },
+    });
+    assert.equal(token, "fake-publish-token");
+  } finally {
+    rmSync(tempDir, { recursive: true, force: true });
+  }
+});
+
 test("brand migration preserves published package ids and endpoint ids", () => {
   const packageJson = JSON.parse(
     readFileSync(join(packageDir, "package.json"), "utf8")
@@ -358,6 +611,9 @@ test("public package discovery terms include transcript workflows", () => {
     "speech-to-text",
     "transcript",
     "video-transcript",
+    "bilibili",
+    "bilibili-data",
+    "bilibili-download",
   ]) {
     assert.ok(
       packageJson.keywords.includes(keyword),
@@ -367,6 +623,16 @@ test("public package discovery terms include transcript workflows", () => {
   assert.match(readme, /media transcript skill/);
   assert.match(readme, /speech-to-text transcript skill/);
   assert.match(readme, /口播转文字 skill/);
+  assert.match(readme, /xhs transcript --url "<note_url_or_share_text>"/);
+  assert.match(readme, /xhs transcript --note-id "<note_id>"/);
+  assert.match(readme, /xhs transcript --job-id "<job_id>"/);
+  assert.match(readme, /xhs download-media --url "<xhs_media_url>" --output-dir \.\/downloads/);
+  assert.match(readme, /XHS local media download/);
+  assert.match(readme, /Transcript commands submit a bounded video speech-to-text job/);
+  assert.match(readme, /the CLI automatically continues matching get-job requests for up to 1200 seconds by default/);
+  assert.match(readme, /--max-wait-seconds <seconds>/);
+  assert.doesNotMatch(readme, /--no-wait/);
+  assert.match(readme, /Direct CLI transcript commands wait and poll the same job by default/);
 });
 
 test("direct CLI keeps legacy shared API key env as runtime fallback", async () => {
@@ -407,6 +673,1583 @@ test("direct CLI prefers SocialDataX API key over legacy fallback env", async ()
   assert.equal(toolCallAuthorizationHeaders[0], "Bearer primary-test-key");
 });
 
+test("xhs download-media validates required local options", () => {
+  assertCliError(
+    runCli(["xhs", "download-media"]),
+    "Missing --url for xhs download-media\\."
+  );
+  assertCliError(
+    runCli([
+      "xhs",
+      "download-media",
+      "--url",
+      "https://sns-img.example.test/media.jpg",
+    ]),
+    "Missing --output or --output-dir for xhs download-media\\."
+  );
+  assertCliError(
+    runCli([
+      "xhs",
+      "download-media",
+      "--url",
+      "https://sns-img.example.test/media.jpg",
+      "--output",
+      "media.jpg",
+      "--output-dir",
+      ".",
+    ]),
+    "Use only one of --output or --output-dir for xhs download-media\\."
+  );
+  assertCliError(
+    runCli([
+      "xhs",
+      "download-media",
+      "--url",
+      "https://sns-img.example.test/media.jpg",
+      "--output",
+      "media.jpg",
+      "--pretty=false",
+    ]),
+    "--pretty does not take a value\\."
+  );
+});
+
+test("xhs download-media CLI saves a media URL locally without API key", async () => {
+  const tempDir = mkdtempSync(join(tmpdir(), "sdx-xhs-cli-download-"));
+  const outputDir = join(tempDir, "downloads");
+  const body = Buffer.from("xhs-cli-media-body");
+  const mediaRequests = [];
+  const mediaServer = createServer((request, response) => {
+    mediaRequests.push({
+      url: request.url,
+      referer: request.headers.referer,
+      userAgent: request.headers["user-agent"],
+      acceptEncoding: request.headers["accept-encoding"],
+      range: request.headers.range,
+    });
+    response.writeHead(200, {
+      "content-type": "image/jpeg",
+      "content-length": String(body.length),
+    });
+    response.end(body);
+  });
+
+  await listenHttpServer(mediaServer);
+
+  try {
+    const result = await runCliWithEnvAsync(
+      [
+        "xhs",
+        "download-media",
+        "--url",
+        httpServerUrl(mediaServer, "/media.jpg?imageView2/2/w/1080"),
+        "--output-dir",
+        outputDir,
+        "--pretty",
+      ],
+      {
+        SOCIALDATAX_API_KEY: "",
+        SOCIAL_MEDIA_MCP_API_KEY: "",
+      }
+    );
+
+    assert.equal(result.status, 0, result.stderr);
+    assert.equal(result.stderr, "");
+    const payload = JSON.parse(result.stdout);
+    assert.equal(payload.platform, "xhs");
+    assert.equal(payload.action, "download-media");
+    assert.equal(payload.status, "downloaded");
+    assert.equal(payload.output_path, join(outputDir, "media.jpg"));
+    assert.equal(payload.output_bytes, body.length);
+    assert.equal(payload.resumed, false);
+    assert.equal(payload.content_type, "image/jpeg");
+    assert.equal(readFileSync(payload.output_path, "utf8"), "xhs-cli-media-body");
+    assert.equal(existsSync(`${payload.output_path}.part`), false);
+    assert.deepEqual(mediaRequests, [
+      {
+        url: "/media.jpg?imageView2/2/w/1080",
+        referer: "https://www.xiaohongshu.com/",
+        userAgent: "Mozilla/5.0 (compatible; SocialDataX/1.0; +https://socialdatax.com)",
+        acceptEncoding: "identity",
+        range: undefined,
+      },
+    ]);
+  } finally {
+    await closeHttpServer(mediaServer);
+    rmSync(tempDir, { recursive: true, force: true });
+  }
+});
+
+test("xhs download-media skips an existing output file", async () => {
+  const tempDir = mkdtempSync(join(tmpdir(), "sdx-xhs-existing-output-"));
+  const outputPath = join(tempDir, "media.mp4");
+  writeFileSync(outputPath, "existing-media");
+
+  try {
+    const result = await downloadXhsMediaFromUrl(
+      "https://sns-video.example.test/media.mp4",
+      { output: outputPath },
+      {
+        fetchMedia: async () => {
+          throw new Error("fetch should not be called for existing output");
+        },
+      }
+    );
+
+    assert.deepEqual(result, {
+      platform: "xhs",
+      action: "download-media",
+      status: "skipped_existing",
+      url: "https://sns-video.example.test/media.mp4",
+      output_path: outputPath,
+      output_bytes: Buffer.byteLength("existing-media"),
+    });
+    assert.equal(readFileSync(outputPath, "utf8"), "existing-media");
+  } finally {
+    rmSync(tempDir, { recursive: true, force: true });
+  }
+});
+
+test("xhs download-media does not overwrite an output file created while downloading", async () => {
+  const tempDir = mkdtempSync(join(tmpdir(), "sdx-xhs-raced-output-"));
+  const outputPath = join(tempDir, "media.jpg");
+
+  try {
+    await assert.rejects(
+      downloadXhsMediaFromUrl(
+        "https://sns-img.example.test/media.jpg",
+        { output: outputPath },
+        {
+          fetchMedia: async () => ({
+            ok: true,
+            status: 200,
+            headers: {
+              get(name) {
+                const normalized = String(name).toLowerCase();
+                if (normalized === "content-length") {
+                  return "9";
+                }
+                if (normalized === "content-type") {
+                  return "image/jpeg";
+                }
+                return null;
+              },
+            },
+            body: (async function* mediaBody() {
+              yield Buffer.from("new-");
+              writeFileSync(outputPath, "existing-during-download");
+              yield Buffer.from("media");
+            })(),
+          }),
+          retryDelayMs: 0,
+        }
+      ),
+      /XHS media download output file already exists\./
+    );
+
+    assert.equal(readFileSync(outputPath, "utf8"), "existing-during-download");
+    assert.equal(readFileSync(`${outputPath}.part`, "utf8"), "new-media");
+  } finally {
+    rmSync(tempDir, { recursive: true, force: true });
+  }
+});
+
+test("xhs download-media infers output-dir extensions from response content type", async () => {
+  const tempDir = mkdtempSync(join(tmpdir(), "sdx-xhs-content-type-ext-"));
+  const cases = [
+    {
+      url: "https://sns-img.example.test/xhs-photo?imageView2/2/w/1080",
+      contentType: "image/jpeg; charset=binary",
+      body: "jpeg-body",
+      expectedFileName: "xhs-photo.jpg",
+    },
+    {
+      url: "https://sns-img.example.test/xhs-heif?imageView2/2/w/1440/format/heif",
+      contentType: "image/heif",
+      body: "heif-body",
+      expectedFileName: "xhs-heif.heif",
+    },
+    {
+      url: "https://sns-img.example.test/xhs-query-heif?imageView2/2/w/1440/format/heif",
+      contentType: null,
+      body: "query-heif-body",
+      expectedFileName: "xhs-query-heif.heif",
+    },
+    {
+      url: "https://sns-video.example.test/xhs-video",
+      contentType: "video/mp4",
+      body: "mp4-body",
+      expectedFileName: "xhs-video.mp4",
+    },
+  ];
+
+  try {
+    for (const testCase of cases) {
+      const body = Buffer.from(testCase.body);
+      const result = await downloadXhsMediaFromUrl(
+        testCase.url,
+        { outputDir: tempDir },
+        {
+          fetchMedia: async () => ({
+            ok: true,
+            status: 200,
+            headers: {
+              get(name) {
+                const normalized = String(name).toLowerCase();
+                if (normalized === "content-length") {
+                  return String(body.length);
+                }
+                if (normalized === "content-type") {
+                  return testCase.contentType;
+                }
+                return null;
+              },
+            },
+            body: (async function* mediaBody() {
+              yield body;
+            })(),
+          }),
+          now: () => new Date("2026-07-17T12:00:00Z"),
+        }
+      );
+
+      const outputPath = join(tempDir, testCase.expectedFileName);
+      assert.equal(result.output_path, outputPath);
+      assert.equal(result.output_bytes, body.length);
+      assert.equal(readFileSync(outputPath, "utf8"), testCase.body);
+      assert.equal(existsSync(`${outputPath}.part`), false);
+    }
+  } finally {
+    rmSync(tempDir, { recursive: true, force: true });
+  }
+});
+
+test("xhs download-media skips an existing output-dir file after content type inference", async () => {
+  const tempDir = mkdtempSync(join(tmpdir(), "sdx-xhs-inferred-existing-"));
+  const outputPath = join(tempDir, "xhs-photo.jpg");
+  writeFileSync(outputPath, "existing-photo");
+  let bodyRead = false;
+
+  try {
+    const result = await downloadXhsMediaFromUrl(
+      "https://sns-img.example.test/xhs-photo?imageView2/2/w/1080",
+      { outputDir: tempDir },
+      {
+        fetchMedia: async () => ({
+          ok: true,
+          status: 200,
+          headers: {
+            get(name) {
+              const normalized = String(name).toLowerCase();
+              if (normalized === "content-length") {
+                return "9";
+              }
+              if (normalized === "content-type") {
+                return "image/jpeg";
+              }
+              return null;
+            },
+          },
+          body: (async function* mediaBody() {
+            bodyRead = true;
+            yield Buffer.from("new-photo");
+          })(),
+        }),
+      }
+    );
+
+    assert.deepEqual(result, {
+      platform: "xhs",
+      action: "download-media",
+      status: "skipped_existing",
+      url: "https://sns-img.example.test/xhs-photo?imageView2/2/w/1080",
+      output_path: outputPath,
+      output_bytes: Buffer.byteLength("existing-photo"),
+    });
+    assert.equal(bodyRead, false);
+    assert.equal(readFileSync(outputPath, "utf8"), "existing-photo");
+    assert.equal(existsSync(join(tempDir, "xhs-photo.bin.part")), false);
+  } finally {
+    rmSync(tempDir, { recursive: true, force: true });
+  }
+});
+
+test("xhs download-media falls back when final hard link is unavailable", async () => {
+  const tempDir = mkdtempSync(join(tmpdir(), "sdx-xhs-link-fallback-"));
+  const outputPath = join(tempDir, "media.jpg");
+  const body = Buffer.from("link-fallback-media");
+  let linkAttempts = 0;
+
+  try {
+    const result = await downloadXhsMediaFromUrl(
+      "https://sns-img.example.test/media.jpg",
+      { output: outputPath },
+      {
+        fetchMedia: async () => ({
+          ok: true,
+          status: 200,
+          headers: {
+            get(name) {
+              const normalized = String(name).toLowerCase();
+              if (normalized === "content-length") {
+                return String(body.length);
+              }
+              if (normalized === "content-type") {
+                return "image/jpeg";
+              }
+              return null;
+            },
+          },
+          body: (async function* mediaBody() {
+            yield body;
+          })(),
+        }),
+        linkFile: async () => {
+          linkAttempts += 1;
+          const error = new Error("hard link unavailable");
+          error.code = "EPERM";
+          throw error;
+        },
+      }
+    );
+
+    assert.equal(linkAttempts, 1);
+    assert.equal(result.status, "downloaded");
+    assert.equal(result.output_path, outputPath);
+    assert.equal(result.output_bytes, body.length);
+    assert.equal(readFileSync(outputPath, "utf8"), "link-fallback-media");
+    assert.equal(existsSync(`${outputPath}.part`), false);
+  } finally {
+    rmSync(tempDir, { recursive: true, force: true });
+  }
+});
+
+test("xhs download-media skips existing inferred output after a complete part range", async () => {
+  const tempDir = mkdtempSync(join(tmpdir(), "sdx-xhs-416-existing-"));
+  const outputPath = join(tempDir, "xhs-photo.jpg");
+  const partPath = join(tempDir, "xhs-photo.bin.part");
+  writeFileSync(outputPath, "existing-photo");
+  writeFileSync(partPath, "part-body");
+
+  try {
+    const result = await downloadXhsMediaFromUrl(
+      "https://sns-img.example.test/xhs-photo?imageView2/2/w/1080",
+      { outputDir: tempDir },
+      {
+        fetchMedia: async () => ({
+          ok: false,
+          status: 416,
+          headers: {
+            get(name) {
+              const normalized = String(name).toLowerCase();
+              if (normalized === "content-range") {
+                return "bytes */9";
+              }
+              if (normalized === "content-type") {
+                return "image/jpeg";
+              }
+              return null;
+            },
+          },
+          body: null,
+        }),
+      }
+    );
+
+    assert.deepEqual(result, {
+      platform: "xhs",
+      action: "download-media",
+      status: "skipped_existing",
+      url: "https://sns-img.example.test/xhs-photo?imageView2/2/w/1080",
+      output_path: outputPath,
+      output_bytes: Buffer.byteLength("existing-photo"),
+    });
+    assert.equal(readFileSync(outputPath, "utf8"), "existing-photo");
+    assert.equal(readFileSync(partPath, "utf8"), "part-body");
+  } finally {
+    rmSync(tempDir, { recursive: true, force: true });
+  }
+});
+
+test("xhs download-media does not finalize missing part files from 416 responses", async () => {
+  const tempDir = mkdtempSync(join(tmpdir(), "sdx-xhs-416-missing-part-"));
+  const outputPath = join(tempDir, "media.jpg");
+  let attempts = 0;
+
+  try {
+    await assert.rejects(
+      downloadXhsMediaFromUrl(
+        "https://sns-img.example.test/media.jpg",
+        { output: outputPath },
+        {
+          fetchMedia: async () => {
+            attempts += 1;
+            return {
+              ok: false,
+              status: 416,
+              headers: {
+                get(name) {
+                  return String(name).toLowerCase() === "content-range"
+                    ? "bytes */0"
+                    : null;
+                },
+              },
+              body: null,
+            };
+          },
+          retryDelayMs: 0,
+        }
+      ),
+      /XHS media download failed before completion\./
+    );
+
+    assert.equal(attempts, 10);
+    assert.equal(existsSync(outputPath), false);
+    assert.equal(existsSync(`${outputPath}.part`), false);
+  } finally {
+    rmSync(tempDir, { recursive: true, force: true });
+  }
+});
+
+test("xhs download-media rejects partial 206 responses without content-range", async () => {
+  const tempDir = mkdtempSync(join(tmpdir(), "sdx-xhs-206-without-range-"));
+  const outputPath = join(tempDir, "media.jpg");
+  let attempts = 0;
+  let bodyRead = false;
+
+  try {
+    await assert.rejects(
+      downloadXhsMediaFromUrl(
+        "https://sns-img.example.test/media.jpg",
+        { output: outputPath },
+        {
+          fetchMedia: async () => {
+            attempts += 1;
+            return {
+              ok: true,
+              status: 206,
+              headers: {
+                get(name) {
+                  const normalized = String(name).toLowerCase();
+                  if (normalized === "content-length") {
+                    return "5";
+                  }
+                  if (normalized === "content-type") {
+                    return "image/jpeg";
+                  }
+                  return null;
+                },
+              },
+              body: (async function* partialBody() {
+                bodyRead = true;
+                yield Buffer.from("abcde");
+              })(),
+            };
+          },
+          retryDelayMs: 0,
+        }
+      ),
+      /XHS media download failed before completion\./
+    );
+
+    assert.equal(attempts, 10);
+    assert.equal(bodyRead, false);
+    assert.equal(existsSync(outputPath), false);
+    assert.equal(existsSync(`${outputPath}.part`), false);
+  } finally {
+    rmSync(tempDir, { recursive: true, force: true });
+  }
+});
+
+test("xhs download-media rejects unusable partial content ranges", async () => {
+  const cases = [
+    {
+      contentRange: "bytes 0-9/5",
+      contentLength: "10",
+    },
+    {
+      contentRange: "bytes 0-9/*",
+      contentLength: "10",
+    },
+    {
+      contentRange: "bytes 0-9/10",
+      contentLength: "5",
+    },
+  ];
+
+  for (const testCase of cases) {
+    const tempDir = mkdtempSync(join(tmpdir(), "sdx-xhs-invalid-range-"));
+    const outputPath = join(tempDir, "media.jpg");
+    let attempts = 0;
+    let bodyRead = false;
+
+    try {
+      await assert.rejects(
+        downloadXhsMediaFromUrl(
+          "https://sns-img.example.test/media.jpg",
+          { output: outputPath },
+          {
+            fetchMedia: async () => {
+              attempts += 1;
+              return {
+                ok: true,
+                status: 206,
+                headers: {
+                  get(name) {
+                    const normalized = String(name).toLowerCase();
+                    if (normalized === "content-range") {
+                      return testCase.contentRange;
+                    }
+                    if (normalized === "content-length") {
+                      return testCase.contentLength;
+                    }
+                    if (normalized === "content-type") {
+                      return "image/jpeg";
+                    }
+                    return null;
+                  },
+                },
+                body: (async function* partialBody() {
+                  bodyRead = true;
+                  yield Buffer.from("0123456789");
+                })(),
+              };
+            },
+            retryDelayMs: 0,
+          }
+        ),
+        /XHS media download failed before completion\./
+      );
+
+      assert.equal(attempts, 10, testCase.contentRange);
+      assert.equal(bodyRead, false, testCase.contentRange);
+      assert.equal(existsSync(outputPath), false, testCase.contentRange);
+      assert.equal(existsSync(`${outputPath}.part`), false, testCase.contentRange);
+    } finally {
+      rmSync(tempDir, { recursive: true, force: true });
+    }
+  }
+});
+
+test("xhs download-media restarts stale part after mismatched content-range", async () => {
+  const tempDir = mkdtempSync(join(tmpdir(), "sdx-xhs-stale-range-"));
+  const outputPath = join(tempDir, "media.mp4");
+  writeFileSync(`${outputPath}.part`, "hello");
+  const requests = [];
+  let staleBodyRead = false;
+
+  try {
+    const result = await downloadXhsMediaFromUrl(
+      "https://sns-video.example.test/media.mp4",
+      { output: outputPath },
+      {
+        fetchMedia: async (_url, request) => {
+          requests.push(request.headers.Range);
+          if (requests.length === 1) {
+            return {
+              ok: true,
+              status: 206,
+              headers: {
+                get(name) {
+                  const normalized = String(name).toLowerCase();
+                  if (normalized === "content-range") {
+                    return "bytes 0-4/11";
+                  }
+                  if (normalized === "content-length") {
+                    return "5";
+                  }
+                  if (normalized === "content-type") {
+                    return "video/mp4";
+                  }
+                  return null;
+                },
+              },
+              body: (async function* staleBody() {
+                staleBodyRead = true;
+                yield Buffer.from("hello");
+              })(),
+            };
+          }
+          return {
+            ok: true,
+            status: 200,
+            headers: {
+              get(name) {
+                const normalized = String(name).toLowerCase();
+                if (normalized === "content-length") {
+                  return "11";
+                }
+                if (normalized === "content-type") {
+                  return "video/mp4";
+                }
+                return null;
+              },
+            },
+            body: (async function* mediaBody() {
+              yield Buffer.from("hello world");
+            })(),
+          };
+        },
+        retryDelayMs: 0,
+      }
+    );
+
+    assert.equal(result.status, "downloaded");
+    assert.equal(result.output_path, outputPath);
+    assert.equal(result.output_bytes, 11);
+    assert.equal(result.resumed, false);
+    assert.deepEqual(requests, ["bytes=5-", undefined]);
+    assert.equal(staleBodyRead, false);
+    assert.equal(readFileSync(outputPath, "utf8"), "hello world");
+    assert.equal(existsSync(`${outputPath}.part`), false);
+  } finally {
+    rmSync(tempDir, { recursive: true, force: true });
+  }
+});
+
+test("xhs download-media retries bodies longer than declared size", async () => {
+  const tempDir = mkdtempSync(join(tmpdir(), "sdx-xhs-long-body-"));
+  const outputPath = join(tempDir, "media.jpg");
+  let attempts = 0;
+
+  try {
+    await assert.rejects(
+      downloadXhsMediaFromUrl(
+        "https://sns-img.example.test/media.jpg",
+        { output: outputPath },
+        {
+          fetchMedia: async () => {
+            attempts += 1;
+            return {
+              ok: true,
+              status: 200,
+              headers: {
+                get(name) {
+                  const normalized = String(name).toLowerCase();
+                  if (normalized === "content-length") {
+                    return "5";
+                  }
+                  if (normalized === "content-type") {
+                    return "image/jpeg";
+                  }
+                  return null;
+                },
+              },
+              body: (async function* longBody() {
+                yield Buffer.from("too-long");
+              })(),
+            };
+          },
+          retryDelayMs: 0,
+        }
+      ),
+      /XHS media download failed before completion\./
+    );
+
+    assert.equal(attempts, 10);
+    assert.equal(existsSync(`${outputPath}.part`), false);
+    assert.equal(existsSync(outputPath), false);
+  } finally {
+    rmSync(tempDir, { recursive: true, force: true });
+  }
+});
+
+test("xhs download-media rejects bodies longer than partial content range", async () => {
+  const tempDir = mkdtempSync(join(tmpdir(), "sdx-xhs-long-range-body-"));
+  const outputPath = join(tempDir, "media.jpg");
+  let attempts = 0;
+
+  try {
+    await assert.rejects(
+      downloadXhsMediaFromUrl(
+        "https://sns-img.example.test/media.jpg",
+        { output: outputPath },
+        {
+          fetchMedia: async () => {
+            attempts += 1;
+            return {
+              ok: true,
+              status: 206,
+              headers: {
+                get(name) {
+                  const normalized = String(name).toLowerCase();
+                  if (normalized === "content-range") {
+                    return "bytes 0-4/10";
+                  }
+                  if (normalized === "content-type") {
+                    return "image/jpeg";
+                  }
+                  return null;
+                },
+              },
+              body: (async function* longRangeBody() {
+                yield Buffer.from("0123456789");
+              })(),
+            };
+          },
+          retryDelayMs: 0,
+        }
+      ),
+      /XHS media download failed before completion\./
+    );
+
+    assert.equal(attempts, 10);
+    assert.equal(existsSync(outputPath), false);
+    assert.equal(existsSync(`${outputPath}.part`), false);
+  } finally {
+    rmSync(tempDir, { recursive: true, force: true });
+  }
+});
+
+test("xhs download-media resumes from a part file with valid content-range", async () => {
+  const tempDir = mkdtempSync(join(tmpdir(), "sdx-xhs-resume-"));
+  const outputPath = join(tempDir, "media.mp4");
+  writeFileSync(`${outputPath}.part`, "hello");
+  const requests = [];
+  const mediaServer = createServer((request, response) => {
+    requests.push({
+      range: request.headers.range,
+      acceptEncoding: request.headers["accept-encoding"],
+    });
+    response.writeHead(206, {
+      "content-type": "video/mp4",
+      "content-range": "bytes 5-10/11",
+      "content-length": "6",
+    });
+    response.end(" world");
+  });
+
+  await listenHttpServer(mediaServer);
+
+  try {
+    const result = await downloadXhsMediaFromUrl(
+      httpServerUrl(mediaServer, "/video.mp4"),
+      { output: outputPath }
+    );
+
+    assert.equal(result.status, "downloaded");
+    assert.equal(result.output_path, outputPath);
+    assert.equal(result.output_bytes, 11);
+    assert.equal(result.resumed, true);
+    assert.equal(readFileSync(outputPath, "utf8"), "hello world");
+    assert.equal(existsSync(`${outputPath}.part`), false);
+    assert.deepEqual(requests, [
+      {
+        range: "bytes=5-",
+        acceptEncoding: "identity",
+      },
+    ]);
+  } finally {
+    await closeHttpServer(mediaServer);
+    rmSync(tempDir, { recursive: true, force: true });
+  }
+});
+
+test("xhs download-media restarts part download when server ignores range", async () => {
+  const tempDir = mkdtempSync(join(tmpdir(), "sdx-xhs-range-ignored-"));
+  const outputPath = join(tempDir, "media.jpg");
+  writeFileSync(`${outputPath}.part`, "stale-part");
+  const requests = [];
+  const mediaServer = createServer((request, response) => {
+    requests.push(request.headers.range);
+    response.writeHead(200, {
+      "content-type": "image/jpeg",
+      "content-length": "9",
+    });
+    response.end("new-media");
+  });
+
+  await listenHttpServer(mediaServer);
+
+  try {
+    const result = await downloadXhsMediaFromUrl(
+      httpServerUrl(mediaServer, "/media.jpg"),
+      { output: outputPath }
+    );
+
+    assert.equal(result.status, "downloaded");
+    assert.equal(result.resumed, false);
+    assert.equal(readFileSync(outputPath, "utf8"), "new-media");
+    assert.deepEqual(requests, ["bytes=10-"]);
+  } finally {
+    await closeHttpServer(mediaServer);
+    rmSync(tempDir, { recursive: true, force: true });
+  }
+});
+
+test("xhs download-media retries short bodies and preserves part file on failure", async () => {
+  const tempDir = mkdtempSync(join(tmpdir(), "sdx-xhs-short-body-"));
+  const outputPath = join(tempDir, "media.jpg");
+  let attempts = 0;
+
+  try {
+    await assert.rejects(
+      downloadXhsMediaFromUrl(
+        "https://sns-img.example.test/media.jpg",
+        { output: outputPath },
+        {
+          fetchMedia: async () => {
+            attempts += 1;
+            return {
+              ok: true,
+              status: 200,
+              headers: {
+                get(name) {
+                  const normalized = String(name).toLowerCase();
+                  if (normalized === "content-length") {
+                    return "10";
+                  }
+                  if (normalized === "content-type") {
+                    return "image/jpeg";
+                  }
+                  return null;
+                },
+              },
+              body: (async function* shortBody() {
+                yield Buffer.from("short");
+              })(),
+            };
+          },
+          retryDelayMs: 0,
+        }
+      ),
+      /XHS media download failed before completion\./
+    );
+
+    assert.equal(attempts, 10);
+    assert.equal(readFileSync(`${outputPath}.part`, "utf8"), "short");
+    assert.equal(existsSync(outputPath), false);
+  } finally {
+    rmSync(tempDir, { recursive: true, force: true });
+  }
+});
+
+test("xhs download-media retries transient network errors", async () => {
+  const tempDir = mkdtempSync(join(tmpdir(), "sdx-xhs-network-retry-"));
+  const outputPath = join(tempDir, "media.jpg");
+  let attempts = 0;
+
+  try {
+    const result = await downloadXhsMediaFromUrl(
+      "https://sns-img.example.test/media.jpg",
+      { output: outputPath },
+      {
+        fetchMedia: async () => {
+          attempts += 1;
+          if (attempts < 10) {
+            throw new TypeError("fetch failed");
+          }
+          return {
+            ok: true,
+            status: 200,
+            headers: {
+              get(name) {
+                const normalized = String(name).toLowerCase();
+                if (normalized === "content-length") {
+                  return "13";
+                }
+                if (normalized === "content-type") {
+                  return "image/jpeg";
+                }
+                return null;
+              },
+            },
+            body: (async function* mediaBody() {
+              yield Buffer.from("retried-media");
+            })(),
+          };
+        },
+        retryDelayMs: 0,
+      }
+    );
+
+    assert.equal(attempts, 10);
+    assert.equal(result.status, "downloaded");
+    assert.equal(readFileSync(outputPath, "utf8"), "retried-media");
+  } finally {
+    rmSync(tempDir, { recursive: true, force: true });
+  }
+});
+
+test("xhs download-media reports expired or unavailable links", async () => {
+  const tempDir = mkdtempSync(join(tmpdir(), "sdx-xhs-expired-link-"));
+  const outputPath = join(tempDir, "media.jpg");
+
+  try {
+    await assert.rejects(
+      downloadXhsMediaFromUrl(
+        "https://sns-img.example.test/media.jpg",
+        { output: outputPath },
+        {
+          fetchMedia: async () => ({
+            ok: false,
+            status: 403,
+            headers: {
+              get() {
+                return null;
+              },
+            },
+            body: null,
+          }),
+          retryDelayMs: 0,
+        }
+      ),
+      /XHS media link is unavailable or expired\. Get a fresh media URL from the XHS detail result and retry\./
+    );
+    assert.equal(existsSync(outputPath), false);
+  } finally {
+    rmSync(tempDir, { recursive: true, force: true });
+  }
+});
+
+test("bilibili download saves dash tracks and merges them with ffmpeg", async () => {
+  const tempDir = mkdtempSync(join(tmpdir(), "sdx-bilibili-download-"));
+  const outputDir = join(tempDir, "downloads");
+  const outputPath = join(outputDir, "bilibili-output.mp4");
+  const ffmpegArgsPath = join(tempDir, "ffmpeg-args.json");
+  const ffmpegPath = join(tempDir, "fake-ffmpeg.js");
+  const videoBody = Buffer.from("video-track-body");
+  const audioBody = Buffer.from("audio-track-body");
+  const mediaRequests = [];
+  const mediaServer = createServer((request, response) => {
+    mediaRequests.push({
+      url: request.url,
+      referer: request.headers.referer,
+      userAgent: request.headers["user-agent"],
+      cookie: request.headers.cookie,
+      authorization: request.headers.authorization,
+      xInternalToken: request.headers["x-internal-token"],
+    });
+    if (request.url === "/video.m4s") {
+      response.writeHead(200, {
+        "content-type": "video/mp4",
+        "content-length": String(videoBody.length),
+      });
+      response.end(videoBody);
+      return;
+    }
+    if (request.url === "/audio.m4s") {
+      response.writeHead(200, {
+        "content-type": "video/mp4",
+        "content-length": String(audioBody.length),
+      });
+      response.end(audioBody);
+      return;
+    }
+    response.writeHead(404).end();
+  });
+
+  writeFileSync(
+    ffmpegPath,
+    [
+      "#!/usr/bin/env node",
+      "const fs = require('node:fs');",
+      "if (process.argv[2] === '-version') { process.exit(0); }",
+      `fs.writeFileSync(${JSON.stringify(ffmpegArgsPath)}, JSON.stringify(process.argv.slice(2)));`,
+      "fs.writeFileSync(process.argv[process.argv.length - 1], 'merged-output');",
+    ].join("\n")
+  );
+  chmodSync(ffmpegPath, 0o755);
+
+  await new Promise((resolve, reject) => {
+    mediaServer.once("error", reject);
+    mediaServer.listen(0, "127.0.0.1", () => {
+      mediaServer.off("error", reject);
+      resolve();
+    });
+  });
+
+  try {
+    const address = mediaServer.address();
+    assert.notEqual(address, null);
+    assert.notEqual(typeof address, "string");
+    const mediaBaseUrl = `http://127.0.0.1:${address.port}`;
+
+    const { result, toolCalls } = await runCliWithMockMcp(
+      [
+        "bilibili",
+        "download",
+        "--url",
+        "https://www.bilibili.com/video/BV1test",
+        "--output",
+        outputPath,
+        "--ffmpeg-path",
+        ffmpegPath,
+        "--keep-tracks",
+        "--pretty",
+      ],
+      {},
+      () => ({
+        platform: "bilibili",
+        title: "测试 Bilibili 视频",
+        bvid: "BV1test",
+        aid: "123",
+        cid: "456",
+        page: 1,
+        selected_quality: "1080P 高清",
+        expires_at: null,
+        headers: {
+          Referer: "https://www.bilibili.com/",
+          "User-Agent": "SocialDataX-Test-UA",
+          Cookie: "SESSDATA=secret",
+          Authorization: "Bearer secret",
+          "X-Internal-Token": "secret",
+        },
+        download_manifest: {
+          mode: "dash",
+          tracks: [
+            {
+              type: "video",
+              url: `${mediaBaseUrl}/video.m4s`,
+              backup_urls: [],
+              codec: "avc1.640028",
+              quality: "1080P 高清",
+              width: 1920,
+              height: 1080,
+              ext: "m4s",
+              bandwidth: 1800000,
+            },
+            {
+              type: "audio",
+              url: `${mediaBaseUrl}/audio.m4s`,
+              backup_urls: [],
+              codec: "mp4a.40.2",
+              quality: "",
+              width: null,
+              height: null,
+              ext: "m4s",
+              bandwidth: 128000,
+            },
+          ],
+          merge: {
+            container: "mp4",
+            strategy: "ffmpeg_copy",
+          },
+        },
+      })
+    );
+
+    assert.equal(result.status, 0, result.stderr);
+    assert.equal(toolCalls.length, 1);
+    assert.equal(toolCalls[0].name, "bilibili_get_video_download_links");
+    assert.deepEqual(toolCalls[0].arguments, {
+      url: "https://www.bilibili.com/video/BV1test",
+    });
+
+    const payload = JSON.parse(result.stdout);
+    assert.equal(payload.platform, "bilibili");
+    assert.equal(payload.action, "download");
+    assert.equal(payload.bvid, "BV1test");
+    assert.equal(payload.selected_quality, "1080P 高清");
+    assert.equal(payload.output_path, outputPath);
+    assert.equal(payload.tracks.length, 2);
+    assert.equal(payload.tracks[0].type, "video");
+    assert.equal(payload.tracks[0].bytes_written, videoBody.length);
+    assert.equal(payload.tracks[1].type, "audio");
+    assert.equal(payload.tracks[1].bytes_written, audioBody.length);
+
+    assert.equal(readFileSync(outputPath, "utf8"), "merged-output");
+    assert.equal(readFileSync(payload.tracks[0].path, "utf8"), "video-track-body");
+    assert.equal(readFileSync(payload.tracks[1].path, "utf8"), "audio-track-body");
+    assert.deepEqual(mediaRequests, [
+      {
+        url: "/video.m4s",
+        referer: "https://www.bilibili.com/",
+        userAgent: "SocialDataX-Test-UA",
+        cookie: undefined,
+        authorization: undefined,
+        xInternalToken: undefined,
+      },
+      {
+        url: "/audio.m4s",
+        referer: "https://www.bilibili.com/",
+        userAgent: "SocialDataX-Test-UA",
+        cookie: undefined,
+        authorization: undefined,
+        xInternalToken: undefined,
+      },
+    ]);
+
+    const ffmpegArgs = JSON.parse(readFileSync(ffmpegArgsPath, "utf8"));
+    assert.deepEqual(ffmpegArgs, [
+      "-y",
+      "-i",
+      payload.tracks[0].path,
+      "-i",
+      payload.tracks[1].path,
+      "-c",
+      "copy",
+      outputPath,
+    ]);
+    assert.equal(existsSync(payload.tracks[0].path), true);
+    assert.equal(existsSync(payload.tracks[1].path), true);
+  } finally {
+    await new Promise((resolve, reject) => {
+      mediaServer.close((error) => (error ? reject(error) : resolve()));
+    });
+    rmSync(tempDir, { recursive: true, force: true });
+  }
+});
+
+test("bilibili download derives output file from output-dir and removes tracks by default", async () => {
+  const tempDir = mkdtempSync(join(tmpdir(), "sdx-bilibili-output-dir-"));
+  const outputDir = join(tempDir, "downloads");
+  const manifest = makeBilibiliDownloadManifest();
+  const trackBodies = new Map([
+    [manifest.download_manifest.tracks[0].url, Buffer.from("video-track")],
+    [manifest.download_manifest.tracks[1].url, Buffer.from("audio-track")],
+  ]);
+  const ffmpegCalls = [];
+
+  const fetchMedia = async (url) => {
+    const body = trackBodies.get(url);
+    assert.ok(body, `unexpected Bilibili track url ${url}`);
+    return {
+      ok: true,
+      status: 200,
+      headers: {
+        get(name) {
+          return name.toLowerCase() === "content-length" ? String(body.length) : null;
+        },
+      },
+      body: (async function* trackChunks() {
+        yield body;
+      })(),
+    };
+  };
+  const spawnProcess = (_command, args) => {
+    ffmpegCalls.push(args);
+    const child = new EventEmitter();
+    child.stderr = new EventEmitter();
+    child.stderr.setEncoding = () => {};
+    process.nextTick(() => {
+      if (args[0] !== "-version") {
+        writeFileSync(args.at(-1), "merged-output");
+      }
+      child.emit("close", 0);
+    });
+    return child;
+  };
+
+  try {
+    const result = await downloadBilibiliVideoFromManifest(
+      manifest,
+      { outputDir },
+      { fetchMedia, spawnProcess }
+    );
+
+    assert.equal(result.output_path, join(outputDir, "测试 Bilibili 视频-BV1test.mp4"));
+    assert.equal(result.tracks_kept, false);
+    assert.equal(readFileSync(result.output_path, "utf8"), "merged-output");
+    assert.deepEqual(ffmpegCalls[0], ["-version"]);
+    assert.deepEqual(ffmpegCalls[1], [
+      "-y",
+      "-i",
+      result.tracks[0].path,
+      "-i",
+      result.tracks[1].path,
+      "-c",
+      "copy",
+      result.output_path,
+    ]);
+    assert.equal(existsSync(result.tracks[0].path), false);
+    assert.equal(existsSync(result.tracks[1].path), false);
+  } finally {
+    rmSync(tempDir, { recursive: true, force: true });
+  }
+});
+
+test("bilibili download validates local output before API key checks", () => {
+  const tempDir = mkdtempSync(join(tmpdir(), "sdx-bilibili-local-validation-"));
+  const existingOutput = join(tempDir, "existing.mp4");
+  const outputDirFile = join(tempDir, "not-a-directory");
+  const parentFile = join(tempDir, "not-a-parent-directory");
+  writeFileSync(existingOutput, "existing-output");
+  writeFileSync(outputDirFile, "plain-file");
+  writeFileSync(parentFile, "plain-file");
+
+  try {
+    assertCliError(
+      runCli([
+        "bilibili",
+        "download",
+        "--output",
+        existingOutput,
+      ]),
+      "Missing --url for bilibili download\\."
+    );
+    assertCliError(
+      runCli([
+        "bilibili",
+        "download",
+        "--url",
+        "https://www.bilibili.com/video/BV1test",
+      ]),
+      "Missing --output or --output-dir for bilibili download\\."
+    );
+    assertCliError(
+      runCli([
+        "bilibili",
+        "download",
+        "--url",
+        "https://www.bilibili.com/video/BV1test",
+        "--output",
+        join(tempDir, "video.mp4"),
+        "--output-dir",
+        tempDir,
+      ]),
+      "Use only one of --output or --output-dir for bilibili download\\."
+    );
+    assertCliError(
+      runCli([
+        "bilibili",
+        "download",
+        "--url",
+        "https://www.bilibili.com/video/BV1test",
+        "--output",
+        join(tempDir, "video-with-flag-value.mp4"),
+        "--keep-tracks=false",
+      ]),
+      "--keep-tracks does not take a value\\."
+    );
+    assertCliError(
+      runCli([
+        "bilibili",
+        "download",
+        "--url",
+        "https://www.bilibili.com/video/BV1test",
+        "--output",
+        join(tempDir, "video-with-pretty-value.mp4"),
+        "--pretty=false",
+      ]),
+      "--pretty does not take a value\\."
+    );
+    assertCliError(
+      runCli([
+        "bilibili",
+        "download",
+        "--url",
+        "https://www.bilibili.com/video/BV1test",
+        "--output",
+        existingOutput,
+      ]),
+      "Bilibili download output file already exists\\."
+    );
+    assertCliError(
+      runCli([
+        "bilibili",
+        "download",
+        "--url",
+        "https://www.bilibili.com/video/BV1test",
+        "--output",
+        tempDir,
+      ]),
+      "--output must be a file path for bilibili download\\."
+    );
+    assertCliError(
+      runCli([
+        "bilibili",
+        "download",
+        "--url",
+        "https://www.bilibili.com/video/BV1test",
+        "--output-dir",
+        outputDirFile,
+      ]),
+      "--output-dir must be a directory for bilibili download\\."
+    );
+    assertCliError(
+      runCli([
+        "bilibili",
+        "download",
+        "--url",
+        "https://www.bilibili.com/video/BV1test",
+        "--output",
+        join(parentFile, "video.mp4"),
+      ]),
+      "--output parent path must be a directory for bilibili download\\."
+    );
+    assertCliError(
+      runCli([
+        "bilibili",
+        "download",
+        "--url",
+        "https://www.bilibili.com/video/BV1test",
+        "--output",
+        join(parentFile, "child", "video.mp4"),
+      ]),
+      "--output parent path must be a directory for bilibili download\\."
+    );
+    assertCliError(
+      runCli([
+        "bilibili",
+        "download",
+        "--url",
+        "https://www.bilibili.com/video/BV1test",
+        "--output-dir",
+        join(parentFile, "downloads"),
+      ]),
+      "--output-dir parent path must be a directory for bilibili download\\."
+    );
+  } finally {
+    rmSync(tempDir, { recursive: true, force: true });
+  }
+});
+
+test("bilibili download reports missing API key before ffmpeg checks", () => {
+  const tempDir = mkdtempSync(join(tmpdir(), "sdx-bilibili-api-key-before-ffmpeg-"));
+  const outputPath = join(tempDir, "video.mp4");
+  const missingFfmpegPath = join(tempDir, "missing-ffmpeg");
+
+  try {
+    assertCliError(
+      runCli([
+        "bilibili",
+        "download",
+        "--url",
+        "https://www.bilibili.com/video/BV1test",
+        "--output",
+        outputPath,
+        "--ffmpeg-path",
+        missingFfmpegPath,
+      ]),
+      "Missing API Key\\. Set SOCIALDATAX_API_KEY before running direct CLI calls\\."
+    );
+    assert.equal(existsSync(outputPath), false);
+  } finally {
+    rmSync(tempDir, { recursive: true, force: true });
+  }
+});
+
+test("bilibili download checks ffmpeg before requesting download links", async () => {
+  const tempDir = mkdtempSync(join(tmpdir(), "sdx-bilibili-cli-ffmpeg-missing-"));
+  const outputPath = join(tempDir, "video.mp4");
+  const missingFfmpegPath = join(tempDir, "missing-ffmpeg");
+
+  try {
+    const { result, toolCalls } = await runCliWithMockMcp([
+      "bilibili",
+      "download",
+      "--url",
+      "https://www.bilibili.com/video/BV1test",
+      "--output",
+      outputPath,
+      "--ffmpeg-path",
+      missingFfmpegPath,
+    ]);
+
+    assert.equal(result.status, 1);
+    assert.equal(result.stdout, "");
+    assert.match(result.stderr, /ffmpeg not found/);
+    assert.match(result.stderr, new RegExp(escapeRegExp(missingFfmpegPath)));
+    assert.equal(toolCalls.length, 0);
+    assert.equal(existsSync(outputPath), false);
+  } finally {
+    rmSync(tempDir, { recursive: true, force: true });
+  }
+});
+
+test("bilibili download refuses to overwrite an existing output file", async () => {
+  const tempDir = mkdtempSync(join(tmpdir(), "sdx-bilibili-output-exists-"));
+  const outputPath = join(tempDir, "video.mp4");
+  writeFileSync(outputPath, "existing-output");
+
+  try {
+    await assert.rejects(
+      downloadBilibiliVideoFromManifest(
+        makeBilibiliDownloadManifest(),
+        { output: outputPath },
+        {
+          fetchMedia: async () => {
+            throw new Error("fetch should not be called");
+          },
+          spawnProcess: () => {
+            throw new Error("ffmpeg should not be called");
+          },
+        }
+      ),
+      /Bilibili download output file already exists\./
+    );
+    assert.equal(readFileSync(outputPath, "utf8"), "existing-output");
+  } finally {
+    rmSync(tempDir, { recursive: true, force: true });
+  }
+});
+
+test("bilibili download refuses to overwrite existing track files", async () => {
+  const tempDir = mkdtempSync(join(tmpdir(), "sdx-bilibili-track-exists-"));
+  const outputPath = join(tempDir, "video.mp4");
+  const videoTrackPath = `${outputPath}.video.m4s`;
+  writeFileSync(videoTrackPath, "existing-track");
+
+  try {
+    await assert.rejects(
+      downloadBilibiliVideoFromManifest(
+        makeBilibiliDownloadManifest(),
+        { output: outputPath },
+        {
+          fetchMedia: async () => {
+            throw new Error("fetch should not be called");
+          },
+          spawnProcess: () => {
+            throw new Error("ffmpeg should not be called");
+          },
+        }
+      ),
+      /Bilibili video track file already exists\./
+    );
+    assert.equal(readFileSync(videoTrackPath, "utf8"), "existing-track");
+    assert.equal(existsSync(outputPath), false);
+  } finally {
+    rmSync(tempDir, { recursive: true, force: true });
+  }
+});
+
+test("bilibili download removes reserved track placeholder after download failure", async () => {
+  const tempDir = mkdtempSync(join(tmpdir(), "sdx-bilibili-track-fails-"));
+  const outputPath = join(tempDir, "video.mp4");
+  const videoTrackPath = `${outputPath}.video.m4s`;
+
+  try {
+    await assert.rejects(
+      downloadBilibiliVideoFromManifest(
+        makeBilibiliDownloadManifest(),
+        { output: outputPath },
+        {
+          fetchMedia: async () => ({
+            ok: false,
+            status: 503,
+            headers: {
+              get() {
+                return null;
+              },
+            },
+            body: null,
+          }),
+          spawnProcess: (_command, args) => {
+            assert.deepEqual(args, ["-version"]);
+            const child = new EventEmitter();
+            child.stderr = new EventEmitter();
+            child.stderr.setEncoding = () => {};
+            process.nextTick(() => {
+              child.emit("close", 0);
+            });
+            return child;
+          },
+        }
+      ),
+      /Bilibili video track download failed with HTTP 503\./
+    );
+    assert.equal(existsSync(videoTrackPath), false);
+    assert.equal(existsSync(outputPath), false);
+  } finally {
+    rmSync(tempDir, { recursive: true, force: true });
+  }
+});
+
+test("bilibili download keeps merged output when track cleanup fails", async () => {
+  const tempDir = mkdtempSync(join(tmpdir(), "sdx-bilibili-cleanup-fails-"));
+  const outputPath = join(tempDir, "video.mp4");
+  const ffmpegPath = join(tempDir, "fake-ffmpeg.js");
+  const manifest = makeBilibiliDownloadManifest();
+  const trackBodies = new Map([
+    [manifest.download_manifest.tracks[0].url, Buffer.from("video-track")],
+    [manifest.download_manifest.tracks[1].url, Buffer.from("audio-track")],
+  ]);
+  const fetchMedia = async (url) => {
+    const body = trackBodies.get(url);
+    assert.ok(body, `unexpected Bilibili track url ${url}`);
+    return {
+      ok: true,
+      status: 200,
+      headers: {
+        get(name) {
+          return name.toLowerCase() === "content-length" ? String(body.length) : null;
+        },
+      },
+      body: (async function* trackChunks() {
+        yield body;
+      })(),
+    };
+  };
+
+  writeFileSync(
+    ffmpegPath,
+    [
+      "#!/usr/bin/env node",
+      "const fs = require('node:fs');",
+      "const path = require('node:path');",
+      "if (process.argv[2] === '-version') { process.exit(0); }",
+      "const output = process.argv[process.argv.length - 1];",
+      "fs.writeFileSync(output, 'merged-output');",
+      "fs.chmodSync(path.dirname(output), 0o500);",
+    ].join("\n")
+  );
+  chmodSync(ffmpegPath, 0o755);
+
+  try {
+    const result = await downloadBilibiliVideoFromManifest(
+      manifest,
+      { output: outputPath, ffmpegPath },
+      { fetchMedia }
+    );
+
+    assert.equal(result.tracks_kept, true);
+    assert.equal(readFileSync(outputPath, "utf8"), "merged-output");
+    assert.equal(existsSync(result.tracks[0].path), true);
+    assert.equal(existsSync(result.tracks[1].path), true);
+  } finally {
+    chmodSync(tempDir, 0o700);
+    rmSync(tempDir, { recursive: true, force: true });
+  }
+});
+
+test("bilibili download suggests ffmpeg install commands when ffmpeg is missing", async () => {
+  const tempDir = mkdtempSync(join(tmpdir(), "sdx-bilibili-ffmpeg-missing-"));
+  const outputPath = join(tempDir, "video.mp4");
+  const manifest = makeBilibiliDownloadManifest();
+  let fetchCalled = false;
+  const fetchMedia = async () => {
+    fetchCalled = true;
+    throw new Error("fetch should not be called");
+  };
+  const spawnProcess = () => {
+    const child = new EventEmitter();
+    child.stderr = new EventEmitter();
+    child.stderr.setEncoding = () => {};
+    process.nextTick(() => {
+      const error = new Error("spawn ffmpeg ENOENT");
+      error.code = "ENOENT";
+      child.emit("error", error);
+    });
+    return child;
+  };
+
+  try {
+    await assert.rejects(
+      () =>
+        downloadBilibiliVideoFromManifest(
+          manifest,
+          { output: outputPath },
+          { fetchMedia, spawnProcess }
+        ),
+      (error) => {
+        assert.match(error.message, /ffmpeg not found/);
+        assert.match(error.message, /macOS.*brew install ffmpeg/s);
+        assert.match(error.message, /Ubuntu\/Debian.*sudo apt install ffmpeg/s);
+        assert.match(error.message, /Windows.*winget install Gyan\.FFmpeg/s);
+        assert.match(error.message, /--ffmpeg-path/);
+        return true;
+      }
+    );
+    assert.equal(fetchCalled, false);
+    assert.equal(existsSync(outputPath), false);
+    assert.equal(existsSync(`${outputPath}.video.m4s`), false);
+    assert.equal(existsSync(`${outputPath}.audio.m4s`), false);
+  } finally {
+    rmSync(tempDir, { recursive: true, force: true });
+  }
+});
+
 test("cli still runs when invoked through an npm-style symlink", () => {
   const destination = mkdtempSync(join(tmpdir(), "smi-test-bin-"));
   try {
@@ -424,11 +2267,20 @@ test("cli still runs when invoked through an npm-style symlink", () => {
     assert.match(result.stdout, /^socialdatax-skills\n/);
     assert.match(result.stdout, /douyin user-info --profile-url/);
     assert.match(result.stdout, /xhs hot-search --pretty/);
+    assert.match(result.stdout, /xhs transcript --url/);
+    assert.match(result.stdout, /xhs download-media --url "<xhs_media_url>" --output-dir \.\/downloads/);
     assert.match(result.stdout, /douyin hot-search --pretty/);
     assert.match(result.stdout, /douyin user-series --profile-url/);
+    assert.match(result.stdout, /douyin transcript --aweme-id/);
     assert.match(result.stdout, /kuaishou hot-search --pretty/);
     assert.match(result.stdout, /kuaishou search --keyword/);
+    assert.match(result.stdout, /kuaishou user-search --keyword/);
     assert.match(result.stdout, /kuaishou user-info --profile-url/);
+    assert.match(result.stdout, /kuaishou transcript --photo-id/);
+    assert.match(result.stdout, /weibo transcript --post-url/);
+    assert.match(result.stdout, /wechat transcript --encrypted-object-id/);
+    assert.match(result.stdout, /wechat decrypt-media --media-url/);
+    assert.match(result.stdout, /sensitive-check text --text/);
   } finally {
     rmSync(destination, { recursive: true, force: true });
   }
@@ -449,6 +2301,10 @@ test("npm pack only includes public skill package files", () => {
     "README.md",
     "assets/logo.png",
     "cli.mjs",
+    "lib/media/bilibili-download.mjs",
+    "lib/media/common.mjs",
+    "lib/media/wechat-decrypt.mjs",
+    "lib/media/xhs-download.mjs",
     "package.json",
     "skills/media-comments/SKILL.md",
     "skills/media-comments/agents/openai.yaml",
@@ -462,6 +2318,8 @@ test("npm pack only includes public skill package files", () => {
     "skills/media-user-info/agents/openai.yaml",
     "skills/media-user-posts/SKILL.md",
     "skills/media-user-posts/agents/openai.yaml",
+    "skills/sensitive-check/SKILL.md",
+    "skills/sensitive-check/agents/openai.yaml",
     "skills/socialdatax-content-research-assistant/SKILL.md",
     "skills/socialdatax-content-research-assistant/agents/openai.yaml",
   ]);
@@ -484,8 +2342,8 @@ test("media user posts skill documents Douyin creator series commands", () => {
     "utf8"
   );
 
-  assert.match(skill, /douyin user-series --sec-user-id/);
-  assert.match(skill, /douyin user-series --profile-url/);
+  assertDirectCliExample(skill, "douyin user-series --sec-user-id");
+  assertDirectCliExample(skill, "douyin user-series --profile-url");
   assert.match(skill, /douyin_get_user_series_by_sec_user_id/);
   assert.match(skill, /douyin_get_user_series_by_profile_url/);
   assert.match(skill, /short-drama series/);
@@ -499,7 +2357,7 @@ test("aggregate content research skill documents safe SocialDataX entrypoints", 
 
   assert.match(skill, /name: "?socialdatax-content-research-assistant"?/);
   assert.match(skill, /SOCIALDATAX_API_KEY/);
-  assert.match(skill, /https:\/\/socialdatax\.52choujiang\.com/);
+  assert.match(skill, /https:\/\/socialdatax\.com/);
   assert.match(skill, /npx -y socialdatax-skills@latest xhs search/);
   assert.match(skill, /npx -y socialdatax-skills@latest xhs hot-search/);
   assert.match(skill, /npx -y socialdatax-skills@latest douyin search/);
@@ -523,6 +2381,31 @@ test("aggregate content research skill documents safe SocialDataX entrypoints", 
   assert.doesNotMatch(skill, /SOCIAL_MEDIA_MCP_API_KEY/);
 });
 
+test("media detail skills document local XHS media download", () => {
+  const npmSkill = readFileSync(
+    join(packageDir, "skills", "media-detail", "SKILL.md"),
+    "utf8"
+  );
+  const openclawSkill = readFileSync(
+    join(
+      packageDir,
+      "..",
+      "socialdatax-openclaw-skills",
+      "socialdatax-xhs-detail",
+      "SKILL.md"
+    ),
+    "utf8"
+  );
+
+  for (const skill of [npmSkill, openclawSkill]) {
+    assert.match(skill, /image_items\[\]\.image_url/);
+    assert.match(skill, /video\.video_url/);
+    assert.match(skill, /xhs download-media --url "<media_url>" --output-dir <directory> --pretty/);
+    assert.match(skill, /optional XHS local save command writes only/);
+    assert.match(skill, /does not require `SOCIALDATAX_API_KEY`/);
+  }
+});
+
 test("xhs search rejects note-id because it is not a search option", () => {
   const result = runCli([
     "xhs",
@@ -536,30 +2419,77 @@ test("xhs search rejects note-id because it is not a search option", () => {
   assertCliError(result, "Unsupported option --note-id\\.");
 });
 
+test("sensitive-check text sends text to MCP but omits arguments from CLI output", async () => {
+  const text = "这个方法百分百治愈焦虑";
+  const { result, toolCalls, toolCallAuthorizationHeaders } =
+    await runCliWithMockMcp([
+      "sensitive-check",
+      "text",
+      "--text",
+      text,
+      "--platform",
+      "xhs",
+      "--pretty",
+    ]);
+
+  assert.equal(result.status, 0, result.stderr);
+  assert.deepEqual(toolCalls, [
+    {
+      name: "check_sensitive_text",
+      arguments: {
+        text,
+        platform: "xhs",
+      },
+    },
+  ]);
+  assert.equal(toolCallAuthorizationHeaders[0], "Bearer test-key");
+  assert.deepEqual(JSON.parse(result.stdout), {
+    platform: "sensitive-check",
+    tool: "check_sensitive_text",
+    data: { ok: true },
+  });
+  assert.doesNotMatch(result.stdout, new RegExp(text));
+});
+
+test("sensitive-check text validates required text and platform before API key", () => {
+  assertCliError(
+    runCli(["sensitive-check", "text", "--platform", "xhs"]),
+    "Missing --text for sensitive-check text\\."
+  );
+  assertCliError(
+    runCli([
+      "sensitive-check",
+      "text",
+      "--text",
+      "hello",
+      "--platform",
+      "twitter",
+    ]),
+    'Unsupported --platform "twitter"\\. Use one of: generic, xhs, douyin, kuaishou\\.'
+  );
+});
+
 test("xhs detail rejects page because it is not a detail option", () => {
   const result = runCli(["xhs", "detail", "--note-id", "a", "--page", "2"]);
 
   assertCliError(result, "Unsupported option --page\\.");
 });
 
-test("xhs search rejects malformed page before checking the API key", () => {
+test("xhs search rejects page because it is not a search option", () => {
   const result = runCli([
     "xhs",
     "search",
     "--keyword",
     "foo",
     "--page",
-    "1abc",
+    "2",
   ]);
 
-  assertCliError(
-    result,
-    "--page must be an integer greater than or equal to 1\\."
-  );
+  assertCliError(result, "Unsupported option --page\\.");
 });
 
-test("xhs search with valid page reaches the missing API key error", () => {
-  const result = runCli(["xhs", "search", "--keyword", "foo", "--page", "1"]);
+test("xhs search first page reaches the missing API key error", () => {
+  const result = runCli(["xhs", "search", "--keyword", "foo"]);
 
   assertCliError(
     result,
@@ -567,22 +2497,1431 @@ test("xhs search with valid page reaches the missing API key error", () => {
   );
 });
 
-test("xhs search keeps sort and filter options omitted unless explicitly provided", () => {
-  const cli = readFileSync(cliPath, "utf8");
+test("direct CLI sends source attribution headers without changing tool arguments", async () => {
+  const {
+    result,
+    toolCalls,
+    toolCallSourceClientHeaders,
+    toolCallSourcePlatformHeaders,
+    toolCallSourceSkillHeaders,
+  } = await runCliWithMockMcp([
+    "xhs",
+    "search",
+    "--keyword",
+    "露营",
+    "--source-client",
+    "socialdatax-skills",
+    "--source-platform",
+    "modelscope",
+    "--source-skill",
+    "xhs-content-research",
+  ]);
 
-  assert.match(
-    cli,
-    /const sortType = parseSemanticOption\(\n    options\.sortType \|\| "general",\n    "--sort-type",\n    XHS_SEARCH_SORT_TYPES,\n    XHS_LEGACY_SEARCH_SORT_TYPE_ALIASES,\n    XHS_SEARCH_SORT_TYPES\.join\(", "\)\n  \);/
+  assert.equal(result.status, 0, result.stderr);
+  assert.deepEqual(toolCalls, [
+    {
+      name: "xhs_search_notes",
+      arguments: {
+        keyword: "露营",
+      },
+    },
+  ]);
+  assert.deepEqual(toolCallSourceClientHeaders, ["socialdatax-skills"]);
+  assert.deepEqual(toolCallSourcePlatformHeaders, ["modelscope"]);
+  assert.deepEqual(toolCallSourceSkillHeaders, ["xhs-content-research"]);
+});
+
+test("direct CLI accepts source attribution from environment", async () => {
+  const {
+    result,
+    toolCalls,
+    toolCallSourceClientHeaders,
+    toolCallSourcePlatformHeaders,
+    toolCallSourceSkillHeaders,
+  } = await runCliWithMockMcp(
+    ["xhs", "search", "--keyword", "露营"],
+    {
+      SOCIALDATAX_SOURCE_CLIENT: "socialdatax-skills",
+      SOCIALDATAX_SOURCE_PLATFORM: "skillhub",
+      SOCIALDATAX_SOURCE_SKILL: "xhs-topic-analysis-v2",
+    }
   );
-  assert.match(
-    cli,
-    /if \(options\.noteType !== undefined\) \{\n    toolArguments\.note_type = noteType;\n  \}/
+
+  assert.equal(result.status, 0, result.stderr);
+  assert.equal(toolCalls[0].name, "xhs_search_notes");
+  assert.deepEqual(toolCallSourceClientHeaders, ["socialdatax-skills"]);
+  assert.deepEqual(toolCallSourcePlatformHeaders, ["skillhub"]);
+  assert.deepEqual(toolCallSourceSkillHeaders, ["xhs-topic-analysis-v2"]);
+});
+
+test("transcript direct commands submit or check jobs with one entrypoint", async () => {
+  const cases = [
+    {
+      args: ["xhs", "transcript", "--url", "https://xhslink.com/a1", "--pretty"],
+      tool: "xhs_submit_video_speech_text_by_note_url",
+      toolArguments: { note_url: "https://xhslink.com/a1" },
+    },
+    {
+      args: ["xhs", "transcript", "--note-id", "note-1"],
+      tool: "xhs_submit_video_speech_text_by_note_id",
+      toolArguments: { note_id: "note-1" },
+    },
+    {
+      args: ["xhs", "transcript", "--job-id", "job-1"],
+      tool: "xhs_get_video_speech_text_job",
+      toolArguments: { job_id: "job-1" },
+      callArguments: { job_id: "job-1", wait_seconds: 240 },
+    },
+    {
+      args: ["douyin", "transcript", "--url", "https://v.douyin.com/a1"],
+      tool: "douyin_submit_video_speech_text_by_video_url",
+      toolArguments: { video_url: "https://v.douyin.com/a1" },
+    },
+    {
+      args: ["douyin", "transcript", "--aweme-id", "aweme-1"],
+      tool: "douyin_submit_video_speech_text_by_aweme_id",
+      toolArguments: { aweme_id: "aweme-1" },
+    },
+    {
+      args: ["douyin", "transcript", "--job-id", "job-2"],
+      tool: "douyin_get_video_speech_text_job",
+      toolArguments: { job_id: "job-2" },
+      callArguments: { job_id: "job-2", wait_seconds: 240 },
+    },
+    {
+      args: ["kuaishou", "transcript", "--url", "https://v.kuaishou.com/a1"],
+      tool: "kuaishou_submit_video_speech_text_by_video_url",
+      toolArguments: { video_url: "https://v.kuaishou.com/a1" },
+    },
+    {
+      args: ["kuaishou", "transcript", "--photo-id", "photo-1"],
+      tool: "kuaishou_submit_video_speech_text_by_photo_id",
+      toolArguments: { photo_id: "photo-1" },
+    },
+    {
+      args: ["kuaishou", "transcript", "--job-id", "job-3"],
+      tool: "kuaishou_get_video_speech_text_job",
+      toolArguments: { job_id: "job-3" },
+      callArguments: { job_id: "job-3", wait_seconds: 240 },
+    },
+    {
+      args: ["weibo", "transcript", "--post-url", "https://weibo.com/1/A"],
+      tool: "weibo_submit_video_speech_text_by_post_url",
+      toolArguments: { post_url: "https://weibo.com/1/A" },
+    },
+    {
+      args: ["weibo", "transcript", "--post-id", "post-1"],
+      tool: "weibo_submit_video_speech_text_by_post_id",
+      toolArguments: { post_id: "post-1" },
+    },
+    {
+      args: ["weibo", "transcript", "--job-id", "job-4"],
+      tool: "weibo_get_video_speech_text_job",
+      toolArguments: { job_id: "job-4" },
+      callArguments: { job_id: "job-4", wait_seconds: 240 },
+    },
+    {
+      args: ["wechat", "transcript", "--url", "https://channels.weixin.qq.com/a1"],
+      tool: "wechat_submit_video_speech_text_by_video_url",
+      toolArguments: { video_url: "https://channels.weixin.qq.com/a1" },
+    },
+    {
+      args: ["wechat", "transcript", "--encrypted-object-id", "enc-1"],
+      tool: "wechat_submit_video_speech_text_by_encrypted_object_id",
+      toolArguments: { encrypted_object_id: "enc-1" },
+    },
+    {
+      args: ["wechat", "transcript", "--job-id", "job-5"],
+      tool: "wechat_get_video_speech_text_job",
+      toolArguments: { job_id: "job-5" },
+      callArguments: { job_id: "job-5", wait_seconds: 240 },
+    },
+  ];
+
+  for (const item of cases) {
+    const { result, toolCalls } = await runCliWithMockMcp(
+      item.args,
+      {},
+      ({ arguments: args }) => ({
+        job_id: args.job_id || "tr-test",
+        status: "succeeded",
+        is_terminal: true,
+        transcript: {
+          text: "口播内容",
+          segments: [{ start_ms: 0, end_ms: 1200, text: "口播内容" }],
+        },
+      })
+    );
+
+    assert.equal(result.status, 0, result.stderr);
+    assert.deepEqual(toolCalls, [
+      {
+        name: item.tool,
+        arguments: item.callArguments || item.toolArguments,
+      },
+    ]);
+    const payload = JSON.parse(result.stdout);
+    assert.equal(payload.tool, item.tool);
+    assert.deepEqual(payload.arguments, item.toolArguments);
+  }
+});
+
+test("transcript direct CLI polls the same job until terminal by default", async () => {
+  const { result, toolCalls } = await runCliWithMockMcp(
+    ["douyin", "transcript", "--url", "https://v.douyin.com/a1", "--pretty"],
+    {},
+    ({ name, arguments: args }, callIndex) => {
+      if (name === "douyin_submit_video_speech_text_by_video_url") {
+        assert.deepEqual(args, { video_url: "https://v.douyin.com/a1" });
+        return {
+          job_id: "tr-1",
+          status: "running",
+          is_terminal: false,
+          next_poll_after_seconds: 0,
+        };
+      }
+      assert.equal(name, "douyin_get_video_speech_text_job");
+      assert.deepEqual(args, { job_id: "tr-1", wait_seconds: 240 });
+      return callIndex === 2
+        ? {
+            job_id: "tr-1",
+            status: "running",
+            is_terminal: false,
+            next_poll_after_seconds: 0,
+          }
+        : {
+            job_id: "tr-1",
+            status: "succeeded",
+            is_terminal: true,
+            transcript: {
+              text: "口播内容",
+              segments: [{ start_ms: 0, end_ms: 1200, text: "口播内容" }],
+            },
+          };
+    }
   );
-  assert.match(
-    cli,
-    /if \(options\.publishTimeRange !== undefined\) \{\n    toolArguments\.publish_time_range = publishTimeRange;\n  \}/
+
+  assert.equal(result.status, 0, result.stderr);
+  assert.deepEqual(toolCalls.map((call) => call.name), [
+    "douyin_submit_video_speech_text_by_video_url",
+    "douyin_get_video_speech_text_job",
+    "douyin_get_video_speech_text_job",
+  ]);
+  const payload = JSON.parse(result.stdout);
+  assert.equal(payload.tool, "douyin_submit_video_speech_text_by_video_url");
+  assert.deepEqual(payload.arguments, { video_url: "https://v.douyin.com/a1" });
+  assert.equal(payload.data.status, "succeeded");
+  assert.equal(payload.data.is_terminal, true);
+  assert.equal(payload.data.transcript.text, "口播内容");
+});
+
+test("transcript direct commands require exactly one entrypoint", () => {
+  assertCliError(
+    runCli(["xhs", "transcript"]),
+    "Missing input\\. Use exactly one of --url, --note-id, or --job-id\\."
   );
-  assert.doesNotMatch(cli, /sort_type: sortType/);
+  assertCliError(
+    runCli(["douyin", "transcript", "--url", "https://v.douyin.com/a1", "--aweme-id", "aweme-1"]),
+    "Use exactly one of --url, --aweme-id, or --job-id\\."
+  );
+  assertCliError(
+    runCli(["kuaishou", "transcript", "--photo-id", "photo-1", "--job-id", "job-1"]),
+    "Use exactly one of --url, --photo-id, or --job-id\\."
+  );
+  assertCliError(
+    runCli(["weibo", "transcript", "--url", "https://weibo.com/1/A"]),
+    "Unsupported option --url\\."
+  );
+  assertCliError(
+    runCli(["douyin", "transcript", "--url", "https://v.douyin.com/a1", "--no-wait"]),
+    "Unsupported option --no-wait\\."
+  );
+  assertCliError(
+    runCli(["douyin", "transcript", "--url", "https://v.douyin.com/a1", "--max-wait-seconds", "0"]),
+    "--max-wait-seconds must be an integer greater than or equal to 1\\."
+  );
+  assertCliError(
+    runCli(["wechat", "transcript", "--encrypted-object-id", "enc-1", "--job-id", "job-1"]),
+    "Use exactly one of --url, --encrypted-object-id, or --job-id\\."
+  );
+});
+
+test("wechat decrypt-media downloads and decrypts a detail media URL without API key", async () => {
+  const encryptedMedia = Buffer.from(
+    "9924d87a25344af3eb492e0b51154bdc66892d7461696c",
+    "hex"
+  );
+  const plaintextMedia = Buffer.from("plain-video-prefix-tail");
+  const outputDir = mkdtempSync(join(tmpdir(), "socialdatax-wechat-media-"));
+  const outputPath = join(outputDir, "video.mp4");
+  const fetchCalls = [];
+  const fetchMedia = async (url, init) => {
+    fetchCalls.push({ url, init });
+    return {
+      ok: true,
+      status: 200,
+      headers: {
+        get(name) {
+          return name.toLowerCase() === "x-enclen" ? "18" : null;
+        },
+      },
+      body: (async function* encryptedChunks() {
+        yield encryptedMedia;
+      })(),
+    };
+  };
+
+  try {
+    const result = await decryptWechatMediaCommand(
+      {
+        mediaUrl: "https://wxapp.tc.qq.com/251/20302/stodownload?k=330933460",
+        output: outputPath,
+      },
+      { fetchMedia }
+    );
+
+    assert.equal(fetchCalls.length, 1);
+    assert.equal(
+      fetchCalls[0].url,
+      "https://wxapp.tc.qq.com/251/20302/stodownload?k=330933460"
+    );
+    assert.deepEqual(fetchCalls[0].init.headers, {
+      Referer: "https://weixin.qq.com/",
+      "User-Agent":
+        "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36",
+    });
+    assert.equal(fetchCalls[0].init.redirect, "manual");
+    assert.ok(fetchCalls[0].init.signal instanceof AbortSignal);
+    assert.deepEqual(readFileSync(outputPath), plaintextMedia);
+    assert.deepEqual(result, {
+      platform: "wechat",
+      action: "decrypt-media",
+      output_path: outputPath,
+      decrypted: true,
+      bytes_written: plaintextMedia.length,
+    });
+  } finally {
+    rmSync(outputDir, { recursive: true, force: true });
+  }
+});
+
+test("wechat decrypt-media saves media as-is when no encrypted prefix is reported", async () => {
+  const plaintextMedia = Buffer.from("plain-video-without-encryption");
+  const outputDir = mkdtempSync(join(tmpdir(), "socialdatax-wechat-media-plain-"));
+  const outputPath = join(outputDir, "video.mp4");
+  const fetchMedia = async () => ({
+    ok: true,
+    status: 200,
+    headers: {
+      get() {
+        return null;
+      },
+    },
+    body: (async function* plainChunks() {
+      yield plaintextMedia.subarray(0, 7);
+      yield plaintextMedia.subarray(7);
+    })(),
+  });
+
+  try {
+    const result = await decryptWechatMediaCommand(
+      {
+        mediaUrl: "http://wxapp.tc.qq.com/251/20302/stodownload?k=330933460",
+        output: outputPath,
+      },
+      { fetchMedia }
+    );
+
+    assert.deepEqual(readFileSync(outputPath), plaintextMedia);
+    assert.deepEqual(result, {
+      platform: "wechat",
+      action: "decrypt-media",
+      output_path: outputPath,
+      decrypted: false,
+      bytes_written: plaintextMedia.length,
+    });
+  } finally {
+    rmSync(outputDir, { recursive: true, force: true });
+  }
+});
+
+test("wechat decrypt-media patches VVC MP4 NAL length metadata to 4-byte prefixes", async () => {
+  const plaintextMedia = makeWechatVvcMp4WithOneByteNalLengthMetadata();
+  const encryptedMedia = Buffer.from(
+    "e948b9032d6d45eae65f2e4b11571e8a0ff1e0c5f0aecf4737c9c177df9b4199a82f112ae7c9f8994518ec15a0822d83793bca3da94b9fc88dfe1f3cc3b7ae8814bd3d0755fb415bfeaf87573113405f4c55ddbe25f0031dfc3328f75c50ef5384ffda34d9ecebbaed4209ef87e5201207a15090e891b5f96f6fc17d3b071e8768739dbf0ea223c13c57f05ff6e32bd38a4e663950140e1e6fa1fe5ba640775b0f75ef82bbbd7fed7cd2814cc862c6b69f6f6d9d9f8efd549687",
+    "hex"
+  );
+  const outputDir = mkdtempSync(join(tmpdir(), "socialdatax-wechat-media-vvc-"));
+  const outputPath = join(outputDir, "video.mp4");
+  const fetchMedia = async () => ({
+    ok: true,
+    status: 200,
+    headers: {
+      get(name) {
+        return name.toLowerCase() === "x-enclen"
+          ? String(encryptedMedia.length)
+          : null;
+      },
+    },
+    body: (async function* plainChunks() {
+      yield encryptedMedia;
+    })(),
+  });
+
+  try {
+    await decryptWechatMediaCommand(
+      {
+        mediaUrl: "http://wxapp.tc.qq.com/251/20302/stodownload?k=330933460",
+        output: outputPath,
+      },
+      { fetchMedia }
+    );
+
+    const output = readFileSync(outputPath);
+    const vvcConfigTypeOffset = output.indexOf(Buffer.from("vvcC", "ascii"));
+    assert.notEqual(vvcConfigTypeOffset, -1);
+    assert.equal(plaintextMedia[vvcConfigTypeOffset + 8], 0x01);
+    assert.equal(output[vvcConfigTypeOffset + 8], 0x07);
+    assert.deepEqual(output.subarray(0, vvcConfigTypeOffset + 8), plaintextMedia.subarray(0, vvcConfigTypeOffset + 8));
+    assert.deepEqual(output.subarray(vvcConfigTypeOffset + 9), plaintextMedia.subarray(vvcConfigTypeOffset + 9));
+  } finally {
+    rmSync(outputDir, { recursive: true, force: true });
+  }
+});
+
+test("wechat decrypt-media leaves VVC metadata unchanged when media is not decrypted", async () => {
+  const plaintextMedia = makeWechatVvcMp4WithOneByteNalLengthMetadata();
+  const outputDir = mkdtempSync(join(tmpdir(), "socialdatax-wechat-media-vvc-plain-"));
+  const outputPath = join(outputDir, "video.mp4");
+  const fetchMedia = async () => ({
+    ok: true,
+    status: 200,
+    headers: {
+      get() {
+        return null;
+      },
+    },
+    body: (async function* plainChunks() {
+      yield plaintextMedia;
+    })(),
+  });
+
+  try {
+    await decryptWechatMediaCommand(
+      {
+        mediaUrl: "http://wxapp.tc.qq.com/251/20302/stodownload?k=330933460",
+        output: outputPath,
+      },
+      { fetchMedia }
+    );
+
+    assert.deepEqual(readFileSync(outputPath), plaintextMedia);
+  } finally {
+    rmSync(outputDir, { recursive: true, force: true });
+  }
+});
+
+test("wechat decrypt-media accepts a real detail video media URL shape from capture", async () => {
+  const media = firstWechatDetailMediaFromCapture(
+    "finder_video_detail_by_url_anxgb9mb8i_20260610.json",
+    (item) => item?.mediaType === 4 && typeof item.url === "string"
+  );
+  const mediaUrl = appendWechatDecodeKey(
+    `${media.url}${media.urlToken ?? ""}`,
+    media.decodeKey
+  );
+  const plaintextMedia = Buffer.from("plain-video-from-real-detail-shape");
+  const outputDir = mkdtempSync(join(tmpdir(), "socialdatax-wechat-media-capture-"));
+  const outputPath = join(outputDir, "video.mp4");
+  const fetchCalls = [];
+  const fetchMedia = async (url) => {
+    fetchCalls.push(url);
+    return {
+      ok: true,
+      status: 200,
+      headers: {
+        get() {
+          return null;
+        },
+      },
+      body: (async function* plainChunks() {
+        yield plaintextMedia;
+      })(),
+    };
+  };
+
+  try {
+    await decryptWechatMediaCommand(
+      {
+        mediaUrl,
+        output: outputPath,
+      },
+      { fetchMedia }
+    );
+
+    assert.deepEqual(fetchCalls, [mediaUrl]);
+    assert.deepEqual(readFileSync(outputPath), plaintextMedia);
+  } finally {
+    rmSync(outputDir, { recursive: true, force: true });
+  }
+});
+
+test("wechat decrypt-media follows allowed WeChat media redirects", async () => {
+  const encryptedMedia = Buffer.from(
+    "9924d87a25344af3eb492e0b51154bdc66892d7461696c",
+    "hex"
+  );
+  const plaintextMedia = Buffer.from("plain-video-prefix-tail");
+  const outputDir = mkdtempSync(join(tmpdir(), "socialdatax-wechat-media-redirect-"));
+  const outputPath = join(outputDir, "video.mp4");
+  const fetchCalls = [];
+  const fetchMedia = async (url) => {
+    fetchCalls.push(url);
+    if (fetchCalls.length === 1) {
+      return {
+        ok: false,
+        status: 302,
+        headers: {
+          get(name) {
+            return name.toLowerCase() === "location"
+              ? "http://wxapp.tc.qq.com/251/20302/stodownload?token=next"
+              : null;
+          },
+        },
+        body: null,
+      };
+    }
+    return {
+      ok: true,
+      status: 200,
+      headers: {
+        get(name) {
+          return name.toLowerCase() === "x-enclen" ? "18" : null;
+        },
+      },
+      body: (async function* encryptedChunks() {
+        yield encryptedMedia;
+      })(),
+    };
+  };
+
+  try {
+    await decryptWechatMediaCommand(
+      {
+        mediaUrl: "https://wxapp.tc.qq.com/251/20302/stodownload?k=330933460",
+        output: outputPath,
+      },
+      { fetchMedia }
+    );
+
+    assert.deepEqual(fetchCalls, [
+      "https://wxapp.tc.qq.com/251/20302/stodownload?k=330933460",
+      "http://wxapp.tc.qq.com/251/20302/stodownload?token=next",
+    ]);
+    assert.deepEqual(readFileSync(outputPath), plaintextMedia);
+  } finally {
+    rmSync(outputDir, { recursive: true, force: true });
+  }
+});
+
+test("wechat decrypt-media rejects redirects outside WeChat media URLs", async () => {
+  const outputDir = mkdtempSync(join(tmpdir(), "socialdatax-wechat-media-bad-redirect-"));
+  const outputPath = join(outputDir, "video.mp4");
+  const fetchCalls = [];
+  const fetchMedia = async (url) => {
+    fetchCalls.push(url);
+    return {
+      ok: false,
+      status: 302,
+      headers: {
+        get(name) {
+          return name.toLowerCase() === "location"
+            ? "http://127.0.0.1:1/media.mp4"
+            : null;
+        },
+      },
+      body: null,
+    };
+  };
+
+  try {
+    await assert.rejects(
+      decryptWechatMediaCommand(
+        {
+          mediaUrl: "https://wxapp.tc.qq.com/251/20302/stodownload?k=330933460",
+          output: outputPath,
+        },
+        { fetchMedia }
+      ),
+      /Media URL cannot be decrypted\. Use the video\.video_url returned by SocialDataX WeChat detail\./
+    );
+    assert.deepEqual(fetchCalls, [
+      "https://wxapp.tc.qq.com/251/20302/stodownload?k=330933460",
+    ]);
+    assert.throws(() => readFileSync(outputPath), /ENOENT/);
+  } finally {
+    rmSync(outputDir, { recursive: true, force: true });
+  }
+});
+
+test("wechat decrypt-media accepts allowed-domain media URL shapes when k exists", async () => {
+  const media = firstWechatDetailMediaFromCapture(
+    "finder_video_detail_by_url_aol7dtqqwb_image_20260622.json",
+    (item) => item?.mediaType === 2 && typeof item.url === "string"
+  );
+  const mediaUrl = appendWechatDecodeKey(
+    `${media.url}${media.urlToken ?? ""}`,
+    "330933460"
+  );
+  const outputDir = mkdtempSync(join(tmpdir(), "socialdatax-wechat-media-image-capture-"));
+  const outputPath = join(outputDir, "video.mp4");
+  const plaintextMedia = Buffer.from("allowed-domain-new-shape");
+  const fetchCalls = [];
+  const fetchMedia = async (url) => {
+    fetchCalls.push(url);
+    return {
+      ok: true,
+      status: 200,
+      headers: {
+        get() {
+          return null;
+        },
+      },
+      body: (async function* plainChunks() {
+        yield plaintextMedia;
+      })(),
+    };
+  };
+
+  try {
+    await decryptWechatMediaCommand(
+      {
+        mediaUrl,
+        output: outputPath,
+      },
+      { fetchMedia }
+    );
+
+    assert.deepEqual(fetchCalls, [mediaUrl]);
+    assert.deepEqual(readFileSync(outputPath), plaintextMedia);
+  } finally {
+    rmSync(outputDir, { recursive: true, force: true });
+  }
+});
+
+test("wechat decrypt-media CLI rejects non-WeChat media hosts before downloading", () => {
+  const outputDir = mkdtempSync(join(tmpdir(), "socialdatax-wechat-media-host-"));
+  const outputPath = join(outputDir, "video.mp4");
+
+  try {
+    const result = runCli([
+      "wechat",
+      "decrypt-media",
+      "--media-url",
+      "http://127.0.0.1:1/media.mp4?k=330933460",
+      "--output",
+      outputPath,
+    ]);
+    assertCliError(
+      result,
+      "Media URL cannot be decrypted\\. Use the video\\.video_url returned by SocialDataX WeChat detail\\."
+    );
+    assert.throws(() => readFileSync(outputPath), /ENOENT/);
+  } finally {
+    rmSync(outputDir, { recursive: true, force: true });
+  }
+});
+
+test("wechat decrypt-media rejects invalid encrypted prefix length before writing output", async () => {
+  const outputDir = mkdtempSync(join(tmpdir(), "socialdatax-wechat-media-bad-enclen-"));
+  const outputPath = join(outputDir, "video.mp4");
+  let bodyRead = false;
+  const fetchMedia = async () => ({
+    ok: true,
+    status: 200,
+    headers: {
+      get(name) {
+        return name.toLowerCase() === "x-enclen" ? "not-a-number" : null;
+      },
+    },
+    body: (async function* encryptedChunks() {
+      bodyRead = true;
+      yield Buffer.from("encrypted");
+    })(),
+  });
+
+  try {
+    await assert.rejects(
+      decryptWechatMediaCommand(
+        {
+          mediaUrl: "https://wxapp.tc.qq.com/251/20302/stodownload?k=330933460",
+          output: outputPath,
+        },
+        { fetchMedia }
+      ),
+      /Downloaded media cannot be decrypted\. Use the video\.video_url returned by SocialDataX WeChat detail\./
+    );
+    assert.equal(bodyRead, false);
+    assert.throws(() => readFileSync(outputPath), /ENOENT/);
+  } finally {
+    rmSync(outputDir, { recursive: true, force: true });
+  }
+});
+
+test("wechat decrypt-media rejects oversized encrypted prefix length before streaming media", async () => {
+  const outputDir = mkdtempSync(join(tmpdir(), "socialdatax-wechat-media-large-enclen-"));
+  const outputPath = join(outputDir, "video.mp4");
+  let bodyRead = false;
+  const fetchMedia = async () => ({
+    ok: true,
+    status: 200,
+    headers: {
+      get(name) {
+        return name.toLowerCase() === "x-enclen" ? "11" : null;
+      },
+    },
+    body: (async function* encryptedChunks() {
+      bodyRead = true;
+      yield Buffer.from("encrypted");
+    })(),
+  });
+
+  try {
+    await assert.rejects(
+      decryptWechatMediaCommand(
+        {
+          mediaUrl: "https://wxapp.tc.qq.com/251/20302/stodownload?k=330933460",
+          output: outputPath,
+        },
+        { fetchMedia, maxDownloadBytes: 10 }
+      ),
+      /Media download is too large for local media processing\./
+    );
+    assert.equal(bodyRead, false);
+    assert.throws(() => readFileSync(outputPath), /ENOENT/);
+  } finally {
+    rmSync(outputDir, { recursive: true, force: true });
+  }
+});
+
+test("wechat decrypt-media decrypts media prefixes without a full-prefix allocation", async () => {
+  const encryptedMedia = Buffer.from(
+    "9924d87a25344af3eb492e0b51154bdc6689cd2dfca8cc1c47a5a08ac5c4569bcc4a7e8bfadff49e2c60c1e5ac822fc80957ab28b4128bcde99b7065c0b1b88a7dc5107334922d778ec3e65a29485507",
+    "hex"
+  );
+  const plaintextMedia = Buffer.from(
+    "plain-video-prefix-tail-plain-video-prefix-tail-plain-video-prefix-tail-plain-vi"
+  );
+  const outputDir = mkdtempSync(join(tmpdir(), "socialdatax-wechat-media-chunked-"));
+  const outputPath = join(outputDir, "video.mp4");
+  const fetchMedia = async () => ({
+    ok: true,
+    status: 200,
+    headers: {
+      get(name) {
+        return name.toLowerCase() === "x-enclen" ? String(encryptedMedia.length) : null;
+      },
+    },
+    body: (async function* encryptedChunks() {
+      yield encryptedMedia.subarray(0, 27);
+      yield encryptedMedia.subarray(27, 53);
+      yield encryptedMedia.subarray(53);
+    })(),
+  });
+  const originalAlloc = Buffer.alloc;
+  Buffer.alloc = function allocWithBound(size, ...args) {
+    if (size > 64) {
+      throw new Error(`Unexpected full-prefix allocation: ${size}`);
+    }
+    return originalAlloc.call(Buffer, size, ...args);
+  };
+
+  try {
+    await decryptWechatMediaCommand(
+      {
+        mediaUrl: "https://wxapp.tc.qq.com/251/20302/stodownload?k=330933460",
+        output: outputPath,
+      },
+      { fetchMedia }
+    );
+
+    assert.deepEqual(readFileSync(outputPath), plaintextMedia);
+  } finally {
+    Buffer.alloc = originalAlloc;
+    rmSync(outputDir, { recursive: true, force: true });
+  }
+});
+
+test("wechat decrypt-media rejects oversized content-length before writing output", async () => {
+  const outputDir = mkdtempSync(join(tmpdir(), "socialdatax-wechat-media-too-large-"));
+  const outputPath = join(outputDir, "video.mp4");
+  const fetchMedia = async () => ({
+    ok: true,
+    status: 200,
+    headers: {
+      get(name) {
+        if (name.toLowerCase() === "content-length") {
+          return "11";
+        }
+        return name.toLowerCase() === "x-enclen" ? "8" : null;
+      },
+    },
+    body: (async function* encryptedChunks() {
+      yield Buffer.from("encrypted");
+    })(),
+  });
+
+  try {
+    await assert.rejects(
+      decryptWechatMediaCommand(
+        {
+          mediaUrl: "https://wxapp.tc.qq.com/251/20302/stodownload?k=330933460",
+          output: outputPath,
+        },
+        { fetchMedia, maxDownloadBytes: 10 }
+      ),
+      /Media download is too large for local media processing\./
+    );
+    assert.throws(() => readFileSync(outputPath), /ENOENT/);
+  } finally {
+    rmSync(outputDir, { recursive: true, force: true });
+  }
+});
+
+test("wechat decrypt-media rejects unsafe integer content-length before writing output", async () => {
+  const outputDir = mkdtempSync(join(tmpdir(), "socialdatax-wechat-media-unsafe-length-"));
+  const outputPath = join(outputDir, "video.mp4");
+  const fetchMedia = async () => ({
+    ok: true,
+    status: 200,
+    headers: {
+      get(name) {
+        if (name.toLowerCase() === "content-length") {
+          return "9007199254740993";
+        }
+        return name.toLowerCase() === "x-enclen" ? "8" : null;
+      },
+    },
+    body: (async function* encryptedChunks() {
+      yield Buffer.from("encrypted");
+    })(),
+  });
+
+  try {
+    await assert.rejects(
+      decryptWechatMediaCommand(
+        {
+          mediaUrl: "https://wxapp.tc.qq.com/251/20302/stodownload?k=330933460",
+          output: outputPath,
+        },
+        { fetchMedia, maxDownloadBytes: 10 }
+      ),
+      /Media download is too large for local media processing\./
+    );
+    assert.throws(() => readFileSync(outputPath), /ENOENT/);
+  } finally {
+    rmSync(outputDir, { recursive: true, force: true });
+  }
+});
+
+test("wechat decrypt-media stops when streamed media exceeds the local size limit", async () => {
+  const outputDir = mkdtempSync(join(tmpdir(), "socialdatax-wechat-media-stream-large-"));
+  const outputPath = join(outputDir, "video.mp4");
+  const fetchMedia = async () => ({
+    ok: true,
+    status: 200,
+    headers: {
+      get(name) {
+        return name.toLowerCase() === "x-enclen" ? "8" : null;
+      },
+    },
+    body: (async function* encryptedChunks() {
+      yield Buffer.from("12345");
+      yield Buffer.from("678901");
+    })(),
+  });
+
+  try {
+    await assert.rejects(
+      decryptWechatMediaCommand(
+        {
+          mediaUrl: "https://wxapp.tc.qq.com/251/20302/stodownload?k=330933460",
+          output: outputPath,
+        },
+        { fetchMedia, maxDownloadBytes: 10 }
+      ),
+      /Media download is too large for local media processing\./
+    );
+    assert.throws(() => readFileSync(outputPath), /ENOENT/);
+  } finally {
+    rmSync(outputDir, { recursive: true, force: true });
+  }
+});
+
+test("wechat decrypt-media matches the Python Isaac64 vector across generator rollover", async () => {
+  const encryptedMedia = Buffer.from(
+    Array.from({ length: 4096 }, (_, index) => index % 256)
+  );
+  const outputDir = mkdtempSync(join(tmpdir(), "socialdatax-wechat-media-long-vector-"));
+  const outputPath = join(outputDir, "video.mp4");
+  const fetchMedia = async () => ({
+    ok: true,
+    status: 200,
+    headers: {
+      get(name) {
+        return name.toLowerCase() === "x-enclen"
+          ? String(encryptedMedia.length)
+          : null;
+      },
+    },
+    body: (async function* encryptedChunks() {
+      yield encryptedMedia.subarray(0, 1500);
+      yield encryptedMedia.subarray(1500, 2600);
+      yield encryptedMedia.subarray(2600);
+    })(),
+  });
+
+  try {
+    await decryptWechatMediaCommand(
+      {
+        mediaUrl: "https://wxapp.tc.qq.com/251/20302/stodownload?k=330933460",
+        output: outputPath,
+      },
+      { fetchMedia }
+    );
+
+    assert.equal(
+      createHash("sha256").update(readFileSync(outputPath)).digest("hex"),
+      "15350eb1ca63c3d277dbd6bd5c1ee3fbba2932c8ff76111e8ec275f0438166f6"
+    );
+  } finally {
+    rmSync(outputDir, { recursive: true, force: true });
+  }
+});
+
+test("wechat decrypt-media maps aborted downloads to a clear timeout error", async () => {
+  const outputDir = mkdtempSync(join(tmpdir(), "socialdatax-wechat-media-timeout-"));
+  const outputPath = join(outputDir, "video.mp4");
+  const fetchMedia = async () => {
+    const error = new Error("operation aborted");
+    error.name = "TimeoutError";
+    throw error;
+  };
+
+  try {
+    await assert.rejects(
+      decryptWechatMediaCommand(
+        {
+          mediaUrl: "https://wxapp.tc.qq.com/251/20302/stodownload?k=330933460",
+          output: outputPath,
+        },
+        { fetchMedia }
+      ),
+      /Media download timed out\./
+    );
+    assert.throws(() => readFileSync(outputPath), /ENOENT/);
+  } finally {
+    rmSync(outputDir, { recursive: true, force: true });
+  }
+});
+
+test("wechat decrypt-media rejects non-http media URLs before downloading", async () => {
+  const outputDir = mkdtempSync(join(tmpdir(), "socialdatax-wechat-media-invalid-url-"));
+  const outputPath = join(outputDir, "video.mp4");
+  const fetchMedia = async () => {
+    throw new Error("fetch should not be called");
+  };
+
+  try {
+    await assert.rejects(
+      decryptWechatMediaCommand(
+        {
+          mediaUrl: "data:text/plain,video?k=330933460",
+          output: outputPath,
+        },
+        { fetchMedia }
+      ),
+      /Invalid --media-url\./
+    );
+    assert.throws(() => readFileSync(outputPath), /ENOENT/);
+  } finally {
+    rmSync(outputDir, { recursive: true, force: true });
+  }
+});
+
+test("wechat decrypt-media accepts new allowed-domain media paths when k exists", async () => {
+  const outputDir = mkdtempSync(join(tmpdir(), "socialdatax-wechat-media-path-"));
+  const outputPath = join(outputDir, "video.mp4");
+  const plaintextMedia = Buffer.from("new-path-media");
+  const fetchCalls = [];
+  const fetchMedia = async (url) => {
+    fetchCalls.push(url);
+    return {
+      ok: true,
+      status: 200,
+      headers: {
+        get() {
+          return null;
+        },
+      },
+      body: (async function* plainChunks() {
+        yield plaintextMedia;
+      })(),
+    };
+  };
+
+  try {
+    await decryptWechatMediaCommand(
+      {
+        mediaUrl: "https://wxapp.tc.qq.com/new/video/path?k=330933460",
+        output: outputPath,
+      },
+      { fetchMedia }
+    );
+    assert.deepEqual(fetchCalls, [
+      "https://wxapp.tc.qq.com/new/video/path?k=330933460",
+    ]);
+    assert.deepEqual(readFileSync(outputPath), plaintextMedia);
+  } finally {
+    rmSync(outputDir, { recursive: true, force: true });
+  }
+});
+
+test("wechat decrypt-media rejects decode keys outside uint64 before downloading", async () => {
+  const outputDir = mkdtempSync(join(tmpdir(), "socialdatax-wechat-media-large-key-"));
+  const outputPath = join(outputDir, "video.mp4");
+  const fetchMedia = async () => {
+    throw new Error("fetch should not be called");
+  };
+
+  try {
+    await assert.rejects(
+      decryptWechatMediaCommand(
+        {
+          mediaUrl: "https://wxapp.tc.qq.com/251/20302/stodownload?k=18446744073709551616",
+          output: outputPath,
+        },
+        { fetchMedia }
+      ),
+      /Media URL cannot be decrypted\. Use the video\.video_url returned by SocialDataX WeChat detail\./
+    );
+    assert.throws(() => readFileSync(outputPath), /ENOENT/);
+  } finally {
+    rmSync(outputDir, { recursive: true, force: true });
+  }
+});
+
+test("wechat decrypt-media accepts other WeChat stodownload paths when k exists", async () => {
+  const outputDir = mkdtempSync(join(tmpdir(), "socialdatax-wechat-media-image-path-"));
+  const outputPath = join(outputDir, "video.mp4");
+  const plaintextMedia = Buffer.from("other-stodownload-path");
+  const fetchCalls = [];
+  const fetchMedia = async (url) => {
+    fetchCalls.push(url);
+    return {
+      ok: true,
+      status: 200,
+      headers: {
+        get() {
+          return null;
+        },
+      },
+      body: (async function* plainChunks() {
+        yield plaintextMedia;
+      })(),
+    };
+  };
+
+  try {
+    await decryptWechatMediaCommand(
+      {
+        mediaUrl: "https://wxapp.tc.qq.com/251/20304/stodownload?k=330933460",
+        output: outputPath,
+      },
+      { fetchMedia }
+    );
+    assert.deepEqual(fetchCalls, [
+      "https://wxapp.tc.qq.com/251/20304/stodownload?k=330933460",
+    ]);
+    assert.deepEqual(readFileSync(outputPath), plaintextMedia);
+  } finally {
+    rmSync(outputDir, { recursive: true, force: true });
+  }
+});
+
+test("wechat decrypt-media accepts findermp media host when k exists", async () => {
+  const outputDir = mkdtempSync(join(tmpdir(), "socialdatax-wechat-media-finder-host-"));
+  const outputPath = join(outputDir, "video.mp4");
+  const plaintextMedia = Buffer.from("finder-host-media");
+  const fetchCalls = [];
+  const fetchMedia = async (url) => {
+    fetchCalls.push(url);
+    return {
+      ok: true,
+      status: 200,
+      headers: {
+        get() {
+          return null;
+        },
+      },
+      body: (async function* plainChunks() {
+        yield plaintextMedia;
+      })(),
+    };
+  };
+
+  try {
+    await decryptWechatMediaCommand(
+      {
+        mediaUrl: "https://findermp.video.qq.com/251/20302/stodownload?k=330933460",
+        output: outputPath,
+      },
+      { fetchMedia }
+    );
+    assert.deepEqual(fetchCalls, [
+      "https://findermp.video.qq.com/251/20302/stodownload?k=330933460",
+    ]);
+    assert.deepEqual(readFileSync(outputPath), plaintextMedia);
+  } finally {
+    rmSync(outputDir, { recursive: true, force: true });
+  }
+});
+
+test("wechat decrypt-media accepts wst wxapp media host when k exists", async () => {
+  const outputDir = mkdtempSync(join(tmpdir(), "socialdatax-wechat-media-wst-host-"));
+  const outputPath = join(outputDir, "video.mp4");
+  const plaintextMedia = Buffer.from("wst-host-media");
+  const fetchCalls = [];
+  const fetchMedia = async (url) => {
+    fetchCalls.push(url);
+    return {
+      ok: true,
+      status: 200,
+      headers: {
+        get() {
+          return null;
+        },
+      },
+      body: (async function* plainChunks() {
+        yield plaintextMedia;
+      })(),
+    };
+  };
+
+  try {
+    await decryptWechatMediaCommand(
+      {
+        mediaUrl: "https://wst.wxapp.tc.qq.com/161/20304/snscosdownload?k=330933460",
+        output: outputPath,
+      },
+      { fetchMedia }
+    );
+    assert.deepEqual(fetchCalls, [
+      "https://wst.wxapp.tc.qq.com/161/20304/snscosdownload?k=330933460",
+    ]);
+    assert.deepEqual(readFileSync(outputPath), plaintextMedia);
+  } finally {
+    rmSync(outputDir, { recursive: true, force: true });
+  }
+});
+
+test("wechat decrypt-media accepts wxapp and video media host subtrees when k exists", async () => {
+  const outputDir = mkdtempSync(join(tmpdir(), "socialdatax-wechat-media-subtrees-"));
+  const mediaUrls = [
+    "https://cdn.wxapp.tc.qq.com/new/video/path?k=330933460",
+    "https://cdn.video.qq.com/new/video/path?k=330933460",
+  ];
+  const plaintextMedia = Buffer.from("subtree-host-media");
+  const fetchCalls = [];
+  const fetchMedia = async (url) => {
+    fetchCalls.push(url);
+    return {
+      ok: true,
+      status: 200,
+      headers: {
+        get() {
+          return null;
+        },
+      },
+      body: (async function* plainChunks() {
+        yield plaintextMedia;
+      })(),
+    };
+  };
+
+  try {
+    for (const [index, mediaUrl] of mediaUrls.entries()) {
+      const outputPath = join(outputDir, `video-${index}.mp4`);
+      await decryptWechatMediaCommand(
+        {
+          mediaUrl,
+          output: outputPath,
+        },
+        { fetchMedia }
+      );
+      assert.deepEqual(readFileSync(outputPath), plaintextMedia);
+    }
+    assert.deepEqual(fetchCalls, mediaUrls);
+  } finally {
+    rmSync(outputDir, { recursive: true, force: true });
+  }
+});
+
+test("wechat decrypt-media rejects lookalike WeChat media hosts before downloading", async () => {
+  const outputDir = mkdtempSync(join(tmpdir(), "socialdatax-wechat-media-lookalike-host-"));
+  const outputPath = join(outputDir, "video.mp4");
+  const fetchMedia = async () => {
+    throw new Error("fetch should not be called");
+  };
+
+  try {
+    await assert.rejects(
+      decryptWechatMediaCommand(
+        {
+          mediaUrl: "https://wxapp.tc.qq.com.evil.invalid/251/20302/stodownload?k=330933460",
+          output: outputPath,
+        },
+        { fetchMedia }
+      ),
+      /Media URL cannot be decrypted\. Use the video\.video_url returned by SocialDataX WeChat detail\./
+    );
+    assert.throws(() => readFileSync(outputPath), /ENOENT/);
+  } finally {
+    rmSync(outputDir, { recursive: true, force: true });
+  }
+});
+
+test("wechat decrypt-media rejects broad qq.com parent hosts before downloading", async () => {
+  const outputDir = mkdtempSync(join(tmpdir(), "socialdatax-wechat-media-parent-host-"));
+  const fetchMedia = async () => {
+    throw new Error("fetch should not be called");
+  };
+
+  try {
+    for (const [index, mediaUrl] of [
+      "https://qq.com/media.mp4?k=330933460",
+      "https://tc.qq.com/media.mp4?k=330933460",
+      "https://video.qq.com/media.mp4?k=330933460",
+    ].entries()) {
+      await assert.rejects(
+        decryptWechatMediaCommand(
+          {
+            mediaUrl,
+            output: join(outputDir, `video-${index}.mp4`),
+          },
+          { fetchMedia }
+        ),
+        /Media URL cannot be decrypted\. Use the video\.video_url returned by SocialDataX WeChat detail\./
+      );
+      assert.throws(() => readFileSync(join(outputDir, `video-${index}.mp4`)), /ENOENT/);
+    }
+  } finally {
+    rmSync(outputDir, { recursive: true, force: true });
+  }
+});
+
+test("wechat decrypt-media rejects non-default media URL ports before downloading", async () => {
+  const outputDir = mkdtempSync(join(tmpdir(), "socialdatax-wechat-media-port-"));
+  const outputPath = join(outputDir, "video.mp4");
+  const fetchMedia = async () => {
+    throw new Error("fetch should not be called");
+  };
+
+  try {
+    await assert.rejects(
+      decryptWechatMediaCommand(
+        {
+          mediaUrl: "https://wxapp.tc.qq.com:8443/251/20302/stodownload?k=330933460",
+          output: outputPath,
+        },
+        { fetchMedia }
+      ),
+      /Media URL cannot be decrypted\. Use the video\.video_url returned by SocialDataX WeChat detail\./
+    );
+    assert.throws(() => readFileSync(outputPath), /ENOENT/);
+  } finally {
+    rmSync(outputDir, { recursive: true, force: true });
+  }
+});
+
+test("wechat decrypt-media rejects media URL credentials before downloading", async () => {
+  const outputDir = mkdtempSync(join(tmpdir(), "socialdatax-wechat-media-credentials-"));
+  const outputPath = join(outputDir, "video.mp4");
+  const fetchMedia = async () => {
+    throw new Error("fetch should not be called");
+  };
+
+  try {
+    await assert.rejects(
+      decryptWechatMediaCommand(
+        {
+          mediaUrl: "https://user:pass@wxapp.tc.qq.com/251/20302/stodownload?k=330933460",
+          output: outputPath,
+        },
+        { fetchMedia }
+      ),
+      /Media URL cannot be decrypted\. Use the video\.video_url returned by SocialDataX WeChat detail\./
+    );
+    assert.throws(() => readFileSync(outputPath), /ENOENT/);
+  } finally {
+    rmSync(outputDir, { recursive: true, force: true });
+  }
+});
+
+test("wechat decrypt-media rejects directory output paths before downloading", async () => {
+  const outputDir = mkdtempSync(join(tmpdir(), "socialdatax-wechat-media-output-dir-"));
+  let fetchCalled = false;
+  const fetchMedia = async () => {
+    fetchCalled = true;
+    throw new Error("fetch should not be called");
+  };
+
+  try {
+    await assert.rejects(
+      decryptWechatMediaCommand(
+        {
+          mediaUrl: "https://wxapp.tc.qq.com/251/20302/stodownload?k=330933460",
+          output: outputDir,
+        },
+        { fetchMedia }
+      ),
+      /--output must be a file path for wechat decrypt-media\./
+    );
+    assert.equal(fetchCalled, false);
+  } finally {
+    rmSync(outputDir, { recursive: true, force: true });
+  }
+});
+
+test("wechat decrypt-media completes when file writes are partial", async () => {
+  const encryptedMedia = Buffer.from(
+    "9924d87a25344af3eb492e0b51154bdc66892d7461696c",
+    "hex"
+  );
+  const plaintextMedia = Buffer.from("plain-video-prefix-tail");
+  const outputDir = mkdtempSync(join(tmpdir(), "socialdatax-wechat-media-partial-write-"));
+  const outputPath = join(outputDir, "video.mp4");
+  const fetchMedia = async () => ({
+    ok: true,
+    status: 200,
+    headers: {
+      get(name) {
+        return name.toLowerCase() === "x-enclen" ? "18" : null;
+      },
+    },
+    body: (async function* encryptedChunks() {
+      yield encryptedMedia;
+    })(),
+  });
+  const probe = await openFile(join(outputDir, "probe.tmp"), "w");
+  const fileHandlePrototype = Object.getPrototypeOf(probe);
+  await probe.close();
+  const originalWrite = fileHandlePrototype.write;
+  const partialWriteLengths = [];
+  fileHandlePrototype.write = function writePartialBuffer(
+    buffer,
+    offset = 0,
+    length,
+    position
+  ) {
+    if (Buffer.isBuffer(buffer)) {
+      const requestedLength =
+        typeof length === "number" ? length : buffer.length - offset;
+      if (requestedLength > 1) {
+        const partialLength = Math.max(1, Math.floor(requestedLength / 2));
+        partialWriteLengths.push({
+          requestedLength,
+          partialLength,
+        });
+        return originalWrite.call(this, buffer, offset, partialLength, position);
+      }
+    }
+    return originalWrite.apply(this, arguments);
+  };
+
+  try {
+    await decryptWechatMediaCommand(
+      {
+        mediaUrl: "https://wxapp.tc.qq.com/251/20302/stodownload?k=330933460",
+        output: outputPath,
+      },
+      { fetchMedia }
+    );
+
+    assert.deepEqual(readFileSync(outputPath), plaintextMedia);
+    assert.ok(
+      partialWriteLengths.some(
+        ({ requestedLength, partialLength }) => partialLength < requestedLength
+      )
+    );
+  } finally {
+    fileHandlePrototype.write = originalWrite;
+    rmSync(outputDir, { recursive: true, force: true });
+  }
+});
+
+test("wechat decrypt-media requires the media URL decrypt key before API key checks", () => {
+  const result = runCli([
+    "wechat",
+    "decrypt-media",
+    "--media-url",
+    "https://wxapp.tc.qq.com/251/20302/stodownload",
+    "--output",
+    "video.mp4",
+  ]);
+
+  assertCliError(
+    result,
+    "Media URL cannot be decrypted\\. Use the video\\.video_url returned by SocialDataX WeChat detail\\."
+  );
+});
+
+test("wechat decrypt-media rejects API source metadata options", () => {
+  const result = runCli([
+    "wechat",
+    "decrypt-media",
+    "--media-url",
+    "https://wxapp.tc.qq.com/251/20302/stodownload?k=330933460",
+    "--output",
+    "video.mp4",
+    "--source-client",
+    "socialdatax-skills",
+  ]);
+
+  assertCliError(result, "Unsupported option --source-client\\.");
+});
+
+test("direct CLI rejects non-slug source skill before checking the API key", () => {
+  const result = runCli([
+    "xhs",
+    "search",
+    "--keyword",
+    "foo",
+    "--source-skill",
+    "skillhub/xhs-content-research",
+  ]);
+
+  assertCliError(
+    result,
+    "--source-skill must be a lowercase skill slug using letters, numbers, and hyphens\\."
+  );
+});
+
+test("xhs search keeps sort and filter options omitted unless explicitly provided", async () => {
+  const { result, toolCalls } = await runCliWithMockMcp(
+    ["xhs", "search", "--keyword", "露营"],
+    {},
+    ({ name }) => {
+      assert.equal(name, "xhs_search_notes");
+      return {
+        items: [{ note_id: "note-1" }],
+        next_page_token: "",
+      };
+    }
+  );
+
+  assert.equal(result.status, 0, result.stderr);
+  assert.deepEqual(toolCalls.map((call) => call.arguments), [{ keyword: "露营" }]);
 });
 
 test("xhs search accepts all public sort values before checking the API key", () => {
@@ -625,11 +3964,186 @@ test("xhs search maps legacy sort aliases to public MCP arguments", async () => 
       name: "xhs_search_notes",
       arguments: {
         keyword: "露营",
-        page: 1,
         sort_type: "like_count_descending",
       },
     },
   ]);
+});
+
+test("xhs search maps page-token to MCP arguments without legacy page", async () => {
+  const { result, toolCalls } = await runCliWithMockMcp([
+    "xhs",
+    "search",
+    "--keyword",
+    "露营",
+    "--page-token",
+    "next-search-token",
+  ]);
+
+  assert.equal(result.status, 0, result.stderr);
+  assert.deepEqual(toolCalls, [
+    {
+      name: "xhs_search_notes",
+      arguments: {
+        keyword: "露营",
+        page_token: "next-search-token",
+      },
+    },
+  ]);
+  assert.deepEqual(JSON.parse(result.stdout), {
+    platform: "xhs",
+    tool: "xhs_search_notes",
+    arguments: {
+      keyword: "露营",
+      page_token: "next-search-token",
+    },
+    data: { ok: true },
+  });
+});
+
+test("xhs comments maps comment sort type to MCP arguments", async () => {
+  const { result, toolCalls } = await runCliWithMockMcp([
+    "xhs",
+    "comments",
+    "--note-id",
+    "note-1",
+    "--page-token",
+    "next-comments-token",
+    "--sort-type",
+    "time_descending",
+  ]);
+
+  assert.equal(result.status, 0, result.stderr);
+  assert.deepEqual(toolCalls, [
+    {
+      name: "xhs_get_note_comments_by_note_id",
+      arguments: {
+        note_id: "note-1",
+        page_token: "next-comments-token",
+        sort_type: "time_descending",
+      },
+    },
+  ]);
+  assert.deepEqual(JSON.parse(result.stdout), {
+    platform: "xhs",
+    tool: "xhs_get_note_comments_by_note_id",
+    arguments: {
+      note_id: "note-1",
+      page_token: "next-comments-token",
+      sort_type: "time_descending",
+    },
+    data: { ok: true },
+  });
+});
+
+test("xhs comments maps every public comment sort type to MCP arguments", async () => {
+  for (const sortType of ["default", "time_descending", "like_count_descending"]) {
+    const { result, toolCalls } = await runCliWithMockMcp([
+      "xhs",
+      "comments",
+      "--note-id",
+      "note-1",
+      "--sort-type",
+      sortType,
+    ]);
+
+    assert.equal(result.status, 0, result.stderr);
+    assert.deepEqual(toolCalls, [
+      {
+        name: "xhs_get_note_comments_by_note_id",
+        arguments: {
+          note_id: "note-1",
+          sort_type: sortType,
+        },
+      },
+    ]);
+  }
+});
+
+test("xhs comments keeps comment sort type for URL pagination", async () => {
+  const { result, toolCalls } = await runCliWithMockMcp(
+    [
+      "xhs",
+      "comments",
+      "--url",
+      "https://www.xiaohongshu.com/explore/note-1",
+      "--sort-type",
+      "like_count_descending",
+      "--pages",
+      "2",
+    ],
+    {},
+    ({ name, arguments: args }) => {
+      assert.equal(name, "xhs_get_note_comments_by_note_url");
+      assert.equal(args.sort_type, "like_count_descending");
+      if (args.page_token) {
+        return {
+          items: [{ comment_id: "comment-2" }],
+          next_page_token: "",
+        };
+      }
+      return {
+        items: [{ comment_id: "comment-1" }],
+        next_page_token: "next-comments-token",
+      };
+    }
+  );
+
+  assert.equal(result.status, 0, result.stderr);
+  assert.deepEqual(toolCalls, [
+    {
+      name: "xhs_get_note_comments_by_note_url",
+      arguments: {
+        note_url: "https://www.xiaohongshu.com/explore/note-1",
+        sort_type: "like_count_descending",
+      },
+    },
+    {
+      name: "xhs_get_note_comments_by_note_url",
+      arguments: {
+        note_url: "https://www.xiaohongshu.com/explore/note-1",
+        sort_type: "like_count_descending",
+        page_token: "next-comments-token",
+      },
+    },
+  ]);
+  const payload = JSON.parse(result.stdout);
+  assert.deepEqual(payload.data.items, [
+    { comment_id: "comment-1" },
+    { comment_id: "comment-2" },
+  ]);
+  assert.equal(payload.data.page_count, 2);
+});
+
+test("xhs comments accepts only public comment sort values before checking the API key", () => {
+  for (const sortType of ["default", "time_descending", "like_count_descending"]) {
+    const result = runCli([
+      "xhs",
+      "comments",
+      "--note-id",
+      "note-1",
+      "--sort-type",
+      sortType,
+    ]);
+
+    assertCliError(
+      result,
+      "Missing API Key\\. Set SOCIALDATAX_API_KEY before running direct CLI calls\\."
+    );
+  }
+
+  const invalidSearchSort = runCli([
+    "xhs",
+    "comments",
+    "--note-id",
+    "note-1",
+    "--sort-type",
+    "general",
+  ]);
+  assertCliError(
+    invalidSearchSort,
+    'Unsupported --sort-type "general"\\. Use one of: default, time_descending, like_count_descending\\.'
+  );
 });
 
 test("xhs search accepts public note type and publish time filters before checking the API key", () => {
@@ -1057,10 +4571,10 @@ test("douyin openclaw plugin only exposes profile-url user tools", () => {
   );
   const readme = readFileSync(join(openclawDir, "README.md"), "utf8");
 
-  assert.equal(packageJson.version, "0.2.7");
-  assert.equal(pluginManifest.version, "0.2.7");
-  assert.match(pluginSource, /const PLUGIN_VERSION = "0\.2\.7";/);
-  assert.match(readme, /Version: `0\.2\.7`/);
+  assert.equal(packageJson.version, "0.2.8");
+  assert.equal(pluginManifest.version, "0.2.8");
+  assert.match(pluginSource, /const PLUGIN_VERSION = "0\.2\.8";/);
+  assert.match(readme, /Version: `0\.2\.8`/);
   assert.deepEqual(Object.keys(pluginManifest.configSchema.properties), [
     "connectionTimeoutMs",
   ]);
@@ -1089,7 +4603,7 @@ test("douyin openclaw plugin only exposes profile-url user tools", () => {
   });
   assert.match(
     readme,
-    /sends the key only to the fixed endpoint `https:\/\/mcp\.52choujiang\.com\/douyin\/mcp`/
+    /sends the key only to the fixed endpoint `https:\/\/mcp\.socialdatax\.com\/douyin\/mcp`/
   );
   assert.match(
     pluginSource,
@@ -1195,9 +4709,13 @@ test("douyin openclaw plugin only exposes profile-url user tools", () => {
   );
   assert.doesNotMatch(pluginSource, /const PAGE_TOKEN_PROPERTY = \{\n  anyOf:/);
   assert.match(pluginSource, /const PAGE_TOKEN_PROPERTY = \{\n  type: "string",/);
-  assert.match(pluginSource, /previous non-empty next_page_token to continue/);
-  assert.match(pluginSource, /Empty next_page_token means there is no next page/);
-  assert.match(pluginSource, /Do not parse, modify, or reuse tokens across pagination chains/);
+  assert.match(pluginSource, /complete returned next_page_token back unchanged/);
+  assert.match(
+    pluginSource,
+    /Do not modify, truncate, redact, mask, omit, normalize, rebuild, generate, or replace the middle with ellipses/
+  );
+  assert.doesNotMatch(pluginSource, /previous non-empty next_page_token to continue/);
+  assert.doesNotMatch(pluginSource, /Do not parse, modify, or reuse tokens across pagination chains/);
   assert.match(
     pluginSource,
     /sort_type: \{\n\s+type: "string",\n\s+enum: \["general", "time_descending", "like_count_descending"\],\n\s+default: "general",/
@@ -1235,10 +4753,10 @@ test("xhs openclaw search schema documents semantic sort enums", () => {
   );
   const readme = readFileSync(join(openclawDir, "README.md"), "utf8");
 
-  assert.equal(packageJson.version, "0.1.17");
-  assert.equal(pluginManifest.version, "0.1.17");
-  assert.match(pluginSource, /const PLUGIN_VERSION = "0\.1\.17";/);
-  assert.match(readme, /Version: `0\.1\.17`/);
+  assert.equal(packageJson.version, "0.1.19");
+  assert.equal(pluginManifest.version, "0.1.19");
+  assert.match(pluginSource, /const PLUGIN_VERSION = "0\.1\.19";/);
+  assert.match(readme, /Version: `0\.1\.19`/);
 
   assert.deepEqual(pluginManifest.providerAuthChoices[0], {
     provider: "xhs-insights",
@@ -1286,6 +4804,17 @@ test("xhs openclaw search schema documents semantic sort enums", () => {
     pluginSource,
     /enum: \[\n\s+"general",\n\s+"time_descending",\n\s+"like_count_descending",\n\s+"comment_count_descending",\n\s+"collect_count_descending",\n\s+\]/
   );
+  const searchDefinition = pluginSource.match(
+    /name: "xhs-insights__xhs_search_notes",[\s\S]*?name: "xhs-insights__xhs_get_note_detail_by_note_url"/
+  )?.[0];
+  assert.ok(searchDefinition, "xhs search tool definition should exist");
+  assert.match(searchDefinition, /page_token: PAGE_TOKEN_PROPERTY/);
+  assert.doesNotMatch(searchDefinition, /\n\s+page: \{/);
+  assert.doesNotMatch(searchDefinition, /Search result page number/);
+  assert.match(
+    pluginSource,
+    /complete returned next_page_token back unchanged/
+  );
   assert.match(
     pluginSource,
     /time_descending \(latest published first\), like_count_descending \(most liked first\), comment_count_descending \(most commented first\), or collect_count_descending \(most collected first\)/
@@ -1294,6 +4823,23 @@ test("xhs openclaw search schema documents semantic sort enums", () => {
     pluginSource,
     /popularity_descending|comment_descending|collect_descending/
   );
+
+  for (const toolName of [
+    "xhs-insights__xhs_get_note_comments_by_note_id",
+    "xhs-insights__xhs_get_note_comments_by_note_url",
+  ]) {
+    const commentDefinition = pluginSource.match(
+      new RegExp(`name: "${toolName}",[\\s\\S]*?\\n  \\},\\n  \\{`)
+    )?.[0];
+    assert.ok(commentDefinition, `${toolName} definition should exist`);
+    assert.match(commentDefinition, /optional comment sort_type/);
+    assert.match(commentDefinition, /sort_type: \{/);
+    assert.match(
+      commentDefinition,
+      /enum: \["default", "time_descending", "like_count_descending"\]/
+    );
+    assert.match(commentDefinition, /default \(platform default\)/);
+  }
 });
 
 test("xhs openclaw preserves returned note URLs in search and detail guidance", () => {
@@ -1414,7 +4960,7 @@ test("douyin share-link is not a public direct CLI command", () => {
     "aweme-1",
   ]);
 
-  assertCliError(result, 'Unsupported Douyin command "share-link"\\. Use hot-search, search, detail, comments, replies, user-info, user-posts, user-series\\.');
+  assertCliError(result, 'Unsupported Douyin command "share-link"\\. Use hot-search, search, detail, comments, replies, user-info, user-posts, user-series, transcript\\.');
 });
 
 test("douyin live-info is not a public direct CLI command", () => {
@@ -1425,7 +4971,7 @@ test("douyin live-info is not a public direct CLI command", () => {
     "https://live.douyin.com/test",
   ]);
 
-  assertCliError(result, 'Unsupported Douyin command "live-info"\\. Use hot-search, search, detail, comments, replies, user-info, user-posts, user-series\\.');
+  assertCliError(result, 'Unsupported Douyin command "live-info"\\. Use hot-search, search, detail, comments, replies, user-info, user-posts, user-series, transcript\\.');
 });
 
 test("douyin user-series direct command maps profile-url and page-token", async () => {
@@ -1459,6 +5005,15 @@ test("douyin user-series direct command maps sec-user-id", async () => {
   assert.deepEqual(toolCalls[0].arguments, {
     sec_user_id: "sec-1",
   });
+});
+
+test("kuaishou hot-search direct command reaches the missing API key error", () => {
+  const result = runCli(["kuaishou", "hot-search"]);
+
+  assertCliError(
+    result,
+    "Missing API Key\\. Set SOCIALDATAX_API_KEY before running direct CLI calls\\."
+  );
 });
 
 test("kuaishou hot-search maps to the public MCP tool", async () => {
@@ -1502,6 +5057,78 @@ test("kuaishou search maps keyword and page-token to MCP arguments", async () =>
     },
     data: { ok: true },
   });
+});
+
+test("kuaishou user-search maps keyword and page-token to MCP arguments", async () => {
+  const { result, toolCalls } = await runCliWithMockMcp([
+    "kuaishou",
+    "user-search",
+    "--keyword",
+    "露营",
+    "--page-token",
+    "next-token",
+  ]);
+
+  assert.equal(result.status, 0, result.stderr);
+  assert.deepEqual(toolCalls, [
+    {
+      name: "kuaishou_search_users",
+      arguments: {
+        keyword: "露营",
+        page_token: "next-token",
+      },
+    },
+  ]);
+  assert.deepEqual(JSON.parse(result.stdout), {
+    platform: "kuaishou",
+    tool: "kuaishou_search_users",
+    arguments: {
+      keyword: "露营",
+      page_token: "next-token",
+    },
+    data: { ok: true },
+  });
+});
+
+test("kuaishou user-search pages deduplicate repeated user ids", async () => {
+  let callCount = 0;
+  const { result, toolCalls } = await runCliWithMockMcp(
+    ["kuaishou", "user-search", "--keyword", "露营", "--pages", "2"],
+    {},
+    ({ name, arguments: args }) => {
+      assert.equal(name, "kuaishou_search_users");
+      assert.equal(args.keyword, "露营");
+      assert.equal(args.page, undefined);
+      callCount += 1;
+      return callCount === 1
+        ? {
+            items: [
+              { user_id: "user-1", name: "first" },
+              { user_id: "user-2", name: "second" },
+            ],
+            next_page_token: "next-users",
+          }
+        : {
+            items: [
+              { user_id: "user-1", name: "duplicate" },
+              { user_id: "user-3", name: "third" },
+            ],
+            next_page_token: "",
+          };
+    }
+  );
+
+  assert.equal(result.status, 0, result.stderr);
+  assert.deepEqual(toolCalls.map((call) => call.arguments), [
+    { keyword: "露营" },
+    { keyword: "露营", page_token: "next-users" },
+  ]);
+  const payload = JSON.parse(result.stdout);
+  assert.deepEqual(
+    payload.data.items.map((item) => item.user_id),
+    ["user-1", "user-2", "user-3"]
+  );
+  assert.equal(payload.data.item_count, 3);
 });
 
 test("douyin and kuaishou search pages use page-token continuation only", async () => {
@@ -1633,6 +5260,16 @@ test("kuaishou validates direct command options before checking the API key", ()
     "time_descending",
   ]);
   assertCliError(unsupported, "Unsupported option --sort-type\\.");
+
+  const unsupportedCreatorSinceDays = runCli([
+    "kuaishou",
+    "user-search",
+    "--keyword",
+    "foo",
+    "--since-days",
+    "7",
+  ]);
+  assertCliError(unsupportedCreatorSinceDays, "Unsupported option --since-days\\.");
 
   const missingPhotoId = runCli([
     "kuaishou",
@@ -1806,7 +5443,7 @@ test("wechat direct commands map public Video Channels operations", async () => 
     "--keyword",
     "露营",
     "--sort-type",
-    "latest",
+    "time_descending",
     "--duration-range",
     "under_5_min",
     "--page-token",
@@ -1817,7 +5454,7 @@ test("wechat direct commands map public Video Channels operations", async () => 
     name: "wechat_search_videos",
     arguments: {
       keyword: "露营",
-      sort_type: "latest",
+      sort_type: "time_descending",
       duration_range: "under_5_min",
       page_token: "next",
     },
@@ -1911,6 +5548,62 @@ test("wechat user commands map url and finder user ids", async () => {
   });
 });
 
+test("wechat article command maps official account article url", async () => {
+  const article = await runCliWithMockMcp([
+    "wechat",
+    "article",
+    "--url",
+    "https://mp.weixin.qq.com/s/cyog0u9QpLFvdBsh9JR3_g",
+  ]);
+
+  assert.equal(article.result.status, 0, article.result.stderr);
+  assert.deepEqual(article.toolCalls[0], {
+    name: "wechat_get_mp_article_detail_by_url",
+    arguments: {
+      url: "https://mp.weixin.qq.com/s/cyog0u9QpLFvdBsh9JR3_g",
+    },
+  });
+});
+
+test("wechat search accepts semantic sort values and rejects legacy sort names", () => {
+  for (const sortType of [
+    "all",
+    "time_descending",
+    "collect_count_descending",
+  ]) {
+    const result = runCli([
+      "wechat",
+      "search",
+      "--keyword",
+      "foo",
+      "--sort-type",
+      sortType,
+    ]);
+
+    assertCliError(
+      result,
+      "Missing API Key\\. Set SOCIALDATAX_API_KEY before running direct CLI calls\\."
+    );
+  }
+
+  for (const sortType of ["general", "latest", "popular", "popularity_descending"]) {
+    const result = runCli([
+      "wechat",
+      "search",
+      "--keyword",
+      "foo",
+      "--sort-type",
+      sortType,
+    ]);
+
+    assertCliError(
+      result,
+      `Unsupported --sort-type "${sortType}"\\. Use one of: all, time_descending, collect_count_descending\\.`
+    );
+  }
+});
+
+
 test("weibo and wechat validate direct command options before checking the API key", () => {
   assertCliError(
     runCli(["weibo", "search", "--keyword", "foo", "--page", "2"]),
@@ -1929,6 +5622,18 @@ test("weibo and wechat validate direct command options before checking the API k
     "Missing --object-nonce-id for wechat replies\\."
   );
   assertCliError(
+    runCli(["wechat", "article"]),
+    "Missing --url for wechat article\\."
+  );
+  assertCliError(
+    runCli(["wechat"]),
+    "Missing WeChat command\\. Use .*article.*\\."
+  );
+  assertCliError(
+    runCli(["wechat", "unknown"]),
+    'Unsupported WeChat command "unknown"\\. Use .*article.*\\.'
+  );
+  assertCliError(
     runCli(["weibo", "search", "--keyword", "foo"]),
     "Missing API Key\\. Set SOCIALDATAX_API_KEY before running direct CLI calls\\."
   );
@@ -1938,7 +5643,7 @@ test("weibo and wechat validate direct command options before checking the API k
   );
 });
 
-test("xhs search pages follow returned next_page and aggregate items", async () => {
+test("xhs search pages require returned next_page_token to aggregate items", async () => {
   let searchCallCount = 0;
   const { result, toolCalls } = await runCliWithMockMcp(
     [
@@ -1957,19 +5662,19 @@ test("xhs search pages follow returned next_page and aggregate items", async () 
       return searchCallCount === 1
         ? {
             items: [{ note_id: "note-1" }],
-            next_page: 2,
+            next_page_token: "next-search-token",
           }
         : {
             items: [{ note_id: "note-2" }],
-            next_page: null,
+            next_page_token: "",
           };
     }
   );
 
   assert.equal(result.status, 0, result.stderr);
   assert.deepEqual(toolCalls.map((call) => call.arguments), [
-    { keyword: "露营", page: 1 },
-    { keyword: "露营", page: 2 },
+    { keyword: "露营" },
+    { keyword: "露营", page_token: "next-search-token" },
   ]);
   const payload = JSON.parse(result.stdout);
   assert.deepEqual(payload.data.items, [
@@ -1978,7 +5683,274 @@ test("xhs search pages follow returned next_page and aggregate items", async () 
   ]);
   assert.equal(payload.data.page_count, 2);
   assert.equal(payload.data.item_count, 2);
-  assert.equal(payload.data.next_page, null);
+  assert.equal(payload.data.next_page_token, "");
+});
+
+test("xhs search pages ignore legacy next_page without next_page_token", async () => {
+  const { result, toolCalls } = await runCliWithMockMcp(
+    [
+      "xhs",
+      "search",
+      "--keyword",
+      "露营",
+      "--pages",
+      "2",
+      "--pretty",
+    ],
+    {},
+    ({ name }) => {
+      assert.equal(name, "xhs_search_notes");
+      return {
+        items: [{ note_id: "note-1" }],
+        next_page: 2,
+      };
+    }
+  );
+
+  assert.equal(result.status, 0, result.stderr);
+  assert.deepEqual(toolCalls.map((call) => call.arguments), [{ keyword: "露营" }]);
+  const payload = JSON.parse(result.stdout);
+  assert.deepEqual(payload.data.items, [{ note_id: "note-1" }]);
+  assert.equal(payload.data.page_count, 1);
+  assert.equal(payload.data.item_count, 1);
+  assert.equal(payload.data.next_page_token, "");
+  assert.equal(Object.hasOwn(payload.data, "next_page"), false);
+});
+
+test("since-days validates values before direct CLI calls", () => {
+  for (const validValue of ["1", "7", "30", "365"]) {
+    const result = runCli([
+      "xhs",
+      "search",
+      "--keyword",
+      "foo",
+      "--since-days",
+      validValue,
+    ]);
+    assertCliError(
+      result,
+      "Missing API Key\\. Set SOCIALDATAX_API_KEY before running direct CLI calls\\."
+    );
+  }
+
+  for (const invalidValue of ["0", "-1", "1.5", "abc", "366"]) {
+    const result = runCli([
+      "xhs",
+      "search",
+      "--keyword",
+      "foo",
+      "--since-days",
+      invalidValue,
+    ]);
+    assertCliError(
+      result,
+      "--since-days must be an integer between 1 and 365\\."
+    );
+  }
+});
+
+test("since-days is only supported for search and user-posts", () => {
+  assertCliError(
+    runCli(["xhs", "detail", "--note-id", "note-1", "--since-days", "7"]),
+    "Unsupported option --since-days\\."
+  );
+  assertCliError(
+    runCli(["douyin", "user-series", "--sec-user-id", "sec-1", "--since-days", "7"]),
+    "Unsupported option --since-days\\."
+  );
+  assertCliError(
+    runCli(["weibo", "likers", "--post-id", "post-1", "--since-days", "7"]),
+    "Unsupported option --since-days\\."
+  );
+  assertCliError(
+    runCli(["kuaishou", "user-search", "--keyword", "露营", "--since-days", "7"]),
+    "Unsupported option --since-days\\."
+  );
+});
+
+test("xhs search since-days defaults to latest sorting and week native filter", async () => {
+  const { result, toolCalls } = await runCliWithMockMcp(
+    [
+      "xhs",
+      "search",
+      "--keyword",
+      "露营",
+      "--since-days",
+      "7",
+      "--pretty",
+    ],
+    {},
+    ({ name }) => {
+      assert.equal(name, "xhs_search_notes");
+      return {
+        items: [
+          { note_id: "recent-note", publish_time: unixSecondsDaysAgo(2) },
+          { note_id: "old-note", publish_time: unixSecondsDaysAgo(8) },
+          { note_id: "missing-time" },
+        ],
+        next_page_token: "next-search-token",
+      };
+    }
+  );
+
+  assert.equal(result.status, 0, result.stderr);
+  assert.deepEqual(toolCalls.map((call) => call.arguments), [
+    {
+      keyword: "露营",
+      sort_type: "time_descending",
+      publish_time_range: "week",
+    },
+  ]);
+  const payload = JSON.parse(result.stdout);
+  assert.deepEqual(payload.data.items.map((item) => item.note_id), ["recent-note"]);
+  assert.equal(payload.data.page_count, 1);
+  assert.equal(payload.data.item_count, 1);
+  assert.equal(payload.data.next_page_token, "next-search-token");
+});
+
+test("search since-days respects explicit sort and publish-time filters", async () => {
+  const { result, toolCalls } = await runCliWithMockMcp(
+    [
+      "douyin",
+      "search",
+      "--keyword",
+      "露营",
+      "--since-days",
+      "7",
+      "--sort-type",
+      "like_count_descending",
+      "--publish-time-range",
+      "day",
+    ],
+    {},
+    ({ name }) => {
+      assert.equal(name, "douyin_search_videos");
+      return {
+        items: [{ aweme_id: "recent-aweme", publish_time: unixSecondsDaysAgo(1) }],
+        next_page_token: "",
+      };
+    }
+  );
+
+  assert.equal(result.status, 0, result.stderr);
+  assert.deepEqual(toolCalls.map((call) => call.arguments), [
+    {
+      keyword: "露营",
+      sort_type: "like_count_descending",
+      publish_time_range: "day",
+    },
+  ]);
+});
+
+test("search since-days applies platform-specific default latest sorting only where supported", async () => {
+  const douyin = await runCliWithMockMcp(
+    ["douyin", "search", "--keyword", "露营", "--since-days", "1"],
+    {},
+    ({ name }) => {
+      assert.equal(name, "douyin_search_videos");
+      return {
+        items: [{ aweme_id: "aweme-1", publish_time: unixSecondsDaysAgo(0) }],
+        next_page_token: "",
+      };
+    }
+  );
+  const kuaishou = await runCliWithMockMcp(
+    ["kuaishou", "search", "--keyword", "露营", "--since-days", "7"],
+    {},
+    ({ name }) => {
+      assert.equal(name, "kuaishou_search_videos");
+      return {
+        items: [{ photo_id: "photo-1", publish_time: unixSecondsDaysAgo(2) }],
+        next_page_token: "",
+      };
+    }
+  );
+  const weibo = await runCliWithMockMcp(
+    ["weibo", "search", "--keyword", "露营", "--since-days", "7"],
+    {},
+    ({ name }) => {
+      assert.equal(name, "weibo_search_posts");
+      return {
+        items: [{ post_id: "post-1", publish_time: unixSecondsDaysAgo(2) }],
+        next_page_token: "",
+      };
+    }
+  );
+  const wechat = await runCliWithMockMcp(
+    ["wechat", "search", "--keyword", "露营", "--since-days", "7"],
+    {},
+    ({ name }) => {
+      assert.equal(name, "wechat_search_videos");
+      return {
+        items: [{ encrypted_object_id: "object-1", publish_time: unixSecondsDaysAgo(2) }],
+        next_page_token: "",
+      };
+    }
+  );
+
+  assert.equal(douyin.result.status, 0, douyin.result.stderr);
+  assert.equal(kuaishou.result.status, 0, kuaishou.result.stderr);
+  assert.equal(weibo.result.status, 0, weibo.result.stderr);
+  assert.equal(wechat.result.status, 0, wechat.result.stderr);
+  assert.deepEqual(douyin.toolCalls[0].arguments, {
+    keyword: "露营",
+    sort_type: "time_descending",
+    publish_time_range: "day",
+  });
+  assert.deepEqual(kuaishou.toolCalls[0].arguments, { keyword: "露营" });
+  assert.deepEqual(weibo.toolCalls[0].arguments, { keyword: "露营" });
+  assert.deepEqual(wechat.toolCalls[0].arguments, {
+    keyword: "露营",
+    sort_type: "time_descending",
+  });
+});
+
+test("search since-days filters within requested pages only", async () => {
+  const { result, toolCalls } = await runCliWithMockMcp(
+    [
+      "kuaishou",
+      "search",
+      "--keyword",
+      "露营",
+      "--since-days",
+      "7",
+      "--pages",
+      "2",
+      "--max-items",
+      "2",
+    ],
+    {},
+    ({ name, arguments: args }) => {
+      assert.equal(name, "kuaishou_search_videos");
+      if (args.page_token) {
+        return {
+          items: [
+            { photo_id: "photo-2", publish_time: unixSecondsDaysAgo(3) },
+            { photo_id: "photo-3", publish_time: unixSecondsDaysAgo(4) },
+          ],
+          next_page_token: "still-has-more",
+        };
+      }
+      return {
+        items: [
+          { photo_id: "old-photo", publish_time: unixSecondsDaysAgo(9) },
+          { photo_id: "photo-1", publish_time: unixSecondsDaysAgo(1) },
+        ],
+        next_page_token: "next-search-token",
+      };
+    }
+  );
+
+  assert.equal(result.status, 0, result.stderr);
+  assert.equal(toolCalls.length, 2);
+  const payload = JSON.parse(result.stdout);
+  assert.deepEqual(payload.data.items.map((item) => item.photo_id), [
+    "photo-1",
+    "photo-2",
+  ]);
+  assert.equal(payload.data.page_count, 2);
+  assert.equal(payload.data.item_count, 2);
+  assert.equal(payload.data.next_page_token, "still-has-more");
 });
 
 test("xhs search pagination de-duplicates repeated note ids", async () => {
@@ -2003,14 +5975,14 @@ test("xhs search pagination de-duplicates repeated note ids", async () => {
               { note_id: "note-1", title: "first" },
               { note_id: "note-2", title: "second" },
             ],
-            next_page: 2,
+            next_page_token: "next-search-token",
           }
         : {
             items: [
               { note_id: "note-1", title: "first duplicate" },
               { note_id: "note-3", title: "third" },
             ],
-            next_page: null,
+            next_page_token: "",
           };
     }
   );
@@ -2055,7 +6027,7 @@ test("xhs search pagination de-duplicates same note content with different note 
                 cover_image_url: coverImageUrl,
               },
             ],
-            next_page: 2,
+            next_page_token: "next-search-token",
           }
         : {
             items: [
@@ -2075,7 +6047,7 @@ test("xhs search pagination de-duplicates same note content with different note 
                   "https://sns-na-i6.xhscdn.com/notes_pre_post/other-token?imageView2/2/w/1440/format/heif",
               },
             ],
-            next_page: null,
+            next_page_token: "",
           };
     }
   );
@@ -2113,7 +6085,7 @@ test("xhs search fingerprint de-duplication keeps items without complete evidenc
                 publish_time: 1700000000,
               },
             ],
-            next_page: 2,
+            next_page_token: "next-search-token",
           }
         : {
             items: [
@@ -2123,7 +6095,7 @@ test("xhs search fingerprint de-duplication keeps items without complete evidenc
                 publish_time: 1700000000,
               },
             ],
-            next_page: null,
+            next_page_token: "",
           };
     }
   );
@@ -2164,7 +6136,7 @@ test("xhs search de-duplication records skipped alias note ids", async () => {
               cover_image_url: "https://sns-na-i6.xhscdn.com/cover-a?imageView2/2/w/1440",
             },
           ],
-          next_page: 2,
+          next_page_token: "next-search-token-2",
         };
       }
       if (searchCallCount === 2) {
@@ -2177,7 +6149,7 @@ test("xhs search de-duplication records skipped alias note ids", async () => {
               cover_image_url: "https://sns-na-i6.xhscdn.com/cover-a?imageView2/2/w/1440",
             },
           ],
-          next_page: 3,
+          next_page_token: "next-search-token-3",
         };
       }
       return {
@@ -2195,7 +6167,7 @@ test("xhs search de-duplication records skipped alias note ids", async () => {
             cover_image_url: "https://sns-na-i6.xhscdn.com/cover-c?imageView2/2/w/1440",
           },
         ],
-        next_page: null,
+        next_page_token: "",
       };
     }
   );
@@ -2763,6 +6735,157 @@ test("kuaishou user-posts pagination de-duplicates repeated photo ids", async ()
   assert.equal(payload.data.item_count, 3);
 });
 
+test("user-posts since-days auto paginates until the publish-time boundary", async () => {
+  let postsCallCount = 0;
+  const { result, toolCalls } = await runCliWithMockMcp(
+    [
+      "xhs",
+      "user-posts",
+      "--user-id",
+      "author-1",
+      "--since-days",
+      "7",
+      "--pretty",
+    ],
+    {},
+    ({ name }) => {
+      assert.equal(name, "xhs_get_user_posted_notes_by_user_id");
+      postsCallCount += 1;
+      return postsCallCount === 1
+        ? {
+            items: [
+              { note_id: "recent-note-1", publish_time: unixSecondsDaysAgo(1) },
+              { note_id: "missing-time" },
+            ],
+            next_page_token: "next-posts-token",
+          }
+        : {
+            items: [
+              { note_id: "recent-note-2", publish_time: unixSecondsDaysAgo(2) },
+              { note_id: "old-note", publish_time: unixSecondsDaysAgo(8) },
+            ],
+            next_page_token: "still-has-more",
+          };
+    }
+  );
+
+  assert.equal(result.status, 0, result.stderr);
+  assert.deepEqual(toolCalls.map((call) => call.arguments), [
+    { user_id: "author-1" },
+    { user_id: "author-1", page_token: "next-posts-token" },
+  ]);
+  const payload = JSON.parse(result.stdout);
+  assert.deepEqual(payload.data.items.map((item) => item.note_id), [
+    "recent-note-1",
+    "recent-note-2",
+  ]);
+  assert.equal(payload.data.page_count, 2);
+  assert.equal(payload.data.item_count, 2);
+  assert.equal(payload.data.next_page_token, "still-has-more");
+  assert.equal(payload.data.stopped_by_since_days, true);
+});
+
+test("user-posts since-days missing publish times do not trigger boundary stop", async () => {
+  let postsCallCount = 0;
+  const { result, toolCalls } = await runCliWithMockMcp(
+    [
+      "douyin",
+      "user-posts",
+      "--sec-user-id",
+      "sec-user-1",
+      "--since-days",
+      "7",
+    ],
+    {},
+    ({ name }) => {
+      assert.equal(name, "douyin_get_user_posted_videos_by_sec_user_id");
+      postsCallCount += 1;
+      return postsCallCount === 1
+        ? {
+            items: [{ aweme_id: "missing-time" }],
+            next_page_token: "next-posts-token",
+          }
+        : {
+            items: [{ aweme_id: "recent-aweme", publish_time: unixSecondsDaysAgo(1) }],
+            next_page_token: "",
+          };
+    }
+  );
+
+  assert.equal(result.status, 0, result.stderr);
+  assert.equal(toolCalls.length, 2);
+  const payload = JSON.parse(result.stdout);
+  assert.deepEqual(payload.data.items.map((item) => item.aweme_id), ["recent-aweme"]);
+  assert.equal(payload.data.stopped_by_since_days, undefined);
+});
+
+test("since-days filters before applying max-items", async () => {
+  const { result } = await runCliWithMockMcp(
+    [
+      "weibo",
+      "user-posts",
+      "--user-id",
+      "user-1",
+      "--since-days",
+      "7",
+      "--max-items",
+      "1",
+    ],
+    {},
+    ({ name }) => {
+      assert.equal(name, "weibo_get_user_posts_by_user_id");
+      return {
+        items: [
+          { post_id: "old-post", publish_time: unixSecondsDaysAgo(10) },
+          { post_id: "recent-post-1", publish_time: unixSecondsDaysAgo(1) },
+          { post_id: "recent-post-2", publish_time: unixSecondsDaysAgo(2) },
+        ],
+        next_page_token: "next-posts-token",
+      };
+    }
+  );
+
+  assert.equal(result.status, 0, result.stderr);
+  const payload = JSON.parse(result.stdout);
+  assert.deepEqual(payload.data.items.map((item) => item.post_id), ["recent-post-1"]);
+  assert.equal(payload.data.item_count, 1);
+  assert.equal(payload.data.stopped_by_since_days, true);
+});
+
+test("user-posts since-days max-items does not report a time boundary without old items", async () => {
+  const { result, toolCalls } = await runCliWithMockMcp(
+    [
+      "wechat",
+      "user-posts",
+      "--user-id",
+      "finder-user-1",
+      "--since-days",
+      "7",
+      "--max-items",
+      "1",
+    ],
+    {},
+    ({ name }) => {
+      assert.equal(name, "wechat_get_user_posted_videos_by_user_id");
+      return {
+        items: [
+          { encrypted_object_id: "object-1", publish_time: unixSecondsDaysAgo(1) },
+          { encrypted_object_id: "object-2", publish_time: unixSecondsDaysAgo(2) },
+        ],
+        next_page_token: "next-posts-token",
+      };
+    }
+  );
+
+  assert.equal(result.status, 0, result.stderr);
+  assert.equal(toolCalls.length, 1);
+  const payload = JSON.parse(result.stdout);
+  assert.deepEqual(payload.data.items.map((item) => item.encrypted_object_id), ["object-1"]);
+  assert.equal(payload.data.item_count, 1);
+  assert.equal(payload.data.next_page_token, "next-posts-token");
+  assert.equal(payload.data.stopped_by_since_days, undefined);
+});
+
 test("douyin user-series pagination de-duplicates repeated series ids", async () => {
   let seriesCallCount = 0;
   const { result, toolCalls } = await runCliWithMockMcp(
@@ -2829,7 +6952,7 @@ test("token paginated commands include empty next token when the last page omits
   assert.equal(payload.data.next_page_token, "");
 });
 
-test("xhs search paginated output treats empty next_page as complete", async () => {
+test("xhs search paginated output treats empty next_page_token as complete", async () => {
   const { result } = await runCliWithMockMcp(
     [
       "xhs",
@@ -2844,18 +6967,24 @@ test("xhs search paginated output treats empty next_page as complete", async () 
       assert.equal(name, "xhs_search_notes");
       return {
         items: [{ note_id: "note-1" }],
-        next_page: "",
+        next_page_token: "",
       };
     }
   );
 
   assert.equal(result.status, 0, result.stderr);
   const payload = JSON.parse(result.stdout);
-  assert.equal(payload.data.next_page, null);
+  assert.equal(payload.data.next_page_token, "");
 });
 
 test("comments include replies builds a nested comment tree", async () => {
-  const { result, toolCalls } = await runCliWithMockMcp(
+  const {
+    result,
+    toolCalls,
+    toolCallSourceClientHeaders,
+    toolCallSourcePlatformHeaders,
+    toolCallSourceSkillHeaders,
+  } = await runCliWithMockMcp(
     [
       "douyin",
       "comments",
@@ -2863,6 +6992,12 @@ test("comments include replies builds a nested comment tree", async () => {
       "aweme-1",
       "--include-replies",
       "--pretty",
+      "--source-client",
+      "socialdatax-skills",
+      "--source-platform",
+      "skillhub",
+      "--source-skill",
+      "socialdatax-comment-insights",
     ],
     {},
     ({ name, arguments: args }) => {
@@ -2901,6 +7036,21 @@ test("comments include replies builds a nested comment tree", async () => {
     "douyin_get_video_comments_by_aweme_id",
     "douyin_get_video_comment_replies_by_comment_id",
     "douyin_get_video_comment_replies_by_comment_id",
+  ]);
+  assert.deepEqual(toolCallSourceClientHeaders, [
+    "socialdatax-skills",
+    "socialdatax-skills",
+    "socialdatax-skills",
+  ]);
+  assert.deepEqual(toolCallSourcePlatformHeaders, [
+    "skillhub",
+    "skillhub",
+    "skillhub",
+  ]);
+  assert.deepEqual(toolCallSourceSkillHeaders, [
+    "socialdatax-comment-insights",
+    "socialdatax-comment-insights",
+    "socialdatax-comment-insights",
   ]);
   assert.deepEqual(toolCalls[1].arguments, {
     aweme_id: "aweme-1",
@@ -3156,6 +7306,65 @@ test("comments include replies reuses resolved content id across URL pages", asy
   assert.equal(payload.data.note_id, "note-1");
 });
 
+test("xhs comments include replies keeps parent sort without passing it to replies", async () => {
+  const { result, toolCalls } = await runCliWithMockMcp(
+    [
+      "xhs",
+      "comments",
+      "--url",
+      "https://www.xiaohongshu.com/explore/note-1",
+      "--sort-type",
+      "like_count_descending",
+      "--pages",
+      "2",
+      "--include-replies",
+    ],
+    {},
+    ({ name, arguments: args }) => {
+      if (name === "xhs_get_note_comments_by_note_url") {
+        assert.equal(args.sort_type, "like_count_descending");
+        if (args.page_token) {
+          return {
+            items: [{ comment_id: "comment-2", reply_count: 1 }],
+            next_page_token: "",
+          };
+        }
+        return {
+          note_id: "note-1",
+          items: [{ comment_id: "comment-1", reply_count: 0 }],
+          next_page_token: "next-comments-token",
+        };
+      }
+      assert.equal(name, "xhs_get_note_sub_comments_by_comment_id");
+      assert.equal(args.sort_type, undefined);
+      return {
+        items: [{ comment_id: "reply-2" }],
+        next_page_token: "",
+      };
+    }
+  );
+
+  assert.equal(result.status, 0, result.stderr);
+  assert.deepEqual(toolCalls.map((call) => call.name), [
+    "xhs_get_note_comments_by_note_url",
+    "xhs_get_note_comments_by_note_url",
+    "xhs_get_note_sub_comments_by_comment_id",
+  ]);
+  assert.deepEqual(toolCalls[0].arguments, {
+    note_url: "https://www.xiaohongshu.com/explore/note-1",
+    sort_type: "like_count_descending",
+  });
+  assert.deepEqual(toolCalls[1].arguments, {
+    note_url: "https://www.xiaohongshu.com/explore/note-1",
+    page_token: "next-comments-token",
+    sort_type: "like_count_descending",
+  });
+  assert.deepEqual(toolCalls[2].arguments, {
+    note_id: "note-1",
+    comment_id: "comment-2",
+  });
+});
+
 test("comments include replies only fetches replies for retained max-items", async () => {
   const { result, toolCalls } = await runCliWithMockMcp(
     [
@@ -3253,18 +7462,20 @@ test("paginated commands reject next marker that repeats the current request", a
       "search",
       "--keyword",
       "露营",
+      "--page-token",
+      "same-token",
       "--pages",
       "2",
     ],
     {},
     () => ({
       items: [{ note_id: "note-1" }],
-      next_page: 1,
+      next_page_token: "same-token",
     })
   );
 
   assert.equal(result.status, 1);
-  assert.match(result.stderr, /Pagination stopped because next_page repeated\./);
+  assert.match(result.stderr, /Pagination stopped because next_page_token repeated\./);
   assert.equal(toolCalls.length, 1);
 });
 
@@ -3275,20 +7486,22 @@ test("paginated commands do not reject repeated next marker when page limit is r
       "search",
       "--keyword",
       "露营",
+      "--page-token",
+      "same-token",
       "--pages",
       "1",
     ],
     {},
     () => ({
       items: [{ note_id: "note-1" }],
-      next_page: 1,
+      next_page_token: "same-token",
     })
   );
 
   assert.equal(result.status, 0, result.stderr);
   assert.equal(toolCalls.length, 1);
   const payload = JSON.parse(result.stdout);
-  assert.equal(payload.data.next_page, null);
+  assert.equal(payload.data.next_page_token, "");
 });
 
 test("paginated commands reject repeated next_page_token", async () => {
@@ -3320,23 +7533,28 @@ test("doctor prints human-readable safety summary", () => {
   assert.equal(result.status, 0);
   assert.equal(result.stderr, "");
   assert.match(result.stdout, /socialdatax-skills doctor/);
-  assert.match(result.stdout, /Package: socialdatax-skills@0\.2\.10/);
-  assert.match(result.stdout, /Website: https:\/\/socialdatax\.52choujiang\.com/);
-  assert.doesNotMatch(result.stdout, /Source: https:\/\/socialdatax\.52choujiang\.com/);
+  assert.match(result.stdout, /Package: socialdatax-skills@0\.2\.28/);
+  assert.match(result.stdout, /Website: https:\/\/socialdatax\.com/);
+  assert.doesNotMatch(result.stdout, /Source: https:\/\/socialdatax\.com/);
   assert.match(result.stdout, /npm lifecycle scripts: none declared by this package/);
   assert.match(result.stdout, /install does not store API keys/);
   assert.match(result.stdout, /social media content intelligence workflows/);
+  assert.match(result.stdout, /some commands submit bounded analysis jobs such as video speech-to-text transcript/);
   assert.doesNotMatch(result.stdout, /read-only social media intelligence workflows/);
   assert.match(result.stdout, /XHS \/ Xiaohongshu \/ RedNote/);
-  assert.match(result.stdout, /endpoint: https:\/\/mcp\.52choujiang\.com\/xhs\/mcp/);
+  assert.match(result.stdout, /endpoint: https:\/\/mcp\.socialdatax\.com\/xhs\/mcp/);
   assert.match(result.stdout, /Douyin \/ 抖音/);
-  assert.match(result.stdout, /endpoint: https:\/\/mcp\.52choujiang\.com\/douyin\/mcp/);
+  assert.match(result.stdout, /endpoint: https:\/\/mcp\.socialdatax\.com\/douyin\/mcp/);
   assert.match(result.stdout, /Kuaishou \/ 快手 \/ Kwai/);
-  assert.match(result.stdout, /endpoint: https:\/\/mcp\.52choujiang\.com\/kuaishou\/mcp/);
+  assert.match(result.stdout, /endpoint: https:\/\/mcp\.socialdatax\.com\/kuaishou\/mcp/);
+  assert.match(result.stdout, /Bilibili \/ 哔哩哔哩 \/ B站/);
+  assert.match(result.stdout, /endpoint: https:\/\/mcp\.socialdatax\.com\/bilibili\/mcp/);
   assert.match(result.stdout, /Weibo \/ 微博/);
-  assert.match(result.stdout, /endpoint: https:\/\/mcp\.52choujiang\.com\/weibo\/mcp/);
-  assert.match(result.stdout, /WeChat Channels \/ 视频号/);
-  assert.match(result.stdout, /endpoint: https:\/\/mcp\.52choujiang\.com\/wechat\/mcp/);
+  assert.match(result.stdout, /endpoint: https:\/\/mcp\.socialdatax\.com\/weibo\/mcp/);
+  assert.match(result.stdout, /WeChat \/ 微信/);
+  assert.match(result.stdout, /endpoint: https:\/\/mcp\.socialdatax\.com\/wechat\/mcp/);
+  assert.match(result.stdout, /Sensitive Words Check \/ 敏感词检测/);
+  assert.match(result.stdout, /endpoint: https:\/\/mcp\.socialdatax\.com\/sensitive-check\/mcp/);
 });
 
 test("verify is an alias for doctor", () => {
@@ -3354,25 +7572,26 @@ test("doctor json prints parseable safety summary", () => {
   assert.equal(result.stderr, "");
   const report = JSON.parse(result.stdout);
   assert.equal(report.package.name, "socialdatax-skills");
-  assert.equal(report.package.version, "0.2.10");
-  assert.equal(report.package.homepage, "https://socialdatax.52choujiang.com");
+  assert.equal(report.package.version, "0.2.28");
+  assert.equal(report.package.homepage, "https://socialdatax.com");
   assert.equal(report.package.repository, undefined);
   assert.deepEqual(report.package.npmLifecycleScripts, []);
   assert.equal(report.install.apiKeyStored, false);
   assert.equal(report.install.mcpConfigChanged, false);
   assert.equal(report.security.readOnly, false);
-  assert.equal(report.security.directCliReadOnly, true);
+  assert.equal(report.security.directCliReadOnly, false);
+  assert.equal(report.security.directCliMaySubmitAnalysisJobs, true);
   assert.equal(report.security.platformMcpMaySubmitAnalysisJobs, true);
   assert.equal(report.security.accountActions, false);
   assert.equal(report.security.readsLocalBrowserData, false);
   assert.equal(report.security.readsBrowserCookies, undefined);
   assert.equal(report.security.readsLocalAccountSession, undefined);
-  assert.equal(report.platforms.length, 5);
+  assert.equal(report.platforms.length, 7);
   assert.equal(report.platform.endpointOverrideActive, false);
   assert.equal(report.platform.registryName, "com.52choujiang/xhs-insights");
   assert.equal(report.platform.futureRegistryName, "com.socialdatax/xhs-insights");
   assert.equal(report.platform.legacyRegistryName, undefined);
-  assert.equal(report.platform.defaultEndpoint, "https://mcp.52choujiang.com/xhs/mcp");
+  assert.equal(report.platform.defaultEndpoint, "https://mcp.socialdatax.com/xhs/mcp");
   assert.equal(report.platform.tools.length, 14);
   assert.ok(report.platform.tools.includes("xhs_get_search_hot_list"));
   assert.ok(report.platform.tools.includes("xhs_get_note_sub_comments_by_comment_id"));
@@ -3385,7 +7604,7 @@ test("doctor json prints parseable safety summary", () => {
   assert.equal(douyinPlatform.registryName, "com.52choujiang/douyin-insights");
   assert.equal(douyinPlatform.futureRegistryName, "com.socialdatax/douyin-insights");
   assert.equal(douyinPlatform.legacyRegistryName, undefined);
-  assert.equal(douyinPlatform.defaultEndpoint, "https://mcp.52choujiang.com/douyin/mcp");
+  assert.equal(douyinPlatform.defaultEndpoint, "https://mcp.socialdatax.com/douyin/mcp");
   assert.equal(douyinPlatform.tools.length, 16);
   assert.ok(douyinPlatform.tools.includes("douyin_get_hot_search_list"));
   assert.ok(douyinPlatform.tools.includes("douyin_get_video_comment_replies_by_comment_id"));
@@ -3416,10 +7635,11 @@ test("doctor json prints parseable safety summary", () => {
   );
   assert.equal(kuaishouPlatform.registryName, "com.52choujiang/kuaishou-insights");
   assert.equal(kuaishouPlatform.futureRegistryName, "com.socialdatax/kuaishou-insights");
-  assert.equal(kuaishouPlatform.defaultEndpoint, "https://mcp.52choujiang.com/kuaishou/mcp");
-  assert.equal(kuaishouPlatform.tools.length, 14);
+  assert.equal(kuaishouPlatform.defaultEndpoint, "https://mcp.socialdatax.com/kuaishou/mcp");
+  assert.equal(kuaishouPlatform.tools.length, 15);
   assert.ok(kuaishouPlatform.tools.includes("kuaishou_get_hot_search_list"));
   assert.ok(kuaishouPlatform.tools.includes("kuaishou_search_videos"));
+  assert.ok(kuaishouPlatform.tools.includes("kuaishou_search_users"));
   assert.ok(kuaishouPlatform.tools.includes("kuaishou_get_video_comment_replies_by_comment_id"));
   assert.ok(kuaishouPlatform.tools.includes("kuaishou_get_user_posted_videos_by_profile_url"));
   assert.ok(kuaishouPlatform.tools.includes("kuaishou_submit_video_speech_text_by_video_url"));
@@ -3432,12 +7652,28 @@ test("doctor json prints parseable safety summary", () => {
     kuaishouSearchTool.description,
     "Search Kuaishou works by natural-language keyword with optional page_token continuation; do not pass page."
   );
+  const kuaishouUserSearchTool = kuaishouPlatform.toolDetails.find(
+    (tool) => tool.name === "kuaishou_search_users"
+  );
+  assert.equal(
+    kuaishouUserSearchTool.description,
+    "Search Kuaishou creators by keyword with optional page_token continuation; do not pass page."
+  );
+  const bilibiliPlatform = report.platforms.find(
+    (platform) => platform.id === "bilibili"
+  );
+  assert.equal(bilibiliPlatform.displayName, "Bilibili / 哔哩哔哩 / B站");
+  assert.equal(bilibiliPlatform.registryName, "com.52choujiang/bilibili-insights");
+  assert.equal(bilibiliPlatform.futureRegistryName, "com.socialdatax/bilibili-insights");
+  assert.equal(bilibiliPlatform.defaultEndpoint, "https://mcp.socialdatax.com/bilibili/mcp");
+  assert.equal(bilibiliPlatform.tools.length, 1);
+  assert.ok(bilibiliPlatform.tools.includes("bilibili_get_video_download_links"));
   const weiboPlatform = report.platforms.find(
     (platform) => platform.id === "weibo"
   );
   assert.equal(weiboPlatform.registryName, "com.52choujiang/weibo-insights");
   assert.equal(weiboPlatform.futureRegistryName, "com.socialdatax/weibo-insights");
-  assert.equal(weiboPlatform.defaultEndpoint, "https://mcp.52choujiang.com/weibo/mcp");
+  assert.equal(weiboPlatform.defaultEndpoint, "https://mcp.socialdatax.com/weibo/mcp");
   assert.equal(weiboPlatform.tools.length, 16);
   assert.ok(weiboPlatform.tools.includes("weibo_get_hot_search_list"));
   assert.ok(weiboPlatform.tools.includes("weibo_search_posts"));
@@ -3451,17 +7687,31 @@ test("doctor json prints parseable safety summary", () => {
   const wechatPlatform = report.platforms.find(
     (platform) => platform.id === "wechat"
   );
+  assert.equal(wechatPlatform.displayName, "WeChat / 微信");
   assert.equal(wechatPlatform.registryName, "com.52choujiang/wechat-channels-insights");
   assert.equal(wechatPlatform.futureRegistryName, "com.socialdatax/wechat-channels-insights");
-  assert.equal(wechatPlatform.defaultEndpoint, "https://mcp.52choujiang.com/wechat/mcp");
-  assert.equal(wechatPlatform.tools.length, 13);
+  assert.equal(wechatPlatform.defaultEndpoint, "https://mcp.socialdatax.com/wechat/mcp");
+  assert.equal(wechatPlatform.tools.length, 14);
   assert.ok(wechatPlatform.tools.includes("wechat_get_hot_search_list"));
   assert.ok(wechatPlatform.tools.includes("wechat_search_videos"));
+  assert.ok(wechatPlatform.tools.includes("wechat_get_mp_article_detail_by_url"));
   assert.ok(wechatPlatform.tools.includes("wechat_get_video_comment_replies_by_comment_id"));
   assert.ok(wechatPlatform.tools.includes("wechat_get_user_posted_videos_by_url"));
   assert.ok(wechatPlatform.tools.includes("wechat_submit_video_speech_text_by_video_url"));
   assert.ok(wechatPlatform.tools.includes("wechat_submit_video_speech_text_by_encrypted_object_id"));
   assert.ok(wechatPlatform.tools.includes("wechat_get_video_speech_text_job"));
+  const sensitiveCheckPlatform = report.platforms.find(
+    (platform) => platform.id === "sensitive-check"
+  );
+  assert.equal(sensitiveCheckPlatform.registryName, "sensitive-check");
+  assert.equal(sensitiveCheckPlatform.futureRegistryName, "com.socialdatax/sensitive-check");
+  assert.equal(sensitiveCheckPlatform.defaultEndpoint, "https://mcp.socialdatax.com/sensitive-check/mcp");
+  assert.equal(sensitiveCheckPlatform.tools.length, 1);
+  assert.ok(sensitiveCheckPlatform.tools.includes("check_sensitive_text"));
+  const sensitiveTextTool = sensitiveCheckPlatform.toolDetails.find(
+    (tool) => tool.name === "check_sensitive_text"
+  );
+  assert.match(sensitiveTextTool.description, /sensitive-content risks/);
   const detailByUrlTool = report.platform.toolDetails.find(
     (tool) => tool.name === "xhs_get_note_detail_by_note_url"
   );
@@ -3474,29 +7724,89 @@ test("doctor json prints parseable safety summary", () => {
   const xhsSubmitTranscriptTool = report.platform.toolDetails.find(
     (tool) => tool.name === "xhs_submit_video_speech_text_by_note_url"
   );
+  const xhsJobTranscriptTool = report.platform.toolDetails.find(
+    (tool) => tool.name === "xhs_get_video_speech_text_job"
+  );
   const douyinSubmitTranscriptTool = douyinPlatform.toolDetails.find(
     (tool) => tool.name === "douyin_submit_video_speech_text_by_aweme_id"
+  );
+  const douyinJobTranscriptTool = douyinPlatform.toolDetails.find(
+    (tool) => tool.name === "douyin_get_video_speech_text_job"
   );
   const kuaishouSubmitTranscriptTool = kuaishouPlatform.toolDetails.find(
     (tool) => tool.name === "kuaishou_submit_video_speech_text_by_photo_id"
   );
+  const kuaishouJobTranscriptTool = kuaishouPlatform.toolDetails.find(
+    (tool) => tool.name === "kuaishou_get_video_speech_text_job"
+  );
   const weiboSubmitTranscriptTool = weiboPlatform.toolDetails.find(
     (tool) => tool.name === "weibo_submit_video_speech_text_by_post_id"
+  );
+  const weiboJobTranscriptTool = weiboPlatform.toolDetails.find(
+    (tool) => tool.name === "weibo_get_video_speech_text_job"
   );
   const wechatSubmitTranscriptTool = wechatPlatform.toolDetails.find(
     (tool) => tool.name === "wechat_submit_video_speech_text_by_encrypted_object_id"
   );
+  const wechatJobTranscriptTool = wechatPlatform.toolDetails.find(
+    (tool) => tool.name === "wechat_get_video_speech_text_job"
+  );
   assert.match(xhsSubmitTranscriptTool.description, /speech-to-text transcript/);
-  assert.match(xhsSubmitTranscriptTool.description, /提交完成后最多短等 15 秒/);
+  assert.match(xhsSubmitTranscriptTool.description, /提交后最多等待 210 秒/);
+  assert.match(xhsSubmitTranscriptTool.description, /同一个 job_id 直到终态/);
+  assert.match(xhsJobTranscriptTool.description, /content context/);
+  assert.match(xhsJobTranscriptTool.description, /is_terminal is true/);
+  assert.match(xhsJobTranscriptTool.description, /not summary/);
   assert.match(douyinSubmitTranscriptTool.description, /speech-to-text transcript/);
-  assert.match(douyinSubmitTranscriptTool.description, /提交完成后最多短等 15 秒/);
+  assert.match(douyinSubmitTranscriptTool.description, /提交后最多等待 210 秒/);
+  assert.match(douyinSubmitTranscriptTool.description, /同一个 job_id 直到终态/);
+  assert.match(douyinJobTranscriptTool.description, /content context/);
+  assert.match(douyinJobTranscriptTool.description, /is_terminal is true/);
+  assert.match(douyinJobTranscriptTool.description, /not summary/);
   assert.match(kuaishouSubmitTranscriptTool.description, /speech-to-text transcript/);
-  assert.match(kuaishouSubmitTranscriptTool.description, /提交完成后最多短等 15 秒/);
+  assert.match(kuaishouSubmitTranscriptTool.description, /提交后最多等待 210 秒/);
+  assert.match(kuaishouSubmitTranscriptTool.description, /同一个 job_id 直到终态/);
+  assert.match(kuaishouJobTranscriptTool.description, /content context/);
+  assert.match(kuaishouJobTranscriptTool.description, /is_terminal is true/);
+  assert.match(kuaishouJobTranscriptTool.description, /not summary/);
   assert.match(weiboSubmitTranscriptTool.description, /speech-to-text transcript/);
-  assert.match(weiboSubmitTranscriptTool.description, /提交完成后最多短等 15 秒/);
+  assert.match(weiboSubmitTranscriptTool.description, /提交后最多等待 210 秒/);
+  assert.match(weiboSubmitTranscriptTool.description, /同一个 job_id 直到终态/);
+  assert.match(weiboJobTranscriptTool.description, /content context/);
+  assert.match(weiboJobTranscriptTool.description, /is_terminal is true/);
+  assert.match(weiboJobTranscriptTool.description, /not summary/);
   assert.match(wechatSubmitTranscriptTool.description, /speech-to-text transcript/);
-  assert.match(wechatSubmitTranscriptTool.description, /提交完成后最多短等 15 秒/);
+  assert.match(wechatSubmitTranscriptTool.description, /提交后最多等待 210 秒/);
+  assert.match(wechatSubmitTranscriptTool.description, /同一个 job_id 直到终态/);
+  assert.match(wechatJobTranscriptTool.description, /content context/);
+  assert.match(wechatJobTranscriptTool.description, /is_terminal is true/);
+  assert.match(wechatJobTranscriptTool.description, /not summary/);
   assert.doesNotMatch(result.stdout, /69cf45899948d391e7b5e879/);
+});
+
+test("README documents transcript job output as transcript plus content context", () => {
+  const readme = readFileSync(join(packageDir, "README.md"), "utf8");
+
+  assert.match(
+    readme,
+    /Check an XHS speech-to-text transcript job by job_id without creating a new task; optional wait_seconds 0-240 can long-poll the same job in one request\. Continue querying the same job_id until is_terminal is true\. Returns transcript plus content context, not summary\./
+  );
+  assert.match(
+    readme,
+    /Check a Douyin speech-to-text transcript job by job_id without creating a new task; optional wait_seconds 0-240 can long-poll the same job in one request\. Continue querying the same job_id until is_terminal is true\. Returns transcript plus content context, not summary\./
+  );
+  assert.match(
+    readme,
+    /Check a Kuaishou speech-to-text transcript job by job_id without creating a new task; optional wait_seconds 0-240 can long-poll the same job in one request\. Continue querying the same job_id until is_terminal is true\. Returns transcript plus content context, not summary\./
+  );
+  assert.match(
+    readme,
+    /Check a Weibo speech-to-text transcript job by job_id without creating a new task; optional wait_seconds 0-240 can long-poll the same job in one request\. Continue querying the same job_id until is_terminal is true\. Returns transcript plus content context, not summary\./
+  );
+  assert.match(
+    readme,
+    /Check a WeChat Channels \/ 视频号 speech-to-text transcript job by job_id without creating a new task; optional wait_seconds 0-240 can long-poll the same job in one request\. Continue querying the same job_id until is_terminal is true\. Returns transcript plus content context, not summary\./
+  );
 });
 
 test("doctor json reports the active endpoint when an upstream override is set", () => {
@@ -3510,7 +7820,7 @@ test("doctor json reports the active endpoint when an upstream override is set",
   assert.equal(result.stderr, "");
   const report = JSON.parse(result.stdout);
   assert.equal(report.platform.endpoint, "https://example.com/xhs/mcp");
-  assert.equal(report.platform.defaultEndpoint, "https://mcp.52choujiang.com/xhs/mcp");
+  assert.equal(report.platform.defaultEndpoint, "https://mcp.socialdatax.com/xhs/mcp");
   assert.equal(report.platform.endpointOverrideActive, true);
 });
 
@@ -3528,7 +7838,7 @@ test("doctor json reports the active douyin endpoint when an upstream override i
     (platform) => platform.id === "douyin"
   );
   assert.equal(douyinPlatform.endpoint, "https://example.com/douyin/mcp");
-  assert.equal(douyinPlatform.defaultEndpoint, "https://mcp.52choujiang.com/douyin/mcp");
+  assert.equal(douyinPlatform.defaultEndpoint, "https://mcp.socialdatax.com/douyin/mcp");
   assert.equal(douyinPlatform.endpointOverrideActive, true);
 });
 
@@ -3546,7 +7856,7 @@ test("doctor json reports the active kuaishou endpoint when an upstream override
     (platform) => platform.id === "kuaishou"
   );
   assert.equal(kuaishouPlatform.endpoint, "https://example.com/kuaishou/mcp");
-  assert.equal(kuaishouPlatform.defaultEndpoint, "https://mcp.52choujiang.com/kuaishou/mcp");
+  assert.equal(kuaishouPlatform.defaultEndpoint, "https://mcp.socialdatax.com/kuaishou/mcp");
   assert.equal(kuaishouPlatform.endpointOverrideActive, true);
 });
 
@@ -3569,10 +7879,10 @@ test("doctor json reports active weibo and wechat endpoints when upstream overri
     (platform) => platform.id === "wechat"
   );
   assert.equal(weiboPlatform.endpoint, "https://example.com/weibo/mcp");
-  assert.equal(weiboPlatform.defaultEndpoint, "https://mcp.52choujiang.com/weibo/mcp");
+  assert.equal(weiboPlatform.defaultEndpoint, "https://mcp.socialdatax.com/weibo/mcp");
   assert.equal(weiboPlatform.endpointOverrideActive, true);
   assert.equal(wechatPlatform.endpoint, "https://example.com/wechat/mcp");
-  assert.equal(wechatPlatform.defaultEndpoint, "https://mcp.52choujiang.com/wechat/mcp");
+  assert.equal(wechatPlatform.defaultEndpoint, "https://mcp.socialdatax.com/wechat/mcp");
   assert.equal(wechatPlatform.endpointOverrideActive, true);
 });
 
@@ -3597,7 +7907,7 @@ test("public comments URL docs do not advertise note ID input", () => {
 
   assert.match(
     readme,
-    /`xhs_get_note_comments_by_note_url` \| Fetch paginated first-level comments directly from a shared note URL, short link, or share text\./
+    /`xhs_get_note_comments_by_note_url` \| Fetch paginated first-level comments directly from a shared note URL, short link, or share text; accepts optional comment `sort_type`\./
   );
   assert.doesNotMatch(
     readme,
@@ -3605,7 +7915,7 @@ test("public comments URL docs do not advertise note ID input", () => {
   );
   assert.match(
     commentsSkill,
-    /`xhs_get_note_comments_by_note_url`: use for note URLs, short links, or share text\./
+    /`xhs_get_note_comments_by_note_url`: use for note URLs, short links, or share text; optional `sort_type` accepts `default`, `time_descending`, or `like_count_descending`\./
   );
   assert.doesNotMatch(
     commentsSkill,
@@ -3614,6 +7924,10 @@ test("public comments URL docs do not advertise note ID input", () => {
   assert.match(
     cli,
     /description:\s*"Fetch paginated first-level comments from a note URL, short link, or share text\."/
+  );
+  assert.doesNotMatch(
+    cli,
+    /Fetch paginated first-level comments[^\n"]*with optional sort/
   );
 });
 
@@ -3684,7 +7998,7 @@ test("direct CLI README examples include all public douyin actions", () => {
   const readme = readFileSync(join(packageDir, "README.md"), "utf8");
 
   for (const example of [
-    'douyin search --keyword "露营桌"',
+    'douyin search --keyword "露营"',
     'douyin detail --aweme-id "<aweme_id>"',
     'douyin comments --aweme-id "<aweme_id>"',
     'douyin replies --aweme-id "<aweme_id>" --comment-id "<comment_id>"',
@@ -3692,6 +8006,9 @@ test("direct CLI README examples include all public douyin actions", () => {
     'douyin user-info --profile-url "<profile_url_or_share_text>"',
     'douyin user-posts --sec-user-id "<sec_user_id>"',
     'douyin user-posts --profile-url "<profile_url_or_share_text>"',
+    'douyin transcript --url "<douyin_content_url_or_share_text>"',
+    'douyin transcript --aweme-id "<aweme_id>"',
+    'douyin transcript --job-id "<job_id>"',
   ]) {
     assert.match(readme, new RegExp(escapeRegExp(example)));
   }
@@ -3713,7 +8030,8 @@ test("direct CLI README examples include all public kuaishou actions", () => {
 
   for (const example of [
     'kuaishou hot-search',
-    'kuaishou search --keyword "露营桌"',
+    'kuaishou search --keyword "露营"',
+    'kuaishou user-search --keyword "露营"',
     'kuaishou detail --photo-id "<photo_id>"',
     'kuaishou detail --url "<kuaishou_content_url_or_share_text>"',
     'kuaishou comments --photo-id "<photo_id>"',
@@ -3723,10 +8041,34 @@ test("direct CLI README examples include all public kuaishou actions", () => {
     'kuaishou user-info --profile-url "<profile_url_or_share_text>"',
     'kuaishou user-posts --user-id "<user_id>"',
     'kuaishou user-posts --profile-url "<profile_url_or_share_text>"',
+    'kuaishou transcript --url "<kuaishou_content_url_or_share_text>"',
+    'kuaishou transcript --photo-id "<photo_id>"',
+    'kuaishou transcript --job-id "<job_id>"',
   ]) {
     assert.match(readme, new RegExp(escapeRegExp(example)));
   }
-  assert.match(readme, /Kuaishou search uses `--keyword` and optional `--page-token`/);
+  assert.match(readme, /kuaishou hot-search/);
+  assert.match(readme, /kuaishou_get_hot_search_list/);
+  assert.match(
+    readme,
+    /XHS, Douyin, Kuaishou, Weibo, and WeChat Channels search use `--keyword` and optional `--page-token`/
+  );
+  assert.doesNotMatch(readme, /露营博主/);
+  assert.match(readme, /Kuaishou search does not accept Douyin semantic filters/);
+  assert.match(readme, /`kuaishou user-search` does not support `--since-days`/);
+});
+
+test("direct CLI README examples include public bilibili download", () => {
+  const readme = readFileSync(join(packageDir, "README.md"), "utf8");
+
+  assert.match(
+    readme,
+    /bilibili download --url "<bilibili_video_url_or_share_text>" --output-dir \.\/downloads/
+  );
+  assert.match(readme, /Bilibili hosted MCP endpoint: `https:\/\/mcp\.socialdatax\.com\/bilibili\/mcp`/);
+  assert.match(readme, /bilibili_get_video_download_links/);
+  assert.match(readme, /download-links request consumes 10 credits/);
+  assert.match(readme, /Local Bilibili download merge requires `ffmpeg`/);
 });
 
 test("direct CLI README examples include public weibo and wechat actions", () => {
@@ -3734,7 +8076,7 @@ test("direct CLI README examples include public weibo and wechat actions", () =>
 
   for (const example of [
     'weibo hot-search',
-    'weibo search --keyword "露营桌"',
+    'weibo search --keyword "露营"',
     'weibo detail --post-id "<post_id>"',
     'weibo detail --post-url "<weibo_post_url_or_share_text>"',
     'weibo comments --post-id "<post_id>"',
@@ -3746,21 +8088,46 @@ test("direct CLI README examples include public weibo and wechat actions", () =>
     'weibo user-info --profile-url "<profile_url_or_share_text>"',
     'weibo user-posts --user-id "<user_id>"',
     'weibo user-posts --profile-url "<profile_url_or_share_text>"',
+    'weibo transcript --post-url "<weibo_post_url_or_share_text>"',
+    'weibo transcript --post-id "<post_id>"',
+    'weibo transcript --job-id "<job_id>"',
     'wechat hot-search',
-    'wechat search --keyword "露营桌"',
+    'wechat search --keyword "露营"',
     'wechat detail --encrypted-object-id "<encrypted_object_id>"',
     'wechat detail --url "<wechat_video_url_or_share_text>"',
+    'wechat decrypt-media --media-url "<video.video_url>" --output video.mp4',
+    'wechat article --url "<mp_article_url_or_share_text>"',
     'wechat comments --object-id "<object_id>" --object-nonce-id "<object_nonce_id>"',
     'wechat comments --url "<wechat_video_url_or_share_text>"',
     'wechat replies --object-id "<object_id>" --object-nonce-id "<object_nonce_id>" --comment-id "<comment_id>"',
     'wechat user-info --user-id "<finder_user_id>"',
     'wechat user-posts --user-id "<finder_user_id>"',
     'wechat user-posts --url "<wechat_video_url_or_share_text>"',
+    'wechat transcript --url "<wechat_video_url_or_share_text>"',
+    'wechat transcript --encrypted-object-id "<encrypted_object_id>"',
+    'wechat transcript --job-id "<job_id>"',
   ]) {
     assert.match(readme, new RegExp(escapeRegExp(example)));
   }
-  assert.match(readme, /Weibo and WeChat Channels search use `--keyword` and optional `--page-token`/);
+  assert.match(
+    readme,
+    /XHS, Douyin, Kuaishou, Weibo, and WeChat Channels search use `--keyword` and optional `--page-token`/
+  );
   assert.match(readme, /WeChat Channels search filters use semantic values/);
+  assert.match(readme, /wechat_get_mp_article_detail_by_url/);
+  assert.match(readme, /WeChat \/ 微信 hosted MCP endpoint/);
+  assert.match(readme, /WeChat Official Account skills/);
+  assert.match(readme, /微信公众号 skills/);
+  assert.match(readme, /Current WeChat \/ 微信 workflows include:/);
+  assert.match(
+    readme,
+    /WeChat Official Account \/ 微信公众号 article link or share text/
+  );
+  assert.match(
+    readme,
+    /`--sort-type`\s+supports\s+`all`,\s+`time_descending`, and `collect_count_descending`/
+  );
+  assert.doesNotMatch(readme, /`--sort-type`\s+supports\s+`general`,\s+`latest`, and `popular`/);
 });
 
 test("direct CLI docs keep search pagination platform-specific", () => {
@@ -3768,20 +8135,33 @@ test("direct CLI docs keep search pagination platform-specific", () => {
   const help = runCli(["--help"]);
 
   assert.equal(help.status, 0);
-  assert.match(help.stdout, /--page <number>\s+XHS search only/);
+  assert.doesNotMatch(help.stdout, /--page <number>/);
   assert.match(
     help.stdout,
     /--page-token <token>\s+Continue token-paginated commands with the complete returned next_page_token/
   );
-  assert.match(help.stdout, /For Douyin, Kuaishou, Weibo, and WeChat Channels search, omit it on the first request/);
+  assert.match(
+    help.stdout,
+    /Content link, short link, or share text for URL-based detail\/comment\/article commands/
+  );
+  assert.match(help.stdout, /For search, omit it on the first request/);
   assert.match(help.stdout, /weibo hot-search --pretty/);
   assert.match(help.stdout, /weibo search --keyword/);
+  assert.match(help.stdout, /kuaishou hot-search --pretty/);
+  assert.match(help.stdout, /bilibili download --url "<bilibili_video_url_or_share_text>" --output-dir \.\/downloads/);
+  assert.match(help.stdout, /xhs download-media --url "<xhs_media_url>" --output-dir \.\/downloads/);
+  assert.match(help.stdout, /--ffmpeg-path <path>/);
   assert.match(help.stdout, /wechat hot-search --pretty/);
   assert.match(help.stdout, /wechat search --keyword/);
   assert.match(
-    readme,
-    /XHS search uses numeric `--page`; Douyin, Kuaishou, Weibo, and WeChat Channels search do not accept `--page`\./
+    help.stdout,
+    /--sort-type <all\|time_descending\|collect_count_descending>/
   );
+  assert.match(
+    readme,
+    /Search pagination uses `--page-token` when continuing with a returned `next_page_token`\./
+  );
+  assert.doesNotMatch(readme, /XHS search also keeps numeric `--page`/);
   assert.match(
     readme,
     /`douyin_search_videos` \| Search Douyin works by keyword with optional `page_token` continuation and filters; do not pass `page`\./
@@ -3790,8 +8170,32 @@ test("direct CLI docs keep search pagination platform-specific", () => {
     readme,
     /`kuaishou_search_videos` \| Search Kuaishou works by natural-language keyword with optional `page_token` continuation; do not pass `page`\./
   );
+  assert.match(
+    readme,
+    /`kuaishou_search_users` \| Search Kuaishou creators by keyword with optional `page_token` continuation; do not pass `page`\./
+  );
   assert.doesNotMatch(readme, /douyin_search_videos` \| Search Douyin works by keyword with optional paging/);
   assert.doesNotMatch(readme, /kuaishou_search_videos` \| Search Kuaishou works by natural-language keyword with optional paging/);
+});
+
+test("direct platform subcommand help exits successfully", () => {
+  const flagHelp = runCli(["wechat", "article", "--help"]);
+
+  assert.equal(flagHelp.status, 0, flagHelp.stderr);
+  assert.equal(flagHelp.stderr, "");
+  assert.match(
+    flagHelp.stdout,
+    /wechat article --url "<mp_article_url_or_share_text>"/
+  );
+
+  const positionalHelp = runCli(["wechat", "article", "help"]);
+
+  assert.equal(positionalHelp.status, 0, positionalHelp.stderr);
+  assert.equal(positionalHelp.stderr, "");
+  assert.match(
+    positionalHelp.stdout,
+    /wechat article --url "<mp_article_url_or_share_text>"/
+  );
 });
 
 test("user skill docs describe douyin profile-url entry without legacy url wording", () => {
@@ -3801,7 +8205,13 @@ test("user skill docs describe douyin profile-url entry without legacy url wordi
       "utf8"
     );
 
-    assert.match(skill, /douyin user-[a-z-]+ --profile-url/);
+    assert.ok(
+      extractDirectCliExamples(skill).some((example) =>
+        /npx -y socialdatax-skills@latest douyin user-[a-z-]+ --profile-url/.test(
+          example
+        )
+      )
+    );
     assert.match(skill, /profile URL option/);
     assert.doesNotMatch(skill, /douyin user-[a-z-]+ --url/);
     assert.doesNotMatch(skill, /the URL option for a single command/);
@@ -3855,10 +8265,18 @@ test("help and search skill document the five public sort meanings", () => {
     result.stdout,
     /kuaishou replies --photo-id "<photo_id>" --comment-id "<comment_id>"/
   );
+  assert.match(
+    result.stdout,
+    /Kuaishou creator works tool from a profile link or share text that resolves directly to a non-empty user_id/
+  );
   assert.match(result.stdout, /--photo-id <photo_id>/);
   assert.match(
     result.stdout,
     /--sort-type <general\|time_descending\|like_count_descending>/
+  );
+  assert.match(
+    result.stdout,
+    /--sort-type <all\|time_descending\|collect_count_descending>/
   );
   assert.match(
     result.stdout,
@@ -3880,6 +8298,9 @@ test("help and search skill document the five public sort meanings", () => {
   assert.match(searchSkill, /`douyin_search_videos`/);
   assert.match(searchSkill, /`like_count_descending`: most liked first\./);
   assert.match(searchSkill, /`week`: published within one week\./);
+  assert.match(searchSkill, /`all`: no sort restriction\./);
+  assert.match(searchSkill, /`collect_count_descending`: hottest first \/ most collected first\./);
+  assert.doesNotMatch(searchSkill, /one of `general`, `latest`, `popular`/);
   assert.match(searchSkill, /`one_to_five_minutes`: 1-5 minutes\./);
   assert.match(searchSkill, /`image`: image\/text posts\./);
   assert.match(searchSkill, /omit it for the default sort/);
@@ -3951,12 +8372,54 @@ test("install dry-run previews all skills under custom parent", () => {
 
   assert.equal(result.status, 0);
   assert.equal(result.stderr, "");
-  assert.match(result.stdout, /Dry run: would install 7 skills for openclaw/);
+  assert.match(result.stdout, /Dry run: would install 8 skills for openclaw/);
   assert.match(result.stdout, /media-search/);
   assert.match(result.stdout, /media-transcript/);
   assert.match(result.stdout, /media-user-posts/);
+  assert.match(result.stdout, /sensitive-check/);
   assert.match(result.stdout, /socialdatax-content-research-assistant/);
   assert.equal(spawnSync("test", ["-e", destination]).status, 1);
+});
+
+test("install success keeps source attribution automatic without extra user setup", () => {
+  const parent = mkdtempSync(join(tmpdir(), "smi-test-install-one-"));
+  const destination = join(parent, "media-search");
+
+  try {
+    const result = runCli([
+      "install",
+      "media-search",
+      "--target",
+      "openclaw",
+      "--path",
+      destination,
+    ]);
+
+    assert.equal(result.status, 0);
+    assert.equal(result.stderr, "");
+    assert.match(result.stdout, /Installed 1 skill for openclaw/);
+    assert.match(result.stdout, /No API key was stored by this installer/);
+    assert.match(result.stdout, /Configure your API Key before making authenticated calls/);
+    assert.match(
+      result.stdout,
+      /Direct CLI examples in installed SKILL\.md files already include source attribution for agents/
+    );
+    assert.match(result.stdout, /No extra source attribution setup is required/);
+    assert.doesNotMatch(result.stdout, /SOCIALDATAX_SOURCE_CLIENT/);
+    assert.doesNotMatch(result.stdout, /SOCIALDATAX_SOURCE_PLATFORM/);
+    assert.doesNotMatch(result.stdout, /SOCIALDATAX_SOURCE_SKILL/);
+    assert.doesNotMatch(result.stdout, /--source-client/);
+    assert.doesNotMatch(result.stdout, /npx -y socialdatax-skills@latest xhs search/);
+    assert.doesNotMatch(result.stdout, /Direct CLI examples:/);
+    const installedSkill = readFileSync(join(destination, "SKILL.md"), "utf8");
+    assert.match(installedSkill, /name:\s*"media-search"/);
+    assert.match(
+      installedSkill,
+      /--source-client socialdatax-skills --source-platform npm --source-skill media-search/
+    );
+  } finally {
+    rmSync(parent, { recursive: true, force: true });
+  }
 });
 
 test("list output documents aggregate skill and Douyin creator series", () => {
@@ -3966,6 +8429,7 @@ test("list output documents aggregate skill and Douyin creator series", () => {
   assert.equal(result.stderr, "");
   assert.match(result.stdout, /socialdatax-content-research-assistant/);
   assert.match(result.stdout, /cross-platform content research/);
+  assert.match(result.stdout, /WeChat Official Account articles/);
   assert.match(result.stdout, /media-transcript/);
   assert.match(result.stdout, /speech-to-text transcript jobs/);
   assert.match(result.stdout, /media-user-posts/);

@@ -5,19 +5,19 @@ Use this checklist before syncing this listing to the public `socialdatax-skills
 ## Public Repository
 
 - Repository name: `socialdatax-skills`
-- Project URL: `https://socialdatax.52choujiang.com`
+- Project URL: `https://socialdatax.com`
 - Public repository: <https://github.com/DevinChen2014/socialdatax-skills>
 - Repository description: `SocialDataX skills for media search, content details, comments/replies, creator profiles, creator content lists, search hot lists, and video speech-to-text transcripts. Current tools support Xiaohongshu / XHS / RedNote, Douyin, Kuaishou / Kwai, Weibo, and WeChat Channels through hosted platform MCP services.`
 - Current repository topics: `agentskills`, `skills`, `social-media`, `social-insights`, `xiaohongshu`, `xhs`, `rednote`, `douyin`, `kuaishou`, `kwai`, `weibo`, `wechat`
 - Optional expansion topics: `marketing-research`, `comment-analysis`, `media-search`, `speech-to-text`, `transcript`, `xiaohongshu-data`, `xhs-data`, `rednote-data`, `douyin-data`, `kuaishou-data`, `kwai-data`, `weibo-data`, `wechat-channels`
 - Root README title: `SocialDataX Skills | 社媒数据助手 Skills`
 - Product name: `SocialDataX` / `社媒数据助手`
-- Website: `https://socialdatax.52choujiang.com`
-- XHS hosted MCP endpoint: `https://mcp.52choujiang.com/xhs/mcp`
-- Douyin hosted MCP endpoint: `https://mcp.52choujiang.com/douyin/mcp`
-- Kuaishou hosted MCP endpoint: `https://mcp.52choujiang.com/kuaishou/mcp`
-- Weibo hosted MCP endpoint: `https://mcp.52choujiang.com/weibo/mcp`
-- WeChat Channels hosted MCP endpoint: `https://mcp.52choujiang.com/wechat/mcp`
+- Website: `https://socialdatax.com`
+- XHS hosted MCP endpoint: `https://mcp.socialdatax.com/xhs/mcp`
+- Douyin hosted MCP endpoint: `https://mcp.socialdatax.com/douyin/mcp`
+- Kuaishou hosted MCP endpoint: `https://mcp.socialdatax.com/kuaishou/mcp`
+- Weibo hosted MCP endpoint: `https://mcp.socialdatax.com/weibo/mcp`
+- WeChat Channels hosted MCP endpoint: `https://mcp.socialdatax.com/wechat/mcp`
 - Hosted auth: `Authorization: Bearer <SOCIALDATAX_API_KEY>`
 - XHS current platform MCP registry name: `com.52choujiang/xhs-insights`
 - XHS future platform MCP registry name: `com.socialdatax/xhs-insights`
@@ -30,7 +30,7 @@ Use this checklist before syncing this listing to the public `socialdatax-skills
 - WeChat Channels current platform MCP registry name: `com.52choujiang/wechat-channels-insights`
 - WeChat Channels future platform MCP registry name: `com.socialdatax/wechat-channels-insights`
 - Unified MCP registry name: none
-- Direct CLI startup: `npx -y socialdatax-skills@latest xhs search --keyword "露营桌" --pretty`
+- Direct CLI startup: `npx -y socialdatax-skills@latest xhs search --keyword "露营" --pretty`
 - Runtime env: `SOCIALDATAX_API_KEY=<SOCIALDATAX_API_KEY>`
 - Node.js runtime: recommend Node.js 22 LTS or newer; minimum Node.js 20.18.1; Node.js 18 and older are not supported.
 - Shared skill install:
@@ -46,20 +46,19 @@ Use this checklist before syncing this listing to the public `socialdatax-skills
   - Codex comments skill: `npx -y socialdatax-skills@latest install media-comments --target codex`
   - Claude Code detail skill: `npx -y socialdatax-skills@latest install media-detail --target claude-code`
   - Shared AgentSkills creator posts skill: `npx -y socialdatax-skills@latest install media-user-posts --target agents`
-  - Direct XHS search: `npx -y socialdatax-skills@latest xhs search --keyword "露营桌" --pretty`
+  - Direct XHS search: `npx -y socialdatax-skills@latest xhs search --keyword "露营" --pretty`
   - Direct XHS search hot list: `npx -y socialdatax-skills@latest xhs hot-search --pretty`
   - Direct Douyin hot search: `npx -y socialdatax-skills@latest douyin hot-search --pretty`
-  - Direct Douyin search: `npx -y socialdatax-skills@latest douyin search --keyword "露营桌" --pretty`
+  - Direct Douyin search: `npx -y socialdatax-skills@latest douyin search --keyword "露营" --pretty`
   - Direct Douyin replies: `npx -y socialdatax-skills@latest douyin replies --aweme-id "<aweme_id>" --comment-id "<comment_id>" --pretty`
   - Direct Douyin creator series: `npx -y socialdatax-skills@latest douyin user-series --sec-user-id "<sec_user_id>" --pretty`
-  - Direct Kuaishou hot search: `npx -y socialdatax-skills@latest kuaishou hot-search --pretty`
-  - Direct Kuaishou search: `npx -y socialdatax-skills@latest kuaishou search --keyword "露营桌" --pretty`
+  - Direct Kuaishou search: `npx -y socialdatax-skills@latest kuaishou search --keyword "露营" --pretty`
   - Direct Kuaishou replies: `npx -y socialdatax-skills@latest kuaishou replies --photo-id "<photo_id>" --comment-id "<comment_id>" --pretty`
   - Direct Weibo hot search: `npx -y socialdatax-skills@latest weibo hot-search --pretty`
-  - Direct Weibo search: `npx -y socialdatax-skills@latest weibo search --keyword "露营桌" --pretty`
+  - Direct Weibo search: `npx -y socialdatax-skills@latest weibo search --keyword "露营" --pretty`
   - Direct Weibo detail: `npx -y socialdatax-skills@latest weibo detail --post-id "<post_id>" --pretty`
   - Direct WeChat Channels hot search: `npx -y socialdatax-skills@latest wechat hot-search --pretty`
-  - Direct WeChat Channels search: `npx -y socialdatax-skills@latest wechat search --keyword "露营桌" --pretty`
+  - Direct WeChat Channels search: `npx -y socialdatax-skills@latest wechat search --keyword "露营" --pretty`
   - Direct WeChat Channels detail: `npx -y socialdatax-skills@latest wechat detail --encrypted-object-id "<encrypted_object_id>" --pretty`
 - OpenClaw default skill directory: `~/.openclaw/workspace/skills`, overridable with `OPENCLAW_SKILLS_DIR`
 - License: MIT for the public CLI wrapper, documentation, and skill files only
@@ -120,31 +119,30 @@ Use this checklist before syncing this listing to the public `socialdatax-skills
 - `node cli.mjs doctor --json` prints parseable JSON and does not include real API keys.
 - `node cli.mjs` prints help instead of silently running a local MCP server.
 - `node cli.mjs --help` documents direct `xhs`, `douyin`, `kuaishou`, `weibo`, and `wechat` commands, multi-skill install, OpenClaw, Hermes Agent, Codex, Claude Code, and shared AgentSkills commands.
-- `node cli.mjs xhs search --keyword "露营桌" --pretty` fails clearly without `SOCIALDATAX_API_KEY`.
+- `node cli.mjs xhs search --keyword "露营" --pretty` fails clearly without `SOCIALDATAX_API_KEY`.
 - `node cli.mjs xhs hot-search --pretty` fails clearly without `SOCIALDATAX_API_KEY`.
 - `node cli.mjs xhs detail --note-id a --url b` fails with the one-input validation error.
 - `node cli.mjs douyin hot-search --pretty` fails clearly without `SOCIALDATAX_API_KEY`.
-- `node cli.mjs douyin search --keyword "露营桌" --pretty` fails clearly without `SOCIALDATAX_API_KEY`.
+- `node cli.mjs douyin search --keyword "露营" --pretty` fails clearly without `SOCIALDATAX_API_KEY`.
 - `node cli.mjs douyin detail --aweme-id a --url b` fails with the one-input validation error.
 - `node cli.mjs douyin replies --aweme-id "<aweme_id>" --comment-id "<comment_id>" --pretty` fails clearly without `SOCIALDATAX_API_KEY`.
 - `node cli.mjs douyin user-series --sec-user-id "<sec_user_id>" --pretty` fails clearly without `SOCIALDATAX_API_KEY`.
-- `node cli.mjs kuaishou hot-search --pretty` fails clearly without `SOCIALDATAX_API_KEY`.
-- `node cli.mjs kuaishou search --keyword "露营桌" --pretty` fails clearly without `SOCIALDATAX_API_KEY`.
+- `node cli.mjs kuaishou search --keyword "露营" --pretty` fails clearly without `SOCIALDATAX_API_KEY`.
 - `node cli.mjs kuaishou detail --photo-id a --url b` fails with the one-input validation error.
 - `node cli.mjs kuaishou replies --photo-id "<photo_id>" --comment-id "<comment_id>" --pretty` fails clearly without `SOCIALDATAX_API_KEY`.
 - `node cli.mjs weibo hot-search --pretty` fails clearly without `SOCIALDATAX_API_KEY`.
-- `node cli.mjs weibo search --keyword "露营桌" --pretty` fails clearly without `SOCIALDATAX_API_KEY`.
+- `node cli.mjs weibo search --keyword "露营" --pretty` fails clearly without `SOCIALDATAX_API_KEY`.
 - `node cli.mjs weibo detail --post-id a --post-url b` fails with the one-input validation error.
 - `node cli.mjs wechat hot-search --pretty` fails clearly without `SOCIALDATAX_API_KEY`.
-- `node cli.mjs wechat search --keyword "露营桌" --pretty` fails clearly without `SOCIALDATAX_API_KEY`.
+- `node cli.mjs wechat search --keyword "露营" --pretty` fails clearly without `SOCIALDATAX_API_KEY`.
 - `node cli.mjs wechat detail --encrypted-object-id a --url b` fails with the one-input validation error.
-- With a valid key, `node cli.mjs xhs search --keyword "露营桌" --pretty` returns a JSON envelope with `platform`, `tool`, `arguments`, and `data`.
+- With a valid key, `node cli.mjs xhs search --keyword "露营" --pretty` returns a JSON envelope with `platform`, `tool`, `arguments`, and `data`.
 - With a valid key, `node cli.mjs xhs hot-search --pretty` returns a JSON envelope with `platform`, `tool`, `arguments`, and `data`.
-- With a valid key, `node cli.mjs douyin search --keyword "露营桌" --pretty` returns a JSON envelope with `platform`, `tool`, `arguments`, and `data`.
-- With a valid key, `node cli.mjs kuaishou search --keyword "露营桌" --pretty` returns a JSON envelope with `platform`, `tool`, `arguments`, and `data`.
-- With a valid key, `node cli.mjs weibo search --keyword "露营桌" --pretty` returns a JSON envelope with `platform`, `tool`, `arguments`, and `data`.
-- With a valid key, `node cli.mjs wechat search --keyword "露营桌" --pretty` returns a JSON envelope with `platform`, `tool`, `arguments`, and `data`.
-- `node cli.mjs xhs search --keyword "露营桌"` prints a clear Node.js version error on runtimes older than 20.18.1.
+- With a valid key, `node cli.mjs douyin search --keyword "露营" --pretty` returns a JSON envelope with `platform`, `tool`, `arguments`, and `data`.
+- With a valid key, `node cli.mjs kuaishou search --keyword "露营" --pretty` returns a JSON envelope with `platform`, `tool`, `arguments`, and `data`.
+- With a valid key, `node cli.mjs weibo search --keyword "露营" --pretty` returns a JSON envelope with `platform`, `tool`, `arguments`, and `data`.
+- With a valid key, `node cli.mjs wechat search --keyword "露营" --pretty` returns a JSON envelope with `platform`, `tool`, `arguments`, and `data`.
+- `node cli.mjs xhs search --keyword "露营"` prints a clear Node.js version error on runtimes older than 20.18.1.
 - `node cli.mjs install media-search --target openclaw --path <temp-dir>` installs a valid `SKILL.md` skill.
 - `node cli.mjs install media-search --target openclaw --path <temp-dir> --dry-run` previews the destination and does not create the directory.
 - `node cli.mjs install --target openclaw --path <temp-parent-dir> --dry-run` previews all bundled skills and does not create the parent directory.
@@ -162,7 +160,7 @@ Use this checklist before syncing this listing to the public `socialdatax-skills
 ## Platform MCP Checks
 
 - XHS platform listing remains in `public-listings/xhs-insights`.
-- XHS platform server card remains `com.52choujiang/xhs-insights`; `com.socialdatax/xhs-insights` is kept only as a future namespace draft while the public endpoint remains on `mcp.52choujiang.com`.
+- XHS platform server card remains `com.52choujiang/xhs-insights`; `com.socialdatax/xhs-insights` is kept only as a future namespace draft while the public endpoint remains on `mcp.socialdatax.com`.
 - Douyin current platform listing remains in `public-listings/douyin-insights`.
 - Douyin server metadata is publicly listed as `com.52choujiang/douyin-insights`; future `com.socialdatax/douyin-insights` metadata remains a draft until the endpoint namespace changes.
 - Kuaishou current platform listing remains in `public-listings/kuaishou-insights`.
@@ -172,13 +170,15 @@ Use this checklist before syncing this listing to the public `socialdatax-skills
 - WeChat Channels current platform listing remains in `public-listings/wechat-channels-insights`.
 - WeChat Channels server metadata is publicly listed as `com.52choujiang/wechat-channels-insights`; future `com.socialdatax/wechat-channels-insights` metadata remains a draft until the endpoint namespace changes.
 - No `public-listings/socialdatax-skills/server-card.json` is published.
-- Hosted streamable HTTP clients can connect directly to `https://mcp.52choujiang.com/xhs/mcp`, `https://mcp.52choujiang.com/douyin/mcp`, `https://mcp.52choujiang.com/kuaishou/mcp`, `https://mcp.52choujiang.com/weibo/mcp`, and `https://mcp.52choujiang.com/wechat/mcp` with `Authorization: Bearer <SOCIALDATAX_API_KEY>`.
+- Hosted streamable HTTP clients can connect directly to `https://mcp.socialdatax.com/xhs/mcp`, `https://mcp.socialdatax.com/douyin/mcp`, `https://mcp.socialdatax.com/kuaishou/mcp`, `https://mcp.socialdatax.com/weibo/mcp`, and `https://mcp.socialdatax.com/wechat/mcp` with `Authorization: Bearer <SOCIALDATAX_API_KEY>`.
 - With a valid key, hosted MCP `initialize` succeeds.
 - With a valid key, XHS hosted MCP `tools/list` returns the current 14 public XHS tools.
 - With a valid key, Douyin hosted MCP `tools/list` returns the current 16 public Douyin tools.
-- With a valid key, Kuaishou hosted MCP `tools/list` returns the current 14 public Kuaishou tools.
-- With a valid key, Weibo hosted MCP `tools/list` returns the current 16 public Weibo tools.
-- With a valid key, WeChat Channels hosted MCP `tools/list` returns the current 13 public WeChat Channels tools.
+- With a valid key, Kuaishou hosted MCP `tools/list` returns the current 15 public Kuaishou tools.
+- With a valid key, Kuaishou hosted MCP `tools/list` includes `kuaishou_get_hot_search_list`.
+- With a valid key, Weibo hosted MCP `tools/list` returns the current 18 public Weibo tools.
+- With a valid key, Weibo hosted MCP `tools/list` includes `weibo_get_post_liker_list_by_post_url` and `weibo_get_post_repost_list_by_post_url`.
+- With a valid key, WeChat Channels hosted MCP `tools/list` returns the current 14 public WeChat Channels tools.
 
 ## Directory Submission Order
 
@@ -227,14 +227,12 @@ Use this checklist before syncing this listing to the public `socialdatax-skills
 - `kuaishou mcp`
 - `kuaishou data mcp`
 - `kuaishou video search mcp`
-- `kuaishou hot search mcp`
 - `Kwai`
 - `kwai mcp`
 - `kwai data mcp`
 - `快手`
 - `快手 mcp`
 - `快手 数据 MCP`
-- `快手 热榜 MCP`
 - `Weibo`
 - `weibo mcp`
 - `weibo data mcp`

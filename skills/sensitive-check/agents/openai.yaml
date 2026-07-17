@@ -1,0 +1,7 @@
+interface:
+  display_name: "敏感词检测"
+  short_description: "Check sensitive words"
+  default_prompt: "Use $sensitive-check to check draft text for sensitive words, prohibited words, and publishing risks with SocialDataX."
+
+policy:
+  allow_implicit_invocation: true

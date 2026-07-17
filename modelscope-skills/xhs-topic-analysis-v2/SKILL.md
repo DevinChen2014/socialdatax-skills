@@ -10,13 +10,73 @@ metadata: {"openclaw":{"requires":{"env":["SOCIALDATAX_API_KEY"],"bins":["node",
 
 # 小红书选题分析
 
-Use this skill when the user wants 小红书选题, topic planning, viral angle review, content angle planning, or topic material organization.
+## 适用场景
+
+当用户需要做小红书选题、小红书内容选题、小红书选题策划、爆款选题拆解、内容角度规划或选题素材整理时使用。面向内容运营、品牌调研和创作者。
 
 ## 快速开始
 
 - 先给出当前 skill 支持的输入：关键词或选题方向。
 - 如果你只想先看样本，先取 1 页；要继续扩大，再按参数说明使用分页或 `--max-items`。
 - 你通常会得到：相关标题、作者或账号、链接或内容 ID，以及可继续追问的角度。
+
+## API Key 获取
+
+获取或管理 API Key：访问 <https://socialdatax.com/?from=modelscope>，按官网的 API Key 申请/管理入口操作。环境变量名固定使用 `SOCIALDATAX_API_KEY`；不要引导用户使用其他域名。
+
+## 直接调用命令
+
+优先使用 direct CLI；能运行 shell 命令的 Agent 不需要额外配置 MCP server：
+
+```bash
+npx -y socialdatax-skills@latest xhs search \
+  --keyword "<keyword>" --pretty --source-client socialdatax-skills \
+  --source-platform modelscope --source-skill xhs-topic-analysis-v2
+
+npx -y socialdatax-skills@latest xhs search \
+  --keyword "<keyword>" --pages 3 --pretty --source-client socialdatax-skills \
+  --source-platform modelscope --source-skill xhs-topic-analysis-v2
+```
+
+## 参数说明
+
+搜索：
+- 必填：`--keyword <text>`：内容研究主题；使用用户真实意图，去掉多余空格，并保持关键词聚焦。
+- 可选：`--sort-type <general|time_descending|like_count_descending|comment_count_descending|collect_count_descending>`：可选排序参数；不传就使用默认排序。
+- 可选：`--note-type <all|image|video>`：可选内容类型筛选；默认是 `all`。
+- 可选：`--publish-time-range <all|day|week|half_year>`：可选发布时间筛选；默认是 `all`。
+- 可选：`--pages <n>`：从当前起点继续获取并合并 N 页搜索结果；如果返回了 `next_page_token`，可继续续页。
+- 可选：`--max-items <n>`：收集到 N 条搜索结果后停止。
+- 可选：`--since-days <1-365>`：只保留最近 N 天内公开 `publish_time` 落在范围内的搜索结果；搜索范围仍受 `--pages` 限制。
+
+通用：
+- 可选：`--page-token <next_page_token>`：这是不透明的分页 token；第一页不要传。继续同一条搜索链路时，只能原样传回完整返回的 `next_page_token`，不能截断、改写、脱敏、重建，或用省略号替换中间内容。
+- 可选：`--pretty`：只影响输出格式，不改变实际请求结果。
+- 可选：`--source-client socialdatax-skills --source-platform modelscope --source-skill xhs-topic-analysis-v2`：这是当前 Agent Skill 的来源标记；按本 Skill 示例执行时保持这些值不变。
+
+## 输出建议
+
+优先输出可直接复盘的结果：相关样本和主要角度，并标出下一步可继续追问的问题。
+
+先把可见证据和你的判断分开写；当用户需要可追溯结论时，重点整理话题模式、内容角度、受众反馈、创作者定位和可引用样本。
+对于 XHS 搜索结果里的 `note_url`，无论是在最终回答、展示、引用、存储、输出还是转发时，都要保留完整原始 URL，包括其中的 `xsec_token` 查询参数；不要改写、截断、脱敏、重建，也不要只根据 `note_id` 去拼链接。
+对于 XHS `note_id`，要完整复制 24 位小写十六进制 ID；不要只传或只展示前缀。
+当用户要看最近话题时，优先使用 CLI 的 `--since-days 7`，或者按用户指定的天数窗口执行；不要把当前返回页范围说成全平台完整覆盖。
+
+## MCP 工具
+
+与上面 direct CLI 命令对应的 MCP 工具：
+
+- `xhs_search_notes`
+
+在 XHS 搜索场景中，调用 `xhs_search_notes` 时传 `keyword`，可选传 `page_token`、`sort_type`、`note_type` 和 `publish_time_range`。
+
+调用 `xhs_search_notes` 时不要传 `page`；第一页也不要传 `page_token`。
+只有在 `next_page_token` 非空时才继续翻页；并且在同一个关键词、排序、内容类型、发布时间范围和调用链路下，把完整返回的 `next_page_token` 原样作为 `page_token` 传回。
+
+## 安全边界
+
+这是只读 skill。运行时使用用户环境变量中的 `SOCIALDATAX_API_KEY`；生成的 Skill 文件不包含 API Key。不会读取本地浏览器数据，也不会执行登录、发帖、点赞、评论或账号修改。
 
 ## 示例结果
 
@@ -34,57 +94,3 @@ Use this skill when the user wants 小红书选题, topic planning, viral angle 
 - 调用失败：先确认 `SOCIALDATAX_API_KEY` 已配置，再重试。
 - 担心账号安全：这是只读能力，不登录、不发帖、不点赞、不评论。
 - 想继续分析：把最相关的 1-3 条结果发回来，继续缩小范围。
-
-## API Key
-
-Use `SOCIALDATAX_API_KEY` for SocialDataX requests. The only official website for requesting or managing API access is <https://socialdatax.com/?from=modelscope>. If a user asks where to get a key, provide only this URL; do not infer alternate domains.
-获取或管理 API Key：访问 <https://socialdatax.com/?from=modelscope>，按官网的 API Key 申请/管理入口操作。环境变量名固定使用 `SOCIALDATAX_API_KEY`；不要引导用户使用其他域名。
-
-## Preferred Direct CLI
-
-Prefer the direct CLI when the agent can run shell commands. It does not require MCP server configuration:
-
-```bash
-npx -y socialdatax-skills@latest xhs search --keyword "<keyword>" --pretty --source-client socialdatax-skills --source-platform modelscope --source-skill xhs-topic-analysis-v2
-npx -y socialdatax-skills@latest xhs search --keyword "<keyword>" --pages 3 --pretty --source-client socialdatax-skills --source-platform modelscope --source-skill xhs-topic-analysis-v2
-```
-
-Required arguments:
-
-- `--keyword <text>`: content research topic; use the user's actual intent, trim whitespace, and keep it focused.
-
-Optional arguments:
-
-- `--page-token <next_page_token>`: opaque pagination token; omit it on the first search request. Continue only with the complete returned `next_page_token` from the same search pagination chain. Do not modify, truncate, redact, mask, omit, normalize, rebuild, generate, or replace the middle with ellipses.
-- `--sort-type <general|time_descending|like_count_descending|comment_count_descending|collect_count_descending>`: optional sort value; omit it for default sorting.
-- `--note-type <all|image|video>`: optional content format filter; default is `all`.
-- `--publish-time-range <all|day|week|half_year>`: optional publish-time filter; default is `all`.
-- `--pages <n>`: fetch and merge N search pages from the current starting point.
-- `--max-items <n>`: stop after collecting N search results.
-- `--since-days <1-365>`: keep only search results whose public `publish_time` is within the last N days; search remains bounded by `--pages`.
-- `--pretty`: output formatting only; it does not change the research topic or results.
-- `--source-client socialdatax-skills --source-platform modelscope --source-skill xhs-topic-analysis-v2`: usage attribution for this Agent Skill; keep these values unchanged when running examples from this Skill.
-
-## Safety Boundary
-
-This skill is read-only. It does not read local browser data, does not save API keys, and does not perform login, posting, liking, commenting, or account changes.
-
-## MCP Tools
-
-MCP tools matching the direct CLI commands above:
-
-- `xhs_search_notes`
-
-For XHS, call `xhs_search_notes` with `keyword`, optional `page_token`, `sort_type`, `note_type`, and `publish_time_range`.
-
-Do not pass `page` to `xhs_search_notes`; omit `page_token` on the first request.
-Continue pagination only when `next_page_token` is not empty, and pass the complete returned `next_page_token` back unchanged as `page_token` for the same keyword, sort, note type, publish-time range, and caller chain.
-
-## 输出建议
-
-优先输出可直接复盘的结果：相关样本和主要角度，并标出下一步可继续追问的问题。
-
-Summarize visible evidence separately from interpretation. Focus on topic patterns, content angles, audience reactions, creator positioning, and useful examples when the user needs traceability.
-For XHS search results, in every use of a returned `note_url`, such as final answers, display, references, storage, output, or forwarding, preserve it exactly as the full URL, including `xsec_token` query parameters. Do not modify, truncate, redact, mask, normalize, rebuild, or synthesize the URL from `note_id`.
-For XHS `note_id`, copy the complete 24-character lowercase hexadecimal ID exactly; do not pass or display only a prefix.
-When the user asks for recent topic research, prefer CLI `--since-days 7` or another user-specified day window; do not claim complete platform coverage beyond the fetched pages.

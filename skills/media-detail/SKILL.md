@@ -1,6 +1,9 @@
 ---
 name: "media-detail"
-description: "Read structured social media content details and metrics from content IDs, URLs, short links, or share text. This version is backed by hosted platform MCP services and supports Xiaohongshu, 小红书, XHS, RedNote, Douyin / 抖音, Kuaishou / 快手 / Kwai, Weibo / 微博, and WeChat Channels / 视频号."
+description: "Read structured social media content details and metrics from content IDs, URLs, short links, or share text. This version is backed by hosted platform MCP services and supports Xiaohongshu, 小红书, XHS, RedNote, Douyin / 抖音, Kuaishou / 快手 / Kwai, Weibo / 微博, WeChat Channels / 视频号, and WeChat Official Account / 微信公众号 articles."
+source_client: "socialdatax-skills"
+source_platform: "npm"
+source_skill: "media-detail"
 metadata:
   openclaw:
     requires:
@@ -15,13 +18,13 @@ metadata:
         package: "socialdatax-skills"
         bins: []
     emoji: "📄"
-    homepage: "https://socialdatax.52choujiang.com/?from=npm"
+    homepage: "https://socialdatax.com/?from=npm"
 ---
 <!-- AUTO-GENERATED from socialdatax-skill-source. Do not edit directly; run `node scripts/generate_socialdatax_skills.mjs`. -->
 
 # Media Detail
 
-Use this skill when the user provides a content link, short link, share text, or content ID and wants structured details or interaction metrics.
+Use this skill when the user provides a content link, short link, share text, content ID, or mp.weixin.qq.com article link and wants structured details or interaction metrics.
 
 Current platform support:
 
@@ -30,27 +33,61 @@ Current platform support:
 - Kuaishou / 快手 works through the `kuaishou_get_video_detail_by_*` tools.
 - Weibo / 微博 posts through the `weibo_get_post_detail_by_*` tools.
 - WeChat Channels / 视频号 videos through the `wechat_get_video_detail_by_*` tools.
+- WeChat Official Account / 微信公众号 articles through `wechat_get_mp_article_detail_by_url`.
 
 ## API Key
 
-Use `SOCIALDATAX_API_KEY` for SocialDataX requests. The only official website for requesting or managing API access is <https://socialdatax.52choujiang.com/?from=npm>. If a user asks where to get a key, provide only this URL; do not infer alternate domains.
-获取或管理 API Key：访问 <https://socialdatax.52choujiang.com/?from=npm>，按官网的 API Key 申请/管理入口操作。环境变量名固定使用 `SOCIALDATAX_API_KEY`；不要引导用户使用其他域名。
+Use `SOCIALDATAX_API_KEY` for SocialDataX requests. The only official website for requesting or managing API access is <https://socialdatax.com/?from=npm>. If a user asks where to get a key, provide only this URL; do not infer alternate domains.
+获取或管理 API Key：访问 <https://socialdatax.com/?from=npm>，按官网的 API Key 申请/管理入口操作。环境变量名固定使用 `SOCIALDATAX_API_KEY`；不要引导用户使用其他域名。
 
 ## Preferred Direct CLI
 
 Prefer the direct CLI when the agent can run shell commands. It does not require MCP server configuration:
 
 ```bash
-npx -y socialdatax-skills@latest xhs detail --note-id "<note_id>" --pretty
-npx -y socialdatax-skills@latest xhs detail --url "<note_url_or_share_text>" --pretty
-npx -y socialdatax-skills@latest douyin detail --aweme-id "<aweme_id>" --pretty
-npx -y socialdatax-skills@latest douyin detail --url "<douyin_content_url_or_share_text>" --pretty
-npx -y socialdatax-skills@latest kuaishou detail --photo-id "<photo_id>" --pretty
-npx -y socialdatax-skills@latest kuaishou detail --url "<kuaishou_content_url_or_share_text>" --pretty
-npx -y socialdatax-skills@latest weibo detail --post-id "<post_id>" --pretty
-npx -y socialdatax-skills@latest weibo detail --post-url "<weibo_post_url_or_share_text>" --pretty
-npx -y socialdatax-skills@latest wechat detail --encrypted-object-id "<encrypted_object_id>" --pretty
-npx -y socialdatax-skills@latest wechat detail --url "<wechat_video_url_or_share_text>" --pretty
+npx -y socialdatax-skills@latest xhs detail \
+  --note-id "<note_id>" --pretty --source-client socialdatax-skills \
+  --source-platform npm --source-skill media-detail
+
+npx -y socialdatax-skills@latest xhs detail \
+  --url "<note_url_or_share_text>" --pretty --source-client socialdatax-skills \
+  --source-platform npm --source-skill media-detail
+
+npx -y socialdatax-skills@latest douyin detail \
+  --aweme-id "<aweme_id>" --pretty --source-client socialdatax-skills \
+  --source-platform npm --source-skill media-detail
+
+npx -y socialdatax-skills@latest douyin detail \
+  --url "<douyin_content_url_or_share_text>" --pretty \
+  --source-client socialdatax-skills --source-platform npm --source-skill media-detail
+
+npx -y socialdatax-skills@latest kuaishou detail \
+  --photo-id "<photo_id>" --pretty --source-client socialdatax-skills \
+  --source-platform npm --source-skill media-detail
+
+npx -y socialdatax-skills@latest kuaishou detail \
+  --url "<kuaishou_content_url_or_share_text>" --pretty \
+  --source-client socialdatax-skills --source-platform npm --source-skill media-detail
+
+npx -y socialdatax-skills@latest weibo detail \
+  --post-id "<post_id>" --pretty --source-client socialdatax-skills \
+  --source-platform npm --source-skill media-detail
+
+npx -y socialdatax-skills@latest weibo detail \
+  --post-url "<weibo_post_url_or_share_text>" --pretty \
+  --source-client socialdatax-skills --source-platform npm --source-skill media-detail
+
+npx -y socialdatax-skills@latest wechat detail \
+  --encrypted-object-id "<encrypted_object_id>" --pretty \
+  --source-client socialdatax-skills --source-platform npm --source-skill media-detail
+
+npx -y socialdatax-skills@latest wechat detail \
+  --url "<wechat_video_url_or_share_text>" --pretty --source-client socialdatax-skills \
+  --source-platform npm --source-skill media-detail
+
+npx -y socialdatax-skills@latest wechat article \
+  --url "<mp_article_url_or_share_text>" --pretty --source-client socialdatax-skills \
+  --source-platform npm --source-skill media-detail
 ```
 
 Optional arguments:
@@ -66,6 +103,8 @@ Optional arguments:
 - Weibo `--post-url <weibo_post_url_or_share_text>`: use for a Weibo post URL, short link, or share text.
 - WeChat Channels / 视频号 `--encrypted-object-id <encrypted_object_id>`: use when the encrypted_object_id from search is already known.
 - WeChat Channels / 视频号 `--url <wechat_video_url_or_share_text>`: use for a WeChat Channels video link or share text.
+- WeChat Official Account / 微信公众号 `article --url <mp_article_url_or_share_text>`: use for an mp.weixin.qq.com article link or share text.
+- `--source-client socialdatax-skills --source-platform npm --source-skill media-detail`: usage attribution for this Agent Skill; keep these values unchanged when running examples from this Skill.
 
 Use either the ID option or the URL option for detail commands, not both.
 
@@ -73,7 +112,7 @@ The command prints JSON with `platform`, `tool`, `arguments`, and `data`.
 
 ## Safety Boundary
 
-This skill is read-only. It does not read local browser data, does not save API keys, and does not perform login, posting, liking, commenting, or account changes. Prefer the direct CLI; hosted MCP tools are optional when the current agent already supports authenticated streamable HTTP MCP.
+Platform detail access is read-only. It uses `SOCIALDATAX_API_KEY` from the user's environment at runtime for SocialDataX detail requests. Generated Skill files do not contain API keys. It does not read local browser data or perform login, posting, liking, commenting, or account changes. The optional XHS local save command writes only to the requested local `--output` path or `--output-dir` directory and does not require `SOCIALDATAX_API_KEY`. The optional WeChat Channels / 视频号 local save command writes only to the user-provided `--output` file, decrypts when needed, and does not require `SOCIALDATAX_API_KEY`. Prefer the direct CLI; hosted MCP tools are optional when the current agent already supports authenticated streamable HTTP MCP.
 
 ## MCP Tools
 
@@ -89,6 +128,7 @@ MCP tools matching the direct CLI commands above:
 - `weibo_get_post_detail_by_post_url`
 - `wechat_get_video_detail_by_encrypted_object_id`
 - `wechat_get_video_detail_by_url`
+- `wechat_get_mp_article_detail_by_url`
 
 If MCP tools are already available in the current agent, use one of these tools:
 - `xhs_get_note_detail_by_note_id`: use when the complete 24-character lowercase hexadecimal `note_id` is already known; do not pass only a prefix.
@@ -101,14 +141,18 @@ If MCP tools are already available in the current agent, use one of these tools:
 - `weibo_get_post_detail_by_post_url`: use for Weibo post URLs, short links, or share text.
 - `wechat_get_video_detail_by_encrypted_object_id`: use when encrypted_object_id from search is already known.
 - `wechat_get_video_detail_by_url`: use for WeChat Channels / 视频号 video links or share text.
+- `wechat_get_mp_article_detail_by_url`: use for WeChat Official Account / 微信公众号 article links or share text.
 
 ## Output Guidance
 
 Return factual fields such as title or description, content, author, publish time, interaction counts, images, and media summary when available.
 For XHS detail results, in every use of a returned `note_url`, such as final answers, display, references, storage, output, or forwarding, preserve it exactly as the full URL, including `xsec_token` query parameters. Do not modify, truncate, redact, mask, normalize, rebuild, or synthesize the URL from `note_id`; if `note_url` is null, show the `note_id` or say that no directly openable full link is available.
 For XHS `note_id`, copy the complete 24-character lowercase hexadecimal ID exactly; do not pass or display only a prefix.
+When the user wants to save XHS images or videos after detail, pass each returned `image_items[].image_url` or `video.video_url` to `npx -y socialdatax-skills@latest xhs download-media --url "<media_url>" --output-dir <directory> --pretty`; this local save command does not require `SOCIALDATAX_API_KEY`.
 For Douyin detail, include `content_type` when available.
 For Douyin detail, use `images` for image/text posts; `video` is the platform player resource and may be audio for image/text posts; `music` is the bound music or original-sound asset.
 Detail access is read-only and does not provide account actions.
 For Weibo detail, include `post_id`, content, author, media, interaction counts, publish time, and post URL when available.
 For WeChat Channels / 视频号 detail, preserve `object_id` and `object_nonce_id` because comments and replies need both values.
+When the user wants to save a WeChat Channels / 视频号 video after detail, pass the returned `video.video_url` to `npx -y socialdatax-skills@latest wechat decrypt-media --media-url "<video.video_url>" --output <file>`; this local save command decrypts when needed and does not require `SOCIALDATAX_API_KEY`.
+For WeChat Official Account / 微信公众号 article detail, include article title, account, publish time, body text, image URLs, linked articles, and embedded video cards when present.
