@@ -86,7 +86,7 @@ Common search phrases for this skill package:
 - Sensitive Words Check MCP server name: `sensitive-check`
 - Sensitive Words Check future MCP registry name: `com.socialdatax/sensitive-check`
 - Unified MCP registry name: none; this package installs skills and calls explicit platform services.
-- Current public capability version: `0.2.30`
+- Current public capability version: `0.2.31`
 
 ## Direct CLI
 

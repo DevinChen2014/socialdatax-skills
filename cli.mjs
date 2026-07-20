@@ -22,7 +22,7 @@ import { decryptWechatMediaCommand } from "./lib/media/wechat-decrypt.mjs";
 export { decryptWechatMediaCommand };
 
 const PACKAGE_NAME = "socialdatax-skills";
-const PACKAGE_VERSION = "0.2.30";
+const PACKAGE_VERSION = "0.2.31";
 const PACKAGE_SPEC = `${PACKAGE_NAME}@latest`;
 const LOG_PREFIX = `[${PACKAGE_NAME}]`;
 const MIN_NODE_VERSION = "20.18.1";

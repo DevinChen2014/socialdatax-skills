@@ -7880,7 +7880,7 @@ test("doctor prints human-readable safety summary", () => {
   assert.equal(result.status, 0);
   assert.equal(result.stderr, "");
   assert.match(result.stdout, /socialdatax-skills doctor/);
-  assert.match(result.stdout, /Package: socialdatax-skills@0\.2\.30/);
+  assert.match(result.stdout, /Package: socialdatax-skills@0\.2\.31/);
   assert.match(result.stdout, /Website: https:\/\/socialdatax\.com/);
   assert.doesNotMatch(result.stdout, /Source: https:\/\/socialdatax\.com/);
   assert.match(result.stdout, /npm lifecycle scripts: none declared by this package/);
@@ -7919,7 +7919,7 @@ test("doctor json prints parseable safety summary", () => {
   assert.equal(result.stderr, "");
   const report = JSON.parse(result.stdout);
   assert.equal(report.package.name, "socialdatax-skills");
-  assert.equal(report.package.version, "0.2.30");
+  assert.equal(report.package.version, "0.2.31");
   assert.equal(report.package.homepage, "https://socialdatax.com");
   assert.equal(report.package.repository, undefined);
   assert.deepEqual(report.package.npmLifecycleScripts, []);
