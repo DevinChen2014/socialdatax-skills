@@ -22,7 +22,7 @@ import test from "node:test";
 import { readToken as readPublishToken } from "../../../scripts/publish_social_media_insights_skills.mjs";
 import { decryptWechatMediaCommand } from "../cli.mjs";
 import { downloadBilibiliVideoFromManifest } from "../lib/media/bilibili-download.mjs";
-import { downloadXhsMediaFromUrl } from "../lib/media/xhs-download.mjs";
+import { downloadPlatformMediaFromUrl } from "../lib/media/platform-download.mjs";
 
 const packageDir = dirname(dirname(fileURLToPath(import.meta.url)));
 const cliPath = join(packageDir, "cli.mjs");
@@ -627,7 +627,10 @@ test("public package discovery terms include transcript workflows", () => {
   assert.match(readme, /xhs transcript --note-id "<note_id>"/);
   assert.match(readme, /xhs transcript --job-id "<job_id>"/);
   assert.match(readme, /xhs download-media --url "<xhs_media_url>" --output-dir \.\/downloads/);
-  assert.match(readme, /XHS local media download/);
+  assert.match(readme, /douyin download-media --url "<douyin_media_url>" --output-dir \.\/downloads/);
+  assert.match(readme, /kuaishou download-media --url "<kuaishou_media_url>" --output-dir \.\/downloads/);
+  assert.match(readme, /weibo download-media --url "<weibo_media_url>" --output-dir \.\/downloads/);
+  assert.match(readme, /XHS \/ Douyin \/ Kuaishou \/ Weibo local media download/);
   assert.match(readme, /Transcript commands submit a bounded video speech-to-text job/);
   assert.match(readme, /the CLI automatically continues matching get-job requests for up to 1200 seconds by default/);
   assert.match(readme, /--max-wait-seconds <seconds>/);
@@ -780,13 +783,181 @@ test("xhs download-media CLI saves a media URL locally without API key", async (
   }
 });
 
+test("douyin/kuaishou/weibo download-media validates required local options", () => {
+  for (const platform of ["douyin", "kuaishou", "weibo"]) {
+    assertCliError(
+      runCli([platform, "download-media"]),
+      `Missing --url for ${platform} download-media\\.`
+    );
+    assertCliError(
+      runCli([
+        platform,
+        "download-media",
+        "--url",
+        "https://media.example.test/item.mp4",
+      ]),
+      `Missing --output or --output-dir for ${platform} download-media\\.`
+    );
+    assertCliError(
+      runCli([
+        platform,
+        "download-media",
+        "--url",
+        "https://media.example.test/item.mp4",
+        "--output",
+        "media.mp4",
+        "--output-dir",
+        ".",
+      ]),
+      `Use only one of --output or --output-dir for ${platform} download-media\\.`
+    );
+    assertCliError(
+      runCli([
+        platform,
+        "download-media",
+        "--url",
+        "https://media.example.test/item.mp4",
+        "--output",
+        "media.mp4",
+        "--source-client",
+        "socialdatax-skills",
+      ]),
+      "Unsupported option --source-client\\."
+    );
+  }
+});
+
+test("douyin/kuaishou/weibo download-media CLI saves media URLs with platform referers", async () => {
+  const cases = [
+    {
+      platform: "douyin",
+      path: "/music",
+      contentType: "audio/mp4",
+      expectedFile: "music.m4a",
+      referer: "https://www.douyin.com/",
+    },
+    {
+      platform: "kuaishou",
+      path: "/video-play",
+      contentType: "video/mp4",
+      expectedFile: "video-play.mp4",
+      referer: "https://www.kuaishou.com/",
+    },
+    {
+      platform: "weibo",
+      path: "/image",
+      contentType: "image/jpeg",
+      expectedFile: "image.jpg",
+      referer: "https://weibo.com/",
+    },
+  ];
+
+  for (const item of cases) {
+    const tempDir = mkdtempSync(join(tmpdir(), `sdx-${item.platform}-download-`));
+    const outputDir = join(tempDir, "downloads");
+    const body = Buffer.from(`${item.platform}-media-body`);
+    const mediaRequests = [];
+    const mediaServer = createServer((request, response) => {
+      mediaRequests.push({
+        url: request.url,
+        referer: request.headers.referer,
+        userAgent: request.headers["user-agent"],
+        acceptEncoding: request.headers["accept-encoding"],
+        range: request.headers.range,
+      });
+      response.writeHead(200, {
+        "content-type": item.contentType,
+        "content-length": String(body.length),
+      });
+      response.end(body);
+    });
+
+    await listenHttpServer(mediaServer);
+
+    try {
+      const result = await runCliWithEnvAsync(
+        [
+          item.platform,
+          "download-media",
+          "--url",
+          httpServerUrl(mediaServer, item.path),
+          "--output-dir",
+          outputDir,
+          "--pretty",
+        ],
+        {
+          SOCIALDATAX_API_KEY: "",
+          SOCIAL_MEDIA_MCP_API_KEY: "",
+        }
+      );
+
+      assert.equal(result.status, 0, result.stderr);
+      assert.equal(result.stderr, "");
+      const payload = JSON.parse(result.stdout);
+      assert.equal(payload.platform, item.platform);
+      assert.equal(payload.action, "download-media");
+      assert.equal(payload.status, "downloaded");
+      assert.equal(payload.output_path, join(outputDir, item.expectedFile));
+      assert.equal(payload.output_bytes, body.length);
+      assert.equal(payload.resumed, false);
+      assert.equal(payload.content_type, item.contentType);
+      assert.equal(readFileSync(payload.output_path, "utf8"), `${item.platform}-media-body`);
+      assert.equal(existsSync(`${payload.output_path}.part`), false);
+      assert.deepEqual(mediaRequests, [
+        {
+          url: item.path,
+          referer: item.referer,
+          userAgent: "Mozilla/5.0 (compatible; SocialDataX/1.0; +https://socialdatax.com)",
+          acceptEncoding: "identity",
+          range: undefined,
+        },
+      ]);
+    } finally {
+      await closeHttpServer(mediaServer);
+      rmSync(tempDir, { recursive: true, force: true });
+    }
+  }
+});
+
+test("platform download-media skips existing output with the requested platform id", async () => {
+  const tempDir = mkdtempSync(join(tmpdir(), "sdx-weibo-existing-output-"));
+  const outputPath = join(tempDir, "media.jpg");
+  writeFileSync(outputPath, "existing-weibo-media");
+
+  try {
+    const result = await downloadPlatformMediaFromUrl(
+      "weibo",
+      "https://wx1.example.test/media.jpg",
+      { output: outputPath },
+      {
+        fetchMedia: async () => {
+          throw new Error("fetch should not be called for existing output");
+        },
+      }
+    );
+
+    assert.deepEqual(result, {
+      platform: "weibo",
+      action: "download-media",
+      status: "skipped_existing",
+      url: "https://wx1.example.test/media.jpg",
+      output_path: outputPath,
+      output_bytes: Buffer.byteLength("existing-weibo-media"),
+    });
+    assert.equal(readFileSync(outputPath, "utf8"), "existing-weibo-media");
+  } finally {
+    rmSync(tempDir, { recursive: true, force: true });
+  }
+});
+
 test("xhs download-media skips an existing output file", async () => {
   const tempDir = mkdtempSync(join(tmpdir(), "sdx-xhs-existing-output-"));
   const outputPath = join(tempDir, "media.mp4");
   writeFileSync(outputPath, "existing-media");
 
   try {
-    const result = await downloadXhsMediaFromUrl(
+    const result = await downloadPlatformMediaFromUrl(
+      "xhs",
       "https://sns-video.example.test/media.mp4",
       { output: outputPath },
       {
@@ -816,7 +987,8 @@ test("xhs download-media does not overwrite an output file created while downloa
 
   try {
     await assert.rejects(
-      downloadXhsMediaFromUrl(
+      downloadPlatformMediaFromUrl(
+        "xhs",
         "https://sns-img.example.test/media.jpg",
         { output: outputPath },
         {
@@ -886,7 +1058,8 @@ test("xhs download-media infers output-dir extensions from response content type
   try {
     for (const testCase of cases) {
       const body = Buffer.from(testCase.body);
-      const result = await downloadXhsMediaFromUrl(
+      const result = await downloadPlatformMediaFromUrl(
+        "xhs",
         testCase.url,
         { outputDir: tempDir },
         {
@@ -931,7 +1104,8 @@ test("xhs download-media skips an existing output-dir file after content type in
   let bodyRead = false;
 
   try {
-    const result = await downloadXhsMediaFromUrl(
+    const result = await downloadPlatformMediaFromUrl(
+      "xhs",
       "https://sns-img.example.test/xhs-photo?imageView2/2/w/1080",
       { outputDir: tempDir },
       {
@@ -981,7 +1155,8 @@ test("xhs download-media falls back when final hard link is unavailable", async 
   let linkAttempts = 0;
 
   try {
-    const result = await downloadXhsMediaFromUrl(
+    const result = await downloadPlatformMediaFromUrl(
+      "xhs",
       "https://sns-img.example.test/media.jpg",
       { output: outputPath },
       {
@@ -1032,7 +1207,8 @@ test("xhs download-media skips existing inferred output after a complete part ra
   writeFileSync(partPath, "part-body");
 
   try {
-    const result = await downloadXhsMediaFromUrl(
+    const result = await downloadPlatformMediaFromUrl(
+      "xhs",
       "https://sns-img.example.test/xhs-photo?imageView2/2/w/1080",
       { outputDir: tempDir },
       {
@@ -1078,7 +1254,8 @@ test("xhs download-media does not finalize missing part files from 416 responses
 
   try {
     await assert.rejects(
-      downloadXhsMediaFromUrl(
+      downloadPlatformMediaFromUrl(
+        "xhs",
         "https://sns-img.example.test/media.jpg",
         { output: outputPath },
         {
@@ -1119,7 +1296,8 @@ test("xhs download-media rejects partial 206 responses without content-range", a
 
   try {
     await assert.rejects(
-      downloadXhsMediaFromUrl(
+      downloadPlatformMediaFromUrl(
+        "xhs",
         "https://sns-img.example.test/media.jpg",
         { output: outputPath },
         {
@@ -1185,7 +1363,8 @@ test("xhs download-media rejects unusable partial content ranges", async () => {
 
     try {
       await assert.rejects(
-        downloadXhsMediaFromUrl(
+        downloadPlatformMediaFromUrl(
+          "xhs",
           "https://sns-img.example.test/media.jpg",
           { output: outputPath },
           {
@@ -1239,7 +1418,8 @@ test("xhs download-media restarts stale part after mismatched content-range", as
   let staleBodyRead = false;
 
   try {
-    const result = await downloadXhsMediaFromUrl(
+    const result = await downloadPlatformMediaFromUrl(
+      "xhs",
       "https://sns-video.example.test/media.mp4",
       { output: outputPath },
       {
@@ -1314,7 +1494,8 @@ test("xhs download-media retries bodies longer than declared size", async () => 
 
   try {
     await assert.rejects(
-      downloadXhsMediaFromUrl(
+      downloadPlatformMediaFromUrl(
+        "xhs",
         "https://sns-img.example.test/media.jpg",
         { output: outputPath },
         {
@@ -1361,7 +1542,8 @@ test("xhs download-media rejects bodies longer than partial content range", asyn
 
   try {
     await assert.rejects(
-      downloadXhsMediaFromUrl(
+      downloadPlatformMediaFromUrl(
+        "xhs",
         "https://sns-img.example.test/media.jpg",
         { output: outputPath },
         {
@@ -1422,7 +1604,8 @@ test("xhs download-media resumes from a part file with valid content-range", asy
   await listenHttpServer(mediaServer);
 
   try {
-    const result = await downloadXhsMediaFromUrl(
+    const result = await downloadPlatformMediaFromUrl(
+      "xhs",
       httpServerUrl(mediaServer, "/video.mp4"),
       { output: outputPath }
     );
@@ -1462,7 +1645,8 @@ test("xhs download-media restarts part download when server ignores range", asyn
   await listenHttpServer(mediaServer);
 
   try {
-    const result = await downloadXhsMediaFromUrl(
+    const result = await downloadPlatformMediaFromUrl(
+      "xhs",
       httpServerUrl(mediaServer, "/media.jpg"),
       { output: outputPath }
     );
@@ -1484,7 +1668,8 @@ test("xhs download-media retries short bodies and preserves part file on failure
 
   try {
     await assert.rejects(
-      downloadXhsMediaFromUrl(
+      downloadPlatformMediaFromUrl(
+        "xhs",
         "https://sns-img.example.test/media.jpg",
         { output: outputPath },
         {
@@ -1530,7 +1715,8 @@ test("xhs download-media retries transient network errors", async () => {
   let attempts = 0;
 
   try {
-    const result = await downloadXhsMediaFromUrl(
+    const result = await downloadPlatformMediaFromUrl(
+      "xhs",
       "https://sns-img.example.test/media.jpg",
       { output: outputPath },
       {
@@ -1571,13 +1757,120 @@ test("xhs download-media retries transient network errors", async () => {
   }
 });
 
+test("xhs download-media cancels unread error response bodies", async () => {
+  const cases = [
+    {
+      status: 500,
+      expectedAttempts: 10,
+      expectedError: /XHS media download failed before completion\./,
+    },
+    {
+      status: 403,
+      expectedAttempts: 1,
+      expectedError: /XHS media link is unavailable or expired\./,
+    },
+  ];
+
+  for (const testCase of cases) {
+    const tempDir = mkdtempSync(join(tmpdir(), "sdx-xhs-error-body-"));
+    const outputPath = join(tempDir, "media.jpg");
+    let attempts = 0;
+    let cancelCount = 0;
+
+    try {
+      await assert.rejects(
+        downloadPlatformMediaFromUrl(
+          "xhs",
+          "https://sns-img.example.test/media.jpg",
+          { output: outputPath },
+          {
+            fetchMedia: async () => {
+              attempts += 1;
+              return {
+                ok: false,
+                status: testCase.status,
+                headers: {
+                  get() {
+                    return null;
+                  },
+                },
+                body: {
+                  async cancel() {
+                    cancelCount += 1;
+                  },
+                },
+              };
+            },
+            retryDelayMs: 0,
+          }
+        ),
+        testCase.expectedError
+      );
+
+      assert.equal(attempts, testCase.expectedAttempts);
+      assert.equal(cancelCount, testCase.expectedAttempts);
+      assert.equal(existsSync(outputPath), false);
+    } finally {
+      rmSync(tempDir, { recursive: true, force: true });
+    }
+  }
+});
+
+test("xhs download-media cancels oversized content-length response bodies", async () => {
+  const tempDir = mkdtempSync(join(tmpdir(), "sdx-xhs-large-body-cancel-"));
+  const outputPath = join(tempDir, "media.jpg");
+  let cancelCount = 0;
+
+  try {
+    await assert.rejects(
+      downloadPlatformMediaFromUrl(
+        "xhs",
+        "https://sns-img.example.test/media.jpg",
+        { output: outputPath },
+        {
+          maxDownloadBytes: 4,
+          fetchMedia: async () => ({
+            ok: true,
+            status: 200,
+            headers: {
+              get(name) {
+                const normalized = String(name).toLowerCase();
+                if (normalized === "content-length") {
+                  return "5";
+                }
+                if (normalized === "content-type") {
+                  return "image/jpeg";
+                }
+                return null;
+              },
+            },
+            body: {
+              async cancel() {
+                cancelCount += 1;
+              },
+            },
+          }),
+        }
+      ),
+      /Media download is too large for local media processing\./
+    );
+
+    assert.equal(cancelCount, 1);
+    assert.equal(existsSync(outputPath), false);
+    assert.equal(existsSync(`${outputPath}.part`), false);
+  } finally {
+    rmSync(tempDir, { recursive: true, force: true });
+  }
+});
+
 test("xhs download-media reports expired or unavailable links", async () => {
   const tempDir = mkdtempSync(join(tmpdir(), "sdx-xhs-expired-link-"));
   const outputPath = join(tempDir, "media.jpg");
 
   try {
     await assert.rejects(
-      downloadXhsMediaFromUrl(
+      downloadPlatformMediaFromUrl(
+        "xhs",
         "https://sns-img.example.test/media.jpg",
         { output: outputPath },
         {
@@ -2272,12 +2565,15 @@ test("cli still runs when invoked through an npm-style symlink", () => {
     assert.match(result.stdout, /douyin hot-search --pretty/);
     assert.match(result.stdout, /douyin user-series --profile-url/);
     assert.match(result.stdout, /douyin transcript --aweme-id/);
+    assert.match(result.stdout, /douyin download-media --url "<douyin_media_url>" --output-dir \.\/downloads/);
     assert.match(result.stdout, /kuaishou hot-search --pretty/);
     assert.match(result.stdout, /kuaishou search --keyword/);
     assert.match(result.stdout, /kuaishou user-search --keyword/);
     assert.match(result.stdout, /kuaishou user-info --profile-url/);
     assert.match(result.stdout, /kuaishou transcript --photo-id/);
+    assert.match(result.stdout, /kuaishou download-media --url "<kuaishou_media_url>" --output-dir \.\/downloads/);
     assert.match(result.stdout, /weibo transcript --post-url/);
+    assert.match(result.stdout, /weibo download-media --url "<weibo_media_url>" --output-dir \.\/downloads/);
     assert.match(result.stdout, /wechat transcript --encrypted-object-id/);
     assert.match(result.stdout, /wechat decrypt-media --media-url/);
     assert.match(result.stdout, /sensitive-check text --text/);
@@ -2303,8 +2599,8 @@ test("npm pack only includes public skill package files", () => {
     "cli.mjs",
     "lib/media/bilibili-download.mjs",
     "lib/media/common.mjs",
+    "lib/media/platform-download.mjs",
     "lib/media/wechat-decrypt.mjs",
-    "lib/media/xhs-download.mjs",
     "package.json",
     "skills/media-comments/SKILL.md",
     "skills/media-comments/agents/openai.yaml",
@@ -2381,7 +2677,7 @@ test("aggregate content research skill documents safe SocialDataX entrypoints", 
   assert.doesNotMatch(skill, /SOCIAL_MEDIA_MCP_API_KEY/);
 });
 
-test("media detail skills document local XHS media download", () => {
+test("media detail skills document local media download commands", () => {
   const npmSkill = readFileSync(
     join(packageDir, "skills", "media-detail", "SKILL.md"),
     "utf8"
@@ -2396,14 +2692,65 @@ test("media detail skills document local XHS media download", () => {
     ),
     "utf8"
   );
+  const douyinSkill = readFileSync(
+    join(
+      packageDir,
+      "..",
+      "socialdatax-openclaw-skills",
+      "socialdatax-douyin-detail",
+      "SKILL.md"
+    ),
+    "utf8"
+  );
+  const kuaishouSkill = readFileSync(
+    join(
+      packageDir,
+      "..",
+      "socialdatax-openclaw-skills",
+      "socialdatax-kuaishou-detail",
+      "SKILL.md"
+    ),
+    "utf8"
+  );
+  const weiboSkill = readFileSync(
+    join(
+      packageDir,
+      "..",
+      "socialdatax-openclaw-skills",
+      "socialdatax-weibo-detail",
+      "SKILL.md"
+    ),
+    "utf8"
+  );
 
   for (const skill of [npmSkill, openclawSkill]) {
     assert.match(skill, /image_items\[\]\.image_url/);
+    assert.match(skill, /image_items\[\]\.live_photo\.video_url/);
     assert.match(skill, /video\.video_url/);
     assert.match(skill, /xhs download-media --url "<media_url>" --output-dir <directory> --pretty/);
-    assert.match(skill, /optional XHS local save command writes only/);
     assert.match(skill, /does not require `SOCIALDATAX_API_KEY`/);
   }
+
+  assert.match(openclawSkill, /optional XHS local save command writes only/);
+  assert.match(npmSkill, /images\[\]\.url/);
+  assert.match(npmSkill, /images\[\]\.live_photo\.play_url/);
+  assert.match(npmSkill, /video\.play_url/);
+  assert.match(npmSkill, /music\.play_url/);
+  assert.match(npmSkill, /cover_image_url/);
+  assert.match(npmSkill, /image_urls\[\]/);
+  assert.match(npmSkill, /douyin download-media --url "<media_url>" --output-dir <directory> --pretty/);
+  assert.match(npmSkill, /kuaishou download-media --url "<media_url>" --output-dir <directory> --pretty/);
+  assert.match(npmSkill, /weibo download-media --url "<media_url>" --output-dir <directory> --pretty/);
+  assert.match(npmSkill, /optional XHS, Douyin, Kuaishou, and Weibo local save commands write only/);
+  assert.match(douyinSkill, /images\[\]\.url/);
+  assert.match(douyinSkill, /images\[\]\.live_photo\.play_url/);
+  assert.match(douyinSkill, /douyin download-media --url "<media_url>" --output-dir <directory> --pretty/);
+  assert.match(douyinSkill, /optional Douyin local save command writes only/);
+  assert.match(kuaishouSkill, /images\[\]\.url/);
+  assert.match(kuaishouSkill, /kuaishou download-media --url "<media_url>" --output-dir <directory> --pretty/);
+  assert.match(kuaishouSkill, /optional Kuaishou local save command writes only/);
+  assert.match(weiboSkill, /weibo download-media --url "<media_url>" --output-dir <directory> --pretty/);
+  assert.match(weiboSkill, /optional Weibo local save command writes only/);
 });
 
 test("xhs search rejects note-id because it is not a search option", () => {
@@ -4960,7 +5307,7 @@ test("douyin share-link is not a public direct CLI command", () => {
     "aweme-1",
   ]);
 
-  assertCliError(result, 'Unsupported Douyin command "share-link"\\. Use hot-search, search, detail, comments, replies, user-info, user-posts, user-series, transcript\\.');
+  assertCliError(result, 'Unsupported Douyin command "share-link"\\. Use hot-search, search, detail, comments, replies, user-info, user-posts, user-series, transcript, download-media\\.');
 });
 
 test("douyin live-info is not a public direct CLI command", () => {
@@ -4971,7 +5318,7 @@ test("douyin live-info is not a public direct CLI command", () => {
     "https://live.douyin.com/test",
   ]);
 
-  assertCliError(result, 'Unsupported Douyin command "live-info"\\. Use hot-search, search, detail, comments, replies, user-info, user-posts, user-series, transcript\\.');
+  assertCliError(result, 'Unsupported Douyin command "live-info"\\. Use hot-search, search, detail, comments, replies, user-info, user-posts, user-series, transcript, download-media\\.');
 });
 
 test("douyin user-series direct command maps profile-url and page-token", async () => {
@@ -7533,7 +7880,7 @@ test("doctor prints human-readable safety summary", () => {
   assert.equal(result.status, 0);
   assert.equal(result.stderr, "");
   assert.match(result.stdout, /socialdatax-skills doctor/);
-  assert.match(result.stdout, /Package: socialdatax-skills@0\.2\.28/);
+  assert.match(result.stdout, /Package: socialdatax-skills@0\.2\.30/);
   assert.match(result.stdout, /Website: https:\/\/socialdatax\.com/);
   assert.doesNotMatch(result.stdout, /Source: https:\/\/socialdatax\.com/);
   assert.match(result.stdout, /npm lifecycle scripts: none declared by this package/);
@@ -7572,7 +7919,7 @@ test("doctor json prints parseable safety summary", () => {
   assert.equal(result.stderr, "");
   const report = JSON.parse(result.stdout);
   assert.equal(report.package.name, "socialdatax-skills");
-  assert.equal(report.package.version, "0.2.28");
+  assert.equal(report.package.version, "0.2.30");
   assert.equal(report.package.homepage, "https://socialdatax.com");
   assert.equal(report.package.repository, undefined);
   assert.deepEqual(report.package.npmLifecycleScripts, []);
@@ -8009,6 +8356,7 @@ test("direct CLI README examples include all public douyin actions", () => {
     'douyin transcript --url "<douyin_content_url_or_share_text>"',
     'douyin transcript --aweme-id "<aweme_id>"',
     'douyin transcript --job-id "<job_id>"',
+    'douyin download-media --url "<douyin_media_url>" --output-dir ./downloads',
   ]) {
     assert.match(readme, new RegExp(escapeRegExp(example)));
   }
@@ -8044,6 +8392,7 @@ test("direct CLI README examples include all public kuaishou actions", () => {
     'kuaishou transcript --url "<kuaishou_content_url_or_share_text>"',
     'kuaishou transcript --photo-id "<photo_id>"',
     'kuaishou transcript --job-id "<job_id>"',
+    'kuaishou download-media --url "<kuaishou_media_url>" --output-dir ./downloads',
   ]) {
     assert.match(readme, new RegExp(escapeRegExp(example)));
   }
@@ -8091,6 +8440,7 @@ test("direct CLI README examples include public weibo and wechat actions", () =>
     'weibo transcript --post-url "<weibo_post_url_or_share_text>"',
     'weibo transcript --post-id "<post_id>"',
     'weibo transcript --job-id "<job_id>"',
+    'weibo download-media --url "<weibo_media_url>" --output-dir ./downloads',
     'wechat hot-search',
     'wechat search --keyword "露营"',
     'wechat detail --encrypted-object-id "<encrypted_object_id>"',
@@ -8150,6 +8500,9 @@ test("direct CLI docs keep search pagination platform-specific", () => {
   assert.match(help.stdout, /kuaishou hot-search --pretty/);
   assert.match(help.stdout, /bilibili download --url "<bilibili_video_url_or_share_text>" --output-dir \.\/downloads/);
   assert.match(help.stdout, /xhs download-media --url "<xhs_media_url>" --output-dir \.\/downloads/);
+  assert.match(help.stdout, /douyin download-media --url "<douyin_media_url>" --output-dir \.\/downloads/);
+  assert.match(help.stdout, /kuaishou download-media --url "<kuaishou_media_url>" --output-dir \.\/downloads/);
+  assert.match(help.stdout, /weibo download-media --url "<weibo_media_url>" --output-dir \.\/downloads/);
   assert.match(help.stdout, /--ffmpeg-path <path>/);
   assert.match(help.stdout, /wechat hot-search --pretty/);
   assert.match(help.stdout, /wechat search --keyword/);

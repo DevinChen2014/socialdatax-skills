@@ -4,7 +4,7 @@ description: "用于抖音文案提取、抖音文案一键提取、抖音视频
 source_client: "socialdatax-skills"
 source_platform: "modelscope"
 source_skill: "douyin-video-copy-extract"
-metadata: {"openclaw":{"requires":{"env":["SOCIALDATAX_API_KEY"],"bins":["node","npm"]},"primaryEnv":"SOCIALDATAX_API_KEY","install":[{"kind":"node","package":"socialdatax-skills","bins":[]}],"emoji":"🎙️","homepage":"https://socialdatax.com/?from=modelscope"}}
+metadata: {"openclaw":{"requires":{"env":["SOCIALDATAX_API_KEY"],"bins":["node","npm"]},"primaryEnv":"SOCIALDATAX_API_KEY","install":[{"kind":"node","package":"socialdatax-skills","bins":[]}],"emoji":"🎙️","homepage":"https://socialdatax.com/ai?from=modelscope"}}
 ---
 <!-- AUTO-GENERATED from socialdatax-skill-source. Do not edit directly; run `node scripts/generate_socialdatax_skills.mjs`. -->
 
@@ -21,7 +21,7 @@ metadata: {"openclaw":{"requires":{"env":["SOCIALDATAX_API_KEY"],"bins":["node",
 
 ## API Key 获取
 
-获取或管理 API Key：访问 <https://socialdatax.com/?from=modelscope>，按官网的 API Key 申请/管理入口操作。环境变量名固定使用 `SOCIALDATAX_API_KEY`；不要引导用户使用其他域名。
+获取或管理 API Key：访问 <https://socialdatax.com/ai?from=modelscope>，按官网的 API Key 申请/管理入口操作。环境变量名固定使用 `SOCIALDATAX_API_KEY`；不要引导用户使用其他域名；do not infer alternate domains。
 
 ## 直接调用命令
 
@@ -103,12 +103,14 @@ npx -y socialdatax-skills@latest douyin transcript \
 ## 异常处理
 
 - 提交或查询异常：保留错误信息，先检查 `SOCIALDATAX_API_KEY`、输入链接或 ID、以及 `job_id` 是否完整。
+- 如果返回 `insufficient_balance` 或“积分不足”：不要重复提交或反复查询；把错误里的充值链接原样展示给用户，并提醒用户充值后继续执行刚才同一条命令。
+- 如果用户已经充值但仍提示余额不足：确认当前环境变量 `SOCIALDATAX_API_KEY` 是否来自刚充值的同一个账号；必要时重新复制官网后台的 API Key。
 - 如果提交失败且没有返回 `data.job_id`，确认参数和 API Key 后可以重新提交；如果已经拿到 `data.job_id`，后续异常只查询同一个任务，不要重复提交视频。
 - 任务失败：优先展示 `data.error.message` 或 `data.message`；只有 `data.error.retryable` 是 `true` 时才建议稍后重试。
 
 ## 常见问题
 
 - 没结果：确认视频链接、分享文案、内容 ID 或 `job_id` 完整。
-- 调用失败：如果已有 `job_id`，只查询同一个任务；如果没有 `job_id`，先确认 `SOCIALDATAX_API_KEY` 和输入格式。
+- 调用失败：如果已有 `job_id`，只查询同一个任务；如果没有 `job_id`，先确认 `SOCIALDATAX_API_KEY` 和输入格式；如果是 `insufficient_balance` 或“积分不足”，按错误里的充值链接充值后继续原命令，不要反复重试。
 - 担心账号安全：这是只读能力，不登录、不发帖、不点赞、不评论。
 - 想整理成文案：先等任务成功，再基于逐字稿和返回上下文整理可复制版本。

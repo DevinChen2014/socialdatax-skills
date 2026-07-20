@@ -18,7 +18,7 @@ metadata:
         package: "socialdatax-skills"
         bins: []
     emoji: "📄"
-    homepage: "https://socialdatax.com/?from=npm"
+    homepage: "https://socialdatax.com/ai?from=npm"
 ---
 <!-- AUTO-GENERATED from socialdatax-skill-source. Do not edit directly; run `node scripts/generate_socialdatax_skills.mjs`. -->
 
@@ -37,8 +37,8 @@ Current platform support:
 
 ## API Key
 
-Use `SOCIALDATAX_API_KEY` for SocialDataX requests. The only official website for requesting or managing API access is <https://socialdatax.com/?from=npm>. If a user asks where to get a key, provide only this URL; do not infer alternate domains.
-获取或管理 API Key：访问 <https://socialdatax.com/?from=npm>，按官网的 API Key 申请/管理入口操作。环境变量名固定使用 `SOCIALDATAX_API_KEY`；不要引导用户使用其他域名。
+Use `SOCIALDATAX_API_KEY` for SocialDataX requests. The only official website for requesting or managing API access is <https://socialdatax.com/ai?from=npm>. If a user asks where to get a key, provide only this URL; do not infer alternate domains.
+获取或管理 API Key：访问 <https://socialdatax.com/ai?from=npm>，按官网的 API Key 申请/管理入口操作。环境变量名固定使用 `SOCIALDATAX_API_KEY`；不要引导用户使用其他域名；do not infer alternate domains。
 
 ## Preferred Direct CLI
 
@@ -112,7 +112,7 @@ The command prints JSON with `platform`, `tool`, `arguments`, and `data`.
 
 ## Safety Boundary
 
-Platform detail access is read-only. It uses `SOCIALDATAX_API_KEY` from the user's environment at runtime for SocialDataX detail requests. Generated Skill files do not contain API keys. It does not read local browser data or perform login, posting, liking, commenting, or account changes. The optional XHS local save command writes only to the requested local `--output` path or `--output-dir` directory and does not require `SOCIALDATAX_API_KEY`. The optional WeChat Channels / 视频号 local save command writes only to the user-provided `--output` file, decrypts when needed, and does not require `SOCIALDATAX_API_KEY`. Prefer the direct CLI; hosted MCP tools are optional when the current agent already supports authenticated streamable HTTP MCP.
+Platform detail access is read-only. It uses `SOCIALDATAX_API_KEY` from the user's environment at runtime for SocialDataX detail requests. Generated Skill files do not contain API keys. It does not read local browser data or perform login, posting, liking, commenting, or account changes. The optional XHS, Douyin, Kuaishou, and Weibo local save commands write only to the requested local `--output` path or `--output-dir` directory and do not require `SOCIALDATAX_API_KEY`. The optional WeChat Channels / 视频号 local save command writes only to the user-provided `--output` file, decrypts when needed, and does not require `SOCIALDATAX_API_KEY`. Prefer the direct CLI; hosted MCP tools are optional when the current agent already supports authenticated streamable HTTP MCP.
 
 ## MCP Tools
 
@@ -148,11 +148,20 @@ If MCP tools are already available in the current agent, use one of these tools:
 Return factual fields such as title or description, content, author, publish time, interaction counts, images, and media summary when available.
 For XHS detail results, in every use of a returned `note_url`, such as final answers, display, references, storage, output, or forwarding, preserve it exactly as the full URL, including `xsec_token` query parameters. Do not modify, truncate, redact, mask, normalize, rebuild, or synthesize the URL from `note_id`; if `note_url` is null, show the `note_id` or say that no directly openable full link is available.
 For XHS `note_id`, copy the complete 24-character lowercase hexadecimal ID exactly; do not pass or display only a prefix.
-When the user wants to save XHS images or videos after detail, pass each returned `image_items[].image_url` or `video.video_url` to `npx -y socialdatax-skills@latest xhs download-media --url "<media_url>" --output-dir <directory> --pretty`; this local save command does not require `SOCIALDATAX_API_KEY`.
+When the user wants to save XHS images or videos after detail, pass each returned `image_items[].image_url`, `image_items[].live_photo.video_url`, or `video.video_url` to `npx -y socialdatax-skills@latest xhs download-media --url "<media_url>" --output-dir <directory> --pretty`; this local save command does not require `SOCIALDATAX_API_KEY`.
 For Douyin detail, include `content_type` when available.
 For Douyin detail, use `images` for image/text posts; `video` is the platform player resource and may be audio for image/text posts; `music` is the bound music or original-sound asset.
+When the user wants to save Douyin media after detail, pass each returned `images[].url`, `images[].live_photo.play_url`, `video.play_url`, `music.play_url`, or `cover_image_url` to `npx -y socialdatax-skills@latest douyin download-media --url "<media_url>" --output-dir <directory> --pretty`; this local save command does not require `SOCIALDATAX_API_KEY`.
+When the user wants to save Kuaishou media after detail, pass each returned `images[].url`, `video.play_url`, or `cover_image_url` to `npx -y socialdatax-skills@latest kuaishou download-media --url "<media_url>" --output-dir <directory> --pretty`; this local save command does not require `SOCIALDATAX_API_KEY`.
 Detail access is read-only and does not provide account actions.
 For Weibo detail, include `post_id`, content, author, media, interaction counts, publish time, and post URL when available.
+When the user wants to save Weibo media after detail, pass each returned `image_urls[]` or `video.video_url` to `npx -y socialdatax-skills@latest weibo download-media --url "<media_url>" --output-dir <directory> --pretty`; this local save command does not require `SOCIALDATAX_API_KEY`.
 For WeChat Channels / 视频号 detail, preserve `object_id` and `object_nonce_id` because comments and replies need both values.
 When the user wants to save a WeChat Channels / 视频号 video after detail, pass the returned `video.video_url` to `npx -y socialdatax-skills@latest wechat decrypt-media --media-url "<video.video_url>" --output <file>`; this local save command decrypts when needed and does not require `SOCIALDATAX_API_KEY`.
 For WeChat Official Account / 微信公众号 article detail, include article title, account, publish time, body text, image URLs, linked articles, and embedded video cards when present.
+
+## Troubleshooting
+
+- For non-balance network or API errors, preserve the error message, check `SOCIALDATAX_API_KEY`, parameters, and link or ID format, then retry once when appropriate.
+- If the response returns `insufficient_balance` or says the balance/credits are insufficient, do not retry repeatedly. Show the recharge URL from the error exactly as returned, then continue the same command after the user recharges.
+- If the user has recharged but still sees insufficient balance, confirm `SOCIALDATAX_API_KEY` belongs to the same account that was recharged; if needed, copy a fresh API Key from the official dashboard.

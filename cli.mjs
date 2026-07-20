@@ -16,13 +16,13 @@ import {
   assertBilibiliFfmpegAvailable,
   downloadBilibiliVideoFromManifest,
 } from "./lib/media/bilibili-download.mjs";
+import { downloadPlatformMediaFromUrl } from "./lib/media/platform-download.mjs";
 import { decryptWechatMediaCommand } from "./lib/media/wechat-decrypt.mjs";
-import { downloadXhsMediaFromUrl } from "./lib/media/xhs-download.mjs";
 
 export { decryptWechatMediaCommand };
 
 const PACKAGE_NAME = "socialdatax-skills";
-const PACKAGE_VERSION = "0.2.28";
+const PACKAGE_VERSION = "0.2.30";
 const PACKAGE_SPEC = `${PACKAGE_NAME}@latest`;
 const LOG_PREFIX = `[${PACKAGE_NAME}]`;
 const MIN_NODE_VERSION = "20.18.1";
@@ -261,6 +261,7 @@ const DOUYIN_DIRECT_ACTION_OPTIONS = {
   ],
   "user-series": ["secUserId", "profileUrl", "pageToken", "pages", "all", "maxItems", "pretty"],
   transcript: ["url", "awemeId", "jobId", "maxWaitSeconds", "pretty"],
+  "download-media": ["url", "output", "outputDir", "pretty"],
 };
 const DOUYIN_DIRECT_ACTION_NAMES = Object.keys(DOUYIN_DIRECT_ACTION_OPTIONS).join(", ");
 const DOUYIN_SEARCH_SORT_TYPES = ["general", "time_descending", "like_count_descending"];
@@ -291,6 +292,8 @@ const DOUYIN_OPTION_DISPLAY_NAMES = {
   secUserId: "--sec-user-id",
   jobId: "--job-id",
   maxWaitSeconds: "--max-wait-seconds",
+  output: "--output",
+  outputDir: "--output-dir",
 };
 const KUAISHOU_DIRECT_ACTION_OPTIONS = {
   "hot-search": ["pretty"],
@@ -329,6 +332,7 @@ const KUAISHOU_DIRECT_ACTION_OPTIONS = {
     "pretty",
   ],
   transcript: ["url", "photoId", "jobId", "maxWaitSeconds", "pretty"],
+  "download-media": ["url", "output", "outputDir", "pretty"],
 };
 const KUAISHOU_DIRECT_ACTION_NAMES = Object.keys(KUAISHOU_DIRECT_ACTION_OPTIONS).join(", ");
 const KUAISHOU_OPTION_DISPLAY_NAMES = {
@@ -346,6 +350,8 @@ const KUAISHOU_OPTION_DISPLAY_NAMES = {
   userId: "--user-id",
   jobId: "--job-id",
   maxWaitSeconds: "--max-wait-seconds",
+  output: "--output",
+  outputDir: "--output-dir",
 };
 const BILIBILI_DIRECT_ACTION_OPTIONS = {
   download: ["url", "output", "outputDir", "ffmpegPath", "keepTracks", "pretty"],
@@ -395,6 +401,7 @@ const WEIBO_DIRECT_ACTION_OPTIONS = {
     "pretty",
   ],
   transcript: ["postUrl", "postId", "jobId", "maxWaitSeconds", "pretty"],
+  "download-media": ["url", "output", "outputDir", "pretty"],
 };
 const WEIBO_DIRECT_ACTION_NAMES = Object.keys(WEIBO_DIRECT_ACTION_OPTIONS).join(", ");
 const WEIBO_OPTION_DISPLAY_NAMES = {
@@ -412,6 +419,9 @@ const WEIBO_OPTION_DISPLAY_NAMES = {
   userId: "--user-id",
   jobId: "--job-id",
   maxWaitSeconds: "--max-wait-seconds",
+  url: "--url",
+  output: "--output",
+  outputDir: "--output-dir",
 };
 const WECHAT_DIRECT_ACTION_OPTIONS = {
   "hot-search": ["pretty"],
@@ -1107,6 +1117,32 @@ function validateFlagOption(options, key, displayName) {
   }
 }
 
+function validateDownloadMediaDirectActionOptions(
+  platform,
+  options,
+  allowedOptions,
+  displayNames
+) {
+  validateKnownOptions(options, allowedOptions);
+  validateFlagOption(options, "pretty", "--pretty");
+  for (const key of allowedOptions) {
+    if (!DIRECT_BOOLEAN_OPTIONS.has(key)) {
+      requireOptionValue(options, key, displayNames[key]);
+    }
+  }
+  if (!options.url) {
+    throw new Error(`Missing --url for ${platform} download-media.`);
+  }
+  if (!options.output && !options.outputDir) {
+    throw new Error(`Missing --output or --output-dir for ${platform} download-media.`);
+  }
+  if (options.output && options.outputDir) {
+    throw new Error(
+      `Use only one of --output or --output-dir for ${platform} download-media.`
+    );
+  }
+}
+
 function validateXhsDirectActionOptions(action, options) {
   const allowedOptions = XHS_DIRECT_ACTION_OPTIONS[action];
   if (!allowedOptions) {
@@ -1114,22 +1150,12 @@ function validateXhsDirectActionOptions(action, options) {
   }
 
   if (action === "download-media") {
-    validateKnownOptions(options, allowedOptions);
-    validateFlagOption(options, "pretty", "--pretty");
-    for (const key of allowedOptions) {
-      if (!DIRECT_BOOLEAN_OPTIONS.has(key)) {
-        requireOptionValue(options, key, XHS_OPTION_DISPLAY_NAMES[key]);
-      }
-    }
-    if (!options.url) {
-      throw new Error("Missing --url for xhs download-media.");
-    }
-    if (!options.output && !options.outputDir) {
-      throw new Error("Missing --output or --output-dir for xhs download-media.");
-    }
-    if (options.output && options.outputDir) {
-      throw new Error("Use only one of --output or --output-dir for xhs download-media.");
-    }
+    validateDownloadMediaDirectActionOptions(
+      "xhs",
+      options,
+      allowedOptions,
+      XHS_OPTION_DISPLAY_NAMES
+    );
     return;
   }
 
@@ -1150,6 +1176,16 @@ function validateDouyinDirectActionOptions(action, options) {
     return;
   }
 
+  if (action === "download-media") {
+    validateDownloadMediaDirectActionOptions(
+      "douyin",
+      options,
+      allowedOptions,
+      DOUYIN_OPTION_DISPLAY_NAMES
+    );
+    return;
+  }
+
   validateKnownOptions(options, allowedDirectOptions(allowedOptions));
   validateDirectMetaOptions(options);
   validateDirectPaginationOptions("douyin", action, options);
@@ -1164,6 +1200,16 @@ function validateDouyinDirectActionOptions(action, options) {
 function validateKuaishouDirectActionOptions(action, options) {
   const allowedOptions = KUAISHOU_DIRECT_ACTION_OPTIONS[action];
   if (!allowedOptions) {
+    return;
+  }
+
+  if (action === "download-media") {
+    validateDownloadMediaDirectActionOptions(
+      "kuaishou",
+      options,
+      allowedOptions,
+      KUAISHOU_OPTION_DISPLAY_NAMES
+    );
     return;
   }
 
@@ -1209,6 +1255,16 @@ function validateBilibiliDirectActionOptions(action, options) {
 function validateWeiboDirectActionOptions(action, options) {
   const allowedOptions = WEIBO_DIRECT_ACTION_OPTIONS[action];
   if (!allowedOptions) {
+    return;
+  }
+
+  if (action === "download-media") {
+    validateDownloadMediaDirectActionOptions(
+      "weibo",
+      options,
+      allowedOptions,
+      WEIBO_OPTION_DISPLAY_NAMES
+    );
     return;
   }
 
@@ -1944,6 +2000,9 @@ function printHelp() {
   console.log(`  npx -y ${PACKAGE_SPEC} douyin transcript --aweme-id "<aweme_id>" --pretty`);
   console.log("      Submit or check a Douyin video speech-to-text transcript job.");
   console.log("");
+  console.log(`  npx -y ${PACKAGE_SPEC} douyin download-media --url "<douyin_media_url>" --output-dir ./downloads --pretty`);
+  console.log("      Save one Douyin media URL returned by detail to a local file.");
+  console.log("");
   console.log(`  npx -y ${PACKAGE_SPEC} kuaishou hot-search --pretty`);
   console.log("      Call the Kuaishou hot-search list tool directly and print JSON.");
   console.log("");
@@ -1990,6 +2049,9 @@ function printHelp() {
   console.log(`  npx -y ${PACKAGE_SPEC} kuaishou transcript --photo-id "<photo_id>" --pretty`);
   console.log("      Submit or check a Kuaishou video speech-to-text transcript job.");
   console.log("");
+  console.log(`  npx -y ${PACKAGE_SPEC} kuaishou download-media --url "<kuaishou_media_url>" --output-dir ./downloads --pretty`);
+  console.log("      Save one Kuaishou media URL returned by detail to a local file.");
+  console.log("");
   console.log(`  npx -y ${PACKAGE_SPEC} bilibili download --url "<bilibili_video_url_or_share_text>" --output-dir ./downloads --pretty`);
   console.log("      Fetch Bilibili download links, save DASH tracks locally, and merge them with ffmpeg.");
   console.log("");
@@ -2034,6 +2096,9 @@ function printHelp() {
   console.log("");
   console.log(`  npx -y ${PACKAGE_SPEC} weibo transcript --post-url "<weibo_post_url_or_share_text>" --pretty`);
   console.log("      Submit or check a Weibo video speech-to-text transcript job.");
+  console.log("");
+  console.log(`  npx -y ${PACKAGE_SPEC} weibo download-media --url "<weibo_media_url>" --output-dir ./downloads --pretty`);
+  console.log("      Save one Weibo image or video media URL returned by detail to a local file.");
   console.log("");
   console.log(`  npx -y ${PACKAGE_SPEC} wechat hot-search --pretty`);
   console.log("      Call the WeChat Channels / 视频号 hot-search list tool directly and print JSON.");
@@ -2146,14 +2211,14 @@ function printHelp() {
   console.log("  --keyword <text>");
   console.log("  --url <url-or-share-text>");
   console.log("      Content link, short link, or share text for URL-based detail/comment/article commands.");
-  console.log("      For xhs download-media, pass one image or video media URL returned by XHS detail.");
+  console.log("      For xhs/douyin/kuaishou/weibo download-media, pass one media URL returned by detail.");
   console.log("      For Douyin detail/comments, pass a content page link, not video.play_url.");
   console.log("  --media-url <video.video_url>");
   console.log("      WeChat detail result media URL for local decrypt-media download.");
   console.log("  --output <file>");
-  console.log("      Output file path for local decrypt-media, XHS download-media, or Bilibili download.");
+  console.log("      Output file path for local decrypt-media, download-media, or Bilibili download.");
   console.log("  --output-dir <directory>");
-  console.log("      Directory for XHS download-media or Bilibili download output when --output is omitted.");
+  console.log("      Directory for download-media or Bilibili download output when --output is omitted.");
   console.log("  --ffmpeg-path <path>");
   console.log("      ffmpeg executable path for Bilibili download; defaults to ffmpeg.");
   console.log("  --keep-tracks");
@@ -2276,7 +2341,7 @@ async function runXhsDirectCommand(args) {
   validateXhsDirectActionOptions(action, options);
 
   if (action === "download-media") {
-    const data = await downloadXhsMediaFromUrl(options.url, options);
+    const data = await downloadPlatformMediaFromUrl("xhs", options.url, options);
     process.stdout.write(JSON.stringify(data, null, options.pretty ? 2 : 0));
     process.stdout.write("\n");
     return;
@@ -2311,6 +2376,13 @@ async function runDouyinDirectCommand(args) {
   }
   validateDouyinDirectActionOptions(action, options);
 
+  if (action === "download-media") {
+    const data = await downloadPlatformMediaFromUrl("douyin", options.url, options);
+    process.stdout.write(JSON.stringify(data, null, options.pretty ? 2 : 0));
+    process.stdout.write("\n");
+    return;
+  }
+
   const operation = attachDirectMetadata(buildDouyinOperation(action, options), options);
   const data = await callDirectOperationWithOptions(operation, options);
   const envelope = {
@@ -2339,6 +2411,13 @@ async function runKuaishouDirectCommand(args) {
     throw new Error(`Unexpected argument: ${positional[1]}`);
   }
   validateKuaishouDirectActionOptions(action, options);
+
+  if (action === "download-media") {
+    const data = await downloadPlatformMediaFromUrl("kuaishou", options.url, options);
+    process.stdout.write(JSON.stringify(data, null, options.pretty ? 2 : 0));
+    process.stdout.write("\n");
+    return;
+  }
 
   const operation = attachDirectMetadata(buildKuaishouOperation(action, options), options);
   const data = await callDirectOperationWithOptions(operation, options);
@@ -2468,6 +2547,13 @@ async function runWeiboDirectCommand(args) {
     throw new Error(`Unexpected argument: ${positional[1]}`);
   }
   validateWeiboDirectActionOptions(action, options);
+
+  if (action === "download-media") {
+    const data = await downloadPlatformMediaFromUrl("weibo", options.url, options);
+    process.stdout.write(JSON.stringify(data, null, options.pretty ? 2 : 0));
+    process.stdout.write("\n");
+    return;
+  }
 
   const operation = attachDirectMetadata(buildWeiboOperation(action, options), options);
   const data = await callDirectOperationWithOptions(operation, options);

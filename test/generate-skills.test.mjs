@@ -21,7 +21,7 @@ import {
 } from "../../../scripts/generate_socialdatax_skills.mjs";
 
 const DEFAULT_PACKAGE_SPEC = "socialdatax-skills@latest";
-const XHS_VIRAL_NOTE_RESEARCH_PACKAGE_SPEC = "socialdatax-skills@0.2.28";
+const XHS_VIRAL_NOTE_RESEARCH_PACKAGE_SPEC = "socialdatax-skills@0.2.30";
 const packageDir = dirname(dirname(fileURLToPath(import.meta.url)));
 const projectRoot = resolve(packageDir, "..", "..");
 
@@ -271,6 +271,25 @@ test("skill generator emits valid host-specific skill files", async () => {
       assert.match(skill, /SOCIALDATAX_API_KEY/);
       assert.match(skill, new RegExp(escapeRegExp(host.homepage)));
       assert.match(skill, new RegExp(`\\?from=${escapeRegExp(listing.host)}`));
+      assert.match(
+        skill,
+        /`insufficient_balance`|`insufficient_balance` 或“积分不足”/,
+        `${listing.host}/${listing.slug} should document insufficient balance handling`
+      );
+      assert.match(
+        skill,
+        isChineseRenderedListing(listing)
+          ? /把错误里的充值链接原样展示给用户/
+          : /Show the recharge URL from the error exactly as returned/,
+        `${listing.host}/${listing.slug} should tell agents to show the recharge URL`
+      );
+      assert.match(
+        skill,
+        isChineseRenderedListing(listing)
+          ? /充值后继续(?:执行刚才)?(?:同一条命令|原命令)/
+          : /continue the same command after the user recharges/,
+        `${listing.host}/${listing.slug} should continue the same command after recharge`
+      );
       assert.match(
         skill,
         isChineseRenderedListing(listing)
@@ -646,7 +665,7 @@ test("clawhub scene entries use no-brand chinese titles and stable attribution",
       assert.equal(frontmatterScalar(frontmatter, "source_skill"), entry.slug);
       assert.match(skill, new RegExp(`^# ${escapeRegExp(entry.title)}$`, "m"));
       assert.doesNotMatch(skill, /^# .*SocialDataX/m);
-      assert.match(skill, /https:\/\/socialdatax\.com\/\?from=clawhub/);
+      assert.match(skill, /https:\/\/socialdatax\.com\/ai\?from=clawhub/);
       assert.match(skill, /--source-platform clawhub/);
       assert.match(skill, new RegExp(`--source-skill ${escapeRegExp(entry.slug)}`));
 
@@ -948,6 +967,10 @@ test("generated douyin video copy extraction skill stays douyin-only and transcr
     assert.match(skill, /如果提交失败且没有返回 `data\.job_id`/);
     assert.match(skill, /如果已经拿到 `data\.job_id`，后续异常只查询同一个任务/);
     assert.match(skill, /调用失败：如果已有 `job_id`，只查询同一个任务/);
+    assert.match(skill, /如果返回 `insufficient_balance` 或“积分不足”/);
+    assert.match(skill, /把错误里的充值链接原样展示给用户/);
+    assert.match(skill, /充值后继续执行刚才同一条命令/);
+    assert.match(skill, /充值后继续原命令，不要反复重试/);
     assert.doesNotMatch(skill, /原样重试一次/);
     assert.doesNotMatch(skill, /调用失败：先确认 `SOCIALDATAX_API_KEY` 已配置，再重试/);
     assert.doesNotMatch(skill, /标题作者/);
@@ -1126,9 +1149,13 @@ test("skillhub generated skills include quick start result examples and troubles
       assert.match(skill, /你通常会得到：/);
       assert.match(skill, /示例展示格式，不代表固定字段/);
       assert.match(skill, /网络或 API 异常：保留错误信息/);
+      assert.match(skill, /如果返回 `insufficient_balance` 或“积分不足”/);
+      assert.match(skill, /把错误里的充值链接原样展示给用户/);
+      assert.match(skill, /充值后继续执行刚才同一条命令/);
       assert.match(skill, /重试仍失败：说明当前调用不可用/);
       assert.match(skill, /没结果：/);
-      assert.match(skill, /调用失败：先确认 `SOCIALDATAX_API_KEY` 已配置，再重试。/);
+      assert.match(skill, /调用失败：先确认 `SOCIALDATAX_API_KEY` 已配置；如果是 `insufficient_balance` 或“积分不足”/);
+      assert.match(skill, /充值后继续原命令，不要反复重试/);
       assert.match(skill, /优先输出可直接复盘的结果/);
     }
   } finally {
@@ -1197,7 +1224,7 @@ test("skillhub generated skills keep user-facing sections in a natural order", a
     assert.ok(apiKeySection, "aggregate SkillHub body should include API Key 获取");
     assert.match(
       apiKeySection,
-      /获取或管理 API Key：访问 <https:\/\/socialdatax\.com\/\?from=skillhub>/
+      /获取或管理 API Key：访问 <https:\/\/socialdatax\.com\/ai\?from=skillhub>/
     );
     assert.doesNotMatch(
       extractMarkdownSection(aggregateSkill, "API Key 获取"),
@@ -1637,7 +1664,7 @@ test("modelscope high-intent scene entries keep scoped commands and attribution"
       assert.equal(frontmatterScalar(frontmatter, "source_platform"), "modelscope");
       assert.equal(frontmatterScalar(frontmatter, "source_skill"), entry.slug);
       assert.match(skill, new RegExp(`^# ${escapeRegExp(entry.title)}$`, "m"));
-      assert.match(skill, /https:\/\/socialdatax\.com\/\?from=modelscope/);
+      assert.match(skill, /https:\/\/socialdatax\.com\/ai\?from=modelscope/);
       assert.match(skill, /--source-platform modelscope/);
       assert.match(skill, new RegExp(`--source-skill ${escapeRegExp(entry.slug)}`));
       assert.match(
@@ -4637,7 +4664,7 @@ test("generator rejects host homepage values without the expected attribution", 
 
     const hostsPath = join(sourceDir, "hosts.json");
     const hosts = JSON.parse(readFileSync(hostsPath, "utf8"));
-    hosts.hosts.skillhub.homepage = "https://socialdatax.com/?from=clawhub";
+    hosts.hosts.skillhub.homepage = "https://socialdatax.com/ai?from=clawhub";
     writeFileSync(hostsPath, `${JSON.stringify(hosts, null, 2)}\n`);
 
     await assert.rejects(
@@ -4646,7 +4673,7 @@ test("generator rejects host homepage values without the expected attribution", 
         outRoot: tempRoot,
         quiet: true,
       }),
-      /Host skillhub homepage must be https:\/\/socialdatax\.com\/\?from=skillhub/
+      /Host skillhub homepage must be https:\/\/socialdatax\.com\/ai\?from=skillhub/
     );
   } finally {
     rmSync(tempRoot, { recursive: true, force: true });

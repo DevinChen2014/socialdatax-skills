@@ -2,7 +2,7 @@
 
 This public package provides the unified skill installer and direct CLI helper for SocialDataX services.
 
-The current public tools support 小红书 / Xiaohongshu / XHS / RedNote, 抖音 / Douyin, 快手 / Kuaishou / Kwai, 微博 / Weibo, 视频号 / WeChat Channels, and 微信公众号 / WeChat Official Account article content research and analysis workflows, plus XHS local media download, Bilibili / 哔哩哔哩 / B站 local video download, and 敏感词检测 / 违禁词检查 text checks. The public skill layer is intentionally named by capability so supported services can evolve without changing the installation model.
+The current public tools support 小红书 / Xiaohongshu / XHS / RedNote, 抖音 / Douyin, 快手 / Kuaishou / Kwai, 微博 / Weibo, 视频号 / WeChat Channels, and 微信公众号 / WeChat Official Account article content research and analysis workflows, plus XHS / Douyin / Kuaishou / Weibo local media download, Bilibili / 哔哩哔哩 / B站 local video download, and 敏感词检测 / 违禁词检查 text checks. The public skill layer is intentionally named by capability so supported services can evolve without changing the installation model.
 
 - direct `npx` JSON commands for agents that can run shell commands
 - AgentSkills-compatible installers split by capability for OpenClaw, Hermes Agent, Codex, Claude Code, and general agent skill directories
@@ -86,7 +86,7 @@ Common search phrases for this skill package:
 - Sensitive Words Check MCP server name: `sensitive-check`
 - Sensitive Words Check future MCP registry name: `com.socialdatax/sensitive-check`
 - Unified MCP registry name: none; this package installs skills and calls explicit platform services.
-- Current public capability version: `0.2.28`
+- Current public capability version: `0.2.30`
 
 ## Direct CLI
 
@@ -125,6 +125,7 @@ npx -y socialdatax-skills@latest douyin user-series --profile-url "<profile_url_
 npx -y socialdatax-skills@latest douyin transcript --url "<douyin_content_url_or_share_text>" --pretty
 npx -y socialdatax-skills@latest douyin transcript --aweme-id "<aweme_id>" --pretty
 npx -y socialdatax-skills@latest douyin transcript --job-id "<job_id>" --pretty
+npx -y socialdatax-skills@latest douyin download-media --url "<douyin_media_url>" --output-dir ./downloads --pretty
 npx -y socialdatax-skills@latest kuaishou hot-search --pretty
 npx -y socialdatax-skills@latest kuaishou search --keyword "露营" --pretty
 npx -y socialdatax-skills@latest kuaishou user-search --keyword "露营" --pretty
@@ -141,6 +142,7 @@ npx -y socialdatax-skills@latest kuaishou user-posts --profile-url "<profile_url
 npx -y socialdatax-skills@latest kuaishou transcript --url "<kuaishou_content_url_or_share_text>" --pretty
 npx -y socialdatax-skills@latest kuaishou transcript --photo-id "<photo_id>" --pretty
 npx -y socialdatax-skills@latest kuaishou transcript --job-id "<job_id>" --pretty
+npx -y socialdatax-skills@latest kuaishou download-media --url "<kuaishou_media_url>" --output-dir ./downloads --pretty
 npx -y socialdatax-skills@latest bilibili download --url "<bilibili_video_url_or_share_text>" --output-dir ./downloads --pretty
 npx -y socialdatax-skills@latest weibo hot-search --pretty
 npx -y socialdatax-skills@latest weibo search --keyword "露营" --pretty
@@ -159,6 +161,7 @@ npx -y socialdatax-skills@latest weibo user-posts --profile-url "<profile_url_or
 npx -y socialdatax-skills@latest weibo transcript --post-url "<weibo_post_url_or_share_text>" --pretty
 npx -y socialdatax-skills@latest weibo transcript --post-id "<post_id>" --pretty
 npx -y socialdatax-skills@latest weibo transcript --job-id "<job_id>" --pretty
+npx -y socialdatax-skills@latest weibo download-media --url "<weibo_media_url>" --output-dir ./downloads --pretty
 npx -y socialdatax-skills@latest wechat hot-search --pretty
 npx -y socialdatax-skills@latest wechat search --keyword "露营" --pretty
 npx -y socialdatax-skills@latest wechat detail --encrypted-object-id "<encrypted_object_id>" --pretty
@@ -178,7 +181,7 @@ npx -y socialdatax-skills@latest wechat transcript --job-id "<job_id>" --pretty
 npx -y socialdatax-skills@latest sensitive-check text --text "<content>" --platform xhs --pretty
 ```
 
-Most direct CLI commands print a JSON envelope with `platform`, `tool`, `arguments`, and `data`. `sensitive-check` prints `platform`, `tool`, and `data` only; it does not echo the original text in CLI output. `wechat decrypt-media` is a local save command: pass the `video.video_url` returned by WeChat detail and an `--output` file path. It saves the media locally, decrypts when needed, and does not require `SOCIALDATAX_API_KEY`. `xhs download-media` is also local: pass one image or video media URL returned by XHS detail and either `--output <file>` or `--output-dir <directory>`. It writes through a `.part` file, resumes partial downloads when the server supports range requests, skips an already existing output file, and infers common image/video extensions in `--output-dir` mode.
+Most direct CLI commands print a JSON envelope with `platform`, `tool`, `arguments`, and `data`. `sensitive-check` prints `platform`, `tool`, and `data` only; it does not echo the original text in CLI output. `wechat decrypt-media` is a local save command: pass the `video.video_url` returned by WeChat detail and an `--output` file path. It saves the media locally, decrypts when needed, and does not require `SOCIALDATAX_API_KEY`. `xhs/douyin/kuaishou/weibo download-media` is also local: pass one media URL returned by detail and either `--output <file>` or `--output-dir <directory>`. It writes through a `.part` file, resumes partial downloads when the server supports range requests, skips an already existing output file, and infers common image/video/audio extensions in `--output-dir` mode.
 
 For transcript commands, the direct CLI tries to deliver the final result in one run: submit may wait up to 210 seconds, and if `data.is_terminal` is not `true`, the CLI automatically continues matching get-job requests for up to 1200 seconds by default, with each get-job request waiting up to 240 seconds. Use positive `--max-wait-seconds <seconds>` to tune that follow-up window. Do not submit a duplicate transcript job just to poll status.
 
@@ -310,13 +313,16 @@ npx -y socialdatax-skills@latest douyin hot-search --pretty
 npx -y socialdatax-skills@latest douyin search --keyword "露营" --pretty
 npx -y socialdatax-skills@latest douyin user-series --sec-user-id "<sec_user_id>" --pretty
 npx -y socialdatax-skills@latest douyin transcript --aweme-id "<aweme_id>" --pretty
+npx -y socialdatax-skills@latest douyin download-media --url "<douyin_media_url>" --output-dir ./downloads --pretty
 npx -y socialdatax-skills@latest kuaishou hot-search --pretty
 npx -y socialdatax-skills@latest kuaishou search --keyword "露营" --pretty
 npx -y socialdatax-skills@latest kuaishou transcript --photo-id "<photo_id>" --pretty
+npx -y socialdatax-skills@latest kuaishou download-media --url "<kuaishou_media_url>" --output-dir ./downloads --pretty
 npx -y socialdatax-skills@latest bilibili download --url "<bilibili_video_url_or_share_text>" --output-dir ./downloads --pretty
 npx -y socialdatax-skills@latest weibo hot-search --pretty
 npx -y socialdatax-skills@latest weibo search --keyword "露营" --pretty
 npx -y socialdatax-skills@latest weibo transcript --post-id "<post_id>" --pretty
+npx -y socialdatax-skills@latest weibo download-media --url "<weibo_media_url>" --output-dir ./downloads --pretty
 npx -y socialdatax-skills@latest wechat hot-search --pretty
 npx -y socialdatax-skills@latest wechat search --keyword "露营" --pretty
 npx -y socialdatax-skills@latest wechat article --url "<mp_article_url_or_share_text>" --pretty
@@ -364,6 +370,7 @@ Current XHS workflows include:
 - Read creator profile data from a profile link, short link, share text, or user ID.
 - Fetch paginated creator note lists from a user ID, profile link, short link, or share text for content style and account research.
 - Submit and check video note 口播转文字 / speech-to-text transcript jobs; submit tools 提交后最多等待 210 秒，未完成时继续查询同一个 job_id 直到终态.
+- Save returned `image_items[].image_url`, `image_items[].live_photo.video_url`, or `video.video_url` media links locally with `xhs download-media`.
 
 Current Kuaishou workflows include:
 
@@ -377,6 +384,7 @@ Current Kuaishou workflows include:
 - Read creator profile data from a non-empty user_id, profile link, short link, or share text. Live/fw-user profile shares are supported for profile data; successful results return a reusable non-empty user_id.
 - Fetch paginated creator work lists from a non-empty user_id, or from a profile link, short link, or share text that resolves directly to a non-empty user_id. For live/fw-user profile shares, call creator profile first and use the returned non-empty user_id.
 - Submit and check video work 口播转文字 / speech-to-text transcript jobs; submit tools 提交后最多等待 210 秒，未完成时继续查询同一个 job_id 直到终态.
+- Save returned `images[].url`, `video.play_url`, or `cover_image_url` media links locally with `kuaishou download-media`.
 
 Current Bilibili workflows include:
 
@@ -396,6 +404,7 @@ Current Douyin workflows include:
 - Fetch paginated creator work lists from a sec_user_id, profile link, short link, or share text.
 - Fetch paginated creator short-drama series lists from a sec_user_id, profile link, short link, or share text.
 - Submit and check video work 口播转文字 / speech-to-text transcript jobs; submit tools 提交后最多等待 210 秒，未完成时继续查询同一个 job_id 直到终态.
+- Save returned `images[].url`, `images[].live_photo.play_url`, `video.play_url`, `music.play_url`, or `cover_image_url` media links locally with `douyin download-media`.
 
 Current Weibo workflows include:
 
@@ -408,6 +417,7 @@ Current Weibo workflows include:
 - Read creator profile data from a profile link, short link, share text, or user_id.
 - Fetch paginated creator post lists from a user_id, profile link, short link, or share text.
 - Submit and check Weibo video 口播转文字 / speech-to-text transcript jobs; submit tools 提交后最多等待 210 秒，未完成时继续查询同一个 job_id 直到终态.
+- Save returned `image_urls[]` or `video.video_url` media links locally with `weibo download-media`.
 
 Current WeChat / 微信 workflows include:
 
@@ -563,7 +573,7 @@ Aily is treated as an OpenClaw / AgentSkills ecosystem channel for this package.
 
 Request or manage API access from the product website:
 
-<https://socialdatax.com/?from=npm>
+<https://socialdatax.com/ai?from=npm>
 
 Use the key as a Bearer token in the `Authorization` request header. Do not commit real API keys to code, docs, issues, or screenshots.
 

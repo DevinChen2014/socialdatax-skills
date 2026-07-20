@@ -2,7 +2,7 @@
 
 SocialDataX (社媒数据助手) provides Agent Skills for read-only social media research workflows. These Skills help agents use the `socialdatax-skills` CLI and SocialDataX MCP services for content research, comment analysis, topic planning, video transcript extraction, and copy safety review.
 
-Official website and API Key access: <https://socialdatax.com/?from=github>
+Official website and API Key access: <https://socialdatax.com/ai?from=github>
 
 ## Quick Start
 
