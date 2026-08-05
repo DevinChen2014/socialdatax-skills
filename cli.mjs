@@ -22,7 +22,7 @@ import { decryptWechatMediaCommand } from "./lib/media/wechat-decrypt.mjs";
 export { decryptWechatMediaCommand };
 
 const PACKAGE_NAME = "socialdatax-skills";
-const PACKAGE_VERSION = "0.2.31";
+const PACKAGE_VERSION = "0.2.35";
 const PACKAGE_SPEC = `${PACKAGE_NAME}@latest`;
 const LOG_PREFIX = `[${PACKAGE_NAME}]`;
 const MIN_NODE_VERSION = "20.18.1";
@@ -43,40 +43,41 @@ const SOURCE_ATTRIBUTION_PATTERN = /^[a-z0-9][a-z0-9-]{0,99}$/;
 export const TRANSCRIPT_JOB_DESCRIPTION_SUFFIX =
   "Returns transcript plus content context, not summary.";
 const TRANSCRIPT_SUBMIT_WAIT_DESCRIPTION =
-  "提交后最多等待 210 秒；未完成时继续用对应 get-job 查询同一个 job_id 直到终态，不要重复提交.";
+  "提交后最多等待 240 秒；未完成时继续用对应 get-job 查询同一个 job_id 直到终态，不要重复提交.";
 const TRANSCRIPT_GET_JOB_WAIT_DESCRIPTION =
-  "Optional wait_seconds 0-240 can long-poll the same job in one request.";
+  "Each call waits up to 240 seconds for the same job. If unfinished, continue querying the same job_id until is_terminal is true.";
 const TRANSCRIPT_DEFAULT_MAX_WAIT_SECONDS = 1200;
-const TRANSCRIPT_GET_JOB_WAIT_SECONDS = 240;
 const TRANSCRIPT_FALLBACK_POLL_SECONDS = 2;
+const TRANSCRIPT_MCP_CALL_TIMEOUT_MS = 330_000;
+const MCP_REQUEST_TIMEOUT_ERROR_CODE = -32001;
 
 export function buildTranscriptJobDescription(subject) {
-  return `Check ${subject} by job_id without starting a new task. ${TRANSCRIPT_GET_JOB_WAIT_DESCRIPTION} Continue querying the same job_id until is_terminal is true. ${TRANSCRIPT_JOB_DESCRIPTION_SUFFIX}`;
+  return `Check ${subject} by job_id without starting a new task. ${TRANSCRIPT_GET_JOB_WAIT_DESCRIPTION} ${TRANSCRIPT_JOB_DESCRIPTION_SUFFIX}`;
 }
 
 const AVAILABLE_SKILLS = [
   {
     name: "socialdatax-content-research-assistant",
     summary:
-      "Coordinate cross-platform content research across XHS, Douyin, Kuaishou, Weibo, WeChat Channels, and WeChat Official Account articles.",
+      "Coordinate cross-platform content research across XHS, Douyin, Kuaishou, Bilibili, Weibo, WeChat Channels, Zhihu, Instagram, X / Twitter, YouTube, and TikTok, plus WeChat Official Account article details.",
     emoji: "🔎",
   },
   {
     name: "media-search",
     summary:
-      "Search XHS notes, Douyin works, Kuaishou works, Weibo posts, and WeChat Channels videos by keyword.",
+      "Search XHS notes, Douyin and Kuaishou works, Bilibili videos/articles, Weibo posts, WeChat Channels videos, Zhihu content, Instagram posts, X / Twitter posts, YouTube videos, and TikTok posts by keyword.",
     emoji: "🔍",
   },
   {
     name: "media-detail",
     summary:
-      "Read structured content details and metrics for XHS, Douyin, Kuaishou, Weibo, WeChat Channels, and WeChat Official Account articles.",
+      "Read WeChat Official Account article details and body text. Read structured content details and metrics for XHS, Douyin, Kuaishou, Bilibili, Weibo, WeChat Channels, Zhihu, Instagram, X / Twitter, YouTube, and TikTok.",
     emoji: "📄",
   },
   {
     name: "media-comments",
     summary:
-      "Fetch and analyze XHS, Douyin, Kuaishou, Weibo, and WeChat Channels comments/replies.",
+      "Fetch and analyze comments/replies for XHS, Douyin, Kuaishou, Bilibili, Weibo, WeChat Channels, Zhihu, Instagram, X / Twitter, YouTube, and TikTok.",
     emoji: "💬",
   },
   {
@@ -88,13 +89,13 @@ const AVAILABLE_SKILLS = [
   {
     name: "media-user-info",
     summary:
-      "Retrieve creator profile information for XHS, Douyin, Kuaishou, Weibo, and WeChat Channels.",
+      "Retrieve creator profile information for XHS, Douyin, Kuaishou, Bilibili, Weibo, WeChat Channels, Zhihu, Instagram, X / Twitter, YouTube channels, and TikTok.",
     emoji: "👤",
   },
   {
     name: "media-user-posts",
     summary:
-      "Retrieve creator content lists for XHS, Douyin, Kuaishou, Weibo, and WeChat Channels, including Douyin creator short-drama series.",
+      "Retrieve creator content lists for XHS, Douyin, Kuaishou, Bilibili, Weibo, WeChat Channels, Zhihu, Instagram, X / Twitter, YouTube channels, and TikTok, including Douyin creator short-drama series.",
     emoji: "🗂️",
   },
   {
@@ -354,15 +355,333 @@ const KUAISHOU_OPTION_DISPLAY_NAMES = {
   outputDir: "--output-dir",
 };
 const BILIBILI_DIRECT_ACTION_OPTIONS = {
+  "search-videos": [
+    "keyword",
+    "pageToken",
+    "pages",
+    "maxItems",
+    "sortType",
+    "publishTimeRange",
+    "publishTimeStartDate",
+    "publishTimeEndDate",
+    "durationRange",
+    "pretty",
+  ],
+  "search-articles": [
+    "keyword",
+    "pageToken",
+    "pages",
+    "maxItems",
+    "sortType",
+    "category",
+    "pretty",
+  ],
+  detail: ["contentId", "url", "pretty"],
+  comments: [
+    "contentId",
+    "url",
+    "pageToken",
+    "pages",
+    "all",
+    "maxItems",
+    "sortType",
+    "pretty",
+  ],
+  replies: [
+    "commentObjectId",
+    "commentObjectType",
+    "commentId",
+    "pageToken",
+    "pages",
+    "all",
+    "maxItems",
+    "pretty",
+  ],
+  reactions: ["postId", "url", "pageToken", "pages", "all", "maxItems", "pretty"],
+  "user-info": ["userId", "profileUrl", "pretty"],
+  "user-videos": [
+    "userId",
+    "profileUrl",
+    "pageToken",
+    "pages",
+    "all",
+    "maxItems",
+    "sortType",
+    "pretty",
+  ],
+  "user-articles": [
+    "userId",
+    "profileUrl",
+    "pageToken",
+    "pages",
+    "all",
+    "maxItems",
+    "pretty",
+  ],
+  "user-dynamics": [
+    "userId",
+    "profileUrl",
+    "pageToken",
+    "pages",
+    "all",
+    "maxItems",
+    "pretty",
+  ],
   download: ["url", "output", "outputDir", "ffmpegPath", "keepTracks", "pretty"],
 };
 const BILIBILI_DIRECT_ACTION_NAMES = Object.keys(BILIBILI_DIRECT_ACTION_OPTIONS).join(", ");
 const BILIBILI_OPTION_DISPLAY_NAMES = {
+  keyword: "--keyword",
+  pageToken: "--page-token",
+  pages: "--pages",
+  maxItems: "--max-items",
+  all: "--all",
+  sortType: "--sort-type",
+  publishTimeRange: "--publish-time-range",
+  publishTimeStartDate: "--publish-time-start-date",
+  publishTimeEndDate: "--publish-time-end-date",
+  durationRange: "--duration-range",
+  category: "--category",
+  contentId: "--content-id",
   url: "--url",
+  commentObjectId: "--comment-object-id",
+  commentObjectType: "--comment-object-type",
+  commentId: "--comment-id",
+  postId: "--post-id",
+  userId: "--user-id",
+  profileUrl: "--profile-url",
   output: "--output",
   outputDir: "--output-dir",
   ffmpegPath: "--ffmpeg-path",
 };
+const BILIBILI_VIDEO_SEARCH_SORT_TYPES = [
+  "general",
+  "view_count_descending",
+  "time_descending",
+  "danmaku_count_descending",
+  "collect_count_descending",
+];
+const BILIBILI_ARTICLE_SEARCH_SORT_TYPES = [
+  "general",
+  "time_descending",
+  "view_count_descending",
+  "like_count_descending",
+  "comment_count_descending",
+];
+const BILIBILI_ARTICLE_CATEGORIES = [
+  "all",
+  "animation",
+  "gaming",
+  "film_and_tv",
+  "lifestyle",
+  "hobbies",
+  "light_novel",
+  "technology",
+  "notes",
+];
+const BILIBILI_PUBLISH_TIME_RANGES = ["all", "day", "week", "half_year"];
+const BILIBILI_DURATION_RANGES = [
+  "all",
+  "under_10_minutes",
+  "between_10_and_30_minutes",
+  "between_30_and_60_minutes",
+  "over_60_minutes",
+];
+const BILIBILI_COMMENT_SORT_TYPES = ["hot", "time_descending"];
+const BILIBILI_USER_VIDEO_SORT_TYPES = [
+  "time_descending",
+  "view_count_descending",
+  "collect_count_descending",
+];
+const ZHIHU_DIRECT_ACTION_OPTIONS = {
+  "hot-list": ["pretty"],
+  search: [
+    "keyword",
+    "pageToken",
+    "pages",
+    "maxItems",
+    "contentType",
+    "sortType",
+    "publishTimeRange",
+    "pretty",
+  ],
+  detail: ["contentUrl", "pretty"],
+  comments: ["contentUrl", "pageToken", "pages", "all", "maxItems", "sortType", "pretty"],
+  replies: ["contentUrl", "commentId", "pageToken", "pages", "all", "maxItems", "pretty"],
+  "user-info": ["profileUrl", "pretty"],
+  "user-posts": ["profileUrl", "pageToken", "pages", "all", "maxItems", "pretty"],
+};
+const ZHIHU_DIRECT_ACTION_NAMES = Object.keys(ZHIHU_DIRECT_ACTION_OPTIONS).join(", ");
+const ZHIHU_OPTION_DISPLAY_NAMES = {
+  keyword: "--keyword",
+  pageToken: "--page-token",
+  pages: "--pages",
+  maxItems: "--max-items",
+  all: "--all",
+  contentType: "--content-type",
+  sortType: "--sort-type",
+  publishTimeRange: "--publish-time-range",
+  contentUrl: "--content-url",
+  commentId: "--comment-id",
+  profileUrl: "--profile-url",
+};
+const ZHIHU_CONTENT_TYPES = ["all", "answer", "article", "video"];
+const ZHIHU_SEARCH_SORT_TYPES = [
+  "general",
+  "upvote_count_descending",
+  "time_descending",
+];
+const ZHIHU_PUBLISH_TIME_RANGES = [
+  "all",
+  "day",
+  "week",
+  "month",
+  "three_months",
+  "half_year",
+  "year",
+];
+const ZHIHU_COMMENT_SORT_TYPES = ["default", "time_descending"];
+const INSTAGRAM_DIRECT_ACTION_OPTIONS = {
+  search: ["keyword", "pageToken", "pages", "maxItems", "pretty"],
+  detail: ["postId", "postUrl", "pretty"],
+  comments: ["postUrl", "pageToken", "pages", "all", "maxItems", "pretty"],
+  replies: ["postId", "commentId", "pageToken", "pages", "all", "maxItems", "pretty"],
+  "user-info": ["username", "profileUrl", "pretty"],
+  "user-posts": ["username", "profileUrl", "pageToken", "pages", "all", "maxItems", "pretty"],
+};
+const INSTAGRAM_DIRECT_ACTION_NAMES = Object.keys(INSTAGRAM_DIRECT_ACTION_OPTIONS).join(", ");
+const INSTAGRAM_OPTION_DISPLAY_NAMES = {
+  keyword: "--keyword",
+  pageToken: "--page-token",
+  pages: "--pages",
+  maxItems: "--max-items",
+  all: "--all",
+  postId: "--post-id",
+  postUrl: "--post-url",
+  commentId: "--comment-id",
+  username: "--username",
+  profileUrl: "--profile-url",
+};
+const X_DIRECT_ACTION_OPTIONS = {
+  search: ["keyword", "pageToken", "pages", "maxItems", "sortType", "pretty"],
+  detail: ["postId", "postUrl", "pretty"],
+  comments: ["postId", "postUrl", "pageToken", "pages", "all", "maxItems", "pretty"],
+  replies: ["postId", "commentId", "pageToken", "pages", "all", "maxItems", "pretty"],
+  "user-info": ["userId", "username", "profileUrl", "pretty"],
+  "user-posts": [
+    "userId",
+    "username",
+    "profileUrl",
+    "pageToken",
+    "pages",
+    "all",
+    "maxItems",
+    "pretty",
+  ],
+};
+const X_DIRECT_ACTION_NAMES = Object.keys(X_DIRECT_ACTION_OPTIONS).join(", ");
+const X_OPTION_DISPLAY_NAMES = {
+  keyword: "--keyword",
+  pageToken: "--page-token",
+  pages: "--pages",
+  maxItems: "--max-items",
+  all: "--all",
+  sortType: "--sort-type",
+  postId: "--post-id",
+  postUrl: "--post-url",
+  commentId: "--comment-id",
+  userId: "--user-id",
+  username: "--username",
+  profileUrl: "--profile-url",
+};
+const X_SEARCH_SORT_TYPES = ["hot", "time_descending"];
+const YOUTUBE_DIRECT_ACTION_OPTIONS = {
+  search: [
+    "keyword",
+    "pageToken",
+    "pages",
+    "maxItems",
+    "sortType",
+    "videoType",
+    "publishTimeRange",
+    "durationRange",
+    "pretty",
+  ],
+  detail: ["url", "pretty"],
+  comments: ["url", "pageToken", "pages", "all", "maxItems", "sortType", "pretty"],
+  replies: ["replyToken", "pageToken", "pages", "all", "maxItems", "pretty"],
+  "channel-info": ["channelUrl", "pretty"],
+  "user-posts": [
+    "channelUrl",
+    "pageToken",
+    "pages",
+    "all",
+    "maxItems",
+    "videoType",
+    "pretty",
+  ],
+};
+const YOUTUBE_DIRECT_ACTION_NAMES = Object.keys(YOUTUBE_DIRECT_ACTION_OPTIONS).join(", ");
+const YOUTUBE_OPTION_DISPLAY_NAMES = {
+  keyword: "--keyword",
+  pageToken: "--page-token",
+  pages: "--pages",
+  maxItems: "--max-items",
+  all: "--all",
+  sortType: "--sort-type",
+  videoType: "--video-type",
+  publishTimeRange: "--publish-time-range",
+  durationRange: "--duration-range",
+  url: "--url",
+  replyToken: "--reply-token",
+  channelUrl: "--channel-url",
+};
+const YOUTUBE_SEARCH_SORT_TYPES = [
+  "general",
+  "time_descending",
+  "view_count_descending",
+  "rating",
+];
+const YOUTUBE_SEARCH_VIDEO_TYPES = ["all", "video", "movie"];
+const YOUTUBE_SEARCH_PUBLISH_TIME_RANGES = [
+  "all",
+  "last_hour",
+  "today",
+  "this_week",
+  "this_month",
+  "this_year",
+];
+const YOUTUBE_SEARCH_DURATION_RANGES = [
+  "all",
+  "under_4_min",
+  "between_4_and_20_min",
+  "over_20_min",
+];
+const YOUTUBE_COMMENT_SORT_TYPES = ["hot", "time_descending"];
+const YOUTUBE_CHANNEL_VIDEO_TYPES = ["video", "short"];
+const TIKTOK_DIRECT_ACTION_OPTIONS = {
+  search: ["keyword", "pageToken", "pages", "maxItems", "contentType", "pretty"],
+  detail: ["url", "pretty"],
+  comments: ["postId", "url", "pageToken", "pages", "all", "maxItems", "pretty"],
+  replies: ["postId", "commentId", "pageToken", "pages", "all", "maxItems", "pretty"],
+  "user-info": ["tiktokId", "profileUrl", "pretty"],
+  "user-posts": ["tiktokId", "profileUrl", "pageToken", "pages", "all", "maxItems", "pretty"],
+};
+const TIKTOK_DIRECT_ACTION_NAMES = Object.keys(TIKTOK_DIRECT_ACTION_OPTIONS).join(", ");
+const TIKTOK_OPTION_DISPLAY_NAMES = {
+  keyword: "--keyword",
+  pageToken: "--page-token",
+  pages: "--pages",
+  maxItems: "--max-items",
+  all: "--all",
+  contentType: "--content-type",
+  url: "--url",
+  postId: "--post-id",
+  commentId: "--comment-id",
+  tiktokId: "--tiktok-id",
+  profileUrl: "--profile-url",
+};
+const TIKTOK_CONTENT_TYPES = ["all", "video", "image"];
 const WEIBO_DIRECT_ACTION_OPTIONS = {
   "hot-search": ["pretty"],
   search: ["keyword", "pageToken", "pages", "all", "maxItems", "sinceDays", "pretty"],
@@ -519,6 +838,15 @@ const SENSITIVE_CHECK_OPTION_DISPLAY_NAMES = {
   text: "--text",
   platform: "--platform",
 };
+const REPO_TRACKED_PLATFORM_LISTINGS = new Set([
+  "xhs",
+  "douyin",
+  "kuaishou",
+  "weibo",
+  "wechat",
+  "instagram",
+]);
+const REPO_TRACKED_FUTURE_REGISTRY_DRAFTS = new Set(["xhs", "douyin"]);
 const PLATFORMS = {
   xhs: {
     id: "xhs",
@@ -775,8 +1103,6 @@ const PLATFORMS = {
     id: "bilibili",
     displayName: "Bilibili / 哔哩哔哩 / B站",
     status: "public",
-    registryName: "com.52choujiang/bilibili-insights",
-    futureRegistryName: "com.socialdatax/bilibili-insights",
     endpoint: "https://mcp.socialdatax.com/bilibili/mcp",
     apiKeyEnv: API_KEY_ENV_NAMES,
     upstreamEnv: [
@@ -786,9 +1112,93 @@ const PLATFORMS = {
     ],
     tools: [
       {
+        name: "bilibili_search_videos",
+        description:
+          "Search Bilibili videos by keyword with optional page_token continuation, sorting, publish-time, and duration filters.",
+      },
+      {
+        name: "bilibili_search_articles",
+        description:
+          "Search Bilibili articles by keyword with optional page_token continuation, sorting, and category filters.",
+      },
+      {
+        name: "bilibili_get_content_detail_by_id",
+        description:
+          "Fetch structured Bilibili video, article, or dynamic details by content_id.",
+      },
+      {
+        name: "bilibili_get_content_detail_by_url",
+        description:
+          "Resolve a Bilibili video, article, dynamic, short link, or share text into structured content details.",
+      },
+      {
         name: "bilibili_get_video_download_links",
         description:
           "Fetch DASH video/audio download links and merge guidance for a Bilibili video URL.",
+      },
+      {
+        name: "bilibili_get_content_comments_by_id",
+        description:
+          "Fetch paginated first-level comments for a Bilibili video, article, or dynamic by content_id.",
+      },
+      {
+        name: "bilibili_get_content_comments_by_url",
+        description:
+          "Fetch paginated first-level comments from a Bilibili video, article, dynamic, short link, or share text.",
+      },
+      {
+        name: "bilibili_get_content_comment_replies_by_comment_id",
+        description:
+          "Fetch paginated replies under a first-level Bilibili comment by comment object and comment_id.",
+      },
+      {
+        name: "bilibili_get_content_likes_and_reposts_by_post_id",
+        description:
+          "Fetch paginated likes and reposts for a Bilibili article or dynamic by post_id.",
+      },
+      {
+        name: "bilibili_get_content_likes_and_reposts_by_url",
+        description:
+          "Fetch paginated likes and reposts from a Bilibili article or dynamic URL, short link, or share text.",
+      },
+      {
+        name: "bilibili_get_user_info_by_user_id",
+        description: "Fetch Bilibili creator profile data by user_id.",
+      },
+      {
+        name: "bilibili_get_user_info_by_profile_url",
+        description:
+          "Resolve a Bilibili profile link, short link, or share text into creator profile data.",
+      },
+      {
+        name: "bilibili_get_user_posted_videos_by_user_id",
+        description:
+          "Fetch a paginated list of videos published by a Bilibili creator by user_id.",
+      },
+      {
+        name: "bilibili_get_user_posted_videos_by_profile_url",
+        description:
+          "Fetch creator videos from a Bilibili profile link, short link, or share text.",
+      },
+      {
+        name: "bilibili_get_user_posted_articles_by_user_id",
+        description:
+          "Fetch a paginated list of articles published by a Bilibili creator by user_id.",
+      },
+      {
+        name: "bilibili_get_user_posted_articles_by_profile_url",
+        description:
+          "Fetch creator articles from a Bilibili profile link, short link, or share text.",
+      },
+      {
+        name: "bilibili_get_user_posted_dynamics_by_user_id",
+        description:
+          "Fetch a paginated list of dynamics published by a Bilibili creator by user_id.",
+      },
+      {
+        name: "bilibili_get_user_posted_dynamics_by_profile_url",
+        description:
+          "Fetch creator dynamics from a Bilibili profile link, short link, or share text.",
       },
     ],
   },
@@ -840,8 +1250,18 @@ const PLATFORMS = {
         description: "Fetch a paginated list of users who liked a Weibo post by post_id.",
       },
       {
+        name: "weibo_get_post_liker_list_by_post_url",
+        description:
+          "Fetch paginated users who liked a Weibo post from a post page link, short link, or share text.",
+      },
+      {
         name: "weibo_get_post_repost_list_by_post_id",
         description: "Fetch a paginated repost list for a Weibo post by post_id.",
+      },
+      {
+        name: "weibo_get_post_repost_list_by_post_url",
+        description:
+          "Fetch paginated reposts for a Weibo post from a post page link, short link, or share text.",
       },
       {
         name: "weibo_get_user_info_by_user_id",
@@ -878,7 +1298,7 @@ const PLATFORMS = {
   },
   wechat: {
     id: "wechat",
-    displayName: "WeChat / 微信",
+    displayName: "WeChat Content / 微信内容",
     status: "public",
     registryName: "com.52choujiang/wechat-channels-insights",
     futureRegistryName: "com.socialdatax/wechat-channels-insights",
@@ -926,11 +1346,16 @@ const PLATFORMS = {
       },
       {
         name: "wechat_get_user_info_by_user_id",
-        description: "Fetch creator profile data when the finder user_id is already known.",
+        description: "Fetch creator profile data when the v2_...@finder user_id is already known.",
+      },
+      {
+        name: "wechat_get_user_info_by_url",
+        description:
+          "Resolve a WeChat Channels / 视频号 video link or share text into creator profile data.",
       },
       {
         name: "wechat_get_user_posted_videos_by_user_id",
-        description: "Fetch a paginated list of videos published by a creator when the finder user_id is already known.",
+        description: "Fetch a paginated list of videos published by a creator when the v2_...@finder user_id is already known.",
       },
       {
         name: "wechat_get_user_posted_videos_by_url",
@@ -955,12 +1380,281 @@ const PLATFORMS = {
       },
     ],
   },
+  zhihu: {
+    id: "zhihu",
+    displayName: "Zhihu / 知乎",
+    status: "public",
+    endpoint: "https://mcp.socialdatax.com/zhihu/mcp",
+    apiKeyEnv: API_KEY_ENV_NAMES,
+    upstreamEnv: [
+      "SOCIAL_MEDIA_ZHIHU_MCP_UPSTREAM_URL",
+      "SOCIAL_MEDIA_MCP_UPSTREAM_URL",
+      "ZHIHU_MCP_UPSTREAM_URL",
+    ],
+    tools: [
+      {
+        name: "zhihu_get_hot_list",
+        description: "Fetch the current Zhihu hot list.",
+      },
+      {
+        name: "zhihu_search_content",
+        description:
+          "Search Zhihu public content by keyword with optional content type, sort, publish-time, and page_token filters.",
+      },
+      {
+        name: "zhihu_get_content_detail_by_url",
+        description:
+          "Fetch structured Zhihu answer, article, or video details from a content URL.",
+      },
+      {
+        name: "zhihu_get_content_comments_by_url",
+        description:
+          "Fetch paginated first-level comments from a Zhihu answer, article, or video URL.",
+      },
+      {
+        name: "zhihu_get_comment_replies_by_url",
+        description:
+          "Fetch paginated replies under a first-level Zhihu comment by content URL and comment_id.",
+      },
+      {
+        name: "zhihu_get_user_info_by_profile_url",
+        description: "Fetch Zhihu creator profile data from a profile URL.",
+      },
+      {
+        name: "zhihu_get_user_posted_articles_by_profile_url",
+        description:
+          "Fetch a paginated list of articles published by a Zhihu creator from a profile URL.",
+      },
+    ],
+  },
+  instagram: {
+    id: "instagram",
+    displayName: "Instagram",
+    status: "public",
+    registryName: "com.52choujiang/instagram-insights",
+    futureRegistryName: "com.socialdatax/instagram-insights",
+    endpoint: "https://mcp.socialdatax.com/instagram/mcp",
+    apiKeyEnv: API_KEY_ENV_NAMES,
+    upstreamEnv: [
+      "SOCIAL_MEDIA_INSTAGRAM_MCP_UPSTREAM_URL",
+      "SOCIAL_MEDIA_MCP_UPSTREAM_URL",
+      "INSTAGRAM_MCP_UPSTREAM_URL",
+    ],
+    tools: [
+      {
+        name: "instagram_search_posts",
+        description:
+          "Search Instagram public posts by keyword with optional page_token continuation.",
+      },
+      {
+        name: "instagram_get_post_detail_by_post_id",
+        description: "Fetch structured Instagram post details by post_id.",
+      },
+      {
+        name: "instagram_get_post_detail_by_post_url",
+        description:
+          "Fetch structured Instagram post details from a post URL.",
+      },
+      {
+        name: "instagram_get_post_comments_by_post_url",
+        description:
+          "Fetch paginated first-level comments from an Instagram post URL.",
+      },
+      {
+        name: "instagram_get_post_comment_replies_by_comment_id",
+        description:
+          "Fetch paginated replies under a first-level Instagram comment by post_id and comment_id.",
+      },
+      {
+        name: "instagram_get_user_info_by_username",
+        description: "Fetch Instagram creator profile data by username.",
+      },
+      {
+        name: "instagram_get_user_info_by_profile_url",
+        description:
+          "Fetch Instagram creator profile data from a profile URL.",
+      },
+      {
+        name: "instagram_get_user_posts_by_username",
+        description:
+          "Fetch a paginated list of public posts by an Instagram creator username.",
+      },
+      {
+        name: "instagram_get_user_posts_by_profile_url",
+        description:
+          "Fetch a paginated list of public posts by an Instagram creator profile URL.",
+      },
+    ],
+  },
+  x: {
+    id: "x",
+    displayName: "X / Twitter",
+    status: "public",
+    endpoint: "https://mcp.socialdatax.com/x/mcp",
+    apiKeyEnv: API_KEY_ENV_NAMES,
+    upstreamEnv: [
+      "SOCIAL_MEDIA_X_MCP_UPSTREAM_URL",
+      "SOCIAL_MEDIA_MCP_UPSTREAM_URL",
+      "X_MCP_UPSTREAM_URL",
+    ],
+    tools: [
+      {
+        name: "x_search_posts",
+        description:
+          "Search X public posts by keyword with hot or time_descending sorting and optional page_token continuation.",
+      },
+      {
+        name: "x_get_post_detail_by_post_id",
+        description: "Fetch structured X post details by post_id.",
+      },
+      {
+        name: "x_get_post_detail_by_post_url",
+        description: "Fetch structured X post details from a post URL.",
+      },
+      {
+        name: "x_get_post_comments_by_post_id",
+        description: "Fetch paginated first-level comments by X post_id.",
+      },
+      {
+        name: "x_get_post_comments_by_post_url",
+        description: "Fetch paginated first-level comments from an X post URL.",
+      },
+      {
+        name: "x_get_post_comment_replies_by_comment_id",
+        description:
+          "Fetch paginated replies under a first-level X comment by post_id and comment_id.",
+      },
+      {
+        name: "x_get_user_info_by_user_id",
+        description: "Fetch X creator profile data by user_id.",
+      },
+      {
+        name: "x_get_user_info_by_username",
+        description: "Fetch X creator profile data by username.",
+      },
+      {
+        name: "x_get_user_info_by_profile_url",
+        description: "Fetch X creator profile data from a profile URL.",
+      },
+      {
+        name: "x_get_user_posts_by_user_id",
+        description:
+          "Fetch a paginated list of public posts by an X creator user_id.",
+      },
+      {
+        name: "x_get_user_posts_by_username",
+        description:
+          "Fetch a paginated list of public posts by an X creator username.",
+      },
+      {
+        name: "x_get_user_posts_by_profile_url",
+        description:
+          "Fetch a paginated list of public posts by an X creator profile URL.",
+      },
+    ],
+  },
+  youtube: {
+    id: "youtube",
+    displayName: "YouTube",
+    status: "public",
+    endpoint: "https://mcp.socialdatax.com/youtube/mcp",
+    apiKeyEnv: API_KEY_ENV_NAMES,
+    upstreamEnv: [
+      "SOCIAL_MEDIA_YOUTUBE_MCP_UPSTREAM_URL",
+      "SOCIAL_MEDIA_MCP_UPSTREAM_URL",
+      "YOUTUBE_MCP_UPSTREAM_URL",
+    ],
+    tools: [
+      {
+        name: "youtube_search_videos",
+        description:
+          "Search YouTube public videos by keyword with optional sort, video type, publish-time, duration, and page_token filters.",
+      },
+      {
+        name: "youtube_get_video_detail_by_url",
+        description: "Fetch structured YouTube video details from a video URL.",
+      },
+      {
+        name: "youtube_get_channel_info_by_url",
+        description: "Fetch YouTube channel profile data from a channel URL.",
+      },
+      {
+        name: "youtube_get_user_posted_videos_by_channel_url",
+        description:
+          "Fetch a paginated list of videos or Shorts published by a YouTube channel URL.",
+      },
+      {
+        name: "youtube_get_video_comments_by_url",
+        description:
+          "Fetch paginated first-level comments from a YouTube video URL.",
+      },
+      {
+        name: "youtube_get_video_comment_replies",
+        description:
+          "Fetch paginated YouTube comment replies by the first-level comment reply_token.",
+      },
+    ],
+  },
+  tiktok: {
+    id: "tiktok",
+    displayName: "TikTok",
+    status: "public",
+    endpoint: "https://mcp.socialdatax.com/tiktok/mcp",
+    apiKeyEnv: API_KEY_ENV_NAMES,
+    upstreamEnv: [
+      "SOCIAL_MEDIA_TIKTOK_MCP_UPSTREAM_URL",
+      "SOCIAL_MEDIA_MCP_UPSTREAM_URL",
+      "TIKTOK_MCP_UPSTREAM_URL",
+    ],
+    tools: [
+      {
+        name: "tiktok_search_posts",
+        description:
+          "Search TikTok public posts by keyword with optional content type and page_token continuation.",
+      },
+      {
+        name: "tiktok_get_post_detail_by_url",
+        description:
+          "Fetch structured TikTok video or image post details from a post URL.",
+      },
+      {
+        name: "tiktok_get_post_comments_by_post_id",
+        description: "Fetch paginated first-level comments by TikTok post_id.",
+      },
+      {
+        name: "tiktok_get_post_comments_by_url",
+        description:
+          "Fetch paginated first-level comments from a TikTok post URL.",
+      },
+      {
+        name: "tiktok_get_post_comment_replies",
+        description:
+          "Fetch paginated replies under a first-level TikTok comment by post_id and comment_id.",
+      },
+      {
+        name: "tiktok_get_user_info_by_tiktok_id",
+        description: "Fetch TikTok creator profile data by tiktok_id.",
+      },
+      {
+        name: "tiktok_get_user_info_by_profile_url",
+        description: "Fetch TikTok creator profile data from a profile URL.",
+      },
+      {
+        name: "tiktok_get_user_posts_by_tiktok_id",
+        description:
+          "Fetch a paginated list of posts by a TikTok creator tiktok_id.",
+      },
+      {
+        name: "tiktok_get_user_posts_by_profile_url",
+        description:
+          "Fetch a paginated list of posts by a TikTok creator profile URL.",
+      },
+    ],
+  },
   "sensitive-check": {
     id: "sensitive-check",
     displayName: "Sensitive Words Check / 敏感词检测",
     status: "public",
-    registryName: "sensitive-check",
-    futureRegistryName: "com.socialdatax/sensitive-check",
     endpoint: "https://mcp.socialdatax.com/sensitive-check/mcp",
     apiKeyEnv: API_KEY_ENV_NAMES,
     upstreamEnv: [
@@ -1017,6 +1711,16 @@ async function main() {
       await runWeiboDirectCommand(cliArgs.slice(1));
     } else if (command === "wechat") {
       await runWechatDirectCommand(cliArgs.slice(1));
+    } else if (command === "zhihu") {
+      await runZhihuDirectCommand(cliArgs.slice(1));
+    } else if (command === "instagram") {
+      await runInstagramDirectCommand(cliArgs.slice(1));
+    } else if (command === "x") {
+      await runXDirectCommand(cliArgs.slice(1));
+    } else if (command === "youtube") {
+      await runYoutubeDirectCommand(cliArgs.slice(1));
+    } else if (command === "tiktok") {
+      await runTikTokDirectCommand(cliArgs.slice(1));
     } else if (command === "sensitive-check") {
       await runSensitiveCheckDirectCommand(cliArgs.slice(1));
     } else if (command === "--platform" || command?.startsWith("--platform=") || command === "print-config") {
@@ -1232,14 +1936,14 @@ function validateBilibiliDirectActionOptions(action, options) {
 
   validateKnownOptions(options, allowedDirectOptions(allowedOptions));
   validateDirectMetaOptions(options);
-  validateFlagOption(options, "pretty", "--pretty");
-  validateFlagOption(options, "keepTracks", "--keep-tracks");
-  for (const key of allowedOptions) {
-    if (!DIRECT_BOOLEAN_OPTIONS.has(key)) {
-      requireOptionValue(options, key, BILIBILI_OPTION_DISPLAY_NAMES[key]);
-    }
-  }
   if (action === "download") {
+    validateFlagOption(options, "pretty", "--pretty");
+    validateFlagOption(options, "keepTracks", "--keep-tracks");
+    for (const key of allowedOptions) {
+      if (!DIRECT_BOOLEAN_OPTIONS.has(key)) {
+        requireOptionValue(options, key, BILIBILI_OPTION_DISPLAY_NAMES[key]);
+      }
+    }
     if (!options.url) {
       throw new Error("Missing --url for bilibili download.");
     }
@@ -1248,6 +1952,14 @@ function validateBilibiliDirectActionOptions(action, options) {
     }
     if (options.output && options.outputDir) {
       throw new Error("Use only one of --output or --output-dir for bilibili download.");
+    }
+    return;
+  }
+
+  validateDirectPaginationOptions("bilibili", action, options);
+  for (const key of allowedOptions) {
+    if (!DIRECT_BOOLEAN_OPTIONS.has(key)) {
+      requireOptionValue(options, key, BILIBILI_OPTION_DISPLAY_NAMES[key]);
     }
   }
 }
@@ -1315,6 +2027,78 @@ function validateSensitiveCheckDirectActionOptions(action, options) {
       requireOptionValue(options, key, SENSITIVE_CHECK_OPTION_DISPLAY_NAMES[key]);
     }
   }
+}
+
+function validateMcpDirectActionOptions(
+  platformId,
+  action,
+  options,
+  actionOptions,
+  displayNames
+) {
+  const allowedOptions = actionOptions[action];
+  if (!allowedOptions) {
+    return;
+  }
+
+  validateKnownOptions(options, allowedDirectOptions(allowedOptions));
+  validateDirectMetaOptions(options);
+  validateDirectPaginationOptions(platformId, action, options);
+  for (const key of allowedOptions) {
+    if (!DIRECT_BOOLEAN_OPTIONS.has(key)) {
+      requireOptionValue(options, key, displayNames[key]);
+    }
+  }
+}
+
+function validateZhihuDirectActionOptions(action, options) {
+  validateMcpDirectActionOptions(
+    "zhihu",
+    action,
+    options,
+    ZHIHU_DIRECT_ACTION_OPTIONS,
+    ZHIHU_OPTION_DISPLAY_NAMES
+  );
+}
+
+function validateInstagramDirectActionOptions(action, options) {
+  validateMcpDirectActionOptions(
+    "instagram",
+    action,
+    options,
+    INSTAGRAM_DIRECT_ACTION_OPTIONS,
+    INSTAGRAM_OPTION_DISPLAY_NAMES
+  );
+}
+
+function validateXDirectActionOptions(action, options) {
+  validateMcpDirectActionOptions(
+    "x",
+    action,
+    options,
+    X_DIRECT_ACTION_OPTIONS,
+    X_OPTION_DISPLAY_NAMES
+  );
+}
+
+function validateYoutubeDirectActionOptions(action, options) {
+  validateMcpDirectActionOptions(
+    "youtube",
+    action,
+    options,
+    YOUTUBE_DIRECT_ACTION_OPTIONS,
+    YOUTUBE_OPTION_DISPLAY_NAMES
+  );
+}
+
+function validateTikTokDirectActionOptions(action, options) {
+  validateMcpDirectActionOptions(
+    "tiktok",
+    action,
+    options,
+    TIKTOK_DIRECT_ACTION_OPTIONS,
+    TIKTOK_OPTION_DISPLAY_NAMES
+  );
 }
 
 function validateDirectMetaOptions(options) {
@@ -1815,11 +2599,15 @@ function listSkills() {
 function buildDoctorReport() {
   const platforms = Object.values(PLATFORMS).map((platform) => {
     const endpoint = resolveUpstreamUrl(platform);
+    const repoTrackedStandaloneListing = REPO_TRACKED_PLATFORM_LISTINGS.has(platform.id);
     return {
       id: platform.id,
       displayName: platform.displayName,
-      registryName: platform.registryName,
-      futureRegistryName: platform.futureRegistryName,
+      repoTrackedStandaloneListing,
+      registryName: repoTrackedStandaloneListing ? platform.registryName : undefined,
+      futureRegistryName: repoTrackedStandaloneListing
+        ? platform.futureRegistryName
+        : undefined,
       endpoint,
       defaultEndpoint: platform.endpoint,
       endpointOverrideActive: endpoint !== platform.endpoint,
@@ -1851,8 +2639,8 @@ function buildDoctorReport() {
       supportsDryRun: true,
     },
     security: {
-      readOnly: false,
-      directCliReadOnly: false,
+      readOnly: true,
+      directCliReadOnly: true,
       directCliMaySubmitAnalysisJobs: true,
       platformMcpMaySubmitAnalysisJobs: true,
       accountActions: false,
@@ -1901,12 +2689,19 @@ function printDoctor(args) {
   console.log("- no local browser data access.");
   console.log(`- requires ${PRIMARY_API_KEY_ENV} only when making authenticated data calls.`);
   console.log("");
-  console.log("Platform MCPs:");
+  console.log("Hosted MCP entries:");
   for (const platform of report.platforms) {
     console.log(`- ${platform.displayName}`);
-    console.log(`  registry: ${platform.registryName}`);
+    if (platform.repoTrackedStandaloneListing) {
+      console.log(`  registry: ${platform.registryName}`);
+    } else {
+      console.log("  listing: hosted endpoint only; standalone listing materials pending");
+    }
     if (platform.futureRegistryName) {
-      console.log(`  future registry: ${platform.futureRegistryName}`);
+      const futureLabel = REPO_TRACKED_FUTURE_REGISTRY_DRAFTS.has(platform.id)
+        ? "future registry draft"
+        : "reserved future namespace";
+      console.log(`  ${futureLabel}: ${platform.futureRegistryName}`);
     }
     console.log(`  endpoint: ${platform.endpoint}`);
     if (platform.endpointOverrideActive) {
@@ -2052,6 +2847,36 @@ function printHelp() {
   console.log(`  npx -y ${PACKAGE_SPEC} kuaishou download-media --url "<kuaishou_media_url>" --output-dir ./downloads --pretty`);
   console.log("      Save one Kuaishou media URL returned by detail to a local file.");
   console.log("");
+  console.log(`  npx -y ${PACKAGE_SPEC} bilibili search-videos --keyword "露营" --pretty`);
+  console.log("      Call the Bilibili video search tool directly and print JSON.");
+  console.log("");
+  console.log(`  npx -y ${PACKAGE_SPEC} bilibili search-articles --keyword "露营" --pretty`);
+  console.log("      Call the Bilibili article search tool directly and print JSON.");
+  console.log("");
+  console.log(`  npx -y ${PACKAGE_SPEC} bilibili detail --content-id "<content_id>" --pretty`);
+  console.log("      Call the Bilibili content detail tool directly and print JSON.");
+  console.log("");
+  console.log(`  npx -y ${PACKAGE_SPEC} bilibili comments --content-id "<content_id>" --pretty`);
+  console.log("      Call the Bilibili content comments tool directly and print JSON.");
+  console.log("");
+  console.log(`  npx -y ${PACKAGE_SPEC} bilibili replies --comment-object-id "<comment_object_id>" --comment-object-type 1 --comment-id "<comment_id>" --pretty`);
+  console.log("      Call the Bilibili comment replies tool directly and print JSON.");
+  console.log("");
+  console.log(`  npx -y ${PACKAGE_SPEC} bilibili reactions --url "<bilibili_opus_or_dynamic_url_or_share_text>" --pretty`);
+  console.log("      Call the Bilibili opus/dynamic likes/reposts tool from an opus, dynamic, or t.bilibili.com link/share text.");
+  console.log("");
+  console.log(`  npx -y ${PACKAGE_SPEC} bilibili user-info --profile-url "<profile_url_or_share_text>" --pretty`);
+  console.log("      Call the Bilibili creator profile tool from a profile link or share text.");
+  console.log("");
+  console.log(`  npx -y ${PACKAGE_SPEC} bilibili user-videos --profile-url "<profile_url_or_share_text>" --pretty`);
+  console.log("      Call the Bilibili creator videos tool from a profile link or share text.");
+  console.log("");
+  console.log(`  npx -y ${PACKAGE_SPEC} bilibili user-articles --profile-url "<profile_url_or_share_text>" --pretty`);
+  console.log("      Call the Bilibili creator articles tool from a profile link or share text.");
+  console.log("");
+  console.log(`  npx -y ${PACKAGE_SPEC} bilibili user-dynamics --profile-url "<profile_url_or_share_text>" --pretty`);
+  console.log("      Call the Bilibili creator dynamics tool from a profile link or share text.");
+  console.log("");
   console.log(`  npx -y ${PACKAGE_SPEC} bilibili download --url "<bilibili_video_url_or_share_text>" --output-dir ./downloads --pretty`);
   console.log("      Fetch Bilibili download links, save DASH tracks locally, and merge them with ffmpeg.");
   console.log("");
@@ -2129,17 +2954,110 @@ function printHelp() {
   );
   console.log("      Call the WeChat Channels / 视频号 comment replies tool directly and print JSON.");
   console.log("");
-  console.log(`  npx -y ${PACKAGE_SPEC} wechat user-info --user-id "<finder_user_id>" --pretty`);
-  console.log("      Call the WeChat Channels / 视频号 creator profile tool directly and print JSON.");
+  console.log(`  npx -y ${PACKAGE_SPEC} wechat user-info --user-id "<v2_finder_user_id>" --pretty`);
+  console.log("      Call the WeChat Channels / 视频号 creator profile tool with a v2_...@finder user_id.");
   console.log("");
-  console.log(`  npx -y ${PACKAGE_SPEC} wechat user-posts --user-id "<finder_user_id>" --pretty`);
-  console.log("      Call the WeChat Channels / 视频号 creator videos tool directly and print JSON.");
+  console.log(`  npx -y ${PACKAGE_SPEC} wechat user-posts --user-id "<v2_finder_user_id>" --pretty`);
+  console.log("      Call the WeChat Channels / 视频号 creator videos tool with a v2_...@finder user_id.");
   console.log("");
   console.log(`  npx -y ${PACKAGE_SPEC} wechat user-posts --url "<wechat_video_url_or_share_text>" --pretty`);
   console.log("      Call the WeChat Channels / 视频号 creator videos tool from a video link or share text.");
   console.log("");
   console.log(`  npx -y ${PACKAGE_SPEC} wechat transcript --encrypted-object-id "<encrypted_object_id>" --pretty`);
   console.log("      Submit or check a WeChat Channels / 视频号 video speech-to-text transcript job.");
+  console.log("");
+  console.log(`  npx -y ${PACKAGE_SPEC} zhihu search --keyword "露营" --pretty`);
+  console.log("      Call the Zhihu content search tool directly and print JSON.");
+  console.log("");
+  console.log(`  npx -y ${PACKAGE_SPEC} zhihu hot-list --pretty`);
+  console.log("      Call the Zhihu hot list tool directly and print JSON.");
+  console.log("");
+  console.log(`  npx -y ${PACKAGE_SPEC} zhihu detail --content-url "<zhihu_content_url_or_share_text>" --pretty`);
+  console.log("      Call the Zhihu content detail tool from a content link or share text.");
+  console.log("");
+  console.log(`  npx -y ${PACKAGE_SPEC} zhihu comments --content-url "<zhihu_content_url_or_share_text>" --pretty`);
+  console.log("      Call the Zhihu content comments tool from a content link or share text.");
+  console.log("");
+  console.log(`  npx -y ${PACKAGE_SPEC} zhihu replies --content-url "<zhihu_content_url_or_share_text>" --comment-id "<comment_id>" --pretty`);
+  console.log("      Call the Zhihu comment replies tool from a content link and comment_id.");
+  console.log("");
+  console.log(`  npx -y ${PACKAGE_SPEC} zhihu user-info --profile-url "<profile_url_or_share_text>" --pretty`);
+  console.log("      Call the Zhihu creator profile tool from a profile link or share text.");
+  console.log("");
+  console.log(`  npx -y ${PACKAGE_SPEC} zhihu user-posts --profile-url "<profile_url_or_share_text>" --pretty`);
+  console.log("      Call the Zhihu creator articles tool from a profile link or share text.");
+  console.log("");
+  console.log(`  npx -y ${PACKAGE_SPEC} instagram search --keyword "camping" --pretty`);
+  console.log("      Call the Instagram public post search tool directly and print JSON.");
+  console.log("");
+  console.log(`  npx -y ${PACKAGE_SPEC} instagram detail --post-url "<instagram_post_url_or_share_text>" --pretty`);
+  console.log("      Call the Instagram post detail tool from a post link or share text.");
+  console.log("");
+  console.log(`  npx -y ${PACKAGE_SPEC} instagram comments --post-url "<instagram_post_url_or_share_text>" --pretty`);
+  console.log("      Call the Instagram post comments tool from a post link or share text.");
+  console.log("");
+  console.log(`  npx -y ${PACKAGE_SPEC} instagram replies --post-id "<post_id>" --comment-id "<comment_id>" --pretty`);
+  console.log("      Call the Instagram comment replies tool directly and print JSON.");
+  console.log("");
+  console.log(`  npx -y ${PACKAGE_SPEC} instagram user-info --username "<username>" --pretty`);
+  console.log("      Call the Instagram creator profile tool by username.");
+  console.log("");
+  console.log(`  npx -y ${PACKAGE_SPEC} instagram user-posts --username "<username>" --pretty`);
+  console.log("      Call the Instagram creator posts tool by username.");
+  console.log("");
+  console.log(`  npx -y ${PACKAGE_SPEC} x search --keyword "camping" --pretty`);
+  console.log("      Call the X public post search tool directly and print JSON.");
+  console.log("");
+  console.log(`  npx -y ${PACKAGE_SPEC} x detail --post-url "<x_post_url_or_share_text>" --pretty`);
+  console.log("      Call the X post detail tool from a post link or share text.");
+  console.log("");
+  console.log(`  npx -y ${PACKAGE_SPEC} x comments --post-url "<x_post_url_or_share_text>" --pretty`);
+  console.log("      Call the X post comments tool from a post link or share text.");
+  console.log("");
+  console.log(`  npx -y ${PACKAGE_SPEC} x replies --post-id "<post_id>" --comment-id "<comment_id>" --pretty`);
+  console.log("      Call the X comment replies tool directly and print JSON.");
+  console.log("");
+  console.log(`  npx -y ${PACKAGE_SPEC} x user-info --username "<username>" --pretty`);
+  console.log("      Call the X creator profile tool by username.");
+  console.log("");
+  console.log(`  npx -y ${PACKAGE_SPEC} x user-posts --username "<username>" --pretty`);
+  console.log("      Call the X creator posts tool by username.");
+  console.log("");
+  console.log(`  npx -y ${PACKAGE_SPEC} youtube search --keyword "camping" --pretty`);
+  console.log("      Call the YouTube public video search tool directly and print JSON.");
+  console.log("");
+  console.log(`  npx -y ${PACKAGE_SPEC} youtube detail --url "<youtube_video_url>" --pretty`);
+  console.log("      Call the YouTube video detail tool from a video URL.");
+  console.log("");
+  console.log(`  npx -y ${PACKAGE_SPEC} youtube comments --url "<youtube_video_url>" --pretty`);
+  console.log("      Call the YouTube video comments tool from a video URL.");
+  console.log("");
+  console.log(`  npx -y ${PACKAGE_SPEC} youtube replies --reply-token "<reply_token>" --pretty`);
+  console.log("      Call the YouTube comment replies tool with the returned reply_token.");
+  console.log("");
+  console.log(`  npx -y ${PACKAGE_SPEC} youtube channel-info --channel-url "<youtube_channel_url>" --pretty`);
+  console.log("      Call the YouTube channel profile tool from a channel URL.");
+  console.log("");
+  console.log(`  npx -y ${PACKAGE_SPEC} youtube user-posts --channel-url "<youtube_channel_url>" --pretty`);
+  console.log("      Call the YouTube channel videos or Shorts tool from a channel URL.");
+  console.log("");
+  console.log(`  npx -y ${PACKAGE_SPEC} tiktok search --keyword "camping" --pretty`);
+  console.log("      Call the TikTok public post search tool directly and print JSON.");
+  console.log("");
+  console.log(`  npx -y ${PACKAGE_SPEC} tiktok detail --url "<tiktok_post_url_or_share_text>" --pretty`);
+  console.log("      Call the TikTok post detail tool from a post link or share text.");
+  console.log("");
+  console.log(`  npx -y ${PACKAGE_SPEC} tiktok comments --url "<tiktok_post_url_or_share_text>" --pretty`);
+  console.log("      Call the TikTok post comments tool from a post link or share text.");
+  console.log("");
+  console.log(`  npx -y ${PACKAGE_SPEC} tiktok replies --post-id "<post_id>" --comment-id "<comment_id>" --pretty`);
+  console.log("      Call the TikTok comment replies tool directly and print JSON.");
+  console.log("");
+  console.log(`  npx -y ${PACKAGE_SPEC} tiktok user-info --tiktok-id "<tiktok_id>" --pretty`);
+  console.log("      Call the TikTok creator profile tool by tiktok_id.");
+  console.log("");
+  console.log(`  npx -y ${PACKAGE_SPEC} tiktok user-posts --tiktok-id "<tiktok_id>" --pretty`);
+  console.log("      Call the TikTok creator posts tool by tiktok_id.");
   console.log("");
   console.log(`  npx -y ${PACKAGE_SPEC} sensitive-check text --text "<content>" --platform xhs --pretty`);
   console.log("      Call the SocialDataX 敏感词检测 / 违禁词检查 text tool directly and print JSON.");
@@ -2227,15 +3145,24 @@ function printHelp() {
   console.log("  --aweme-id <aweme_id>");
   console.log("  --photo-id <photo_id>");
   console.log("  --post-id <post_id>");
-  console.log("  --post-url <weibo-post-url-or-share-text>");
+  console.log("  --post-url <post-url-or-share-text>");
+  console.log("  --content-id <content_id>");
+  console.log("  --content-url <content-url-or-share-text>");
+  console.log("  --channel-url <youtube-channel-url>");
+  console.log("  --reply-token <reply_token>");
   console.log("  --encrypted-object-id <encrypted_object_id>");
   console.log("  --job-id <job_id>");
   console.log("  --object-id <object_id>");
   console.log("  --object-nonce-id <object_nonce_id>");
   console.log("  --comment-id <comment_id>");
+  console.log("  --comment-object-id <comment_object_id>");
+  console.log("  --comment-object-type <comment_object_type>");
+  console.log("      Bilibili replies require the first-level comment object id/type plus --comment-id.");
   console.log("  --profile-url <profile-url-or-share-text>");
   console.log("  --user-id <user_id>");
   console.log("  --sec-user-id <sec_user_id>");
+  console.log("  --username <username>");
+  console.log("  --tiktok-id <tiktok_id>");
   console.log("  --text <content>");
   console.log("      Text content for sensitive-check text.");
   console.log("  --platform <generic|xhs|douyin|kuaishou>");
@@ -2247,9 +3174,11 @@ function printHelp() {
   console.log("  --max-items <number>");
   console.log("      Stop after collecting this many primary items.");
   console.log("  --since-days <1-365>");
-  console.log("      Keep search or creator content-list items with publish_time in the last N days. Search stays bounded by --pages; creator lists continue until the time boundary when --pages is omitted.");
+  console.log("      Only for XHS, Douyin, Kuaishou, Weibo, and WeChat Channels search and creator content-list commands. Use platform publish-time filters where documented for other search commands.");
+  console.log("  --max-wait-seconds <seconds>");
+  console.log("      Maximum wait time for transcript submit or job lookup commands.");
   console.log("  --include-replies");
-  console.log("      For comments commands, also fetch nested second-level replies for each returned first-level comment.");
+  console.log("      For XHS, Douyin, Kuaishou, Weibo, and WeChat Channels comments, also fetch nested second-level replies for each returned first-level comment.");
   console.log("  --sort-type <general|time_descending|like_count_descending|comment_count_descending|collect_count_descending>");
   console.log("      XHS sort meanings: general=default, time_descending=newest, like_count_descending=most liked, comment_count_descending=most commented, collect_count_descending=most collected.");
   console.log("  --sort-type <default|time_descending|like_count_descending>");
@@ -2265,6 +3194,45 @@ function printHelp() {
   console.log("      Douyin duration filter; omit for no duration filter.");
   console.log("  --content-type <all|video|image>");
   console.log("      Douyin content type filter; omit for all content types.");
+  console.log("  --sort-type <general|view_count_descending|time_descending|danmaku_count_descending|collect_count_descending>");
+  console.log("      Bilibili video search sort; omit for default sort.");
+  console.log("  --sort-type <general|time_descending|view_count_descending|like_count_descending|comment_count_descending>");
+  console.log("      Bilibili article search sort; omit for default sort.");
+  console.log("  --sort-type <hot|time_descending>");
+  console.log("      Bilibili comments sort; omit for default sort.");
+  console.log("  --sort-type <time_descending|view_count_descending|collect_count_descending>");
+  console.log("      Bilibili creator video-list sort; omit for default sort.");
+  console.log("  --category <all|animation|gaming|film_and_tv|lifestyle|hobbies|light_novel|technology|notes>");
+  console.log("      Bilibili article search category filter; default is all.");
+  console.log("  --publish-time-range <all|day|week|half_year>");
+  console.log("      Bilibili video search publish-time filter; omit for no filter.");
+  console.log("  --publish-time-start-date <YYYY-MM-DD>");
+  console.log("  --publish-time-end-date <YYYY-MM-DD>");
+  console.log("      Bilibili video search exact date bounds; omit unless narrowing by date.");
+  console.log("  --duration-range <all|under_10_minutes|between_10_and_30_minutes|between_30_and_60_minutes|over_60_minutes>");
+  console.log("      Bilibili video search duration filter; omit for no duration filter.");
+  console.log("  --content-type <all|answer|article|video>");
+  console.log("      Zhihu search content type filter; omit for all content types.");
+  console.log("  --sort-type <general|upvote_count_descending|time_descending>");
+  console.log("      Zhihu search sort; omit for default sort.");
+  console.log("  --sort-type <default|time_descending>");
+  console.log("      Zhihu comments sort; omit for default sort.");
+  console.log("  --publish-time-range <all|day|week|month|three_months|half_year|year>");
+  console.log("      Zhihu search publish-time filter; omit for no filter.");
+  console.log("  --sort-type <hot|time_descending>");
+  console.log("      X search sort and YouTube comments sort; omit for default sort.");
+  console.log("  --sort-type <general|time_descending|view_count_descending|rating>");
+  console.log("      YouTube search sort; omit for default sort.");
+  console.log("  --video-type <all|video|movie>");
+  console.log("      YouTube search video type filter; omit for all video types.");
+  console.log("  --video-type <video|short>");
+  console.log("      YouTube channel videos filter; omit for default channel videos.");
+  console.log("  --publish-time-range <all|last_hour|today|this_week|this_month|this_year>");
+  console.log("      YouTube search publish-time filter; omit for no filter.");
+  console.log("  --duration-range <all|under_4_min|between_4_and_20_min|over_20_min>");
+  console.log("      YouTube search duration filter; omit for no duration filter.");
+  console.log("  --content-type <all|video|image>");
+  console.log("      TikTok search content type filter; omit for all content types.");
   console.log("  --page-token <token>");
   console.log("      Continue token-paginated commands with the complete returned next_page_token. For search, omit it on the first request.");
   console.log("  --source-client <slug>");
@@ -2291,20 +3259,22 @@ function printRemovedMcpConfigHelp(command) {
   console.error(`${LOG_PREFIX} ${command} is no longer supported by this skills package.`);
   console.error("");
   console.error("This package now installs AgentSkills and provides direct CLI data commands only.");
-  console.error("For MCP client configuration, use the platform MCP listings:");
+  console.error("For MCP client configuration, use existing repo-tracked platform MCP listings when available:");
   console.error("  com.52choujiang/xhs-insights");
   console.error("  com.52choujiang/douyin-insights");
   console.error("  com.52choujiang/kuaishou-insights");
-  console.error("  com.52choujiang/bilibili-insights");
   console.error("  com.52choujiang/weibo-insights");
   console.error("  com.52choujiang/wechat-channels-insights");
-  console.error("Future SocialDataX namespace drafts are kept for a later endpoint migration:");
+  console.error("  com.52choujiang/instagram-insights");
+  console.error("Repo-tracked future SocialDataX namespace draft files exist for:");
   console.error("  com.socialdatax/xhs-insights");
   console.error("  com.socialdatax/douyin-insights");
+  console.error("Reserved future SocialDataX namespace names without draft files yet:");
   console.error("  com.socialdatax/kuaishou-insights");
-  console.error("  com.socialdatax/bilibili-insights");
   console.error("  com.socialdatax/weibo-insights");
   console.error("  com.socialdatax/wechat-channels-insights");
+  console.error("  com.socialdatax/instagram-insights");
+  console.error("Additional hosted endpoints for Bilibili, Zhihu, X / Twitter, YouTube, TikTok, and Sensitive Words Check do not yet have repo-tracked standalone listing materials in this repository.");
   console.error("");
   console.error("Use hosted streamable HTTP when your client supports remote MCP:");
   console.error("  https://mcp.socialdatax.com/xhs/mcp");
@@ -2313,6 +3283,12 @@ function printRemovedMcpConfigHelp(command) {
   console.error("  https://mcp.socialdatax.com/bilibili/mcp");
   console.error("  https://mcp.socialdatax.com/weibo/mcp");
   console.error("  https://mcp.socialdatax.com/wechat/mcp");
+  console.error("  https://mcp.socialdatax.com/zhihu/mcp");
+  console.error("  https://mcp.socialdatax.com/instagram/mcp");
+  console.error("  https://mcp.socialdatax.com/x/mcp");
+  console.error("  https://mcp.socialdatax.com/youtube/mcp");
+  console.error("  https://mcp.socialdatax.com/tiktok/mcp");
+  console.error("  https://mcp.socialdatax.com/sensitive-check/mcp");
   console.error("");
   console.error("For command/stdio-only clients, use mcp-remote:");
   console.error(`  npx -y mcp-remote https://mcp.socialdatax.com/xhs/mcp --header "Authorization: Bearer <${PRIMARY_API_KEY_ENV}>"`);
@@ -2321,6 +3297,12 @@ function printRemovedMcpConfigHelp(command) {
   console.error(`  npx -y mcp-remote https://mcp.socialdatax.com/bilibili/mcp --header "Authorization: Bearer <${PRIMARY_API_KEY_ENV}>"`);
   console.error(`  npx -y mcp-remote https://mcp.socialdatax.com/weibo/mcp --header "Authorization: Bearer <${PRIMARY_API_KEY_ENV}>"`);
   console.error(`  npx -y mcp-remote https://mcp.socialdatax.com/wechat/mcp --header "Authorization: Bearer <${PRIMARY_API_KEY_ENV}>"`);
+  console.error(`  npx -y mcp-remote https://mcp.socialdatax.com/zhihu/mcp --header "Authorization: Bearer <${PRIMARY_API_KEY_ENV}>"`);
+  console.error(`  npx -y mcp-remote https://mcp.socialdatax.com/instagram/mcp --header "Authorization: Bearer <${PRIMARY_API_KEY_ENV}>"`);
+  console.error(`  npx -y mcp-remote https://mcp.socialdatax.com/x/mcp --header "Authorization: Bearer <${PRIMARY_API_KEY_ENV}>"`);
+  console.error(`  npx -y mcp-remote https://mcp.socialdatax.com/youtube/mcp --header "Authorization: Bearer <${PRIMARY_API_KEY_ENV}>"`);
+  console.error(`  npx -y mcp-remote https://mcp.socialdatax.com/tiktok/mcp --header "Authorization: Bearer <${PRIMARY_API_KEY_ENV}>"`);
+  console.error(`  npx -y mcp-remote https://mcp.socialdatax.com/sensitive-check/mcp --header "Authorization: Bearer <${PRIMARY_API_KEY_ENV}>"`);
 }
 
 async function runXhsDirectCommand(args) {
@@ -2461,9 +3443,19 @@ async function runBilibiliDirectCommand(args) {
     return;
   }
 
-  throw new Error(
-    `Unsupported Bilibili command "${action}". Use ${BILIBILI_DIRECT_ACTION_NAMES}.`
+  const operation = attachDirectMetadata(
+    buildBilibiliOperation(action, options),
+    options
   );
+  const data = await callDirectOperationWithOptions(operation, options);
+  const envelope = {
+    platform: operation.platform.id,
+    tool: operation.tool,
+    arguments: operation.arguments,
+    data,
+  };
+  process.stdout.write(JSON.stringify(envelope, null, options.pretty ? 2 : 0));
+  process.stdout.write("\n");
 }
 
 async function assertBilibiliDownloadLocalPreflight(options) {
@@ -2601,6 +3593,81 @@ async function runWechatDirectCommand(args) {
   };
   process.stdout.write(JSON.stringify(envelope, null, options.pretty ? 2 : 0));
   process.stdout.write("\n");
+}
+
+async function runMcpDirectCommand(
+  args,
+  { displayName, actionNames, validateActionOptions, buildOperation }
+) {
+  const { options, positional } = parseCommandArgs(args);
+  if (shouldPrintDirectHelp(options, positional)) {
+    printHelp();
+    return;
+  }
+  const action = positional[0];
+  if (!action) {
+    throw new Error(`Missing ${displayName} command. Use ${actionNames}.`);
+  }
+  if (positional.length > 1) {
+    throw new Error(`Unexpected argument: ${positional[1]}`);
+  }
+  validateActionOptions(action, options);
+
+  const operation = attachDirectMetadata(buildOperation(action, options), options);
+  const data = await callDirectOperationWithOptions(operation, options);
+  const envelope = {
+    platform: operation.platform.id,
+    tool: operation.tool,
+    arguments: operation.arguments,
+    data,
+  };
+  process.stdout.write(JSON.stringify(envelope, null, options.pretty ? 2 : 0));
+  process.stdout.write("\n");
+}
+
+async function runZhihuDirectCommand(args) {
+  await runMcpDirectCommand(args, {
+    displayName: "Zhihu",
+    actionNames: ZHIHU_DIRECT_ACTION_NAMES,
+    validateActionOptions: validateZhihuDirectActionOptions,
+    buildOperation: buildZhihuOperation,
+  });
+}
+
+async function runInstagramDirectCommand(args) {
+  await runMcpDirectCommand(args, {
+    displayName: "Instagram",
+    actionNames: INSTAGRAM_DIRECT_ACTION_NAMES,
+    validateActionOptions: validateInstagramDirectActionOptions,
+    buildOperation: buildInstagramOperation,
+  });
+}
+
+async function runXDirectCommand(args) {
+  await runMcpDirectCommand(args, {
+    displayName: "X",
+    actionNames: X_DIRECT_ACTION_NAMES,
+    validateActionOptions: validateXDirectActionOptions,
+    buildOperation: buildXOperation,
+  });
+}
+
+async function runYoutubeDirectCommand(args) {
+  await runMcpDirectCommand(args, {
+    displayName: "YouTube",
+    actionNames: YOUTUBE_DIRECT_ACTION_NAMES,
+    validateActionOptions: validateYoutubeDirectActionOptions,
+    buildOperation: buildYoutubeOperation,
+  });
+}
+
+async function runTikTokDirectCommand(args) {
+  await runMcpDirectCommand(args, {
+    displayName: "TikTok",
+    actionNames: TIKTOK_DIRECT_ACTION_NAMES,
+    validateActionOptions: validateTikTokDirectActionOptions,
+    buildOperation: buildTikTokOperation,
+  });
 }
 
 async function runSensitiveCheckDirectCommand(args) {
@@ -2978,6 +4045,115 @@ function buildKuaishouOperation(action, options) {
 
 function buildBilibiliOperation(action, options) {
   switch (action) {
+    case "search-videos":
+      return buildDirectOperation(
+        "search-videos",
+        buildBilibiliVideoSearchCall(options),
+        PLATFORMS.bilibili
+      );
+    case "search-articles":
+      return buildDirectOperation(
+        "search-articles",
+        buildBilibiliArticleSearchCall(options),
+        PLATFORMS.bilibili
+      );
+    case "detail":
+      return buildDirectOperation(
+        "detail",
+        buildOneOfCall(options, {
+          idOption: "contentId",
+          urlOption: "url",
+          idTool: "bilibili_get_content_detail_by_id",
+          urlTool: "bilibili_get_content_detail_by_url",
+          idArgument: "content_id",
+          urlArgument: "url",
+          idDisplay: "--content-id",
+          urlDisplay: "--url",
+        }),
+        PLATFORMS.bilibili
+      );
+    case "comments":
+      return buildDirectOperation(
+        "comments",
+        buildOneOfCall(options, {
+          idOption: "contentId",
+          urlOption: "url",
+          idTool: "bilibili_get_content_comments_by_id",
+          urlTool: "bilibili_get_content_comments_by_url",
+          idArgument: "content_id",
+          urlArgument: "url",
+          idDisplay: "--content-id",
+          urlDisplay: "--url",
+          pageToken: options.pageToken,
+          extraArguments: buildBilibiliCommentsExtraArguments(options),
+        }),
+        PLATFORMS.bilibili
+      );
+    case "replies":
+      return buildDirectOperation(
+        "replies",
+        buildBilibiliRepliesCall(options),
+        PLATFORMS.bilibili
+      );
+    case "reactions":
+      return buildDirectOperation(
+        "reactions",
+        buildOneOfCall(options, {
+          idOption: "postId",
+          urlOption: "url",
+          idTool: "bilibili_get_content_likes_and_reposts_by_post_id",
+          urlTool: "bilibili_get_content_likes_and_reposts_by_url",
+          idArgument: "post_id",
+          urlArgument: "url",
+          idDisplay: "--post-id",
+          urlDisplay: "--url",
+          pageToken: options.pageToken,
+        }),
+        PLATFORMS.bilibili
+      );
+    case "user-info":
+      return buildDirectOperation(
+        "user-info",
+        buildOneOfCall(options, {
+          idOption: "userId",
+          urlOption: "profileUrl",
+          idTool: "bilibili_get_user_info_by_user_id",
+          urlTool: "bilibili_get_user_info_by_profile_url",
+          idArgument: "user_id",
+          urlArgument: "profile_url",
+          idDisplay: "--user-id",
+          urlDisplay: "--profile-url",
+        }),
+        PLATFORMS.bilibili
+      );
+    case "user-videos":
+      return buildDirectOperation(
+        "user-videos",
+        buildBilibiliUserContentCall(options, {
+          idTool: "bilibili_get_user_posted_videos_by_user_id",
+          urlTool: "bilibili_get_user_posted_videos_by_profile_url",
+          includeSortType: true,
+        }),
+        PLATFORMS.bilibili
+      );
+    case "user-articles":
+      return buildDirectOperation(
+        "user-articles",
+        buildBilibiliUserContentCall(options, {
+          idTool: "bilibili_get_user_posted_articles_by_user_id",
+          urlTool: "bilibili_get_user_posted_articles_by_profile_url",
+        }),
+        PLATFORMS.bilibili
+      );
+    case "user-dynamics":
+      return buildDirectOperation(
+        "user-dynamics",
+        buildBilibiliUserContentCall(options, {
+          idTool: "bilibili_get_user_posted_dynamics_by_user_id",
+          urlTool: "bilibili_get_user_posted_dynamics_by_profile_url",
+        }),
+        PLATFORMS.bilibili
+      );
     case "download":
       if (!options.url) {
         throw new Error("Missing --url for bilibili download.");
@@ -3241,6 +4417,422 @@ function buildSensitiveCheckOperation(action, options) {
   }
 }
 
+function buildZhihuOperation(action, options) {
+  switch (action) {
+    case "hot-list":
+      return buildDirectOperation(
+        "hot-list",
+        {
+          tool: "zhihu_get_hot_list",
+          toolArguments: {},
+        },
+        PLATFORMS.zhihu
+      );
+    case "search":
+      return buildDirectOperation(
+        "search",
+        buildZhihuSearchCall(options),
+        PLATFORMS.zhihu
+      );
+    case "detail":
+      return buildDirectOperation(
+        "detail",
+        buildRequiredIdCall(options, {
+          idOption: "contentUrl",
+          tool: "zhihu_get_content_detail_by_url",
+          idArgument: "content_url",
+          idDisplay: "--content-url",
+          platformLabel: "zhihu detail",
+        }),
+        PLATFORMS.zhihu
+      );
+    case "comments":
+      return buildDirectOperation(
+        "comments",
+        buildZhihuCommentsCall(options),
+        PLATFORMS.zhihu
+      );
+    case "replies":
+      return buildDirectOperation(
+        "replies",
+        buildZhihuRepliesCall(options),
+        PLATFORMS.zhihu
+      );
+    case "user-info":
+      return buildDirectOperation(
+        "user-info",
+        buildRequiredIdCall(options, {
+          idOption: "profileUrl",
+          tool: "zhihu_get_user_info_by_profile_url",
+          idArgument: "profile_url",
+          idDisplay: "--profile-url",
+          platformLabel: "zhihu user-info",
+        }),
+        PLATFORMS.zhihu
+      );
+    case "user-posts":
+      return buildDirectOperation(
+        "user-posts",
+        buildRequiredIdCall(options, {
+          idOption: "profileUrl",
+          tool: "zhihu_get_user_posted_articles_by_profile_url",
+          idArgument: "profile_url",
+          idDisplay: "--profile-url",
+          platformLabel: "zhihu user-posts",
+          pageToken: options.pageToken,
+        }),
+        PLATFORMS.zhihu
+      );
+    default:
+      throw new Error(
+        `Unsupported Zhihu command "${action}". Use ${ZHIHU_DIRECT_ACTION_NAMES}.`
+      );
+  }
+}
+
+function buildInstagramOperation(action, options) {
+  switch (action) {
+    case "search":
+      return buildDirectOperation(
+        "search",
+        buildKeywordSearchCall(options, {
+          platformLabel: "instagram search",
+          tool: "instagram_search_posts",
+        }),
+        PLATFORMS.instagram
+      );
+    case "detail":
+      return buildDirectOperation(
+        "detail",
+        buildOneOfCall(options, {
+          idOption: "postId",
+          urlOption: "postUrl",
+          idTool: "instagram_get_post_detail_by_post_id",
+          urlTool: "instagram_get_post_detail_by_post_url",
+          idArgument: "post_id",
+          urlArgument: "post_url",
+          idDisplay: "--post-id",
+          urlDisplay: "--post-url",
+        }),
+        PLATFORMS.instagram
+      );
+    case "comments":
+      return buildDirectOperation(
+        "comments",
+        buildRequiredIdCall(options, {
+          idOption: "postUrl",
+          tool: "instagram_get_post_comments_by_post_url",
+          idArgument: "post_url",
+          idDisplay: "--post-url",
+          platformLabel: "instagram comments",
+          pageToken: options.pageToken,
+        }),
+        PLATFORMS.instagram
+      );
+    case "replies":
+      return buildDirectOperation(
+        "replies",
+        buildPostCommentRepliesCall(options, {
+          platformLabel: "instagram replies",
+          tool: "instagram_get_post_comment_replies_by_comment_id",
+        }),
+        PLATFORMS.instagram
+      );
+    case "user-info":
+      return buildDirectOperation(
+        "user-info",
+        buildOneOfCall(options, {
+          idOption: "username",
+          urlOption: "profileUrl",
+          idTool: "instagram_get_user_info_by_username",
+          urlTool: "instagram_get_user_info_by_profile_url",
+          idArgument: "username",
+          urlArgument: "profile_url",
+          idDisplay: "--username",
+          urlDisplay: "--profile-url",
+        }),
+        PLATFORMS.instagram
+      );
+    case "user-posts":
+      return buildDirectOperation(
+        "user-posts",
+        buildOneOfCall(options, {
+          idOption: "username",
+          urlOption: "profileUrl",
+          idTool: "instagram_get_user_posts_by_username",
+          urlTool: "instagram_get_user_posts_by_profile_url",
+          idArgument: "username",
+          urlArgument: "profile_url",
+          idDisplay: "--username",
+          urlDisplay: "--profile-url",
+          pageToken: options.pageToken,
+        }),
+        PLATFORMS.instagram
+      );
+    default:
+      throw new Error(
+        `Unsupported Instagram command "${action}". Use ${INSTAGRAM_DIRECT_ACTION_NAMES}.`
+      );
+  }
+}
+
+function buildXOperation(action, options) {
+  switch (action) {
+    case "search":
+      return buildDirectOperation(
+        "search",
+        buildXSearchCall(options),
+        PLATFORMS.x
+      );
+    case "detail":
+      return buildDirectOperation(
+        "detail",
+        buildOneOfCall(options, {
+          idOption: "postId",
+          urlOption: "postUrl",
+          idTool: "x_get_post_detail_by_post_id",
+          urlTool: "x_get_post_detail_by_post_url",
+          idArgument: "post_id",
+          urlArgument: "post_url",
+          idDisplay: "--post-id",
+          urlDisplay: "--post-url",
+        }),
+        PLATFORMS.x
+      );
+    case "comments":
+      return buildDirectOperation(
+        "comments",
+        buildOneOfCall(options, {
+          idOption: "postId",
+          urlOption: "postUrl",
+          idTool: "x_get_post_comments_by_post_id",
+          urlTool: "x_get_post_comments_by_post_url",
+          idArgument: "post_id",
+          urlArgument: "post_url",
+          idDisplay: "--post-id",
+          urlDisplay: "--post-url",
+          pageToken: options.pageToken,
+        }),
+        PLATFORMS.x
+      );
+    case "replies":
+      return buildDirectOperation(
+        "replies",
+        buildPostCommentRepliesCall(options, {
+          platformLabel: "x replies",
+          tool: "x_get_post_comment_replies_by_comment_id",
+        }),
+        PLATFORMS.x
+      );
+    case "user-info":
+      return buildDirectOperation(
+        "user-info",
+        buildExactlyOneCall(options, {
+          choices: [
+            {
+              option: "userId",
+              tool: "x_get_user_info_by_user_id",
+              argument: "user_id",
+              display: "--user-id",
+            },
+            {
+              option: "username",
+              tool: "x_get_user_info_by_username",
+              argument: "username",
+              display: "--username",
+            },
+            {
+              option: "profileUrl",
+              tool: "x_get_user_info_by_profile_url",
+              argument: "profile_url",
+              display: "--profile-url",
+            },
+          ],
+        }),
+        PLATFORMS.x
+      );
+    case "user-posts":
+      return buildDirectOperation(
+        "user-posts",
+        buildExactlyOneCall(options, {
+          pageToken: options.pageToken,
+          choices: [
+            {
+              option: "userId",
+              tool: "x_get_user_posts_by_user_id",
+              argument: "user_id",
+              display: "--user-id",
+            },
+            {
+              option: "username",
+              tool: "x_get_user_posts_by_username",
+              argument: "username",
+              display: "--username",
+            },
+            {
+              option: "profileUrl",
+              tool: "x_get_user_posts_by_profile_url",
+              argument: "profile_url",
+              display: "--profile-url",
+            },
+          ],
+        }),
+        PLATFORMS.x
+      );
+    default:
+      throw new Error(
+        `Unsupported X command "${action}". Use ${X_DIRECT_ACTION_NAMES}.`
+      );
+  }
+}
+
+function buildYoutubeOperation(action, options) {
+  switch (action) {
+    case "search":
+      return buildDirectOperation(
+        "search",
+        buildYoutubeSearchCall(options),
+        PLATFORMS.youtube
+      );
+    case "detail":
+      return buildDirectOperation(
+        "detail",
+        buildRequiredIdCall(options, {
+          idOption: "url",
+          tool: "youtube_get_video_detail_by_url",
+          idArgument: "video_url",
+          idDisplay: "--url",
+          platformLabel: "youtube detail",
+        }),
+        PLATFORMS.youtube
+      );
+    case "comments":
+      return buildDirectOperation(
+        "comments",
+        buildYoutubeCommentsCall(options),
+        PLATFORMS.youtube
+      );
+    case "replies":
+      return buildDirectOperation(
+        "replies",
+        buildRequiredIdCall(options, {
+          idOption: "replyToken",
+          tool: "youtube_get_video_comment_replies",
+          idArgument: "reply_token",
+          idDisplay: "--reply-token",
+          platformLabel: "youtube replies",
+          pageToken: options.pageToken,
+        }),
+        PLATFORMS.youtube
+      );
+    case "channel-info":
+      return buildDirectOperation(
+        "channel-info",
+        buildRequiredIdCall(options, {
+          idOption: "channelUrl",
+          tool: "youtube_get_channel_info_by_url",
+          idArgument: "channel_url",
+          idDisplay: "--channel-url",
+          platformLabel: "youtube channel-info",
+        }),
+        PLATFORMS.youtube
+      );
+    case "user-posts":
+      return buildDirectOperation(
+        "user-posts",
+        buildYoutubeUserPostsCall(options),
+        PLATFORMS.youtube
+      );
+    default:
+      throw new Error(
+        `Unsupported YouTube command "${action}". Use ${YOUTUBE_DIRECT_ACTION_NAMES}.`
+      );
+  }
+}
+
+function buildTikTokOperation(action, options) {
+  switch (action) {
+    case "search":
+      return buildDirectOperation(
+        "search",
+        buildTikTokSearchCall(options),
+        PLATFORMS.tiktok
+      );
+    case "detail":
+      return buildDirectOperation(
+        "detail",
+        buildRequiredIdCall(options, {
+          idOption: "url",
+          tool: "tiktok_get_post_detail_by_url",
+          idArgument: "url",
+          idDisplay: "--url",
+          platformLabel: "tiktok detail",
+        }),
+        PLATFORMS.tiktok
+      );
+    case "comments":
+      return buildDirectOperation(
+        "comments",
+        buildOneOfCall(options, {
+          idOption: "postId",
+          urlOption: "url",
+          idTool: "tiktok_get_post_comments_by_post_id",
+          urlTool: "tiktok_get_post_comments_by_url",
+          idArgument: "post_id",
+          urlArgument: "url",
+          idDisplay: "--post-id",
+          urlDisplay: "--url",
+          pageToken: options.pageToken,
+        }),
+        PLATFORMS.tiktok
+      );
+    case "replies":
+      return buildDirectOperation(
+        "replies",
+        buildPostCommentRepliesCall(options, {
+          platformLabel: "tiktok replies",
+          tool: "tiktok_get_post_comment_replies",
+        }),
+        PLATFORMS.tiktok
+      );
+    case "user-info":
+      return buildDirectOperation(
+        "user-info",
+        buildOneOfCall(options, {
+          idOption: "tiktokId",
+          urlOption: "profileUrl",
+          idTool: "tiktok_get_user_info_by_tiktok_id",
+          urlTool: "tiktok_get_user_info_by_profile_url",
+          idArgument: "tiktok_id",
+          urlArgument: "profile_url",
+          idDisplay: "--tiktok-id",
+          urlDisplay: "--profile-url",
+        }),
+        PLATFORMS.tiktok
+      );
+    case "user-posts":
+      return buildDirectOperation(
+        "user-posts",
+        buildOneOfCall(options, {
+          idOption: "tiktokId",
+          urlOption: "profileUrl",
+          idTool: "tiktok_get_user_posts_by_tiktok_id",
+          urlTool: "tiktok_get_user_posts_by_profile_url",
+          idArgument: "tiktok_id",
+          urlArgument: "profile_url",
+          idDisplay: "--tiktok-id",
+          urlDisplay: "--profile-url",
+          pageToken: options.pageToken,
+        }),
+        PLATFORMS.tiktok
+      );
+    default:
+      throw new Error(
+        `Unsupported TikTok command "${action}". Use ${TIKTOK_DIRECT_ACTION_NAMES}.`
+      );
+  }
+}
+
 function buildDirectOperation(operation, call, platform = PLATFORMS.xhs) {
   const { tool, toolArguments, ...metadata } = call;
   return {
@@ -3434,6 +5026,400 @@ function buildRequiredIdCall(
     toolArguments.page_token = pageToken;
   }
   return { tool, toolArguments };
+}
+
+function buildExactlyOneCall(options, { choices, pageToken }) {
+  const selectedChoices = choices.filter((choice) => Boolean(options[choice.option]));
+  const displays = choices.map((choice) => choice.display).join(", ");
+  if (selectedChoices.length === 0) {
+    throw new Error(`Missing input. Use exactly one of ${displays}.`);
+  }
+  if (selectedChoices.length > 1) {
+    throw new Error(`Use exactly one of ${displays}.`);
+  }
+  const choice = selectedChoices[0];
+  const toolArguments = {
+    [choice.argument]: options[choice.option],
+  };
+  if (pageToken) {
+    toolArguments.page_token = pageToken;
+  }
+  return {
+    tool: choice.tool,
+    toolArguments,
+  };
+}
+
+function buildKeywordSearchCall(options, { platformLabel, tool }) {
+  if (!options.keyword) {
+    throw new Error(`Missing --keyword for ${platformLabel}.`);
+  }
+  const toolArguments = {
+    keyword: options.keyword,
+  };
+  if (options.pageToken) {
+    toolArguments.page_token = options.pageToken;
+  }
+  return {
+    tool,
+    toolArguments,
+  };
+}
+
+function buildBilibiliVideoSearchCall(options) {
+  if (!options.keyword) {
+    throw new Error("Missing --keyword for bilibili search-videos.");
+  }
+  const toolArguments = {
+    keyword: options.keyword,
+  };
+  if (options.sortType !== undefined) {
+    toolArguments.sort_type = parseAllowedStringOption(
+      options.sortType,
+      "--sort-type",
+      BILIBILI_VIDEO_SEARCH_SORT_TYPES,
+      BILIBILI_VIDEO_SEARCH_SORT_TYPES.join(", ")
+    );
+  }
+  if (options.publishTimeRange !== undefined) {
+    toolArguments.publish_time_range = parseAllowedStringOption(
+      options.publishTimeRange,
+      "--publish-time-range",
+      BILIBILI_PUBLISH_TIME_RANGES,
+      BILIBILI_PUBLISH_TIME_RANGES.join(", ")
+    );
+  }
+  if (options.publishTimeStartDate !== undefined) {
+    toolArguments.publish_time_start_date = options.publishTimeStartDate;
+  }
+  if (options.publishTimeEndDate !== undefined) {
+    toolArguments.publish_time_end_date = options.publishTimeEndDate;
+  }
+  if (options.durationRange !== undefined) {
+    toolArguments.duration_range = parseAllowedStringOption(
+      options.durationRange,
+      "--duration-range",
+      BILIBILI_DURATION_RANGES,
+      BILIBILI_DURATION_RANGES.join(", ")
+    );
+  }
+  if (options.pageToken) {
+    toolArguments.page_token = options.pageToken;
+  }
+  return {
+    tool: "bilibili_search_videos",
+    toolArguments,
+  };
+}
+
+function buildBilibiliArticleSearchCall(options) {
+  if (!options.keyword) {
+    throw new Error("Missing --keyword for bilibili search-articles.");
+  }
+  const toolArguments = {
+    keyword: options.keyword,
+  };
+  if (options.sortType !== undefined) {
+    toolArguments.sort_type = parseAllowedStringOption(
+      options.sortType,
+      "--sort-type",
+      BILIBILI_ARTICLE_SEARCH_SORT_TYPES,
+      BILIBILI_ARTICLE_SEARCH_SORT_TYPES.join(", ")
+    );
+  }
+  if (options.category !== undefined) {
+    toolArguments.category = parseAllowedStringOption(
+      options.category,
+      "--category",
+      BILIBILI_ARTICLE_CATEGORIES,
+      BILIBILI_ARTICLE_CATEGORIES.join(", ")
+    );
+  }
+  if (options.pageToken) {
+    toolArguments.page_token = options.pageToken;
+  }
+  return {
+    tool: "bilibili_search_articles",
+    toolArguments,
+  };
+}
+
+function buildBilibiliCommentsExtraArguments(options) {
+  const toolArguments = {};
+  if (options.sortType !== undefined) {
+    toolArguments.sort_type = parseAllowedStringOption(
+      options.sortType,
+      "--sort-type",
+      BILIBILI_COMMENT_SORT_TYPES,
+      BILIBILI_COMMENT_SORT_TYPES.join(", ")
+    );
+  }
+  return toolArguments;
+}
+
+function buildBilibiliRepliesCall(options) {
+  if (!options.commentObjectId) {
+    throw new Error("Missing --comment-object-id for bilibili replies.");
+  }
+  if (!options.commentObjectType) {
+    throw new Error("Missing --comment-object-type for bilibili replies.");
+  }
+  if (!options.commentId) {
+    throw new Error("Missing --comment-id for bilibili replies.");
+  }
+  const toolArguments = {
+    comment_object_id: options.commentObjectId,
+    comment_object_type: parsePositiveIntegerOption(
+      options.commentObjectType,
+      "--comment-object-type"
+    ),
+    comment_id: options.commentId,
+  };
+  if (options.pageToken) {
+    toolArguments.page_token = options.pageToken;
+  }
+  return {
+    tool: "bilibili_get_content_comment_replies_by_comment_id",
+    toolArguments,
+  };
+}
+
+function buildBilibiliUserContentCall(
+  options,
+  { idTool, urlTool, includeSortType = false }
+) {
+  const call = buildOneOfCall(options, {
+    idOption: "userId",
+    urlOption: "profileUrl",
+    idTool,
+    urlTool,
+    idArgument: "user_id",
+    urlArgument: "profile_url",
+    idDisplay: "--user-id",
+    urlDisplay: "--profile-url",
+    pageToken: options.pageToken,
+  });
+  if (includeSortType && options.sortType !== undefined) {
+    call.toolArguments.sort_type = parseAllowedStringOption(
+      options.sortType,
+      "--sort-type",
+      BILIBILI_USER_VIDEO_SORT_TYPES,
+      BILIBILI_USER_VIDEO_SORT_TYPES.join(", ")
+    );
+  }
+  return call;
+}
+
+function buildZhihuSearchCall(options) {
+  if (!options.keyword) {
+    throw new Error("Missing --keyword for zhihu search.");
+  }
+  const toolArguments = {
+    keyword: options.keyword,
+  };
+  if (options.contentType !== undefined) {
+    toolArguments.content_type = parseAllowedStringOption(
+      options.contentType,
+      "--content-type",
+      ZHIHU_CONTENT_TYPES,
+      ZHIHU_CONTENT_TYPES.join(", ")
+    );
+  }
+  if (options.sortType !== undefined) {
+    toolArguments.sort_type = parseAllowedStringOption(
+      options.sortType,
+      "--sort-type",
+      ZHIHU_SEARCH_SORT_TYPES,
+      ZHIHU_SEARCH_SORT_TYPES.join(", ")
+    );
+  }
+  if (options.publishTimeRange !== undefined) {
+    toolArguments.publish_time_range = parseAllowedStringOption(
+      options.publishTimeRange,
+      "--publish-time-range",
+      ZHIHU_PUBLISH_TIME_RANGES,
+      ZHIHU_PUBLISH_TIME_RANGES.join(", ")
+    );
+  }
+  if (options.pageToken) {
+    toolArguments.page_token = options.pageToken;
+  }
+  return {
+    tool: "zhihu_search_content",
+    toolArguments,
+  };
+}
+
+function buildZhihuCommentsCall(options) {
+  const call = buildRequiredIdCall(options, {
+    idOption: "contentUrl",
+    tool: "zhihu_get_content_comments_by_url",
+    idArgument: "content_url",
+    idDisplay: "--content-url",
+    platformLabel: "zhihu comments",
+    pageToken: options.pageToken,
+  });
+  if (options.sortType !== undefined) {
+    call.toolArguments.sort_type = parseAllowedStringOption(
+      options.sortType,
+      "--sort-type",
+      ZHIHU_COMMENT_SORT_TYPES,
+      ZHIHU_COMMENT_SORT_TYPES.join(", ")
+    );
+  }
+  return call;
+}
+
+function buildZhihuRepliesCall(options) {
+  if (!options.contentUrl) {
+    throw new Error("Missing --content-url for zhihu replies.");
+  }
+  if (!options.commentId) {
+    throw new Error("Missing --comment-id for zhihu replies.");
+  }
+  const toolArguments = {
+    content_url: options.contentUrl,
+    comment_id: options.commentId,
+  };
+  if (options.pageToken) {
+    toolArguments.page_token = options.pageToken;
+  }
+  return {
+    tool: "zhihu_get_comment_replies_by_url",
+    toolArguments,
+  };
+}
+
+function buildPostCommentRepliesCall(options, { platformLabel, tool }) {
+  if (!options.postId) {
+    throw new Error(`Missing --post-id for ${platformLabel}.`);
+  }
+  if (!options.commentId) {
+    throw new Error(`Missing --comment-id for ${platformLabel}.`);
+  }
+  const toolArguments = {
+    post_id: options.postId,
+    comment_id: options.commentId,
+  };
+  if (options.pageToken) {
+    toolArguments.page_token = options.pageToken;
+  }
+  return {
+    tool,
+    toolArguments,
+  };
+}
+
+function buildXSearchCall(options) {
+  const call = buildKeywordSearchCall(options, {
+    platformLabel: "x search",
+    tool: "x_search_posts",
+  });
+  if (options.sortType !== undefined) {
+    call.toolArguments.sort_type = parseAllowedStringOption(
+      options.sortType,
+      "--sort-type",
+      X_SEARCH_SORT_TYPES,
+      X_SEARCH_SORT_TYPES.join(", ")
+    );
+  }
+  return call;
+}
+
+function buildYoutubeSearchCall(options) {
+  const call = buildKeywordSearchCall(options, {
+    platformLabel: "youtube search",
+    tool: "youtube_search_videos",
+  });
+  if (options.sortType !== undefined) {
+    call.toolArguments.sort_type = parseAllowedStringOption(
+      options.sortType,
+      "--sort-type",
+      YOUTUBE_SEARCH_SORT_TYPES,
+      YOUTUBE_SEARCH_SORT_TYPES.join(", ")
+    );
+  }
+  if (options.videoType !== undefined) {
+    call.toolArguments.video_type = parseAllowedStringOption(
+      options.videoType,
+      "--video-type",
+      YOUTUBE_SEARCH_VIDEO_TYPES,
+      YOUTUBE_SEARCH_VIDEO_TYPES.join(", ")
+    );
+  }
+  if (options.publishTimeRange !== undefined) {
+    call.toolArguments.publish_time_range = parseAllowedStringOption(
+      options.publishTimeRange,
+      "--publish-time-range",
+      YOUTUBE_SEARCH_PUBLISH_TIME_RANGES,
+      YOUTUBE_SEARCH_PUBLISH_TIME_RANGES.join(", ")
+    );
+  }
+  if (options.durationRange !== undefined) {
+    call.toolArguments.duration_range = parseAllowedStringOption(
+      options.durationRange,
+      "--duration-range",
+      YOUTUBE_SEARCH_DURATION_RANGES,
+      YOUTUBE_SEARCH_DURATION_RANGES.join(", ")
+    );
+  }
+  return call;
+}
+
+function buildYoutubeCommentsCall(options) {
+  const call = buildRequiredIdCall(options, {
+    idOption: "url",
+    tool: "youtube_get_video_comments_by_url",
+    idArgument: "video_url",
+    idDisplay: "--url",
+    platformLabel: "youtube comments",
+    pageToken: options.pageToken,
+  });
+  if (options.sortType !== undefined) {
+    call.toolArguments.sort_type = parseAllowedStringOption(
+      options.sortType,
+      "--sort-type",
+      YOUTUBE_COMMENT_SORT_TYPES,
+      YOUTUBE_COMMENT_SORT_TYPES.join(", ")
+    );
+  }
+  return call;
+}
+
+function buildYoutubeUserPostsCall(options) {
+  const call = buildRequiredIdCall(options, {
+    idOption: "channelUrl",
+    tool: "youtube_get_user_posted_videos_by_channel_url",
+    idArgument: "channel_url",
+    idDisplay: "--channel-url",
+    platformLabel: "youtube user-posts",
+    pageToken: options.pageToken,
+  });
+  if (options.videoType !== undefined) {
+    call.toolArguments.video_type = parseAllowedStringOption(
+      options.videoType,
+      "--video-type",
+      YOUTUBE_CHANNEL_VIDEO_TYPES,
+      YOUTUBE_CHANNEL_VIDEO_TYPES.join(", ")
+    );
+  }
+  return call;
+}
+
+function buildTikTokSearchCall(options) {
+  const call = buildKeywordSearchCall(options, {
+    platformLabel: "tiktok search",
+    tool: "tiktok_search_posts",
+  });
+  if (options.contentType !== undefined) {
+    call.toolArguments.content_type = parseAllowedStringOption(
+      options.contentType,
+      "--content-type",
+      TIKTOK_CONTENT_TYPES,
+      TIKTOK_CONTENT_TYPES.join(", ")
+    );
+  }
+  return call;
 }
 
 function buildDouyinSearchCall(options) {
@@ -3764,10 +5750,10 @@ function buildXhsSubCommentsCall(options) {
   };
 }
 
-async function callDirectOperation(operation) {
+async function callDirectOperation(operation, requestOptions) {
   switch (operation.backend) {
     case "mcp":
-      return callMcpBackend(operation);
+      return callMcpBackend(operation, requestOptions);
     default:
       throw new Error(`Unsupported direct CLI backend: ${operation.backend}.`);
   }
@@ -3785,7 +5771,7 @@ async function callDirectOperationWithOptions(operation, options) {
 
 async function callTranscriptDirectOperation(operation, options) {
   const maxWaitSeconds = parseTranscriptMaxWaitSeconds(options);
-  let currentOperation = transcriptInitialOperation(operation, maxWaitSeconds);
+  let currentOperation = transcriptInitialOperation(operation);
   let data = await callDirectOperation(currentOperation);
   if (maxWaitSeconds <= 0 || isTerminalTranscriptData(data)) {
     return data;
@@ -3822,12 +5808,18 @@ async function callTranscriptDirectOperation(operation, options) {
       break;
     }
 
-    currentOperation = transcriptGetJobOperation(
-      operation,
-      jobId,
-      transcriptWaitSecondsForCall(remainingSeconds)
-    );
-    data = await callDirectOperation(currentOperation);
+    currentOperation = transcriptGetJobOperation(operation, jobId);
+    try {
+      data = await callDirectOperation(currentOperation, {
+        requestDeadlineMs: Date.now() + remainingSeconds * 1000,
+        preserveRequestTimeout: true,
+      });
+    } catch (error) {
+      if (isMcpRequestTimeoutError(error)) {
+        break;
+      }
+      throw error;
+    }
     jobId = readTranscriptJobId(data, operation) || jobId;
   }
 
@@ -3844,36 +5836,19 @@ function parseTranscriptMaxWaitSeconds(options) {
   return TRANSCRIPT_DEFAULT_MAX_WAIT_SECONDS;
 }
 
-function transcriptInitialOperation(operation, maxWaitSeconds) {
-  const initialOperation = cloneDirectOperation(operation);
-  const isJobLookup =
-    operation.transcriptIsJobLookup ||
-    operation.tool === operation.transcriptJobTool ||
-    Object.hasOwn(operation.arguments, "job_id");
-  if (isJobLookup && maxWaitSeconds > 0) {
-    initialOperation.arguments.wait_seconds =
-      transcriptWaitSecondsForCall(maxWaitSeconds);
-  }
-  return initialOperation;
+function transcriptInitialOperation(operation) {
+  return cloneDirectOperation(operation);
 }
 
-function transcriptGetJobOperation(operation, jobId, waitSeconds) {
+function transcriptGetJobOperation(operation, jobId) {
   const jobArgument = operation.transcriptJobArgument || "job_id";
   return {
     ...operation,
     tool: operation.transcriptJobTool,
     arguments: {
       [jobArgument]: jobId,
-      wait_seconds: waitSeconds,
     },
   };
-}
-
-function transcriptWaitSecondsForCall(remainingSeconds) {
-  return Math.min(
-    TRANSCRIPT_GET_JOB_WAIT_SECONDS,
-    Math.max(1, Math.ceil(remainingSeconds))
-  );
 }
 
 function transcriptRemainingWaitSeconds(startedAtMs, maxWaitSeconds) {
@@ -4161,12 +6136,34 @@ function contentItemId(operation, item) {
       return itemStringField(item, "aweme_id");
     case "kuaishou":
       return itemStringField(item, "photo_id");
+    case "bilibili":
+      return (
+        itemStringField(item, "content_id") ||
+        itemStringField(item, "bvid") ||
+        itemStringField(item, "post_id")
+      );
     case "weibo":
       return itemStringField(item, "post_id");
     case "wechat":
       return (
         itemStringField(item, "encrypted_object_id") ||
         itemStringField(item, "object_id")
+      );
+    case "zhihu":
+      return (
+        itemStringField(item, "content_id") ||
+        itemStringField(item, "content_url")
+      );
+    case "instagram":
+      return itemStringField(item, "post_id");
+    case "x":
+      return itemStringField(item, "post_id");
+    case "youtube":
+      return itemStringField(item, "video_id");
+    case "tiktok":
+      return (
+        itemStringField(item, "post_id") ||
+        itemStringField(item, "aweme_id")
       );
     default:
       return undefined;
@@ -4237,9 +6234,15 @@ function mergeParentContextData(current, pageData) {
       "note_id",
       "aweme_id",
       "photo_id",
+      "content_id",
+      "content_url",
+      "comment_object_id",
+      "comment_object_type",
       "post_id",
       "object_id",
       "object_nonce_id",
+      "video_url",
+      "reply_token",
     ]),
   };
 }
@@ -4490,7 +6493,10 @@ function buildRepliesOperationForComment(platform, comment, parentArguments, par
   }
 }
 
-async function callMcpBackend(operation) {
+async function callMcpBackend(
+  operation,
+  { requestDeadlineMs, requestTimeoutMs, preserveRequestTimeout = false } = {}
+) {
   ensureSupportedNodeVersion();
   const { platform, tool } = operation;
   const apiKey = readDirectApiKey(platform);
@@ -4520,11 +6526,22 @@ async function callMcpBackend(operation) {
   });
 
   try {
-    await client.connect(transport);
-    const result = await client.callTool({
-      name: tool,
-      arguments: operation.arguments,
+    const transcriptConnectOptions = transcriptMcpRequestOptions(operation, {
+      requestDeadlineMs,
+      requestTimeoutMs,
     });
+    await connectMcpClient(client, transport, transcriptConnectOptions);
+    const result = await client.callTool(
+      {
+        name: tool,
+        arguments: operation.arguments,
+      },
+      undefined,
+      transcriptMcpRequestOptions(operation, {
+        requestDeadlineMs,
+        requestTimeoutMs,
+      })
+    );
     if (result.isError) {
       const errorMessage =
         result.structuredContent?.message ||
@@ -4536,10 +6553,68 @@ async function callMcpBackend(operation) {
     }
     return result.structuredContent ?? result;
   } catch (error) {
+    if (preserveRequestTimeout && isMcpRequestTimeoutError(error)) {
+      throw error;
+    }
     throw formatDirectCallError({ error, operation, upstreamUrl });
   } finally {
     await client.close().catch(() => {});
   }
+}
+
+function isMcpRequestTimeoutError(error) {
+  return error?.code === MCP_REQUEST_TIMEOUT_ERROR_CODE;
+}
+
+async function connectMcpClient(client, transport, requestOptions) {
+  if (requestOptions?.timeout === undefined) {
+    await client.connect(transport, requestOptions);
+    return;
+  }
+  await withMcpRequestTimeout(
+    client.connect(transport, requestOptions),
+    requestOptions.timeout,
+    () => client.close().catch(() => {})
+  );
+}
+
+function transcriptMcpRequestOptions(
+  operation,
+  { requestDeadlineMs, requestTimeoutMs }
+) {
+  if (operation.operation !== "transcript") {
+    return undefined;
+  }
+  if (requestDeadlineMs !== undefined) {
+    return {
+      timeout: Math.max(Math.ceil(requestDeadlineMs - Date.now()), 1),
+    };
+  }
+  return {
+    timeout: requestTimeoutMs ?? TRANSCRIPT_MCP_CALL_TIMEOUT_MS,
+  };
+}
+
+async function withMcpRequestTimeout(promise, timeoutMs, onTimeout) {
+  let timeoutId;
+  const timeoutPromise = new Promise((_, reject) => {
+    timeoutId = setTimeout(() => {
+      reject(mcpRequestTimeoutError(timeoutMs));
+      Promise.resolve(onTimeout?.()).catch(() => {});
+    }, timeoutMs);
+  });
+  try {
+    return await Promise.race([promise, timeoutPromise]);
+  } finally {
+    clearTimeout(timeoutId);
+  }
+}
+
+function mcpRequestTimeoutError(timeoutMs) {
+  const error = new Error("Request timed out");
+  error.code = MCP_REQUEST_TIMEOUT_ERROR_CODE;
+  error.data = { timeout: timeoutMs };
+  return error;
 }
 
 function readDirectApiKey(platform) {

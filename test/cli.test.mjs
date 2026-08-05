@@ -26,6 +26,9 @@ import { downloadPlatformMediaFromUrl } from "../lib/media/platform-download.mjs
 
 const packageDir = dirname(dirname(fileURLToPath(import.meta.url)));
 const cliPath = join(packageDir, "cli.mjs");
+const packageMetadata = JSON.parse(
+  readFileSync(join(packageDir, "package.json"), "utf8")
+);
 const removedDouyinApiKeyEnv = ["DOUYIN", "MCP", "API", "KEY"].join("_");
 
 async function listenHttpServer(server) {
@@ -62,12 +65,22 @@ function runCli(args) {
   delete env.SOCIAL_MEDIA_DOUYIN_MCP_UPSTREAM_URL;
   delete env.SOCIAL_MEDIA_KUAISHOU_MCP_UPSTREAM_URL;
   delete env.SOCIAL_MEDIA_BILIBILI_MCP_UPSTREAM_URL;
+  delete env.SOCIAL_MEDIA_ZHIHU_MCP_UPSTREAM_URL;
+  delete env.SOCIAL_MEDIA_INSTAGRAM_MCP_UPSTREAM_URL;
+  delete env.SOCIAL_MEDIA_X_MCP_UPSTREAM_URL;
+  delete env.SOCIAL_MEDIA_YOUTUBE_MCP_UPSTREAM_URL;
+  delete env.SOCIAL_MEDIA_TIKTOK_MCP_UPSTREAM_URL;
   delete env.SOCIAL_MEDIA_MCP_UPSTREAM_URL;
   delete env.XHS_MCP_API_KEY;
   delete env.XHS_MCP_UPSTREAM_URL;
   delete env.DOUYIN_MCP_UPSTREAM_URL;
   delete env.KUAISHOU_MCP_UPSTREAM_URL;
   delete env.BILIBILI_MCP_UPSTREAM_URL;
+  delete env.ZHIHU_MCP_UPSTREAM_URL;
+  delete env.INSTAGRAM_MCP_UPSTREAM_URL;
+  delete env.X_MCP_UPSTREAM_URL;
+  delete env.YOUTUBE_MCP_UPSTREAM_URL;
+  delete env.TIKTOK_MCP_UPSTREAM_URL;
 
   return spawnSync(process.execPath, [cliPath, ...args], {
     cwd: packageDir,
@@ -289,12 +302,18 @@ function makeWechatVvcMp4WithOneByteNalLengthMetadata() {
   ]);
 }
 
-async function runCliWithMockMcp(args, extraEnv = {}, structuredContentForToolCall) {
+async function runCliWithMockMcp(
+  args,
+  extraEnv = {},
+  structuredContentForToolCall,
+  { onInitialize, onInitializedNotification } = {}
+) {
   const toolCalls = [];
   const toolCallAuthorizationHeaders = [];
   const toolCallSourceClientHeaders = [];
   const toolCallSourcePlatformHeaders = [];
   const toolCallSourceSkillHeaders = [];
+  let initializeCalls = 0;
   const server = createServer((request, response) => {
     if (request.method === "GET") {
       response.writeHead(405).end();
@@ -310,9 +329,23 @@ async function runCliWithMockMcp(args, extraEnv = {}, structuredContentForToolCa
     request.on("data", (chunk) => {
       body += chunk;
     });
-    request.on("end", () => {
+    request.on("end", async () => {
       const payload = JSON.parse(body);
       if (payload.method === "initialize") {
+        initializeCalls += 1;
+        if (onInitialize) {
+          await onInitialize(
+            {
+              request,
+              response,
+              payload,
+            },
+            initializeCalls
+          );
+        }
+        if (response.destroyed) {
+          return;
+        }
         response.writeHead(200, {
           "content-type": "application/json",
           "mcp-session-id": "test-session",
@@ -331,6 +364,19 @@ async function runCliWithMockMcp(args, extraEnv = {}, structuredContentForToolCa
         return;
       }
       if (payload.method === "notifications/initialized") {
+        if (onInitializedNotification) {
+          await onInitializedNotification(
+            {
+              request,
+              response,
+              payload,
+            },
+            initializeCalls
+          );
+        }
+        if (response.destroyed) {
+          return;
+        }
         response.writeHead(202).end();
         return;
       }
@@ -347,8 +393,14 @@ async function runCliWithMockMcp(args, extraEnv = {}, structuredContentForToolCa
         );
         toolCalls.push(payload.params);
         const structuredContent = structuredContentForToolCall
-          ? structuredContentForToolCall(payload.params, toolCalls.length)
+          ? await structuredContentForToolCall(payload.params, toolCalls.length, {
+              request,
+              response,
+            })
           : { ok: true };
+        if (response.destroyed) {
+          return;
+        }
         response.writeHead(200, { "content-type": "application/json" });
         response.end(
           JSON.stringify({
@@ -386,6 +438,11 @@ async function runCliWithMockMcp(args, extraEnv = {}, structuredContentForToolCa
       SOCIAL_MEDIA_DOUYIN_MCP_UPSTREAM_URL: `http://127.0.0.1:${address.port}/mcp`,
       SOCIAL_MEDIA_KUAISHOU_MCP_UPSTREAM_URL: `http://127.0.0.1:${address.port}/mcp`,
       SOCIAL_MEDIA_BILIBILI_MCP_UPSTREAM_URL: `http://127.0.0.1:${address.port}/mcp`,
+      SOCIAL_MEDIA_ZHIHU_MCP_UPSTREAM_URL: `http://127.0.0.1:${address.port}/mcp`,
+      SOCIAL_MEDIA_INSTAGRAM_MCP_UPSTREAM_URL: `http://127.0.0.1:${address.port}/mcp`,
+      SOCIAL_MEDIA_X_MCP_UPSTREAM_URL: `http://127.0.0.1:${address.port}/mcp`,
+      SOCIAL_MEDIA_YOUTUBE_MCP_UPSTREAM_URL: `http://127.0.0.1:${address.port}/mcp`,
+      SOCIAL_MEDIA_TIKTOK_MCP_UPSTREAM_URL: `http://127.0.0.1:${address.port}/mcp`,
       SOCIAL_MEDIA_WEIBO_MCP_UPSTREAM_URL: `http://127.0.0.1:${address.port}/mcp`,
       SOCIAL_MEDIA_WECHAT_MCP_UPSTREAM_URL: `http://127.0.0.1:${address.port}/mcp`,
       SOCIALDATAX_SENSITIVE_CHECK_MCP_UPSTREAM_URL: `http://127.0.0.1:${address.port}/mcp`,
@@ -410,6 +467,12 @@ function assertCliError(result, expectedMessage) {
   assert.equal(result.status, 1);
   assert.equal(result.stdout, "");
   assert.match(result.stderr, new RegExp(`\\] ${expectedMessage}\\n$`));
+}
+
+async function assertDirectToolCall(args, expectedToolCall) {
+  const { result, toolCalls } = await runCliWithMockMcp(args);
+  assert.equal(result.status, 0, result.stderr);
+  assert.deepEqual(toolCalls[0], expectedToolCall);
 }
 
 function escapeRegExp(text) {
@@ -566,6 +629,27 @@ test("douyin package surface only documents the shared API key", () => {
   assert.doesNotMatch(cli, new RegExp(removedDouyinApiKeyEnv));
 });
 
+test("pending hosted entries do not declare standalone registry names in CLI source", () => {
+  const cli = readFileSync(cliPath, "utf8");
+
+  for (const registryName of [
+    "com.52choujiang/bilibili-insights",
+    "com.socialdatax/bilibili-insights",
+    "com.52choujiang/zhihu-insights",
+    "com.socialdatax/zhihu-insights",
+    "com.52choujiang/x-insights",
+    "com.socialdatax/x-insights",
+    "com.52choujiang/youtube-insights",
+    "com.socialdatax/youtube-insights",
+    "com.52choujiang/tiktok-insights",
+    "com.socialdatax/tiktok-insights",
+    'registryName: "sensitive-check"',
+    "com.socialdatax/sensitive-check",
+  ]) {
+    assert.doesNotMatch(cli, new RegExp(escapeRegExp(registryName)));
+  }
+});
+
 test("public docs and doctor report only advertise the SocialDataX API key", () => {
   const readme = readFileSync(join(packageDir, "README.md"), "utf8");
   const legacyXhsApiKeyEnv = ["XHS", "MCP", "API", "KEY"].join("_");
@@ -581,6 +665,67 @@ test("public docs and doctor report only advertise the SocialDataX API key", () 
   assert.deepEqual(report.security.apiKeyEnv, ["SOCIALDATAX_API_KEY"]);
   assert.equal(report.security.legacyApiKeyEnv, undefined);
   assert.equal(report.security.platformApiKeyEnv, undefined);
+});
+
+test("public docs keep Official Account articles limited to detail workflows", () => {
+  const readme = readFileSync(join(packageDir, "README.md"), "utf8");
+  const cliSource = readFileSync(cliPath, "utf8");
+  const checklist = readFileSync(
+    join(packageDir, "SUBMISSION_CHECKLIST.md"),
+    "utf8"
+  );
+  const mediaDetailSkill = readFileSync(
+    join(packageDir, "skills", "media-detail", "SKILL.md"),
+    "utf8"
+  );
+  const mediaDetailAgent = readFileSync(
+    join(packageDir, "skills", "media-detail", "agents", "openai.yaml"),
+    "utf8"
+  );
+
+  assert.match(readme, /WeChat Official Account \/ 微信公众号 article details/);
+  assert.match(
+    readme,
+    /Fetch paginated WeChat Channels \/ 视频号 first-level comments/
+  );
+  assert.match(
+    readme,
+    /hosted MCP can also resolve creator profile data from a video link or share text/
+  );
+  assert.doesNotMatch(
+    readme,
+    /WeChat Official Account articles,[^\n]*content research and analysis workflows/
+  );
+  assert.match(
+    readme,
+    /Current repo-tracked standalone listings cover XHS, Douyin, Kuaishou, Weibo, WeChat Content \/ 微信内容 under the historical `wechat-channels-insights` Registry name, and Instagram/
+  );
+  assert.match(
+    readme,
+    /WeChat Official Account article details are included in the WeChat endpoint and skills package, not a separate standalone listing/
+  );
+  assert.doesNotMatch(
+    readme,
+    /repo-tracked listings cover[^\n]*Official Account article details/
+  );
+  for (const source of [readme, cliSource, mediaDetailSkill, mediaDetailAgent]) {
+    assert.doesNotMatch(
+      source,
+      /details and metrics[^.\n]*(?:WeChat Official Account article|Official Account articles)/
+    );
+    assert.doesNotMatch(
+      source,
+      /interaction metrics[^.\n]*(?:WeChat Official Account article|mp\.weixin)/
+    );
+  }
+  assert.match(
+    checklist,
+    /Also read WeChat Official Account article details from article links\./
+  );
+  assert.doesNotMatch(
+    checklist,
+    /Official Account articles,[^`]*(keyword discovery|comments|replies|creator profiles|creator content lists)/
+  );
 });
 
 test("README preserves opaque page tokens", () => {
@@ -600,7 +745,7 @@ test("README preserves returned XHS note URLs", () => {
   assertDoesNotSynthesizeNoteUrlFromIdWhenMissing(readme, "README");
 });
 
-test("public package discovery terms include transcript workflows", () => {
+test("public package discovery terms include transcript and supported platform workflows", () => {
   const packageJson = JSON.parse(
     readFileSync(join(packageDir, "package.json"), "utf8")
   );
@@ -614,6 +759,18 @@ test("public package discovery terms include transcript workflows", () => {
     "bilibili",
     "bilibili-data",
     "bilibili-download",
+    "zhihu",
+    "zhihu-data",
+    "instagram",
+    "instagram-data",
+    "x-twitter",
+    "x-data",
+    "twitter",
+    "twitter-data",
+    "youtube",
+    "youtube-data",
+    "tiktok",
+    "tiktok-data",
   ]) {
     assert.ok(
       packageJson.keywords.includes(keyword),
@@ -623,6 +780,8 @@ test("public package discovery terms include transcript workflows", () => {
   assert.match(readme, /media transcript skill/);
   assert.match(readme, /speech-to-text transcript skill/);
   assert.match(readme, /口播转文字 skill/);
+  assert.match(readme, /## Hosted MCP Entries/);
+  assert.doesNotMatch(readme, /## Platform MCPs/);
   assert.match(readme, /xhs transcript --url "<note_url_or_share_text>"/);
   assert.match(readme, /xhs transcript --note-id "<note_id>"/);
   assert.match(readme, /xhs transcript --job-id "<job_id>"/);
@@ -630,7 +789,10 @@ test("public package discovery terms include transcript workflows", () => {
   assert.match(readme, /douyin download-media --url "<douyin_media_url>" --output-dir \.\/downloads/);
   assert.match(readme, /kuaishou download-media --url "<kuaishou_media_url>" --output-dir \.\/downloads/);
   assert.match(readme, /weibo download-media --url "<weibo_media_url>" --output-dir \.\/downloads/);
-  assert.match(readme, /XHS \/ Douyin \/ Kuaishou \/ Weibo local media download/);
+  assert.match(
+    readme,
+    /XHS \/ Douyin \/ Kuaishou \/ Weibo local media download, WeChat Channels local media decrypt\/save, Bilibili local video download/
+  );
   assert.match(readme, /Transcript commands submit a bounded video speech-to-text job/);
   assert.match(readme, /the CLI automatically continues matching get-job requests for up to 1200 seconds by default/);
   assert.match(readme, /--max-wait-seconds <seconds>/);
@@ -2593,6 +2755,7 @@ test("npm pack only includes public skill package files", () => {
   const paths = pack.files.map((file) => file.path).sort();
 
   assert.deepEqual(paths, [
+    "CATALOG.md",
     "LICENSE",
     "README.md",
     "assets/logo.png",
@@ -2630,6 +2793,23 @@ test("npm pack only includes public skill package files", () => {
     ),
     false
   );
+});
+
+test("README catalog link target exists", () => {
+  const readme = readFileSync(join(packageDir, "README.md"), "utf8");
+
+  assert.match(readme, /\[CATALOG\.md\]\(\.\/CATALOG\.md\)/);
+  assert.equal(existsSync(join(packageDir, "CATALOG.md")), true);
+});
+
+test("package catalog mirrors GitHub skills catalog source", () => {
+  const catalog = readFileSync(join(packageDir, "CATALOG.md"), "utf8");
+  const source = readFileSync(
+    join(packageDir, "..", "github-skills-catalog", "README.md"),
+    "utf8"
+  );
+
+  assert.equal(catalog, source);
 });
 
 test("media user posts skill documents Douyin creator series commands", () => {
@@ -2901,6 +3081,28 @@ test("direct CLI accepts source attribution from environment", async () => {
   assert.deepEqual(toolCallSourceSkillHeaders, ["xhs-topic-analysis-v2"]);
 });
 
+test("transcript MCP calls use the extended client timeout only for transcript operations", () => {
+  const cliSource = readFileSync(cliPath, "utf8");
+
+  assert.match(cliSource, /const TRANSCRIPT_MCP_CALL_TIMEOUT_MS = 330_000;/);
+  assert.match(
+    cliSource,
+    /const transcriptConnectOptions = transcriptMcpRequestOptions\(operation,/
+  );
+  assert.match(
+    cliSource,
+    /await connectMcpClient\(client, transport, transcriptConnectOptions\);/
+  );
+  assert.match(
+    cliSource,
+    /operation\.operation !== "transcript"[\s\S]*return undefined;/
+  );
+  assert.match(
+    cliSource,
+    /timeout: requestTimeoutMs \?\? TRANSCRIPT_MCP_CALL_TIMEOUT_MS/
+  );
+});
+
 test("transcript direct commands submit or check jobs with one entrypoint", async () => {
   const cases = [
     {
@@ -2917,7 +3119,7 @@ test("transcript direct commands submit or check jobs with one entrypoint", asyn
       args: ["xhs", "transcript", "--job-id", "job-1"],
       tool: "xhs_get_video_speech_text_job",
       toolArguments: { job_id: "job-1" },
-      callArguments: { job_id: "job-1", wait_seconds: 240 },
+      callArguments: { job_id: "job-1" },
     },
     {
       args: ["douyin", "transcript", "--url", "https://v.douyin.com/a1"],
@@ -2933,7 +3135,7 @@ test("transcript direct commands submit or check jobs with one entrypoint", asyn
       args: ["douyin", "transcript", "--job-id", "job-2"],
       tool: "douyin_get_video_speech_text_job",
       toolArguments: { job_id: "job-2" },
-      callArguments: { job_id: "job-2", wait_seconds: 240 },
+      callArguments: { job_id: "job-2" },
     },
     {
       args: ["kuaishou", "transcript", "--url", "https://v.kuaishou.com/a1"],
@@ -2949,7 +3151,7 @@ test("transcript direct commands submit or check jobs with one entrypoint", asyn
       args: ["kuaishou", "transcript", "--job-id", "job-3"],
       tool: "kuaishou_get_video_speech_text_job",
       toolArguments: { job_id: "job-3" },
-      callArguments: { job_id: "job-3", wait_seconds: 240 },
+      callArguments: { job_id: "job-3" },
     },
     {
       args: ["weibo", "transcript", "--post-url", "https://weibo.com/1/A"],
@@ -2965,7 +3167,7 @@ test("transcript direct commands submit or check jobs with one entrypoint", asyn
       args: ["weibo", "transcript", "--job-id", "job-4"],
       tool: "weibo_get_video_speech_text_job",
       toolArguments: { job_id: "job-4" },
-      callArguments: { job_id: "job-4", wait_seconds: 240 },
+      callArguments: { job_id: "job-4" },
     },
     {
       args: ["wechat", "transcript", "--url", "https://channels.weixin.qq.com/a1"],
@@ -2981,7 +3183,7 @@ test("transcript direct commands submit or check jobs with one entrypoint", asyn
       args: ["wechat", "transcript", "--job-id", "job-5"],
       tool: "wechat_get_video_speech_text_job",
       toolArguments: { job_id: "job-5" },
-      callArguments: { job_id: "job-5", wait_seconds: 240 },
+      callArguments: { job_id: "job-5" },
     },
   ];
 
@@ -3028,7 +3230,7 @@ test("transcript direct CLI polls the same job until terminal by default", async
         };
       }
       assert.equal(name, "douyin_get_video_speech_text_job");
-      assert.deepEqual(args, { job_id: "tr-1", wait_seconds: 240 });
+      assert.deepEqual(args, { job_id: "tr-1" });
       return callIndex === 2
         ? {
             job_id: "tr-1",
@@ -3060,6 +3262,178 @@ test("transcript direct CLI polls the same job until terminal by default", async
   assert.equal(payload.data.status, "succeeded");
   assert.equal(payload.data.is_terminal, true);
   assert.equal(payload.data.transcript.text, "口播内容");
+});
+
+test("transcript direct CLI returns the last job when follow-up reaches max wait", async () => {
+  let delayedResponseClosed = false;
+  const startedAt = Date.now();
+  const { result, toolCalls } = await runCliWithMockMcp(
+    [
+      "douyin",
+      "transcript",
+      "--url",
+      "https://v.douyin.com/a1",
+      "--max-wait-seconds",
+      "1",
+    ],
+    {},
+    async ({ name, arguments: args }, callIndex, { response }) => {
+      if (callIndex === 1) {
+        assert.equal(name, "douyin_submit_video_speech_text_by_video_url");
+        assert.deepEqual(args, { video_url: "https://v.douyin.com/a1" });
+        return {
+          job_id: "tr-1",
+          status: "running",
+          is_terminal: false,
+          next_poll_after_seconds: 0,
+        };
+      }
+
+      assert.equal(name, "douyin_get_video_speech_text_job");
+      assert.deepEqual(args, { job_id: "tr-1" });
+      await new Promise((resolve) => {
+        const timer = setTimeout(resolve, 3_000);
+        response.once("close", () => {
+          delayedResponseClosed = true;
+          clearTimeout(timer);
+          resolve();
+        });
+      });
+      return {
+        job_id: "tr-1",
+        status: "running",
+        is_terminal: false,
+        next_poll_after_seconds: 0,
+      };
+    }
+  );
+
+  assert.equal(result.status, 0, result.stderr);
+  assert.equal(delayedResponseClosed, true);
+  assert.ok(
+    Date.now() - startedAt < 2_200,
+    "CLI should stop the follow-up request when its one-second budget expires"
+  );
+  assert.deepEqual(toolCalls.map((call) => call.name), [
+    "douyin_submit_video_speech_text_by_video_url",
+    "douyin_get_video_speech_text_job",
+  ]);
+  const payload = JSON.parse(result.stdout);
+  assert.equal(payload.data.status, "running");
+  assert.equal(payload.data.is_terminal, false);
+  assert.equal(payload.data.job_id, "tr-1");
+});
+
+test("transcript direct CLI max wait covers follow-up MCP initialization", async () => {
+  let delayedInitializeClosed = false;
+  const startedAt = Date.now();
+  const { result, toolCalls } = await runCliWithMockMcp(
+    [
+      "douyin",
+      "transcript",
+      "--url",
+      "https://v.douyin.com/a1",
+      "--max-wait-seconds",
+      "1",
+    ],
+    {},
+    ({ name, arguments: args }, callIndex) => {
+      assert.equal(callIndex, 1);
+      assert.equal(name, "douyin_submit_video_speech_text_by_video_url");
+      assert.deepEqual(args, { video_url: "https://v.douyin.com/a1" });
+      return {
+        job_id: "tr-1",
+        status: "running",
+        is_terminal: false,
+        next_poll_after_seconds: 0,
+      };
+    },
+    {
+      onInitialize: async ({ response }, initializeIndex) => {
+        if (initializeIndex !== 2) {
+          return;
+        }
+        await new Promise((resolve) => {
+          const timer = setTimeout(resolve, 3_000);
+          response.once("close", () => {
+            delayedInitializeClosed = true;
+            clearTimeout(timer);
+            resolve();
+          });
+        });
+      },
+    }
+  );
+
+  assert.equal(result.status, 0, result.stderr);
+  assert.equal(delayedInitializeClosed, true);
+  assert.ok(
+    Date.now() - startedAt < 2_200,
+    "CLI should stop a follow-up initialization when its one-second budget expires"
+  );
+  assert.deepEqual(toolCalls.map((call) => call.name), [
+    "douyin_submit_video_speech_text_by_video_url",
+  ]);
+  const payload = JSON.parse(result.stdout);
+  assert.equal(payload.data.status, "running");
+  assert.equal(payload.data.is_terminal, false);
+  assert.equal(payload.data.job_id, "tr-1");
+});
+
+test("transcript direct CLI max wait covers follow-up MCP initialized notification", async () => {
+  let delayedNotificationClosed = false;
+  const startedAt = Date.now();
+  const { result, toolCalls } = await runCliWithMockMcp(
+    [
+      "douyin",
+      "transcript",
+      "--url",
+      "https://v.douyin.com/a1",
+      "--max-wait-seconds",
+      "1",
+    ],
+    {},
+    ({ name, arguments: args }, callIndex) => {
+      assert.equal(callIndex, 1);
+      assert.equal(name, "douyin_submit_video_speech_text_by_video_url");
+      assert.deepEqual(args, { video_url: "https://v.douyin.com/a1" });
+      return {
+        job_id: "tr-1",
+        status: "running",
+        is_terminal: false,
+        next_poll_after_seconds: 0,
+      };
+    },
+    {
+      onInitializedNotification: async ({ response }, initializeIndex) => {
+        if (initializeIndex !== 2) {
+          return;
+        }
+        await new Promise((resolve) => {
+          const timer = setTimeout(resolve, 3_000);
+          response.once("close", () => {
+            delayedNotificationClosed = true;
+            clearTimeout(timer);
+            resolve();
+          });
+        });
+      },
+    }
+  );
+
+  assert.equal(result.status, 0, result.stderr);
+  assert.equal(delayedNotificationClosed, true);
+  assert.ok(
+    Date.now() - startedAt < 2_200,
+    "CLI should stop a follow-up initialized notification when its one-second budget expires"
+  );
+  assert.deepEqual(toolCalls.map((call) => call.name), [
+    "douyin_submit_video_speech_text_by_video_url",
+  ]);
+  const payload = JSON.parse(result.stdout);
+  assert.equal(payload.data.status, "running");
+  assert.equal(payload.data.is_terminal, false);
+  assert.equal(payload.data.job_id, "tr-1");
 });
 
 test("transcript direct commands require exactly one entrypoint", () => {
@@ -5100,10 +5474,10 @@ test("xhs openclaw search schema documents semantic sort enums", () => {
   );
   const readme = readFileSync(join(openclawDir, "README.md"), "utf8");
 
-  assert.equal(packageJson.version, "0.1.19");
-  assert.equal(pluginManifest.version, "0.1.19");
-  assert.match(pluginSource, /const PLUGIN_VERSION = "0\.1\.19";/);
-  assert.match(readme, /Version: `0\.1\.19`/);
+  assert.equal(packageJson.version, "0.1.21");
+  assert.equal(pluginManifest.version, "0.1.21");
+  assert.match(pluginSource, /const PLUGIN_VERSION = "0\.1\.21";/);
+  assert.match(readme, /Version: `0\.1\.21`/);
 
   assert.deepEqual(pluginManifest.providerAuthChoices[0], {
     provider: "xhs-insights",
@@ -5867,13 +6241,13 @@ test("wechat user commands map url and finder user ids", async () => {
     "wechat",
     "user-info",
     "--user-id",
-    "v2_demo@finder",
+    "v2_060000231003b20faec8c5e58110c0dcc90cee33b0777dd2f17b0e35693b274a9dd455cde24f@finder",
   ]);
   assert.equal(userInfo.result.status, 0, userInfo.result.stderr);
   assert.deepEqual(userInfo.toolCalls[0], {
     name: "wechat_get_user_info_by_user_id",
     arguments: {
-      user_id: "v2_demo@finder",
+      user_id: "v2_060000231003b20faec8c5e58110c0dcc90cee33b0777dd2f17b0e35693b274a9dd455cde24f@finder",
     },
   });
 
@@ -5910,6 +6284,503 @@ test("wechat article command maps official account article url", async () => {
       url: "https://mp.weixin.qq.com/s/cyog0u9QpLFvdBsh9JR3_g",
     },
   });
+});
+
+test("bilibili direct commands map public read operations", async () => {
+  await assertDirectToolCall(
+    [
+      "bilibili",
+      "search-videos",
+      "--keyword",
+      "露营",
+      "--sort-type",
+      "time_descending",
+      "--page-token",
+      "next",
+    ],
+    {
+      name: "bilibili_search_videos",
+      arguments: {
+        keyword: "露营",
+        sort_type: "time_descending",
+        page_token: "next",
+      },
+    }
+  );
+  await assertDirectToolCall(
+    [
+      "bilibili",
+      "search-articles",
+      "--keyword",
+      "AI",
+      "--category",
+      "technology",
+    ],
+    {
+      name: "bilibili_search_articles",
+      arguments: {
+        keyword: "AI",
+        category: "technology",
+      },
+    }
+  );
+  await assertDirectToolCall(
+    ["bilibili", "detail", "--content-id", "BV1abc"],
+    {
+      name: "bilibili_get_content_detail_by_id",
+      arguments: {
+        content_id: "BV1abc",
+      },
+    }
+  );
+  await assertDirectToolCall(
+    [
+      "bilibili",
+      "comments",
+      "--url",
+      "https://www.bilibili.com/video/BV1abc",
+      "--sort-type",
+      "time_descending",
+      "--page-token",
+      "next",
+    ],
+    {
+      name: "bilibili_get_content_comments_by_url",
+      arguments: {
+        url: "https://www.bilibili.com/video/BV1abc",
+        sort_type: "time_descending",
+        page_token: "next",
+      },
+    }
+  );
+  await assertDirectToolCall(
+    [
+      "bilibili",
+      "replies",
+      "--comment-object-id",
+      "123",
+      "--comment-object-type",
+      "1",
+      "--comment-id",
+      "456",
+    ],
+    {
+      name: "bilibili_get_content_comment_replies_by_comment_id",
+      arguments: {
+        comment_object_id: "123",
+        comment_object_type: 1,
+        comment_id: "456",
+      },
+    }
+  );
+  await assertDirectToolCall(
+    ["bilibili", "user-info", "--profile-url", "https://space.bilibili.com/42"],
+    {
+      name: "bilibili_get_user_info_by_profile_url",
+      arguments: {
+        profile_url: "https://space.bilibili.com/42",
+      },
+    }
+  );
+  await assertDirectToolCall(
+    [
+      "bilibili",
+      "user-videos",
+      "--user-id",
+      "42",
+      "--sort-type",
+      "view_count_descending",
+      "--page-token",
+      "next",
+    ],
+    {
+      name: "bilibili_get_user_posted_videos_by_user_id",
+      arguments: {
+        user_id: "42",
+        sort_type: "view_count_descending",
+        page_token: "next",
+      },
+    }
+  );
+});
+
+test("zhihu direct commands map public read operations", async () => {
+  await assertDirectToolCall(["zhihu", "hot-list"], {
+    name: "zhihu_get_hot_list",
+    arguments: {},
+  });
+  await assertDirectToolCall(
+    [
+      "zhihu",
+      "search",
+      "--keyword",
+      "AI",
+      "--content-type",
+      "video",
+      "--sort-type",
+      "time_descending",
+      "--publish-time-range",
+      "week",
+      "--page-token",
+      "next",
+    ],
+    {
+      name: "zhihu_search_content",
+      arguments: {
+        keyword: "AI",
+        content_type: "video",
+        sort_type: "time_descending",
+        publish_time_range: "week",
+        page_token: "next",
+      },
+    }
+  );
+  await assertDirectToolCall(
+    ["zhihu", "detail", "--content-url", "https://www.zhihu.com/question/1/answer/2"],
+    {
+      name: "zhihu_get_content_detail_by_url",
+      arguments: {
+        content_url: "https://www.zhihu.com/question/1/answer/2",
+      },
+    }
+  );
+  await assertDirectToolCall(
+    [
+      "zhihu",
+      "comments",
+      "--content-url",
+      "https://zhuanlan.zhihu.com/p/123",
+      "--sort-type",
+      "time_descending",
+    ],
+    {
+      name: "zhihu_get_content_comments_by_url",
+      arguments: {
+        content_url: "https://zhuanlan.zhihu.com/p/123",
+        sort_type: "time_descending",
+      },
+    }
+  );
+  await assertDirectToolCall(
+    [
+      "zhihu",
+      "replies",
+      "--content-url",
+      "https://zhuanlan.zhihu.com/p/123",
+      "--comment-id",
+      "comment-1",
+    ],
+    {
+      name: "zhihu_get_comment_replies_by_url",
+      arguments: {
+        content_url: "https://zhuanlan.zhihu.com/p/123",
+        comment_id: "comment-1",
+      },
+    }
+  );
+  await assertDirectToolCall(
+    ["zhihu", "user-posts", "--profile-url", "https://www.zhihu.com/people/test"],
+    {
+      name: "zhihu_get_user_posted_articles_by_profile_url",
+      arguments: {
+        profile_url: "https://www.zhihu.com/people/test",
+      },
+    }
+  );
+});
+
+test("instagram direct commands map public read operations", async () => {
+  await assertDirectToolCall(
+    ["instagram", "search", "--keyword", "camping", "--page-token", "next"],
+    {
+      name: "instagram_search_posts",
+      arguments: {
+        keyword: "camping",
+        page_token: "next",
+      },
+    }
+  );
+  await assertDirectToolCall(
+    ["instagram", "detail", "--post-url", "https://www.instagram.com/p/abc/"],
+    {
+      name: "instagram_get_post_detail_by_post_url",
+      arguments: {
+        post_url: "https://www.instagram.com/p/abc/",
+      },
+    }
+  );
+  await assertDirectToolCall(
+    [
+      "instagram",
+      "comments",
+      "--post-url",
+      "https://www.instagram.com/p/abc/",
+      "--page-token",
+      "next",
+    ],
+    {
+      name: "instagram_get_post_comments_by_post_url",
+      arguments: {
+        post_url: "https://www.instagram.com/p/abc/",
+        page_token: "next",
+      },
+    }
+  );
+  await assertDirectToolCall(
+    ["instagram", "replies", "--post-id", "123", "--comment-id", "456"],
+    {
+      name: "instagram_get_post_comment_replies_by_comment_id",
+      arguments: {
+        post_id: "123",
+        comment_id: "456",
+      },
+    }
+  );
+  await assertDirectToolCall(
+    ["instagram", "user-info", "--username", "socialdatax"],
+    {
+      name: "instagram_get_user_info_by_username",
+      arguments: {
+        username: "socialdatax",
+      },
+    }
+  );
+  await assertDirectToolCall(
+    [
+      "instagram",
+      "user-posts",
+      "--profile-url",
+      "https://www.instagram.com/socialdatax/",
+    ],
+    {
+      name: "instagram_get_user_posts_by_profile_url",
+      arguments: {
+        profile_url: "https://www.instagram.com/socialdatax/",
+      },
+    }
+  );
+});
+
+test("x direct commands map public read operations", async () => {
+  await assertDirectToolCall(
+    [
+      "x",
+      "search",
+      "--keyword",
+      "openai",
+      "--sort-type",
+      "time_descending",
+      "--page-token",
+      "next",
+    ],
+    {
+      name: "x_search_posts",
+      arguments: {
+        keyword: "openai",
+        sort_type: "time_descending",
+        page_token: "next",
+      },
+    }
+  );
+  await assertDirectToolCall(["x", "detail", "--post-id", "123"], {
+    name: "x_get_post_detail_by_post_id",
+    arguments: {
+      post_id: "123",
+    },
+  });
+  await assertDirectToolCall(
+    ["x", "comments", "--post-url", "https://x.com/openai/status/123"],
+    {
+      name: "x_get_post_comments_by_post_url",
+      arguments: {
+        post_url: "https://x.com/openai/status/123",
+      },
+    }
+  );
+  await assertDirectToolCall(["x", "replies", "--post-id", "123", "--comment-id", "456"], {
+    name: "x_get_post_comment_replies_by_comment_id",
+    arguments: {
+      post_id: "123",
+      comment_id: "456",
+    },
+  });
+  await assertDirectToolCall(["x", "user-info", "--username", "openai"], {
+    name: "x_get_user_info_by_username",
+    arguments: {
+      username: "openai",
+    },
+  });
+  await assertDirectToolCall(
+    ["x", "user-posts", "--profile-url", "https://x.com/openai", "--page-token", "next"],
+    {
+      name: "x_get_user_posts_by_profile_url",
+      arguments: {
+        profile_url: "https://x.com/openai",
+        page_token: "next",
+      },
+    }
+  );
+});
+
+test("youtube direct commands map public read operations", async () => {
+  await assertDirectToolCall(
+    [
+      "youtube",
+      "search",
+      "--keyword",
+      "openai",
+      "--sort-type",
+      "time_descending",
+      "--video-type",
+      "video",
+      "--publish-time-range",
+      "this_week",
+      "--duration-range",
+      "under_4_min",
+      "--page-token",
+      "next",
+    ],
+    {
+      name: "youtube_search_videos",
+      arguments: {
+        keyword: "openai",
+        sort_type: "time_descending",
+        video_type: "video",
+        publish_time_range: "this_week",
+        duration_range: "under_4_min",
+        page_token: "next",
+      },
+    }
+  );
+  await assertDirectToolCall(
+    ["youtube", "detail", "--url", "https://www.youtube.com/watch?v=abc"],
+    {
+      name: "youtube_get_video_detail_by_url",
+      arguments: {
+        video_url: "https://www.youtube.com/watch?v=abc",
+      },
+    }
+  );
+  await assertDirectToolCall(
+    [
+      "youtube",
+      "comments",
+      "--url",
+      "https://youtu.be/abc",
+      "--sort-type",
+      "time_descending",
+    ],
+    {
+      name: "youtube_get_video_comments_by_url",
+      arguments: {
+        video_url: "https://youtu.be/abc",
+        sort_type: "time_descending",
+      },
+    }
+  );
+  await assertDirectToolCall(["youtube", "replies", "--reply-token", "reply-token"], {
+    name: "youtube_get_video_comment_replies",
+    arguments: {
+      reply_token: "reply-token",
+    },
+  });
+  await assertDirectToolCall(
+    ["youtube", "channel-info", "--channel-url", "https://www.youtube.com/@OpenAI"],
+    {
+      name: "youtube_get_channel_info_by_url",
+      arguments: {
+        channel_url: "https://www.youtube.com/@OpenAI",
+      },
+    }
+  );
+  await assertDirectToolCall(
+    [
+      "youtube",
+      "user-posts",
+      "--channel-url",
+      "https://www.youtube.com/@OpenAI",
+      "--video-type",
+      "short",
+    ],
+    {
+      name: "youtube_get_user_posted_videos_by_channel_url",
+      arguments: {
+        channel_url: "https://www.youtube.com/@OpenAI",
+        video_type: "short",
+      },
+    }
+  );
+});
+
+test("tiktok direct commands map public read operations", async () => {
+  await assertDirectToolCall(
+    [
+      "tiktok",
+      "search",
+      "--keyword",
+      "openai",
+      "--content-type",
+      "video",
+      "--page-token",
+      "next",
+    ],
+    {
+      name: "tiktok_search_posts",
+      arguments: {
+        keyword: "openai",
+        content_type: "video",
+        page_token: "next",
+      },
+    }
+  );
+  await assertDirectToolCall(
+    ["tiktok", "detail", "--url", "https://www.tiktok.com/@user/video/123"],
+    {
+      name: "tiktok_get_post_detail_by_url",
+      arguments: {
+        url: "https://www.tiktok.com/@user/video/123",
+      },
+    }
+  );
+  await assertDirectToolCall(["tiktok", "comments", "--post-id", "123"], {
+    name: "tiktok_get_post_comments_by_post_id",
+    arguments: {
+      post_id: "123",
+    },
+  });
+  await assertDirectToolCall(
+    ["tiktok", "replies", "--post-id", "123", "--comment-id", "456"],
+    {
+      name: "tiktok_get_post_comment_replies",
+      arguments: {
+        post_id: "123",
+        comment_id: "456",
+      },
+    }
+  );
+  await assertDirectToolCall(["tiktok", "user-info", "--tiktok-id", "openai"], {
+    name: "tiktok_get_user_info_by_tiktok_id",
+    arguments: {
+      tiktok_id: "openai",
+    },
+  });
+  await assertDirectToolCall(
+    [
+      "tiktok",
+      "user-posts",
+      "--profile-url",
+      "https://www.tiktok.com/@openai",
+      "--page-token",
+      "next",
+    ],
+    {
+      name: "tiktok_get_user_posts_by_profile_url",
+      arguments: {
+        profile_url: "https://www.tiktok.com/@openai",
+        page_token: "next",
+      },
+    }
+  );
 });
 
 test("wechat search accepts semantic sort values and rejects legacy sort names", () => {
@@ -6096,7 +6967,7 @@ test("since-days validates values before direct CLI calls", () => {
   }
 });
 
-test("since-days is only supported for search and user-posts", () => {
+test("since-days is only supported by documented search and user-posts commands", () => {
   assertCliError(
     runCli(["xhs", "detail", "--note-id", "note-1", "--since-days", "7"]),
     "Unsupported option --since-days\\."
@@ -6113,6 +6984,13 @@ test("since-days is only supported for search and user-posts", () => {
     runCli(["kuaishou", "user-search", "--keyword", "露营", "--since-days", "7"]),
     "Unsupported option --since-days\\."
   );
+  for (const command of [
+    ["bilibili", "search-videos", "--keyword", "露营", "--since-days", "7"],
+    ["youtube", "search", "--keyword", "camping", "--since-days", "7"],
+    ["tiktok", "user-posts", "--tiktok-id", "creator-1", "--since-days", "7"],
+  ]) {
+    assertCliError(runCli(command), "Unsupported option --since-days\\.");
+  }
 });
 
 test("xhs search since-days defaults to latest sorting and week native filter", async () => {
@@ -7880,7 +8758,10 @@ test("doctor prints human-readable safety summary", () => {
   assert.equal(result.status, 0);
   assert.equal(result.stderr, "");
   assert.match(result.stdout, /socialdatax-skills doctor/);
-  assert.match(result.stdout, /Package: socialdatax-skills@0\.2\.31/);
+  assert.match(
+    result.stdout,
+    new RegExp(`Package: socialdatax-skills@${escapeRegExp(packageMetadata.version)}`)
+  );
   assert.match(result.stdout, /Website: https:\/\/socialdatax\.com/);
   assert.doesNotMatch(result.stdout, /Source: https:\/\/socialdatax\.com/);
   assert.match(result.stdout, /npm lifecycle scripts: none declared by this package/);
@@ -7888,20 +8769,39 @@ test("doctor prints human-readable safety summary", () => {
   assert.match(result.stdout, /social media content intelligence workflows/);
   assert.match(result.stdout, /some commands submit bounded analysis jobs such as video speech-to-text transcript/);
   assert.doesNotMatch(result.stdout, /read-only social media intelligence workflows/);
+  assert.match(result.stdout, /Hosted MCP entries:/);
+  assert.doesNotMatch(result.stdout, /Platform MCPs:/);
   assert.match(result.stdout, /XHS \/ Xiaohongshu \/ RedNote/);
+  assert.match(result.stdout, /future registry draft: com\.socialdatax\/xhs-insights/);
   assert.match(result.stdout, /endpoint: https:\/\/mcp\.socialdatax\.com\/xhs\/mcp/);
   assert.match(result.stdout, /Douyin \/ 抖音/);
+  assert.match(result.stdout, /future registry draft: com\.socialdatax\/douyin-insights/);
   assert.match(result.stdout, /endpoint: https:\/\/mcp\.socialdatax\.com\/douyin\/mcp/);
   assert.match(result.stdout, /Kuaishou \/ 快手 \/ Kwai/);
+  assert.match(result.stdout, /reserved future namespace: com\.socialdatax\/kuaishou-insights/);
   assert.match(result.stdout, /endpoint: https:\/\/mcp\.socialdatax\.com\/kuaishou\/mcp/);
   assert.match(result.stdout, /Bilibili \/ 哔哩哔哩 \/ B站/);
   assert.match(result.stdout, /endpoint: https:\/\/mcp\.socialdatax\.com\/bilibili\/mcp/);
   assert.match(result.stdout, /Weibo \/ 微博/);
   assert.match(result.stdout, /endpoint: https:\/\/mcp\.socialdatax\.com\/weibo\/mcp/);
-  assert.match(result.stdout, /WeChat \/ 微信/);
+  assert.match(result.stdout, /WeChat Content \/ 微信内容/);
   assert.match(result.stdout, /endpoint: https:\/\/mcp\.socialdatax\.com\/wechat\/mcp/);
+  assert.match(result.stdout, /Zhihu \/ 知乎/);
+  assert.match(result.stdout, /endpoint: https:\/\/mcp\.socialdatax\.com\/zhihu\/mcp/);
+  assert.match(result.stdout, /Instagram/);
+  assert.match(result.stdout, /endpoint: https:\/\/mcp\.socialdatax\.com\/instagram\/mcp/);
+  assert.match(result.stdout, /X \/ Twitter/);
+  assert.match(result.stdout, /endpoint: https:\/\/mcp\.socialdatax\.com\/x\/mcp/);
+  assert.match(result.stdout, /YouTube/);
+  assert.match(result.stdout, /endpoint: https:\/\/mcp\.socialdatax\.com\/youtube\/mcp/);
+  assert.match(result.stdout, /TikTok/);
+  assert.match(result.stdout, /endpoint: https:\/\/mcp\.socialdatax\.com\/tiktok\/mcp/);
   assert.match(result.stdout, /Sensitive Words Check \/ 敏感词检测/);
   assert.match(result.stdout, /endpoint: https:\/\/mcp\.socialdatax\.com\/sensitive-check\/mcp/);
+  assert.match(result.stdout, /listing: hosted endpoint only; standalone listing materials pending/);
+  assert.doesNotMatch(result.stdout, /future registry: com\.socialdatax\/kuaishou-insights/);
+  assert.doesNotMatch(result.stdout, /registry: com\.52choujiang\/youtube-insights/);
+  assert.doesNotMatch(result.stdout, /registry: com\.52choujiang\/bilibili-insights/);
 });
 
 test("verify is an alias for doctor", () => {
@@ -7919,22 +8819,23 @@ test("doctor json prints parseable safety summary", () => {
   assert.equal(result.stderr, "");
   const report = JSON.parse(result.stdout);
   assert.equal(report.package.name, "socialdatax-skills");
-  assert.equal(report.package.version, "0.2.31");
+  assert.equal(report.package.version, packageMetadata.version);
   assert.equal(report.package.homepage, "https://socialdatax.com");
   assert.equal(report.package.repository, undefined);
   assert.deepEqual(report.package.npmLifecycleScripts, []);
   assert.equal(report.install.apiKeyStored, false);
   assert.equal(report.install.mcpConfigChanged, false);
-  assert.equal(report.security.readOnly, false);
-  assert.equal(report.security.directCliReadOnly, false);
+  assert.equal(report.security.readOnly, true);
+  assert.equal(report.security.directCliReadOnly, true);
   assert.equal(report.security.directCliMaySubmitAnalysisJobs, true);
   assert.equal(report.security.platformMcpMaySubmitAnalysisJobs, true);
   assert.equal(report.security.accountActions, false);
   assert.equal(report.security.readsLocalBrowserData, false);
   assert.equal(report.security.readsBrowserCookies, undefined);
   assert.equal(report.security.readsLocalAccountSession, undefined);
-  assert.equal(report.platforms.length, 7);
+  assert.equal(report.platforms.length, 12);
   assert.equal(report.platform.endpointOverrideActive, false);
+  assert.equal(report.platform.repoTrackedStandaloneListing, true);
   assert.equal(report.platform.registryName, "com.52choujiang/xhs-insights");
   assert.equal(report.platform.futureRegistryName, "com.socialdatax/xhs-insights");
   assert.equal(report.platform.legacyRegistryName, undefined);
@@ -7948,6 +8849,7 @@ test("doctor json prints parseable safety summary", () => {
   const douyinPlatform = report.platforms.find(
     (platform) => platform.id === "douyin"
   );
+  assert.equal(douyinPlatform.repoTrackedStandaloneListing, true);
   assert.equal(douyinPlatform.registryName, "com.52choujiang/douyin-insights");
   assert.equal(douyinPlatform.futureRegistryName, "com.socialdatax/douyin-insights");
   assert.equal(douyinPlatform.legacyRegistryName, undefined);
@@ -7980,6 +8882,7 @@ test("doctor json prints parseable safety summary", () => {
   const kuaishouPlatform = report.platforms.find(
     (platform) => platform.id === "kuaishou"
   );
+  assert.equal(kuaishouPlatform.repoTrackedStandaloneListing, true);
   assert.equal(kuaishouPlatform.registryName, "com.52choujiang/kuaishou-insights");
   assert.equal(kuaishouPlatform.futureRegistryName, "com.socialdatax/kuaishou-insights");
   assert.equal(kuaishouPlatform.defaultEndpoint, "https://mcp.socialdatax.com/kuaishou/mcp");
@@ -8010,23 +8913,44 @@ test("doctor json prints parseable safety summary", () => {
     (platform) => platform.id === "bilibili"
   );
   assert.equal(bilibiliPlatform.displayName, "Bilibili / 哔哩哔哩 / B站");
-  assert.equal(bilibiliPlatform.registryName, "com.52choujiang/bilibili-insights");
-  assert.equal(bilibiliPlatform.futureRegistryName, "com.socialdatax/bilibili-insights");
+  assert.equal(bilibiliPlatform.repoTrackedStandaloneListing, false);
+  assert.equal(bilibiliPlatform.registryName, undefined);
+  assert.equal(bilibiliPlatform.futureRegistryName, undefined);
   assert.equal(bilibiliPlatform.defaultEndpoint, "https://mcp.socialdatax.com/bilibili/mcp");
-  assert.equal(bilibiliPlatform.tools.length, 1);
+  assert.equal(bilibiliPlatform.tools.length, 18);
+  assert.ok(bilibiliPlatform.tools.includes("bilibili_search_videos"));
+  assert.ok(bilibiliPlatform.tools.includes("bilibili_search_articles"));
+  assert.ok(bilibiliPlatform.tools.includes("bilibili_get_content_detail_by_id"));
+  assert.ok(bilibiliPlatform.tools.includes("bilibili_get_content_detail_by_url"));
   assert.ok(bilibiliPlatform.tools.includes("bilibili_get_video_download_links"));
+  assert.ok(bilibiliPlatform.tools.includes("bilibili_get_content_comments_by_id"));
+  assert.ok(bilibiliPlatform.tools.includes("bilibili_get_content_comments_by_url"));
+  assert.ok(bilibiliPlatform.tools.includes("bilibili_get_content_comment_replies_by_comment_id"));
+  assert.ok(bilibiliPlatform.tools.includes("bilibili_get_content_likes_and_reposts_by_post_id"));
+  assert.ok(bilibiliPlatform.tools.includes("bilibili_get_content_likes_and_reposts_by_url"));
+  assert.ok(bilibiliPlatform.tools.includes("bilibili_get_user_info_by_user_id"));
+  assert.ok(bilibiliPlatform.tools.includes("bilibili_get_user_info_by_profile_url"));
+  assert.ok(bilibiliPlatform.tools.includes("bilibili_get_user_posted_videos_by_user_id"));
+  assert.ok(bilibiliPlatform.tools.includes("bilibili_get_user_posted_videos_by_profile_url"));
+  assert.ok(bilibiliPlatform.tools.includes("bilibili_get_user_posted_articles_by_user_id"));
+  assert.ok(bilibiliPlatform.tools.includes("bilibili_get_user_posted_articles_by_profile_url"));
+  assert.ok(bilibiliPlatform.tools.includes("bilibili_get_user_posted_dynamics_by_user_id"));
+  assert.ok(bilibiliPlatform.tools.includes("bilibili_get_user_posted_dynamics_by_profile_url"));
   const weiboPlatform = report.platforms.find(
     (platform) => platform.id === "weibo"
   );
+  assert.equal(weiboPlatform.repoTrackedStandaloneListing, true);
   assert.equal(weiboPlatform.registryName, "com.52choujiang/weibo-insights");
   assert.equal(weiboPlatform.futureRegistryName, "com.socialdatax/weibo-insights");
   assert.equal(weiboPlatform.defaultEndpoint, "https://mcp.socialdatax.com/weibo/mcp");
-  assert.equal(weiboPlatform.tools.length, 16);
+  assert.equal(weiboPlatform.tools.length, 18);
   assert.ok(weiboPlatform.tools.includes("weibo_get_hot_search_list"));
   assert.ok(weiboPlatform.tools.includes("weibo_search_posts"));
   assert.ok(weiboPlatform.tools.includes("weibo_get_post_comment_replies_by_comment_id"));
   assert.ok(weiboPlatform.tools.includes("weibo_get_post_liker_list_by_post_id"));
+  assert.ok(weiboPlatform.tools.includes("weibo_get_post_liker_list_by_post_url"));
   assert.ok(weiboPlatform.tools.includes("weibo_get_post_repost_list_by_post_id"));
+  assert.ok(weiboPlatform.tools.includes("weibo_get_post_repost_list_by_post_url"));
   assert.ok(weiboPlatform.tools.includes("weibo_get_user_posts_by_profile_url"));
   assert.ok(weiboPlatform.tools.includes("weibo_submit_video_speech_text_by_post_url"));
   assert.ok(weiboPlatform.tools.includes("weibo_submit_video_speech_text_by_post_id"));
@@ -8034,24 +8958,119 @@ test("doctor json prints parseable safety summary", () => {
   const wechatPlatform = report.platforms.find(
     (platform) => platform.id === "wechat"
   );
-  assert.equal(wechatPlatform.displayName, "WeChat / 微信");
+  assert.equal(wechatPlatform.displayName, "WeChat Content / 微信内容");
+  assert.equal(wechatPlatform.repoTrackedStandaloneListing, true);
   assert.equal(wechatPlatform.registryName, "com.52choujiang/wechat-channels-insights");
   assert.equal(wechatPlatform.futureRegistryName, "com.socialdatax/wechat-channels-insights");
   assert.equal(wechatPlatform.defaultEndpoint, "https://mcp.socialdatax.com/wechat/mcp");
-  assert.equal(wechatPlatform.tools.length, 14);
+  assert.equal(wechatPlatform.tools.length, 15);
   assert.ok(wechatPlatform.tools.includes("wechat_get_hot_search_list"));
   assert.ok(wechatPlatform.tools.includes("wechat_search_videos"));
   assert.ok(wechatPlatform.tools.includes("wechat_get_mp_article_detail_by_url"));
   assert.ok(wechatPlatform.tools.includes("wechat_get_video_comment_replies_by_comment_id"));
+  assert.ok(wechatPlatform.tools.includes("wechat_get_user_info_by_url"));
   assert.ok(wechatPlatform.tools.includes("wechat_get_user_posted_videos_by_url"));
   assert.ok(wechatPlatform.tools.includes("wechat_submit_video_speech_text_by_video_url"));
   assert.ok(wechatPlatform.tools.includes("wechat_submit_video_speech_text_by_encrypted_object_id"));
   assert.ok(wechatPlatform.tools.includes("wechat_get_video_speech_text_job"));
+  const zhihuPlatform = report.platforms.find(
+    (platform) => platform.id === "zhihu"
+  );
+  assert.equal(zhihuPlatform.displayName, "Zhihu / 知乎");
+  assert.equal(zhihuPlatform.repoTrackedStandaloneListing, false);
+  assert.equal(zhihuPlatform.registryName, undefined);
+  assert.equal(zhihuPlatform.futureRegistryName, undefined);
+  assert.equal(zhihuPlatform.defaultEndpoint, "https://mcp.socialdatax.com/zhihu/mcp");
+  assert.equal(zhihuPlatform.tools.length, 7);
+  assert.ok(zhihuPlatform.tools.includes("zhihu_get_hot_list"));
+  assert.ok(zhihuPlatform.tools.includes("zhihu_search_content"));
+  assert.ok(zhihuPlatform.tools.includes("zhihu_get_content_detail_by_url"));
+  assert.ok(zhihuPlatform.tools.includes("zhihu_get_content_comments_by_url"));
+  assert.ok(zhihuPlatform.tools.includes("zhihu_get_comment_replies_by_url"));
+  assert.ok(zhihuPlatform.tools.includes("zhihu_get_user_info_by_profile_url"));
+  assert.ok(zhihuPlatform.tools.includes("zhihu_get_user_posted_articles_by_profile_url"));
+  const instagramPlatform = report.platforms.find(
+    (platform) => platform.id === "instagram"
+  );
+  assert.equal(instagramPlatform.displayName, "Instagram");
+  assert.equal(instagramPlatform.repoTrackedStandaloneListing, true);
+  assert.equal(instagramPlatform.registryName, "com.52choujiang/instagram-insights");
+  assert.equal(instagramPlatform.futureRegistryName, "com.socialdatax/instagram-insights");
+  assert.equal(instagramPlatform.defaultEndpoint, "https://mcp.socialdatax.com/instagram/mcp");
+  assert.equal(instagramPlatform.tools.length, 9);
+  assert.ok(instagramPlatform.tools.includes("instagram_search_posts"));
+  assert.ok(instagramPlatform.tools.includes("instagram_get_post_detail_by_post_id"));
+  assert.ok(instagramPlatform.tools.includes("instagram_get_post_detail_by_post_url"));
+  assert.ok(instagramPlatform.tools.includes("instagram_get_post_comments_by_post_url"));
+  assert.ok(instagramPlatform.tools.includes("instagram_get_post_comment_replies_by_comment_id"));
+  assert.ok(instagramPlatform.tools.includes("instagram_get_user_info_by_username"));
+  assert.ok(instagramPlatform.tools.includes("instagram_get_user_info_by_profile_url"));
+  assert.ok(instagramPlatform.tools.includes("instagram_get_user_posts_by_username"));
+  assert.ok(instagramPlatform.tools.includes("instagram_get_user_posts_by_profile_url"));
+  const xPlatform = report.platforms.find(
+    (platform) => platform.id === "x"
+  );
+  assert.equal(xPlatform.displayName, "X / Twitter");
+  assert.equal(xPlatform.repoTrackedStandaloneListing, false);
+  assert.equal(xPlatform.registryName, undefined);
+  assert.equal(xPlatform.futureRegistryName, undefined);
+  assert.equal(xPlatform.defaultEndpoint, "https://mcp.socialdatax.com/x/mcp");
+  assert.equal(xPlatform.tools.length, 12);
+  assert.ok(xPlatform.tools.includes("x_search_posts"));
+  assert.ok(xPlatform.tools.includes("x_get_post_detail_by_post_id"));
+  assert.ok(xPlatform.tools.includes("x_get_post_detail_by_post_url"));
+  assert.ok(xPlatform.tools.includes("x_get_post_comments_by_post_id"));
+  assert.ok(xPlatform.tools.includes("x_get_post_comments_by_post_url"));
+  assert.ok(xPlatform.tools.includes("x_get_post_comment_replies_by_comment_id"));
+  assert.ok(xPlatform.tools.includes("x_get_user_info_by_user_id"));
+  assert.ok(xPlatform.tools.includes("x_get_user_info_by_username"));
+  assert.ok(xPlatform.tools.includes("x_get_user_info_by_profile_url"));
+  assert.ok(xPlatform.tools.includes("x_get_user_posts_by_user_id"));
+  assert.ok(xPlatform.tools.includes("x_get_user_posts_by_username"));
+  assert.ok(xPlatform.tools.includes("x_get_user_posts_by_profile_url"));
+  const youtubePlatform = report.platforms.find(
+    (platform) => platform.id === "youtube"
+  );
+  assert.equal(youtubePlatform.displayName, "YouTube");
+  assert.equal(youtubePlatform.repoTrackedStandaloneListing, false);
+  assert.equal(youtubePlatform.registryName, undefined);
+  assert.equal(youtubePlatform.futureRegistryName, undefined);
+  assert.equal(youtubePlatform.defaultEndpoint, "https://mcp.socialdatax.com/youtube/mcp");
+  assert.equal(youtubePlatform.tools.length, 6);
+  assert.ok(youtubePlatform.tools.includes("youtube_search_videos"));
+  assert.ok(youtubePlatform.tools.includes("youtube_get_video_detail_by_url"));
+  assert.ok(youtubePlatform.tools.includes("youtube_get_channel_info_by_url"));
+  assert.ok(youtubePlatform.tools.includes("youtube_get_user_posted_videos_by_channel_url"));
+  assert.ok(youtubePlatform.tools.includes("youtube_get_video_comments_by_url"));
+  assert.ok(youtubePlatform.tools.includes("youtube_get_video_comment_replies"));
+  const youtubeRepliesTool = youtubePlatform.toolDetails.find(
+    (tool) => tool.name === "youtube_get_video_comment_replies"
+  );
+  assert.match(youtubeRepliesTool.description, /reply_token/);
+  const tiktokPlatform = report.platforms.find(
+    (platform) => platform.id === "tiktok"
+  );
+  assert.equal(tiktokPlatform.displayName, "TikTok");
+  assert.equal(tiktokPlatform.repoTrackedStandaloneListing, false);
+  assert.equal(tiktokPlatform.registryName, undefined);
+  assert.equal(tiktokPlatform.futureRegistryName, undefined);
+  assert.equal(tiktokPlatform.defaultEndpoint, "https://mcp.socialdatax.com/tiktok/mcp");
+  assert.equal(tiktokPlatform.tools.length, 9);
+  assert.ok(tiktokPlatform.tools.includes("tiktok_search_posts"));
+  assert.ok(tiktokPlatform.tools.includes("tiktok_get_post_detail_by_url"));
+  assert.ok(tiktokPlatform.tools.includes("tiktok_get_post_comments_by_post_id"));
+  assert.ok(tiktokPlatform.tools.includes("tiktok_get_post_comments_by_url"));
+  assert.ok(tiktokPlatform.tools.includes("tiktok_get_post_comment_replies"));
+  assert.ok(tiktokPlatform.tools.includes("tiktok_get_user_info_by_tiktok_id"));
+  assert.ok(tiktokPlatform.tools.includes("tiktok_get_user_info_by_profile_url"));
+  assert.ok(tiktokPlatform.tools.includes("tiktok_get_user_posts_by_tiktok_id"));
+  assert.ok(tiktokPlatform.tools.includes("tiktok_get_user_posts_by_profile_url"));
   const sensitiveCheckPlatform = report.platforms.find(
     (platform) => platform.id === "sensitive-check"
   );
-  assert.equal(sensitiveCheckPlatform.registryName, "sensitive-check");
-  assert.equal(sensitiveCheckPlatform.futureRegistryName, "com.socialdatax/sensitive-check");
+  assert.equal(sensitiveCheckPlatform.repoTrackedStandaloneListing, false);
+  assert.equal(sensitiveCheckPlatform.registryName, undefined);
+  assert.equal(sensitiveCheckPlatform.futureRegistryName, undefined);
   assert.equal(sensitiveCheckPlatform.defaultEndpoint, "https://mcp.socialdatax.com/sensitive-check/mcp");
   assert.equal(sensitiveCheckPlatform.tools.length, 1);
   assert.ok(sensitiveCheckPlatform.tools.includes("check_sensitive_text"));
@@ -8099,31 +9118,31 @@ test("doctor json prints parseable safety summary", () => {
     (tool) => tool.name === "wechat_get_video_speech_text_job"
   );
   assert.match(xhsSubmitTranscriptTool.description, /speech-to-text transcript/);
-  assert.match(xhsSubmitTranscriptTool.description, /提交后最多等待 210 秒/);
+  assert.match(xhsSubmitTranscriptTool.description, /提交后最多等待 240 秒/);
   assert.match(xhsSubmitTranscriptTool.description, /同一个 job_id 直到终态/);
   assert.match(xhsJobTranscriptTool.description, /content context/);
   assert.match(xhsJobTranscriptTool.description, /is_terminal is true/);
   assert.match(xhsJobTranscriptTool.description, /not summary/);
   assert.match(douyinSubmitTranscriptTool.description, /speech-to-text transcript/);
-  assert.match(douyinSubmitTranscriptTool.description, /提交后最多等待 210 秒/);
+  assert.match(douyinSubmitTranscriptTool.description, /提交后最多等待 240 秒/);
   assert.match(douyinSubmitTranscriptTool.description, /同一个 job_id 直到终态/);
   assert.match(douyinJobTranscriptTool.description, /content context/);
   assert.match(douyinJobTranscriptTool.description, /is_terminal is true/);
   assert.match(douyinJobTranscriptTool.description, /not summary/);
   assert.match(kuaishouSubmitTranscriptTool.description, /speech-to-text transcript/);
-  assert.match(kuaishouSubmitTranscriptTool.description, /提交后最多等待 210 秒/);
+  assert.match(kuaishouSubmitTranscriptTool.description, /提交后最多等待 240 秒/);
   assert.match(kuaishouSubmitTranscriptTool.description, /同一个 job_id 直到终态/);
   assert.match(kuaishouJobTranscriptTool.description, /content context/);
   assert.match(kuaishouJobTranscriptTool.description, /is_terminal is true/);
   assert.match(kuaishouJobTranscriptTool.description, /not summary/);
   assert.match(weiboSubmitTranscriptTool.description, /speech-to-text transcript/);
-  assert.match(weiboSubmitTranscriptTool.description, /提交后最多等待 210 秒/);
+  assert.match(weiboSubmitTranscriptTool.description, /提交后最多等待 240 秒/);
   assert.match(weiboSubmitTranscriptTool.description, /同一个 job_id 直到终态/);
   assert.match(weiboJobTranscriptTool.description, /content context/);
   assert.match(weiboJobTranscriptTool.description, /is_terminal is true/);
   assert.match(weiboJobTranscriptTool.description, /not summary/);
   assert.match(wechatSubmitTranscriptTool.description, /speech-to-text transcript/);
-  assert.match(wechatSubmitTranscriptTool.description, /提交后最多等待 210 秒/);
+  assert.match(wechatSubmitTranscriptTool.description, /提交后最多等待 240 秒/);
   assert.match(wechatSubmitTranscriptTool.description, /同一个 job_id 直到终态/);
   assert.match(wechatJobTranscriptTool.description, /content context/);
   assert.match(wechatJobTranscriptTool.description, /is_terminal is true/);
@@ -8134,25 +9153,28 @@ test("doctor json prints parseable safety summary", () => {
 test("README documents transcript job output as transcript plus content context", () => {
   const readme = readFileSync(join(packageDir, "README.md"), "utf8");
 
+  assert.match(readme, /submit may wait up to 240 seconds/);
+  assert.match(readme, /submit waits up to 240 seconds/);
+  assert.doesNotMatch(readme, /210 seconds/);
   assert.match(
     readme,
-    /Check an XHS speech-to-text transcript job by job_id without creating a new task; optional wait_seconds 0-240 can long-poll the same job in one request\. Continue querying the same job_id until is_terminal is true\. Returns transcript plus content context, not summary\./
+    /Check an XHS speech-to-text transcript job by job_id without creating a new task\. Each call waits up to 240 seconds for the same job\. If unfinished, continue querying the same job_id until is_terminal is true\. Returns transcript plus content context, not summary\./
   );
   assert.match(
     readme,
-    /Check a Douyin speech-to-text transcript job by job_id without creating a new task; optional wait_seconds 0-240 can long-poll the same job in one request\. Continue querying the same job_id until is_terminal is true\. Returns transcript plus content context, not summary\./
+    /Check a Douyin speech-to-text transcript job by job_id without creating a new task\. Each call waits up to 240 seconds for the same job\. If unfinished, continue querying the same job_id until is_terminal is true\. Returns transcript plus content context, not summary\./
   );
   assert.match(
     readme,
-    /Check a Kuaishou speech-to-text transcript job by job_id without creating a new task; optional wait_seconds 0-240 can long-poll the same job in one request\. Continue querying the same job_id until is_terminal is true\. Returns transcript plus content context, not summary\./
+    /Check a Kuaishou speech-to-text transcript job by job_id without creating a new task\. Each call waits up to 240 seconds for the same job\. If unfinished, continue querying the same job_id until is_terminal is true\. Returns transcript plus content context, not summary\./
   );
   assert.match(
     readme,
-    /Check a Weibo speech-to-text transcript job by job_id without creating a new task; optional wait_seconds 0-240 can long-poll the same job in one request\. Continue querying the same job_id until is_terminal is true\. Returns transcript plus content context, not summary\./
+    /Check a Weibo speech-to-text transcript job by job_id without creating a new task\. Each call waits up to 240 seconds for the same job\. If unfinished, continue querying the same job_id until is_terminal is true\. Returns transcript plus content context, not summary\./
   );
   assert.match(
     readme,
-    /Check a WeChat Channels \/ 视频号 speech-to-text transcript job by job_id without creating a new task; optional wait_seconds 0-240 can long-poll the same job in one request\. Continue querying the same job_id until is_terminal is true\. Returns transcript plus content context, not summary\./
+    /Check a WeChat Channels \/ 视频号 speech-to-text transcript job by job_id without creating a new task\. Each call waits up to 240 seconds for the same job\. If unfinished, continue querying the same job_id until is_terminal is true\. Returns transcript plus content context, not summary\./
   );
 });
 
@@ -8400,24 +9422,143 @@ test("direct CLI README examples include all public kuaishou actions", () => {
   assert.match(readme, /kuaishou_get_hot_search_list/);
   assert.match(
     readme,
-    /XHS, Douyin, Kuaishou, Weibo, and WeChat Channels search use `--keyword` and optional `--page-token`/
+    /Search commands for XHS, Douyin, Kuaishou, Bilibili, Zhihu, Instagram, X \/ Twitter, YouTube, TikTok, Weibo, and WeChat Channels use `--keyword` and optional `--page-token`/
   );
   assert.doesNotMatch(readme, /露营博主/);
   assert.match(readme, /Kuaishou search does not accept Douyin semantic filters/);
   assert.match(readme, /`kuaishou user-search` does not support `--since-days`/);
 });
 
-test("direct CLI README examples include public bilibili download", () => {
+test("direct CLI README examples include public bilibili actions", () => {
   const readme = readFileSync(join(packageDir, "README.md"), "utf8");
 
-  assert.match(
-    readme,
-    /bilibili download --url "<bilibili_video_url_or_share_text>" --output-dir \.\/downloads/
-  );
+  for (const example of [
+    'bilibili search-videos --keyword "露营"',
+    'bilibili search-articles --keyword "露营"',
+    'bilibili detail --content-id "<content_id>"',
+    'bilibili detail --url "<bilibili_content_url_or_share_text>"',
+    'bilibili comments --content-id "<content_id>"',
+    'bilibili comments --url "<bilibili_content_url_or_share_text>"',
+    'bilibili replies --comment-object-id "<comment_object_id>" --comment-object-type 1 --comment-id "<comment_id>"',
+    'bilibili reactions --post-id "<post_id>"',
+    'bilibili reactions --url "<bilibili_opus_or_dynamic_url_or_share_text>"',
+    'bilibili user-info --user-id "<user_id>"',
+    'bilibili user-info --profile-url "<profile_url_or_share_text>"',
+    'bilibili user-videos --user-id "<user_id>"',
+    'bilibili user-videos --profile-url "<profile_url_or_share_text>"',
+    'bilibili user-articles --user-id "<user_id>"',
+    'bilibili user-articles --profile-url "<profile_url_or_share_text>"',
+    'bilibili user-dynamics --user-id "<user_id>"',
+    'bilibili user-dynamics --profile-url "<profile_url_or_share_text>"',
+    'bilibili download --url "<bilibili_video_url_or_share_text>" --output-dir ./downloads',
+  ]) {
+    assert.match(readme, new RegExp(escapeRegExp(example)));
+  }
   assert.match(readme, /Bilibili hosted MCP endpoint: `https:\/\/mcp\.socialdatax\.com\/bilibili\/mcp`/);
+  assert.match(readme, /bilibili_search_videos/);
+  assert.match(readme, /bilibili_search_articles/);
+  assert.match(readme, /bilibili_get_content_comments_by_url/);
+  assert.match(readme, /bilibili_get_user_posted_dynamics_by_profile_url/);
   assert.match(readme, /bilibili_get_video_download_links/);
   assert.match(readme, /download-links request consumes 10 credits/);
   assert.match(readme, /Local Bilibili download merge requires `ffmpeg`/);
+});
+
+test("direct CLI README examples include newly supported public platform actions", () => {
+  const readme = readFileSync(join(packageDir, "README.md"), "utf8");
+
+  for (const example of [
+    'zhihu hot-list',
+    'zhihu search --keyword "露营"',
+    'zhihu detail --content-url "<zhihu_content_url_or_share_text>"',
+    'zhihu comments --content-url "<zhihu_content_url_or_share_text>"',
+    'zhihu replies --content-url "<zhihu_content_url_or_share_text>" --comment-id "<comment_id>"',
+    'zhihu user-info --profile-url "<profile_url_or_share_text>"',
+    'zhihu user-posts --profile-url "<profile_url_or_share_text>"',
+    'instagram search --keyword "camping"',
+    'instagram detail --post-id "<post_id>"',
+    'instagram detail --post-url "<instagram_post_url_or_share_text>"',
+    'instagram comments --post-url "<instagram_post_url_or_share_text>"',
+    'instagram replies --post-id "<post_id>" --comment-id "<comment_id>"',
+    'instagram user-info --username "<username>"',
+    'instagram user-info --profile-url "<profile_url_or_share_text>"',
+    'instagram user-posts --username "<username>"',
+    'instagram user-posts --profile-url "<profile_url_or_share_text>"',
+    'x search --keyword "camping"',
+    'x detail --post-id "<post_id>"',
+    'x detail --post-url "<x_post_url_or_share_text>"',
+    'x comments --post-id "<post_id>"',
+    'x comments --post-url "<x_post_url_or_share_text>"',
+    'x replies --post-id "<post_id>" --comment-id "<comment_id>"',
+    'x user-info --user-id "<user_id>"',
+    'x user-info --username "<username>"',
+    'x user-info --profile-url "<profile_url_or_share_text>"',
+    'x user-posts --user-id "<user_id>"',
+    'x user-posts --username "<username>"',
+    'x user-posts --profile-url "<profile_url_or_share_text>"',
+    'youtube search --keyword "camping"',
+    'youtube detail --url "<youtube_video_url>"',
+    'youtube comments --url "<youtube_video_url>"',
+    'youtube replies --reply-token "<reply_token>"',
+    'youtube channel-info --channel-url "<youtube_channel_url>"',
+    'youtube user-posts --channel-url "<youtube_channel_url>"',
+    'tiktok search --keyword "camping"',
+    'tiktok detail --url "<tiktok_post_url_or_share_text>"',
+    'tiktok comments --post-id "<post_id>"',
+    'tiktok comments --url "<tiktok_post_url_or_share_text>"',
+    'tiktok replies --post-id "<post_id>" --comment-id "<comment_id>"',
+    'tiktok user-info --tiktok-id "<tiktok_id>"',
+    'tiktok user-info --profile-url "<profile_url_or_share_text>"',
+    'tiktok user-posts --tiktok-id "<tiktok_id>"',
+    'tiktok user-posts --profile-url "<profile_url_or_share_text>"',
+  ]) {
+    assert.match(readme, new RegExp(escapeRegExp(example)));
+  }
+  assert.match(readme, /Zhihu \/ 知乎 hosted MCP endpoint: `https:\/\/mcp\.socialdatax\.com\/zhihu\/mcp`/);
+  assert.match(readme, /Instagram hosted MCP endpoint: `https:\/\/mcp\.socialdatax\.com\/instagram\/mcp`/);
+  assert.match(readme, /X \/ Twitter hosted MCP endpoint: `https:\/\/mcp\.socialdatax\.com\/x\/mcp`/);
+  assert.match(readme, /YouTube hosted MCP endpoint: `https:\/\/mcp\.socialdatax\.com\/youtube\/mcp`/);
+  assert.match(readme, /TikTok hosted MCP endpoint: `https:\/\/mcp\.socialdatax\.com\/tiktok\/mcp`/);
+  assert.match(readme, /zhihu_search_content/);
+  assert.match(readme, /instagram_get_post_comment_replies_by_comment_id/);
+  assert.match(readme, /x_get_user_posts_by_profile_url/);
+  assert.match(readme, /youtube_get_video_comment_replies/);
+  assert.match(readme, /first-level comment `reply_token`/);
+  assert.match(readme, /tiktok_get_post_comment_replies/);
+});
+
+test("skills package submission checklist verifies newly supported platform keywords", () => {
+  const checklist = readFileSync(join(packageDir, "SUBMISSION_CHECKLIST.md"), "utf8");
+
+  for (const keyword of [
+    "Bilibili",
+    "bilibili mcp",
+    "B站 mcp",
+    "zhihu mcp",
+    "Instagram",
+    "instagram mcp",
+    "X Twitter",
+    "twitter mcp",
+    "YouTube",
+    "youtube mcp",
+    "TikTok",
+    "tiktok mcp",
+    "敏感词检测 skill",
+  ]) {
+    assert.match(checklist, new RegExp(escapeRegExp(keyword)));
+  }
+  assert.match(checklist, /## Hosted MCP Checks/);
+  assert.doesNotMatch(checklist, /## Platform MCP Checks/);
+  assert.doesNotMatch(checklist, /future-platform search keywords/);
+  assert.match(
+    checklist,
+    /do not submit them as standalone MCP Registry listings until repo-tracked listing and registry materials exist/
+  );
+  assert.match(checklist, /`CATALOG\.md`/);
+  assert.match(
+    checklist,
+    /includes `cli\.mjs`, `README\.md`, `CATALOG\.md`, and `skills\/\*\*`/
+  );
 });
 
 test("direct CLI README examples include public weibo and wechat actions", () => {
@@ -8450,8 +9591,8 @@ test("direct CLI README examples include public weibo and wechat actions", () =>
     'wechat comments --object-id "<object_id>" --object-nonce-id "<object_nonce_id>"',
     'wechat comments --url "<wechat_video_url_or_share_text>"',
     'wechat replies --object-id "<object_id>" --object-nonce-id "<object_nonce_id>" --comment-id "<comment_id>"',
-    'wechat user-info --user-id "<finder_user_id>"',
-    'wechat user-posts --user-id "<finder_user_id>"',
+    'wechat user-info --user-id "<v2_finder_user_id>"',
+    'wechat user-posts --user-id "<v2_finder_user_id>"',
     'wechat user-posts --url "<wechat_video_url_or_share_text>"',
     'wechat transcript --url "<wechat_video_url_or_share_text>"',
     'wechat transcript --encrypted-object-id "<encrypted_object_id>"',
@@ -8461,17 +9602,23 @@ test("direct CLI README examples include public weibo and wechat actions", () =>
   }
   assert.match(
     readme,
-    /XHS, Douyin, Kuaishou, Weibo, and WeChat Channels search use `--keyword` and optional `--page-token`/
+    /Search commands for XHS, Douyin, Kuaishou, Bilibili, Zhihu, Instagram, X \/ Twitter, YouTube, TikTok, Weibo, and WeChat Channels use `--keyword` and optional `--page-token`/
   );
   assert.match(readme, /WeChat Channels search filters use semantic values/);
   assert.match(readme, /wechat_get_mp_article_detail_by_url/);
-  assert.match(readme, /WeChat \/ 微信 hosted MCP endpoint/);
+  assert.match(readme, /WeChat Content \/ 微信内容 hosted MCP endpoint/);
   assert.match(readme, /WeChat Official Account skills/);
   assert.match(readme, /微信公众号 skills/);
-  assert.match(readme, /Current WeChat \/ 微信 workflows include:/);
+  assert.match(readme, /Current WeChat Content \/ 微信内容 workflows include/);
   assert.match(
     readme,
     /WeChat Official Account \/ 微信公众号 article link or share text/
+  );
+  assert.match(readme, /also reads WeChat Official Account article link details/);
+  assert.doesNotMatch(
+    readme,
+    /creator content workflows for cross-platform content research across [^\n]*WeChat Official Account articles/,
+    "README should not describe Official Account articles as part of the full search/comment/creator workflow surface"
   );
   assert.match(
     readme,
@@ -8498,7 +9645,54 @@ test("direct CLI docs keep search pagination platform-specific", () => {
   assert.match(help.stdout, /weibo hot-search --pretty/);
   assert.match(help.stdout, /weibo search --keyword/);
   assert.match(help.stdout, /kuaishou hot-search --pretty/);
+  assert.match(help.stdout, /bilibili search-videos --keyword/);
+  assert.match(help.stdout, /bilibili search-articles --keyword/);
+  assert.match(help.stdout, /bilibili detail --content-id "<content_id>"/);
+  assert.match(help.stdout, /bilibili comments --content-id "<content_id>"/);
+  assert.match(help.stdout, /bilibili replies --comment-object-id "<comment_object_id>" --comment-object-type 1 --comment-id "<comment_id>"/);
+  assert.match(help.stdout, /bilibili reactions --url "<bilibili_opus_or_dynamic_url_or_share_text>"/);
+  assert.match(help.stdout, /bilibili user-info --profile-url "<profile_url_or_share_text>"/);
+  assert.match(help.stdout, /bilibili user-videos --profile-url "<profile_url_or_share_text>"/);
+  assert.match(help.stdout, /bilibili user-articles --profile-url "<profile_url_or_share_text>"/);
+  assert.match(help.stdout, /bilibili user-dynamics --profile-url "<profile_url_or_share_text>"/);
   assert.match(help.stdout, /bilibili download --url "<bilibili_video_url_or_share_text>" --output-dir \.\/downloads/);
+  assert.match(help.stdout, /--content-id <content_id>/);
+  assert.match(help.stdout, /--max-wait-seconds <seconds>/);
+  assert.match(
+    help.stdout,
+    /Only for XHS, Douyin, Kuaishou, Weibo, and WeChat Channels search and creator content-list commands/
+  );
+  assert.match(help.stdout, /zhihu search --keyword/);
+  assert.match(help.stdout, /zhihu hot-list --pretty/);
+  assert.match(help.stdout, /zhihu detail --content-url "<zhihu_content_url_or_share_text>"/);
+  assert.match(help.stdout, /zhihu comments --content-url "<zhihu_content_url_or_share_text>"/);
+  assert.match(help.stdout, /zhihu replies --content-url "<zhihu_content_url_or_share_text>" --comment-id "<comment_id>"/);
+  assert.match(help.stdout, /zhihu user-info --profile-url "<profile_url_or_share_text>"/);
+  assert.match(help.stdout, /zhihu user-posts --profile-url "<profile_url_or_share_text>"/);
+  assert.match(help.stdout, /instagram search --keyword/);
+  assert.match(help.stdout, /instagram detail --post-url "<instagram_post_url_or_share_text>"/);
+  assert.match(help.stdout, /instagram comments --post-url "<instagram_post_url_or_share_text>"/);
+  assert.match(help.stdout, /instagram replies --post-id "<post_id>" --comment-id "<comment_id>"/);
+  assert.match(help.stdout, /instagram user-info --username "<username>"/);
+  assert.match(help.stdout, /instagram user-posts --username "<username>"/);
+  assert.match(help.stdout, /x search --keyword/);
+  assert.match(help.stdout, /x detail --post-url "<x_post_url_or_share_text>"/);
+  assert.match(help.stdout, /x comments --post-url "<x_post_url_or_share_text>"/);
+  assert.match(help.stdout, /x replies --post-id "<post_id>" --comment-id "<comment_id>"/);
+  assert.match(help.stdout, /x user-info --username "<username>"/);
+  assert.match(help.stdout, /x user-posts --username "<username>"/);
+  assert.match(help.stdout, /youtube search --keyword/);
+  assert.match(help.stdout, /youtube detail --url "<youtube_video_url>"/);
+  assert.match(help.stdout, /youtube comments --url "<youtube_video_url>"/);
+  assert.match(help.stdout, /youtube replies --reply-token "<reply_token>"/);
+  assert.match(help.stdout, /youtube channel-info --channel-url "<youtube_channel_url>"/);
+  assert.match(help.stdout, /youtube user-posts --channel-url "<youtube_channel_url>"/);
+  assert.match(help.stdout, /tiktok search --keyword/);
+  assert.match(help.stdout, /tiktok detail --url "<tiktok_post_url_or_share_text>"/);
+  assert.match(help.stdout, /tiktok comments --url "<tiktok_post_url_or_share_text>"/);
+  assert.match(help.stdout, /tiktok replies --post-id "<post_id>" --comment-id "<comment_id>"/);
+  assert.match(help.stdout, /tiktok user-info --tiktok-id "<tiktok_id>"/);
+  assert.match(help.stdout, /tiktok user-posts --tiktok-id "<tiktok_id>"/);
   assert.match(help.stdout, /xhs download-media --url "<xhs_media_url>" --output-dir \.\/downloads/);
   assert.match(help.stdout, /douyin download-media --url "<douyin_media_url>" --output-dir \.\/downloads/);
   assert.match(help.stdout, /kuaishou download-media --url "<kuaishou_media_url>" --output-dir \.\/downloads/);
@@ -8510,10 +9704,67 @@ test("direct CLI docs keep search pagination platform-specific", () => {
     help.stdout,
     /--sort-type <all\|time_descending\|collect_count_descending>/
   );
+  assert.match(help.stdout, /--comment-object-id <comment_object_id>/);
+  assert.match(help.stdout, /--comment-object-type <comment_object_type>/);
+  assert.match(
+    help.stdout,
+    /--sort-type <general\|view_count_descending\|time_descending\|danmaku_count_descending\|collect_count_descending>/
+  );
+  assert.match(help.stdout, /Bilibili comments sort; omit for default sort\./);
+  assert.match(
+    help.stdout,
+    /--sort-type <time_descending\|view_count_descending\|collect_count_descending>/
+  );
+  assert.match(
+    help.stdout,
+    /Bilibili creator video-list sort; omit for default sort\./
+  );
+  assert.match(
+    help.stdout,
+    /--category <all\|animation\|gaming\|film_and_tv\|lifestyle\|hobbies\|light_novel\|technology\|notes>/
+  );
+  assert.match(help.stdout, /--publish-time-start-date <YYYY-MM-DD>/);
+  assert.match(help.stdout, /--publish-time-end-date <YYYY-MM-DD>/);
+  assert.match(help.stdout, /--publish-time-range <all\|day\|week\|half_year>/);
+  assert.match(
+    help.stdout,
+    /--duration-range <all\|under_10_minutes\|between_10_and_30_minutes\|between_30_and_60_minutes\|over_60_minutes>/
+  );
+  assert.match(help.stdout, /--content-type <all\|answer\|article\|video>/);
+  assert.match(
+    help.stdout,
+    /--sort-type <general\|upvote_count_descending\|time_descending>/
+  );
+  assert.match(help.stdout, /--sort-type <default\|time_descending>/);
+  assert.match(help.stdout, /Zhihu comments sort; omit for default sort\./);
+  assert.match(
+    help.stdout,
+    /--publish-time-range <all\|day\|week\|month\|three_months\|half_year\|year>/
+  );
+  assert.match(help.stdout, /--sort-type <hot\|time_descending>/);
+  assert.match(
+    help.stdout,
+    /--sort-type <general\|time_descending\|view_count_descending\|rating>/
+  );
+  assert.match(help.stdout, /--video-type <all\|video\|movie>/);
+  assert.match(help.stdout, /--video-type <video\|short>/);
+  assert.match(
+    help.stdout,
+    /--publish-time-range <all\|last_hour\|today\|this_week\|this_month\|this_year>/
+  );
+  assert.match(
+    help.stdout,
+    /--duration-range <all\|under_4_min\|between_4_and_20_min\|over_20_min>/
+  );
   assert.match(
     readme,
     /Search pagination uses `--page-token` when continuing with a returned `next_page_token`\./
   );
+  assert.match(
+    readme,
+    /Use `--since-days <1-365>` only on XHS, Douyin, Kuaishou, Weibo, and WeChat Channels search and creator content-list commands/
+  );
+  assert.doesNotMatch(readme, /For search and creator content-list commands, use `--since-days/);
   assert.doesNotMatch(readme, /XHS search also keeps numeric `--page`/);
   assert.match(
     readme,
@@ -8526,6 +9777,38 @@ test("direct CLI docs keep search pagination platform-specific", () => {
   assert.match(
     readme,
     /`kuaishou_search_users` \| Search Kuaishou creators by keyword with optional `page_token` continuation; do not pass `page`\./
+  );
+  assert.match(
+    readme,
+    /`bilibili_search_videos` \| Search Bilibili videos by keyword with optional `page_token` continuation, sorting, publish-time, and duration filters\./
+  );
+  assert.match(
+    readme,
+    /`zhihu_search_content` \| Search Zhihu public content by keyword with optional content type, sort, publish-time, and `page_token` filters\./
+  );
+  assert.match(
+    readme,
+    /`youtube_get_video_comment_replies` \| Fetch paginated YouTube comment replies by the first-level comment reply_token\./
+  );
+  assert.match(
+    readme,
+    /Bilibili and YouTube comments accept optional `--sort-type` values: `hot` and\s+`time_descending`; Zhihu comments accept `default` and `time_descending`\./
+  );
+  assert.match(
+    readme,
+    /Bilibili creator videos accept optional `--sort-type` values:\s+`time_descending`, `view_count_descending`, and `collect_count_descending`/
+  );
+  assert.match(
+    readme,
+    /Use `--video-type video\|short` on `youtube user-posts` when you need only regular videos or Shorts\./
+  );
+  assert.match(
+    readme,
+    /`--publish-time-range` supports `all`, `day`, `week`, `month`,\s+`three_months`, `half_year`, and `year`/
+  );
+  assert.match(
+    readme,
+    /`--publish-time-range all\|last_hour\|today\|this_week\|this_month\|this_year`/
   );
   assert.doesNotMatch(readme, /douyin_search_videos` \| Search Douyin works by keyword with optional paging/);
   assert.doesNotMatch(readme, /kuaishou_search_videos` \| Search Kuaishou works by natural-language keyword with optional paging/);
@@ -8577,6 +9860,57 @@ test("user skill docs describe douyin profile-url entry without legacy url wordi
       /bio or signature|liked count|favorited count|posted content count|received collect count|pin status/
     );
   }
+});
+
+test("media user info skill documents the WeChat video-link MCP entry", () => {
+  const skill = readFileSync(
+    join(packageDir, "skills", "media-user-info", "SKILL.md"),
+    "utf8"
+  );
+
+  assert.match(
+    skill,
+    /wechat_get_user_info_by_url.*WeChat Channels \/ 视频号 video link or share text/
+  );
+  assert.match(
+    skill,
+    /Prefer the direct CLI; hosted MCP tools are optional/
+  );
+  assert.doesNotMatch(skill, /wechat user-info --url/);
+});
+
+test("content research skill lists the WeChat video-link profile MCP entry", () => {
+  const skill = readFileSync(
+    join(packageDir, "skills", "socialdatax-content-research-assistant", "SKILL.md"),
+    "utf8"
+  );
+
+  assert.match(
+    skill,
+    /MCP-only tools not available through the direct CLI:[\s\S]*`wechat_get_user_info_by_url`/
+  );
+  assert.equal(
+    skill.match(/MCP-only tools not available through the direct CLI:/g)?.length,
+    1
+  );
+  const mcpOnlyOffset = skill.indexOf("MCP-only tools not available through the direct CLI:");
+  const sourceOfTruthOffset = skill.indexOf(
+    "Use the automatically listed MCP tools above as the source of truth"
+  );
+  assert.notEqual(mcpOnlyOffset, -1);
+  assert.notEqual(sourceOfTruthOffset, -1);
+  assert.ok(
+    mcpOnlyOffset < sourceOfTruthOffset,
+    "MCP-only tool names should be listed before the source-of-truth guidance"
+  );
+  assert.match(
+    skill,
+    /MCP-only tools not available through the direct CLI:[^\n]+\n\nUse the automatically listed MCP tools above/
+  );
+  assert.match(
+    skill,
+    /Prefer the direct CLI; hosted MCP tools are optional/
+  );
 });
 
 test("help and search skill document the five public sort meanings", () => {
@@ -8782,12 +10116,22 @@ test("list output documents aggregate skill and Douyin creator series", () => {
   assert.equal(result.stderr, "");
   assert.match(result.stdout, /socialdatax-content-research-assistant/);
   assert.match(result.stdout, /cross-platform content research/);
-  assert.match(result.stdout, /WeChat Official Account articles/);
+  assert.match(result.stdout, /WeChat Official Account article details/);
+  assert.doesNotMatch(
+    result.stdout,
+    /Coordinate cross-platform content research[^\n]*WeChat Official Account articles/
+  );
   assert.match(result.stdout, /media-transcript/);
   assert.match(result.stdout, /speech-to-text transcript jobs/);
   assert.match(result.stdout, /media-user-posts/);
   assert.match(result.stdout, /Douyin creator short-drama series/);
   assert.match(result.stdout, /Kuaishou/);
+  assert.match(result.stdout, /Bilibili/);
+  assert.match(result.stdout, /Zhihu/);
+  assert.match(result.stdout, /Instagram/);
+  assert.match(result.stdout, /X \/ Twitter posts/);
+  assert.match(result.stdout, /YouTube/);
+  assert.match(result.stdout, /TikTok/);
 });
 
 test("install dry-run reports existing destination without force", () => {
@@ -8872,5 +10216,24 @@ test("print-config is no longer supported by the skills package", () => {
   assert.match(result.stderr, /\] print-config is no longer supported by this skills package\./);
   assert.match(result.stderr, /hosted streamable HTTP/);
   assert.match(result.stderr, /mcp-remote/);
+  for (const platform of [
+    "xhs",
+    "douyin",
+    "kuaishou",
+    "bilibili",
+    "weibo",
+    "wechat",
+    "zhihu",
+    "instagram",
+    "x",
+    "youtube",
+    "tiktok",
+    "sensitive-check",
+  ]) {
+    assert.match(
+      result.stderr,
+      new RegExp(`https://mcp\\.socialdatax\\.com/${platform}/mcp`)
+    );
+  }
   assert.doesNotMatch(result.stdout, /streamable_http/);
 });

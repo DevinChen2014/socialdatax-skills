@@ -22,7 +22,7 @@ metadata: {"openclaw":{"requires":{"env":["SOCIALDATAX_API_KEY"],"bins":["node",
 
 ## API Key 获取
 
-获取或管理 API Key：访问 <https://socialdatax.com/ai?from=modelscope>，按官网的 API Key 申请/管理入口操作。环境变量名固定使用 `SOCIALDATAX_API_KEY`；不要引导用户使用其他域名；do not infer alternate domains。
+获取或管理 API Key：访问 <https://socialdatax.com/ai?from=modelscope>，按官网的 API Key 申请/管理入口操作。环境变量名固定使用 `SOCIALDATAX_API_KEY`；不要引导用户使用其他域名。
 
 ## 直接调用命令
 
@@ -49,20 +49,18 @@ npx -y socialdatax-skills@latest xhs sub-comments \
 - 说明：XHS `--note-id <note_id>`：使用搜索、详情、评论或创作者笔记列表返回的完整 24 位小写十六进制 `note_id`；不要只传前缀。
 - 说明：XHS 评论 `--sort-type <default|time_descending|like_count_descending>`：可选一级评论排序；不传就使用平台默认排序。
 - 可选：`--url <url_or_share_text>`：用于一级评论入口的内容页 URL、短链或分享文本。
-- 条件必填：`--comment-id <comment_id>`：回复命令必填；使用同一内容下的一级评论 ID。
 - 可选：`--page-token <next_page_token>`：这是不透明的分页 token；在同一条内容或评论链路下，必须把完整返回的 `next_page_token` 原样传回，不能截断、改写、脱敏、重建，或用省略号替换中间内容。
 - 可选：`--pages <n>`：获取并合并 N 页一级评论或回复。
 - 可选：`--all`：持续获取一级评论或回复，直到 `next_page_token` 为空；默认没有条数或页数上限。
 - 可选：`--max-items <n>`：收集到 N 条一级评论或回复后停止。
-- 可选：`--include-replies`：仅用于一级 `comments` 命令；同时获取每条一级评论下的二级回复。
 
 通用：
 - 可选：`--pretty`：只影响输出格式，不改变实际请求结果。
 - 可选：`--source-client socialdatax-skills --source-platform modelscope --source-skill xhs-comment-insights`：这是当前 Agent Skill 的来源标记；按本 Skill 示例执行时保持这些值不变。
 
-一级评论命令使用内容 ID 或 URL 其中一种入口即可，不要同时传；回复命令需要内容 ID 和 `--comment-id` 一起使用。
+一级评论命令使用平台内容 ID 或 URL 其中一种入口即可，不要同时传；回复命令使用 CLI 示例中对应平台需要的回复定位参数。
 
-命令返回 JSON，包含 `platform`、`tool`、`arguments` 和 `data`。多页结果会把一级评论合并到 `data.items`，并补充 `page_count`、`item_count` 和下一页标记；如果使用 `--include-replies`，每条一级评论还会带上 `replies`、`replies_page_count` 和 `replies_next_page_token`。
+命令返回 JSON，包含 `platform`、`tool`、`arguments` 和 `data`。多页结果会把一级评论合并到 `data.items`，并补充 `page_count`、`item_count` 和下一页标记；在支持 `--include-replies` 的平台上，每条一级评论还会带上 `replies`、`replies_page_count` 和 `replies_next_page_token`。
 
 ## 输出建议
 
@@ -87,7 +85,6 @@ npx -y socialdatax-skills@latest xhs sub-comments \
 - `xhs_get_note_comments_by_note_url`：用于笔记链接、短链或分享文本；可选 `sort_type` 支持 `default`、`time_descending` 或 `like_count_descending`。
 - `xhs_get_note_sub_comments_by_comment_id`：当你已经拿到完整的 24 位小写十六进制 `note_id` 和一级评论 ID 时使用；不要只传笔记 ID 前缀。
 
-评论翻页使用不透明的 `page_token`。同一条内容或评论链路下，必须把完整返回的 `next_page_token` 原样传回，不能改写、截断、脱敏、重建，或用省略号替换中间部分。用户需要多页评论或完整的一二级评论树时，优先使用 CLI 的 `--pages`、`--all` 和 `--include-replies`。
 XHS 回复翻页同样使用 `page_token`，并且只适用于当前这条评论链路。
 
 ## 安全边界

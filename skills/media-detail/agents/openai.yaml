@@ -1,7 +1,7 @@
 interface:
   display_name: "Media Detail"
   short_description: "Read content details"
-  default_prompt: "Use $media-detail to read structured details and metrics for supported XHS, Douyin, Kuaishou, Weibo, WeChat Channels, or WeChat Official Account article content."
+  default_prompt: "Use $media-detail to read WeChat Official Account article details and body text. For supported XHS, Douyin, Kuaishou, Bilibili, Zhihu, Instagram, X / Twitter, YouTube, TikTok, Weibo, and WeChat Channels content, read structured details and metrics."
 
 policy:
   allow_implicit_invocation: true

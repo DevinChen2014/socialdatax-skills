@@ -22,7 +22,7 @@ metadata: {"openclaw":{"requires":{"env":["SOCIALDATAX_API_KEY"],"bins":["node",
 
 ## API Key 获取
 
-获取或管理 API Key：访问 <https://socialdatax.com/ai?from=modelscope>，按官网的 API Key 申请/管理入口操作。环境变量名固定使用 `SOCIALDATAX_API_KEY`；不要引导用户使用其他域名；do not infer alternate domains。
+获取或管理 API Key：访问 <https://socialdatax.com/ai?from=modelscope>，按官网的 API Key 申请/管理入口操作。环境变量名固定使用 `SOCIALDATAX_API_KEY`；不要引导用户使用其他域名。
 
 ## 直接调用命令
 
@@ -106,6 +106,8 @@ npx -y socialdatax-skills@latest xhs detail \
 如果当前 Agent 已可直接调用 MCP 工具，可按入口选择以下工具：
 - `xhs_get_note_detail_by_note_id`：当你已经拿到完整的 24 位小写十六进制 `note_id` 时使用；不要只传前缀。
 - `xhs_get_note_detail_by_note_url`：用于笔记链接、短链或分享文本。
+
+小红书搜索参数命名提醒：direct CLI 使用 `--sort-type`、`--publish-time-range`、`--note-type`；MCP 工具 `xhs_search_notes` 使用 `sort_type`、`publish_time_range`、`note_type`。不要传 `sortType`、`publishTimeRange` 或 `noteType`。
 
 ## 安全边界
 

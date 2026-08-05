@@ -1,6 +1,6 @@
 ---
 name: "media-detail"
-description: "Read structured social media content details and metrics from content IDs, URLs, short links, or share text. This version is backed by hosted platform MCP services and supports Xiaohongshu, 小红书, XHS, RedNote, Douyin / 抖音, Kuaishou / 快手 / Kwai, Weibo / 微博, WeChat Channels / 视频号, and WeChat Official Account / 微信公众号 articles."
+description: "Read structured social media content details and metrics from content IDs, URLs, short links, or share text for supported platforms including Xiaohongshu / XHS / RedNote, Douyin, Kuaishou, Bilibili, Zhihu, Instagram, X / Twitter, YouTube, TikTok, Weibo, and WeChat Channels. For WeChat Official Account articles, read article details and body text from article links."
 source_client: "socialdatax-skills"
 source_platform: "npm"
 source_skill: "media-detail"
@@ -24,13 +24,19 @@ metadata:
 
 # Media Detail
 
-Use this skill when the user provides a content link, short link, share text, content ID, or mp.weixin.qq.com article link and wants structured details or interaction metrics.
+Use this skill when the user provides an mp.weixin.qq.com article link and wants WeChat Official Account article body text. For other supported content links, short links, share text, or content IDs, use it for structured details or interaction metrics where supported.
 
 Current platform support:
 
 - Xiaohongshu / XHS / RedNote notes through the `xhs_get_note_detail_by_*` tools.
 - Douyin / 抖音 works, including video and image/text posts, through the `douyin_get_video_detail_by_*` tools.
 - Kuaishou / 快手 works through the `kuaishou_get_video_detail_by_*` tools.
+- Bilibili / 哔哩哔哩 / B站 videos, articles, and dynamics through the `bilibili_get_content_detail_by_*` tools.
+- Zhihu / 知乎 answers, articles, and videos through `zhihu_get_content_detail_by_url`.
+- Instagram posts through the `instagram_get_post_detail_by_*` tools.
+- X / Twitter posts through the `x_get_post_detail_by_*` tools.
+- YouTube videos through `youtube_get_video_detail_by_url`.
+- TikTok videos and image posts through `tiktok_get_post_detail_by_url`.
 - Weibo / 微博 posts through the `weibo_get_post_detail_by_*` tools.
 - WeChat Channels / 视频号 videos through the `wechat_get_video_detail_by_*` tools.
 - WeChat Official Account / 微信公众号 articles through `wechat_get_mp_article_detail_by_url`.
@@ -38,7 +44,7 @@ Current platform support:
 ## API Key
 
 Use `SOCIALDATAX_API_KEY` for SocialDataX requests. The only official website for requesting or managing API access is <https://socialdatax.com/ai?from=npm>. If a user asks where to get a key, provide only this URL; do not infer alternate domains.
-获取或管理 API Key：访问 <https://socialdatax.com/ai?from=npm>，按官网的 API Key 申请/管理入口操作。环境变量名固定使用 `SOCIALDATAX_API_KEY`；不要引导用户使用其他域名；do not infer alternate domains。
+获取或管理 API Key：访问 <https://socialdatax.com/ai?from=npm>，按官网的 API Key 申请/管理入口操作。环境变量名固定使用 `SOCIALDATAX_API_KEY`；不要引导用户使用其他域名。
 
 ## Preferred Direct CLI
 
@@ -68,6 +74,42 @@ npx -y socialdatax-skills@latest kuaishou detail \
 npx -y socialdatax-skills@latest kuaishou detail \
   --url "<kuaishou_content_url_or_share_text>" --pretty \
   --source-client socialdatax-skills --source-platform npm --source-skill media-detail
+
+npx -y socialdatax-skills@latest bilibili detail \
+  --content-id "<content_id>" --pretty --source-client socialdatax-skills \
+  --source-platform npm --source-skill media-detail
+
+npx -y socialdatax-skills@latest bilibili detail \
+  --url "<bilibili_content_url_or_share_text>" --pretty \
+  --source-client socialdatax-skills --source-platform npm --source-skill media-detail
+
+npx -y socialdatax-skills@latest zhihu detail \
+  --content-url "<zhihu_content_url_or_share_text>" --pretty \
+  --source-client socialdatax-skills --source-platform npm --source-skill media-detail
+
+npx -y socialdatax-skills@latest instagram detail \
+  --post-id "<post_id>" --pretty --source-client socialdatax-skills \
+  --source-platform npm --source-skill media-detail
+
+npx -y socialdatax-skills@latest instagram detail \
+  --post-url "<instagram_post_url_or_share_text>" --pretty \
+  --source-client socialdatax-skills --source-platform npm --source-skill media-detail
+
+npx -y socialdatax-skills@latest x detail \
+  --post-id "<post_id>" --pretty --source-client socialdatax-skills \
+  --source-platform npm --source-skill media-detail
+
+npx -y socialdatax-skills@latest x detail \
+  --post-url "<x_post_url_or_share_text>" --pretty --source-client socialdatax-skills \
+  --source-platform npm --source-skill media-detail
+
+npx -y socialdatax-skills@latest youtube detail \
+  --url "<youtube_video_url>" --pretty --source-client socialdatax-skills \
+  --source-platform npm --source-skill media-detail
+
+npx -y socialdatax-skills@latest tiktok detail \
+  --url "<tiktok_post_url_or_share_text>" --pretty --source-client socialdatax-skills \
+  --source-platform npm --source-skill media-detail
 
 npx -y socialdatax-skills@latest weibo detail \
   --post-id "<post_id>" --pretty --source-client socialdatax-skills \
@@ -99,6 +141,15 @@ Optional arguments:
 - `--pretty`: output formatting only.
 - Kuaishou `--photo-id <photo_id>`: preferred when the Kuaishou work photo_id is already known.
 - Kuaishou `--url <kuaishou_content_url_or_share_text>`: use for a Kuaishou work page URL, short link, or share text.
+- Bilibili `--content-id <content_id>`: preferred when the Bilibili content ID is already known.
+- Bilibili `--url <bilibili_content_url_or_share_text>`: use for a Bilibili video, article, dynamic, short link, or share text.
+- Zhihu `--content-url <zhihu_content_url_or_share_text>`: use for a Zhihu answer, article, or video URL.
+- Instagram `--post-id <post_id>`: preferred when the Instagram post ID is already known.
+- Instagram `--post-url <instagram_post_url_or_share_text>`: use for an Instagram post URL.
+- X / Twitter `--post-id <post_id>`: preferred when the X post ID is already known.
+- X / Twitter `--post-url <x_post_url_or_share_text>`: use for an X post URL.
+- YouTube `--url <youtube_video_url>`: use for a YouTube video URL.
+- TikTok `--url <tiktok_post_url_or_share_text>`: use for a TikTok post URL or share text.
 - Weibo `--post-id <post_id>`: preferred when the Weibo post ID is already known.
 - Weibo `--post-url <weibo_post_url_or_share_text>`: use for a Weibo post URL, short link, or share text.
 - WeChat Channels / 视频号 `--encrypted-object-id <encrypted_object_id>`: use when the encrypted_object_id from search is already known.
@@ -124,6 +175,15 @@ MCP tools matching the direct CLI commands above:
 - `douyin_get_video_detail_by_url`
 - `kuaishou_get_video_detail_by_photo_id`
 - `kuaishou_get_video_detail_by_url`
+- `bilibili_get_content_detail_by_id`
+- `bilibili_get_content_detail_by_url`
+- `zhihu_get_content_detail_by_url`
+- `instagram_get_post_detail_by_post_id`
+- `instagram_get_post_detail_by_post_url`
+- `x_get_post_detail_by_post_id`
+- `x_get_post_detail_by_post_url`
+- `youtube_get_video_detail_by_url`
+- `tiktok_get_post_detail_by_url`
 - `weibo_get_post_detail_by_post_id`
 - `weibo_get_post_detail_by_post_url`
 - `wechat_get_video_detail_by_encrypted_object_id`
@@ -137,6 +197,15 @@ If MCP tools are already available in the current agent, use one of these tools:
 - `douyin_get_video_detail_by_url`: use for Douyin content page URLs, short links, or share text; do not pass playback URLs such as `video.play_url`.
 - `kuaishou_get_video_detail_by_photo_id`: use when a photo_id is already known.
 - `kuaishou_get_video_detail_by_url`: use for Kuaishou work page URLs, short links, or share text.
+- `bilibili_get_content_detail_by_id`: use when a Bilibili content_id is already known.
+- `bilibili_get_content_detail_by_url`: use for Bilibili video, article, dynamic, short link, or share text.
+- `zhihu_get_content_detail_by_url`: use for Zhihu answer, article, or video URLs.
+- `instagram_get_post_detail_by_post_id`: use when an Instagram post_id is already known.
+- `instagram_get_post_detail_by_post_url`: use for Instagram post URLs.
+- `x_get_post_detail_by_post_id`: use when an X post_id is already known.
+- `x_get_post_detail_by_post_url`: use for X post URLs.
+- `youtube_get_video_detail_by_url`: use for YouTube video URLs.
+- `tiktok_get_post_detail_by_url`: use for TikTok post URLs or share text.
 - `weibo_get_post_detail_by_post_id`: use when a post_id is already known.
 - `weibo_get_post_detail_by_post_url`: use for Weibo post URLs, short links, or share text.
 - `wechat_get_video_detail_by_encrypted_object_id`: use when encrypted_object_id from search is already known.
@@ -153,6 +222,8 @@ For Douyin detail, include `content_type` when available.
 For Douyin detail, use `images` for image/text posts; `video` is the platform player resource and may be audio for image/text posts; `music` is the bound music or original-sound asset.
 When the user wants to save Douyin media after detail, pass each returned `images[].url`, `images[].live_photo.play_url`, `video.play_url`, `music.play_url`, or `cover_image_url` to `npx -y socialdatax-skills@latest douyin download-media --url "<media_url>" --output-dir <directory> --pretty`; this local save command does not require `SOCIALDATAX_API_KEY`.
 When the user wants to save Kuaishou media after detail, pass each returned `images[].url`, `video.play_url`, or `cover_image_url` to `npx -y socialdatax-skills@latest kuaishou download-media --url "<media_url>" --output-dir <directory> --pretty`; this local save command does not require `SOCIALDATAX_API_KEY`.
+For Bilibili detail, preserve returned content IDs and URLs because comments, replies, and article/dynamic reactions may need them.
+For Zhihu, Instagram, X / Twitter, YouTube, and TikTok detail results, keep the returned URL and public content ID values exactly as returned for follow-up comments or creator lookups.
 Detail access is read-only and does not provide account actions.
 For Weibo detail, include `post_id`, content, author, media, interaction counts, publish time, and post URL when available.
 When the user wants to save Weibo media after detail, pass each returned `image_urls[]` or `video.video_url` to `npx -y socialdatax-skills@latest weibo download-media --url "<media_url>" --output-dir <directory> --pretty`; this local save command does not require `SOCIALDATAX_API_KEY`.

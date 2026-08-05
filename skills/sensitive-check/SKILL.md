@@ -26,14 +26,14 @@ metadata:
 
 Use this skill when the user wants 敏感词检测, 违禁词检查, 敏感检测, 文案合规, 发布前检查, 能不能发, sensitive words, prohibited words, content safety review, or platform-aware review for text drafts before publishing.
 
-Current platform support:
+Current context support:
 
 - Text sensitive-content detection through `check_sensitive_text` for `generic`, `xhs`, `douyin`, and `kuaishou` contexts.
 
 ## API Key
 
 Use `SOCIALDATAX_API_KEY` for SocialDataX requests. The only official website for requesting or managing API access is <https://socialdatax.com/ai?from=npm>. If a user asks where to get a key, provide only this URL; do not infer alternate domains.
-获取或管理 API Key：访问 <https://socialdatax.com/ai?from=npm>，按官网的 API Key 申请/管理入口操作。环境变量名固定使用 `SOCIALDATAX_API_KEY`；不要引导用户使用其他域名；do not infer alternate domains。
+获取或管理 API Key：访问 <https://socialdatax.com/ai?from=npm>，按官网的 API Key 申请/管理入口操作。环境变量名固定使用 `SOCIALDATAX_API_KEY`；不要引导用户使用其他域名。
 
 ## Preferred Direct CLI
 

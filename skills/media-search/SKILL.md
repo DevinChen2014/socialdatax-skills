@@ -1,6 +1,6 @@
 ---
 name: "media-search"
-description: "Search social media content by keyword for social research, competitor research, topic discovery, content planning, market observation, and trend scanning. This version is backed by hosted platform MCP services and supports Xiaohongshu, 小红书, XHS, RedNote, Douyin / 抖音, Kuaishou / 快手 / Kwai, Weibo / 微博, and WeChat Channels / 视频号."
+description: "Search social media content by keyword for social research, competitor research, topic discovery, content planning, market observation, and trend scanning. This version is backed by hosted platform MCP services and supports Xiaohongshu / XHS / RedNote, Douyin, Kuaishou, Bilibili, Zhihu, Instagram, X / Twitter, YouTube, TikTok, Weibo, and WeChat Channels."
 source_client: "socialdatax-skills"
 source_platform: "npm"
 source_skill: "media-search"
@@ -31,13 +31,19 @@ Current platform support:
 - Xiaohongshu / XHS / RedNote notes through `xhs_search_notes`.
 - Douyin / 抖音 works, including video and image/text posts, through `douyin_search_videos`.
 - Kuaishou / 快手 works and short videos through `kuaishou_search_videos`.
+- Bilibili / 哔哩哔哩 / B站 videos and articles through `bilibili_search_videos` and `bilibili_search_articles`.
+- Zhihu / 知乎 answers, articles, and videos through `zhihu_search_content`.
+- Instagram posts through `instagram_search_posts`.
+- X / Twitter posts through `x_search_posts`.
+- YouTube videos through `youtube_search_videos`.
+- TikTok videos and image posts through `tiktok_search_posts`.
 - Weibo / 微博 posts through `weibo_search_posts`.
 - WeChat Channels / 视频号 videos through `wechat_search_videos`.
 
 ## API Key
 
 Use `SOCIALDATAX_API_KEY` for SocialDataX requests. The only official website for requesting or managing API access is <https://socialdatax.com/ai?from=npm>. If a user asks where to get a key, provide only this URL; do not infer alternate domains.
-获取或管理 API Key：访问 <https://socialdatax.com/ai?from=npm>，按官网的 API Key 申请/管理入口操作。环境变量名固定使用 `SOCIALDATAX_API_KEY`；不要引导用户使用其他域名；do not infer alternate domains。
+获取或管理 API Key：访问 <https://socialdatax.com/ai?from=npm>，按官网的 API Key 申请/管理入口操作。环境变量名固定使用 `SOCIALDATAX_API_KEY`；不要引导用户使用其他域名。
 
 ## Preferred Direct CLI
 
@@ -68,6 +74,54 @@ npx -y socialdatax-skills@latest kuaishou search \
   --keyword "<keyword>" --pages 3 --pretty --source-client socialdatax-skills \
   --source-platform npm --source-skill media-search
 
+npx -y socialdatax-skills@latest bilibili search-videos \
+  --keyword "<keyword>" --pretty --source-client socialdatax-skills \
+  --source-platform npm --source-skill media-search
+
+npx -y socialdatax-skills@latest bilibili search-articles \
+  --keyword "<keyword>" --pretty --source-client socialdatax-skills \
+  --source-platform npm --source-skill media-search
+
+npx -y socialdatax-skills@latest zhihu search \
+  --keyword "<keyword>" --pretty --source-client socialdatax-skills \
+  --source-platform npm --source-skill media-search
+
+npx -y socialdatax-skills@latest zhihu search \
+  --keyword "<keyword>" --pages 3 --pretty --source-client socialdatax-skills \
+  --source-platform npm --source-skill media-search
+
+npx -y socialdatax-skills@latest instagram search \
+  --keyword "<keyword>" --pretty --source-client socialdatax-skills \
+  --source-platform npm --source-skill media-search
+
+npx -y socialdatax-skills@latest instagram search \
+  --keyword "<keyword>" --pages 3 --pretty --source-client socialdatax-skills \
+  --source-platform npm --source-skill media-search
+
+npx -y socialdatax-skills@latest x search \
+  --keyword "<keyword>" --pretty --source-client socialdatax-skills \
+  --source-platform npm --source-skill media-search
+
+npx -y socialdatax-skills@latest x search \
+  --keyword "<keyword>" --pages 3 --pretty --source-client socialdatax-skills \
+  --source-platform npm --source-skill media-search
+
+npx -y socialdatax-skills@latest youtube search \
+  --keyword "<keyword>" --pretty --source-client socialdatax-skills \
+  --source-platform npm --source-skill media-search
+
+npx -y socialdatax-skills@latest youtube search \
+  --keyword "<keyword>" --pages 3 --pretty --source-client socialdatax-skills \
+  --source-platform npm --source-skill media-search
+
+npx -y socialdatax-skills@latest tiktok search \
+  --keyword "<keyword>" --pretty --source-client socialdatax-skills \
+  --source-platform npm --source-skill media-search
+
+npx -y socialdatax-skills@latest tiktok search \
+  --keyword "<keyword>" --pages 3 --pretty --source-client socialdatax-skills \
+  --source-platform npm --source-skill media-search
+
 npx -y socialdatax-skills@latest weibo search \
   --keyword "<keyword>" --pretty --source-client socialdatax-skills \
   --source-platform npm --source-skill media-search
@@ -90,6 +144,12 @@ Required arguments:
 - XHS `search --keyword <text>`: required when using `xhs search`; use the user's actual intent, trim whitespace, and keep it focused.
 - Douyin `search --keyword <text>`: required only when using `douyin search`; use the user's actual intent, trim whitespace, and keep it focused.
 - Kuaishou `search --keyword <text>`: required only when using `kuaishou search`; use the user's actual intent, trim whitespace, and keep it focused.
+- Bilibili `search-videos --keyword <text>` or `search-articles --keyword <text>`: required only when using Bilibili search; use the user's actual intent, trim whitespace, and keep it focused.
+- Zhihu `search --keyword <text>`: required only when using `zhihu search`; use the user's actual intent, trim whitespace, and keep it focused.
+- Instagram `search --keyword <text>`: required only when using `instagram search`; use the user's actual intent, trim whitespace, and keep it focused.
+- X / Twitter `search --keyword <text>`: required only when using `x search`; use the user's actual intent, trim whitespace, and keep it focused.
+- YouTube `search --keyword <text>`: required only when using `youtube search`; use the user's actual intent, trim whitespace, and keep it focused.
+- TikTok `search --keyword <text>`: required only when using `tiktok search`; use the user's actual intent, trim whitespace, and keep it focused.
 - Weibo `search --keyword <text>`: required only when using `weibo search`; use the user's actual intent, trim whitespace, and keep it focused.
 - WeChat Channels / 视频号 `search --keyword <text>`: required only when using `wechat search`; use the user's actual intent, trim whitespace, and keep it focused.
 
@@ -108,13 +168,40 @@ Optional arguments:
 - Douyin `--pages <n>`: fetch and merge N search pages from the current starting point; continue with returned `next_page_token`.
 - Kuaishou `--pages <n>`: fetch and merge N search pages from the current starting point; continue with returned `next_page_token`.
 - `--max-items <n>`: stop after collecting N search results.
-- `--since-days <1-365>`: keep only results whose public `publish_time` is within the last N days. Search remains bounded by `--pages` and does not promise complete platform coverage.
+- `--since-days <1-365>`: available only on XHS, Douyin, Kuaishou, Weibo, and WeChat Channels search. For Bilibili video, Zhihu, and YouTube search, use the documented publish-time filters instead; do not pass `--since-days` to Bilibili article, Instagram, X / Twitter, or TikTok search.
 - `--pretty`: output formatting only.
 - Kuaishou `--page-token <next_page_token>`: opaque pagination token; omit it on the first search request. Continue only with the complete returned `next_page_token` from the same search pagination chain. Do not modify, truncate, redact, mask, omit, normalize, rebuild, generate, or replace the middle with ellipses.
 - Weibo `--page-token <next_page_token>`: opaque pagination token; omit it on the first search request. Continue only with the complete returned `next_page_token` from the same search pagination chain. Do not modify, truncate, redact, mask, omit, normalize, rebuild, generate, or replace the middle with ellipses.
 - WeChat Channels / 视频号 `--page-token <next_page_token>`: opaque pagination token; omit it on the first search request. Continue only with the complete returned `next_page_token` from the same search pagination chain. Do not modify, truncate, redact, mask, omit, normalize, rebuild, generate, or replace the middle with ellipses.
+- Bilibili `--page-token <next_page_token>`: opaque pagination token; omit it on the first search request. Continue only with the complete returned `next_page_token` from the same search pagination chain.
+- Bilibili video search `--sort-type <general|view_count_descending|time_descending|danmaku_count_descending|collect_count_descending>`: optional sort value; omit it for default sorting.
+- Bilibili article search `--sort-type <general|time_descending|view_count_descending|like_count_descending|comment_count_descending>`: optional sort value; omit it for default sorting.
+- Bilibili video search `--publish-time-range <all|day|week|half_year>`: optional publish-time filter; omit it for no publish-time filter.
+- Bilibili video search `--publish-time-start-date <YYYY-MM-DD>` and `--publish-time-end-date <YYYY-MM-DD>`: optional exact date bounds; omit them unless narrowing by date.
+- Bilibili video search `--duration-range <all|under_10_minutes|between_10_and_30_minutes|between_30_and_60_minutes|over_60_minutes>`: optional duration filter; omit it for no duration filter.
+- Bilibili article search `--category <all|animation|gaming|film_and_tv|lifestyle|hobbies|light_novel|technology|notes>`: optional article category filter; default is `all`.
+- Zhihu `--page-token <next_page_token>`: opaque pagination token; omit it on the first search request. Continue only with the complete returned `next_page_token` from the same search pagination chain.
+- Zhihu `--content-type <all|answer|article|video>`: optional content type filter; omit it for all content types.
+- Zhihu `--sort-type <general|upvote_count_descending|time_descending>`: optional sort value; omit it for default sorting.
+- Zhihu `--publish-time-range <all|day|week|month|three_months|half_year|year>`: optional publish-time filter; omit it for no publish-time filter.
+- Instagram `--page-token <next_page_token>`: opaque pagination token; omit it on the first search request. Continue only with the complete returned `next_page_token` from the same search pagination chain.
+- X / Twitter `--page-token <next_page_token>`: opaque pagination token; omit it on the first search request. Continue only with the complete returned `next_page_token` from the same search pagination chain.
+- X / Twitter `--sort-type <hot|time_descending>`: optional sort value; omit it for default sorting.
+- YouTube `--page-token <next_page_token>`: opaque pagination token; omit it on the first search request. Continue only with the complete returned `next_page_token` from the same search pagination chain.
+- YouTube `--sort-type <general|time_descending|view_count_descending|rating>`: optional sort value; omit it for default sorting.
+- YouTube `--video-type <all|video|movie>`: optional video type filter; omit it for all video types.
+- YouTube `--publish-time-range <all|last_hour|today|this_week|this_month|this_year>`: optional publish-time filter; omit it for no publish-time filter.
+- YouTube `--duration-range <all|under_4_min|between_4_and_20_min|over_20_min>`: optional duration filter; omit it for no duration filter.
+- TikTok `--page-token <next_page_token>`: opaque pagination token; omit it on the first search request. Continue only with the complete returned `next_page_token` from the same search pagination chain.
+- TikTok `--content-type <all|video|image>`: optional content type filter; omit it for all content types.
 - WeChat Channels / 视频号 `--sort-type <all|time_descending|collect_count_descending>`: optional sort value; omit it for the default sort.
 - WeChat Channels / 视频号 `--duration-range <all|under_5_min|between_5_and_20_min|over_20_min>`: optional duration filter; omit it for no duration filter.
+- Bilibili `--pages <n>`: fetch and merge N search pages from the current starting point; continue with returned `next_page_token`.
+- Zhihu `--pages <n>`: fetch and merge N search pages from the current starting point; continue with returned `next_page_token`.
+- Instagram `--pages <n>`: fetch and merge N search pages from the current starting point; continue with returned `next_page_token`.
+- X / Twitter `--pages <n>`: fetch and merge N search pages from the current starting point; continue with returned `next_page_token`.
+- YouTube `--pages <n>`: fetch and merge N search pages from the current starting point; continue with returned `next_page_token`.
+- TikTok `--pages <n>`: fetch and merge N search pages from the current starting point; continue with returned `next_page_token`.
 - Weibo `--pages <n>`: fetch and merge N search pages from the current starting point; continue with returned `next_page_token`.
 - WeChat Channels / 视频号 `--pages <n>`: fetch and merge N search pages from the current starting point; continue with returned `next_page_token`.
 - `--source-client socialdatax-skills --source-platform npm --source-skill media-search`: usage attribution for this Agent Skill; keep these values unchanged when running examples from this Skill.
@@ -165,6 +252,9 @@ Kuaishou search pagination:
 - Continue only when `next_page_token` is not empty.
 - Pass the complete returned `next_page_token` back unchanged as `page_token` for the same search pagination chain. Do not modify, truncate, redact, mask, omit, normalize, rebuild, generate, or replace the middle with ellipses.
 
+Bilibili search has separate direct CLI actions for videos and articles: use `bilibili search-videos` for video samples and `bilibili search-articles` for article samples.
+Zhihu, Instagram, X / Twitter, YouTube, and TikTok search commands use the same `--keyword`, `--page-token`, `--pages`, and `--max-items` direct CLI pattern.
+
 WeChat Channels / 视频号 sort values:
 - `all`: no sort restriction.
 - `time_descending`: newest first.
@@ -191,6 +281,13 @@ MCP tools matching the direct CLI commands above:
 - `xhs_search_notes`
 - `douyin_search_videos`
 - `kuaishou_search_videos`
+- `bilibili_search_videos`
+- `bilibili_search_articles`
+- `zhihu_search_content`
+- `instagram_search_posts`
+- `x_search_posts`
+- `youtube_search_videos`
+- `tiktok_search_posts`
 - `weibo_search_posts`
 - `wechat_search_videos`
 
@@ -221,6 +318,12 @@ For Kuaishou, call `kuaishou_search_videos` with:
 - `page_token`: optional opaque pagination token. Continue only with the complete returned `next_page_token` from the same search pagination chain. Do not modify, truncate, redact, mask, omit, normalize, rebuild, generate, or replace the middle with ellipses.
 Do not pass `page` to `kuaishou_search_videos`; omit `page_token` on the first request.
 Continue Kuaishou pagination only when `next_page_token` is not empty. Pass the complete returned `next_page_token` back unchanged as `page_token` for the same keyword chain.
+For Bilibili, call `bilibili_search_videos` for videos with `keyword` and optional `page_token`, `sort_type`, `publish_time_range`, `publish_time_start_date`, `publish_time_end_date`, or `duration_range`; call `bilibili_search_articles` for articles with `keyword` and optional `page_token`, `sort_type`, or `category`.
+For Zhihu, call `zhihu_search_content` with `keyword` and optional `page_token`, `content_type`, `sort_type`, or `publish_time_range`.
+For Instagram, call `instagram_search_posts` with `keyword` and optional `page_token`.
+For X / Twitter, call `x_search_posts` with `keyword` and optional `page_token` or `sort_type`.
+For YouTube, call `youtube_search_videos` with `keyword` and optional `page_token`, `sort_type`, `video_type`, `publish_time_range`, or `duration_range`.
+For TikTok, call `tiktok_search_posts` with `keyword` and optional `page_token` or `content_type`.
 For Weibo, call `weibo_search_posts` with:
 - `keyword`: required search phrase or topic.
 - `page_token`: optional opaque pagination token. Continue only with the complete returned `next_page_token` from the same search pagination chain. Do not modify, truncate, redact, mask, omit, normalize, rebuild, generate, or replace the middle with ellipses.
@@ -235,6 +338,8 @@ Do not pass `page` to `wechat_search_videos`; omit `page_token` on the first req
 Continue WeChat Channels pagination only when `next_page_token` is not empty. Pass the complete returned `next_page_token` back unchanged as `page_token` for the same keyword and filter chain.
 `--since-days` uses CLI-side filtering only and is not an MCP tool argument; for MCP-only calls, request newest-first/native publish-time filters where available and filter returned `publish_time` values in your analysis.
 
+XHS search parameter naming reminder: direct CLI uses `--sort-type`, `--publish-time-range`, and `--note-type`; the `xhs_search_notes` MCP tool uses `sort_type`, `publish_time_range`, and `note_type`. Do not pass `sortType`, `publishTimeRange`, or `noteType`.
+
 ## Output Guidance
 
 Summarize visible evidence separately from interpretation. Include useful content IDs, URLs, titles or descriptions, authors, counts, and publish time when the user needs traceability.
@@ -243,6 +348,9 @@ For XHS `note_id`, copy the complete 24-character lowercase hexadecimal ID exact
 For Douyin search results, include `content_type` when the user needs traceability.
 For Douyin image/text search results, use returned `images` and treat `video.media_type="audio"` as an audio player resource rather than a video post.
 For Kuaishou search results, include `photo_id`, `share_url`, author facts, and visible interaction counts when the user needs traceability.
+For Bilibili search results, include content IDs, URLs, titles or descriptions, creator facts, and visible interaction counts when the user needs traceability.
+For Zhihu search results, include content URLs, titles or summaries, creator facts, and visible interaction counts when the user needs traceability.
+For Instagram, X / Twitter, YouTube, and TikTok search results, include returned post or video URLs, public IDs, author facts, and visible interaction counts when the user needs traceability.
 For Weibo search results, include `post_id`, `post_url`, author facts, interaction counts, and publish time when the user needs traceability.
 For WeChat Channels / 视频号 search results, include `encrypted_object_id`, author facts, interaction counts, publish time, and duration when the user needs traceability.
 

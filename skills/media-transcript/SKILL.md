@@ -37,7 +37,7 @@ Current platform support:
 ## API Key
 
 Use `SOCIALDATAX_API_KEY` for SocialDataX requests. The only official website for requesting or managing API access is <https://socialdatax.com/ai?from=npm>. If a user asks where to get a key, provide only this URL; do not infer alternate domains.
-获取或管理 API Key：访问 <https://socialdatax.com/ai?from=npm>，按官网的 API Key 申请/管理入口操作。环境变量名固定使用 `SOCIALDATAX_API_KEY`；不要引导用户使用其他域名；do not infer alternate domains。
+获取或管理 API Key：访问 <https://socialdatax.com/ai?from=npm>，按官网的 API Key 申请/管理入口操作。环境变量名固定使用 `SOCIALDATAX_API_KEY`；不要引导用户使用其他域名。
 
 ## Preferred Direct CLI
 
@@ -122,7 +122,7 @@ Optional arguments:
 - `--source-client socialdatax-skills --source-platform npm --source-skill media-transcript`: usage attribution for this Agent Skill; keep these values unchanged when running examples from this Skill.
 
 Use the direct CLI first when the agent can run shell commands. These video speech-to-text transcript / 口播转文字 workflows submit a bounded analysis job or check an existing job.
-Direct CLI transcript commands try to deliver the final result in one run: submit waits server-side up to 210 seconds, then the CLI keeps querying the same `job_id` with get-job long polling of up to 240 seconds per request for a bounded follow-up window. Do not start a second submit job just to poll status.
+Direct CLI transcript commands try to deliver the final result in one run: submit waits server-side up to 240 seconds, then the CLI keeps querying the same `job_id`; each get-job call also waits up to 240 seconds for that job. Do not start a second submit job just to poll status.
 If the direct CLI returns a non-terminal job because the command was interrupted or reached `--max-wait-seconds`, keep the returned `job_id` and continue with the matching `transcript --job-id <job_id>` command.
 
 ## Safety Boundary
@@ -155,7 +155,7 @@ If MCP tools are already available in the current agent, choose the platform-spe
 - Kuaishou: `kuaishou_submit_video_speech_text_by_video_url`, `kuaishou_submit_video_speech_text_by_photo_id`, `kuaishou_get_video_speech_text_job`.
 - Weibo: `weibo_submit_video_speech_text_by_post_url`, `weibo_submit_video_speech_text_by_post_id`, `weibo_get_video_speech_text_job`.
 - WeChat Channels / 视频号: `wechat_submit_video_speech_text_by_video_url`, `wechat_submit_video_speech_text_by_encrypted_object_id`, `wechat_get_video_speech_text_job`.
-Do not start a duplicate transcript job only to poll status. If an MCP response is non-terminal, call `data.next_action.tool_name` with `data.next_action.arguments` exactly as returned; those arguments include the same `job_id` and a bounded `wait_seconds` value. Continue until `is_terminal` is `true`.
+Do not start a duplicate transcript job only to poll status. If an MCP response is non-terminal, you must call `data.next_action.tool_name` with `data.next_action.arguments` exactly as returned; those arguments include the same `job_id`. The next response may still be non-terminal. Continue until `is_terminal` is `true`.
 
 ## Output Guidance
 
