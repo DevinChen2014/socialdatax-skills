@@ -2,7 +2,7 @@
 name: "media-comments"
 description: "Fetch and analyze comments/replies for supported SocialDataX public platforms. This version is backed by hosted platform MCP services and supports Xiaohongshu / XHS / RedNote, Douyin, Kuaishou, Bilibili, Zhihu, Instagram, X / Twitter, YouTube, TikTok, Weibo, and WeChat Channels."
 source_client: "socialdatax-skills"
-source_platform: "npm"
+source_platform: "github"
 source_skill: "media-comments"
 metadata:
   openclaw:
@@ -18,7 +18,7 @@ metadata:
         package: "socialdatax-skills"
         bins: []
     emoji: "💬"
-    homepage: "https://socialdatax.com/ai?from=npm"
+    homepage: "https://socialdatax.com/ai?from=github"
 ---
 <!-- AUTO-GENERATED from socialdatax-skill-source. Do not edit directly; run `node scripts/generate_socialdatax_skills.mjs`. -->
 
@@ -42,8 +42,8 @@ Current platform support:
 
 ## API Key
 
-Use `SOCIALDATAX_API_KEY` for SocialDataX requests. The only official website for requesting or managing API access is <https://socialdatax.com/ai?from=npm>. If a user asks where to get a key, provide only this URL; do not infer alternate domains.
-获取或管理 API Key：访问 <https://socialdatax.com/ai?from=npm>，按官网的 API Key 申请/管理入口操作。环境变量名固定使用 `SOCIALDATAX_API_KEY`；不要引导用户使用其他域名。
+Use `SOCIALDATAX_API_KEY` for SocialDataX requests. The only official website for requesting or managing API access is <https://socialdatax.com/ai?from=github>. If a user asks where to get a key, provide only this URL; do not infer alternate domains.
+获取或管理 API Key：访问 <https://socialdatax.com/ai?from=github>，按官网的 API Key 申请/管理入口操作。环境变量名固定使用 `SOCIALDATAX_API_KEY`；不要引导用户使用其他域名。
 
 ## Preferred Direct CLI
 
@@ -52,174 +52,174 @@ Prefer the direct CLI when the agent can run shell commands. It does not require
 ```bash
 npx -y socialdatax-skills@latest xhs comments \
   --note-id "<note_id>" --pretty --source-client socialdatax-skills \
-  --source-platform npm --source-skill media-comments
+  --source-platform github --source-skill media-comments
 
 npx -y socialdatax-skills@latest xhs comments \
   --note-id "<note_id>" --all --include-replies --pretty \
-  --source-client socialdatax-skills --source-platform npm \
+  --source-client socialdatax-skills --source-platform github \
   --source-skill media-comments
 
 npx -y socialdatax-skills@latest xhs comments \
   --url "<note_url_or_share_text>" --pretty --source-client socialdatax-skills \
-  --source-platform npm --source-skill media-comments
+  --source-platform github --source-skill media-comments
 
 npx -y socialdatax-skills@latest xhs sub-comments \
   --note-id "<note_id>" --comment-id "<comment_id>" --pretty \
-  --source-client socialdatax-skills --source-platform npm \
+  --source-client socialdatax-skills --source-platform github \
   --source-skill media-comments
 
 npx -y socialdatax-skills@latest douyin comments \
   --aweme-id "<aweme_id>" --pretty --source-client socialdatax-skills \
-  --source-platform npm --source-skill media-comments
+  --source-platform github --source-skill media-comments
 
 npx -y socialdatax-skills@latest douyin comments \
   --aweme-id "<aweme_id>" --all --include-replies --pretty \
-  --source-client socialdatax-skills --source-platform npm \
+  --source-client socialdatax-skills --source-platform github \
   --source-skill media-comments
 
 npx -y socialdatax-skills@latest douyin comments \
   --url "<douyin_content_url_or_share_text>" --pretty \
-  --source-client socialdatax-skills --source-platform npm \
+  --source-client socialdatax-skills --source-platform github \
   --source-skill media-comments
 
 npx -y socialdatax-skills@latest douyin replies \
   --aweme-id "<aweme_id>" --comment-id "<comment_id>" --pretty \
-  --source-client socialdatax-skills --source-platform npm \
+  --source-client socialdatax-skills --source-platform github \
   --source-skill media-comments
 
 npx -y socialdatax-skills@latest kuaishou comments \
   --photo-id "<photo_id>" --pretty --source-client socialdatax-skills \
-  --source-platform npm --source-skill media-comments
+  --source-platform github --source-skill media-comments
 
 npx -y socialdatax-skills@latest kuaishou comments \
   --photo-id "<photo_id>" --all --include-replies --pretty \
-  --source-client socialdatax-skills --source-platform npm \
+  --source-client socialdatax-skills --source-platform github \
   --source-skill media-comments
 
 npx -y socialdatax-skills@latest kuaishou comments \
   --url "<kuaishou_content_url_or_share_text>" --pretty \
-  --source-client socialdatax-skills --source-platform npm \
+  --source-client socialdatax-skills --source-platform github \
   --source-skill media-comments
 
 npx -y socialdatax-skills@latest kuaishou replies \
   --photo-id "<photo_id>" --comment-id "<comment_id>" --pretty \
-  --source-client socialdatax-skills --source-platform npm \
+  --source-client socialdatax-skills --source-platform github \
   --source-skill media-comments
 
 npx -y socialdatax-skills@latest bilibili comments \
   --content-id "<content_id>" --pretty --source-client socialdatax-skills \
-  --source-platform npm --source-skill media-comments
+  --source-platform github --source-skill media-comments
 
 npx -y socialdatax-skills@latest bilibili comments \
   --url "<bilibili_content_url_or_share_text>" --pretty \
-  --source-client socialdatax-skills --source-platform npm \
+  --source-client socialdatax-skills --source-platform github \
   --source-skill media-comments
 
 npx -y socialdatax-skills@latest bilibili replies \
   --comment-object-id "<comment_object_id>" \
   --comment-object-type "<comment_object_type>" --comment-id "<comment_id>" --pretty \
-  --source-client socialdatax-skills --source-platform npm \
+  --source-client socialdatax-skills --source-platform github \
   --source-skill media-comments
 
 npx -y socialdatax-skills@latest zhihu comments \
   --content-url "<zhihu_content_url_or_share_text>" --pretty \
-  --source-client socialdatax-skills --source-platform npm \
+  --source-client socialdatax-skills --source-platform github \
   --source-skill media-comments
 
 npx -y socialdatax-skills@latest zhihu replies \
   --content-url "<zhihu_content_url_or_share_text>" --comment-id "<comment_id>" \
-  --pretty --source-client socialdatax-skills --source-platform npm \
+  --pretty --source-client socialdatax-skills --source-platform github \
   --source-skill media-comments
 
 npx -y socialdatax-skills@latest instagram comments \
   --post-url "<instagram_post_url_or_share_text>" --pretty \
-  --source-client socialdatax-skills --source-platform npm \
+  --source-client socialdatax-skills --source-platform github \
   --source-skill media-comments
 
 npx -y socialdatax-skills@latest instagram replies \
   --post-id "<post_id>" --comment-id "<comment_id>" --pretty \
-  --source-client socialdatax-skills --source-platform npm \
+  --source-client socialdatax-skills --source-platform github \
   --source-skill media-comments
 
 npx -y socialdatax-skills@latest x comments \
   --post-id "<post_id>" --pretty --source-client socialdatax-skills \
-  --source-platform npm --source-skill media-comments
+  --source-platform github --source-skill media-comments
 
 npx -y socialdatax-skills@latest x comments \
   --post-url "<x_post_url_or_share_text>" --pretty --source-client socialdatax-skills \
-  --source-platform npm --source-skill media-comments
+  --source-platform github --source-skill media-comments
 
 npx -y socialdatax-skills@latest x replies \
   --post-id "<post_id>" --comment-id "<comment_id>" --pretty \
-  --source-client socialdatax-skills --source-platform npm \
+  --source-client socialdatax-skills --source-platform github \
   --source-skill media-comments
 
 npx -y socialdatax-skills@latest youtube comments \
   --url "<youtube_video_url>" --pretty --source-client socialdatax-skills \
-  --source-platform npm --source-skill media-comments
+  --source-platform github --source-skill media-comments
 
 npx -y socialdatax-skills@latest youtube replies \
   --reply-token "<reply_token>" --pretty --source-client socialdatax-skills \
-  --source-platform npm --source-skill media-comments
+  --source-platform github --source-skill media-comments
 
 npx -y socialdatax-skills@latest tiktok comments \
   --post-id "<post_id>" --pretty --source-client socialdatax-skills \
-  --source-platform npm --source-skill media-comments
+  --source-platform github --source-skill media-comments
 
 npx -y socialdatax-skills@latest tiktok comments \
   --url "<tiktok_post_url_or_share_text>" --pretty --source-client socialdatax-skills \
-  --source-platform npm --source-skill media-comments
+  --source-platform github --source-skill media-comments
 
 npx -y socialdatax-skills@latest tiktok replies \
   --post-id "<post_id>" --comment-id "<comment_id>" --pretty \
-  --source-client socialdatax-skills --source-platform npm \
+  --source-client socialdatax-skills --source-platform github \
   --source-skill media-comments
 
 npx -y socialdatax-skills@latest weibo comments \
   --post-id "<post_id>" --pretty --source-client socialdatax-skills \
-  --source-platform npm --source-skill media-comments
+  --source-platform github --source-skill media-comments
 
 npx -y socialdatax-skills@latest weibo comments \
   --post-id "<post_id>" --all --include-replies --pretty \
-  --source-client socialdatax-skills --source-platform npm \
+  --source-client socialdatax-skills --source-platform github \
   --source-skill media-comments
 
 npx -y socialdatax-skills@latest weibo comments \
   --post-url "<weibo_post_url_or_share_text>" --pretty \
-  --source-client socialdatax-skills --source-platform npm \
+  --source-client socialdatax-skills --source-platform github \
   --source-skill media-comments
 
 npx -y socialdatax-skills@latest weibo replies \
   --post-id "<post_id>" --comment-id "<comment_id>" --pretty \
-  --source-client socialdatax-skills --source-platform npm \
+  --source-client socialdatax-skills --source-platform github \
   --source-skill media-comments
 
 npx -y socialdatax-skills@latest wechat comments \
   --object-id "<object_id>" --object-nonce-id "<object_nonce_id>" --pretty \
-  --source-client socialdatax-skills --source-platform npm \
+  --source-client socialdatax-skills --source-platform github \
   --source-skill media-comments
 
 npx -y socialdatax-skills@latest wechat comments \
   --object-id "<object_id>" --object-nonce-id "<object_nonce_id>" --all \
-  --include-replies --pretty --source-client socialdatax-skills --source-platform npm \
-  --source-skill media-comments
+  --include-replies --pretty --source-client socialdatax-skills \
+  --source-platform github --source-skill media-comments
 
 npx -y socialdatax-skills@latest wechat comments \
   --url "<wechat_video_url_or_share_text>" --pretty --source-client socialdatax-skills \
-  --source-platform npm --source-skill media-comments
+  --source-platform github --source-skill media-comments
 
 npx -y socialdatax-skills@latest wechat replies \
   --object-id "<object_id>" --object-nonce-id "<object_nonce_id>" \
   --comment-id "<comment_id>" --pretty --source-client socialdatax-skills \
-  --source-platform npm --source-skill media-comments
+  --source-platform github --source-skill media-comments
 ```
 
 Optional arguments:
 
-- XHS `--note-id <note_id>`: use the complete 24-character lowercase hexadecimal `note_id` returned from search, detail, comments, or creator note lists; do not pass only a prefix.
+- XHS `--note-id <note_id>`: use the entire `note_id` returned from search, detail, comments, or creator note lists; do not pass only a prefix.
 - XHS comments `--sort-type <default|time_descending|like_count_descending>`: optional first-level comment sort order; omit it for the platform default order.
 - Douyin `--aweme-id <aweme_id>`: preferred when the video ID is already known and should anchor the comment thread.
-- `--url <url_or_share_text>`: use for a content page URL, short link, or share text for first-level comments.
+- Use the URL entrypoint shown in the CLI example for a content page URL, short link, or share text for first-level comments.
 - Douyin URL safety: do not pass `video.play_url`; use a Douyin content page URL, short link, or share text instead.
 - `--comment-id <comment_id>`: required only for reply commands whose CLI example uses comment IDs; YouTube replies require the returned `--reply-token <reply_token>` instead.
 - `--page-token <next_page_token>`: opaque pagination token; pass the complete returned `next_page_token` back unchanged for the same content item or comment chain. Do not modify, truncate, redact, mask, omit, normalize, rebuild, generate, or replace the middle with ellipses.
@@ -244,15 +244,15 @@ Optional arguments:
 - Weibo `--post-url <weibo_post_url_or_share_text>`: use for a Weibo post URL, short link, or share text for first-level comments.
 - WeChat Channels / 视频号 `--object-id <object_id>` and `--object-nonce-id <object_nonce_id>`: use together when both values are already known and should anchor the comment thread.
 - WeChat Channels / 视频号 `--url <wechat_video_url_or_share_text>`: use for a WeChat Channels video link or share text for first-level comments.
-- `--source-client socialdatax-skills --source-platform npm --source-skill media-comments`: usage attribution for this Agent Skill; keep these values unchanged when running examples from this Skill.
+- `--source-client socialdatax-skills --source-platform github --source-skill media-comments`: usage attribution for this Agent Skill; keep these values unchanged when running examples from this Skill.
 
-Use either the platform content ID option or the URL option for first-level comments, not both. For reply commands, use the platform-specific reply identifiers shown in the CLI example.
+Use one first-level comment entrypoint shown in the CLI example at a time; do not mix multiple content identifiers in one command. For reply commands, use the platform-specific reply identifiers shown in the CLI example.
 
 The command prints JSON with `platform`, `tool`, `arguments`, and `data`. Multi-page output keeps merged primary comments in `data.items` and adds `page_count`, `item_count`, and the next-page marker. On platforms that support `--include-replies`, each first-level comment includes `replies`, `replies_page_count`, and `replies_next_page_token`.
 
 ## Safety Boundary
 
-This skill is read-only. It uses `SOCIALDATAX_API_KEY` from the user's environment at runtime. Generated Skill files do not contain API keys. It does not read local browser data or perform login, posting, liking, commenting, or account changes. Prefer the direct CLI; hosted MCP tools are optional when the current agent already supports authenticated streamable HTTP MCP.
+This skill is read-only. It uses `SOCIALDATAX_API_KEY` from the user's environment at runtime. Generated Skill files do not contain API keys. It does not read local browser data or perform login, posting, liking, commenting, or account changes.
 
 ## MCP Tools
 
@@ -271,20 +271,20 @@ MCP tools matching the direct CLI commands above:
 - WECHAT: `wechat_get_video_comments_by_object_id`, `wechat_get_video_comments_by_url`, `wechat_get_video_comment_replies_by_comment_id`
 
 If MCP tools are already available in the current agent, use one of these tools:
-- `xhs_get_note_comments_by_note_id`: use when the complete 24-character lowercase hexadecimal `note_id` is known; do not pass only a prefix; optional `sort_type` accepts `default`, `time_descending`, or `like_count_descending`.
+- `xhs_get_note_comments_by_note_id`: use when the full `note_id` is known; do not pass only a prefix; optional `sort_type` accepts `default`, `time_descending`, or `like_count_descending`.
 - `xhs_get_note_comments_by_note_url`: use for note URLs, short links, or share text; optional `sort_type` accepts `default`, `time_descending`, or `like_count_descending`.
-- `xhs_get_note_sub_comments_by_comment_id`: use when the complete 24-character lowercase hexadecimal `note_id` and first-level comment ID are known; do not pass only a note ID prefix.
+- `xhs_get_note_sub_comments_by_comment_id`: use when the full `note_id` and first-level comment ID are known; do not pass only a note ID prefix.
 - `douyin_get_video_comments_by_aweme_id`: use when the aweme_id is known.
 - `douyin_get_video_comments_by_url`: use for Douyin content page URLs, short links, or share text; do not pass playback URLs such as `video.play_url`.
 - `douyin_get_video_comment_replies_by_comment_id`: use when both aweme_id and first-level comment ID are known; use page_token to continue pagination.
 
-Comment pagination uses opaque `page_token` values. Pass the complete returned `next_page_token` back unchanged for the same content item or comment chain. Do not modify, truncate, redact, mask, omit, normalize, rebuild, generate, or replace the middle with ellipses. Prefer CLI `--pages` and `--all` for multiple comment pages; use `--include-replies` only on XHS, Douyin, Kuaishou, Weibo, and WeChat Channels / 视频号 when the user asks for a full first-level plus second-level comment tree.
-For Douyin comments and replies, continue only when `next_page_token` is non-empty; an empty string means there are no more comments or replies to request.
-XHS reply pagination also uses `page_token` and is bound to the current comment.
+- Comment pagination uses opaque `page_token` values. Pass the complete returned `next_page_token` back unchanged for the same content item or comment chain. Do not modify, truncate, redact, mask, omit, normalize, rebuild, generate, or replace the middle with ellipses. Prefer CLI `--pages` and `--all` for multiple comment pages; use `--include-replies` only on XHS, Douyin, Kuaishou, Weibo, and WeChat Channels / 视频号 when the user asks for a full first-level plus second-level comment tree.
+- For Douyin comments and replies, continue only when `next_page_token` is non-empty; an empty string means there are no more comments or replies to request.
+- XHS reply pagination also uses `page_token` and is bound to the current comment.
 - `kuaishou_get_video_comments_by_photo_id`: use when the photo_id is known.
 - `kuaishou_get_video_comments_by_url`: use for Kuaishou work page URLs, short links, or share text.
 - `kuaishou_get_video_comment_replies_by_comment_id`: use when the photo_id and first-level comment ID are known.
-For Kuaishou comments and replies, continue only when `next_page_token` is non-empty; an empty string means there are no more comments or replies to request.
+- For Kuaishou comments and replies, continue only when `next_page_token` is non-empty; an empty string means there are no more comments or replies to request.
 - `bilibili_get_content_comments_by_id`: use when the Bilibili content_id is known; optional `sort_type` accepts `hot` or `time_descending`.
 - `bilibili_get_content_comments_by_url`: use for Bilibili video, article, dynamic, short link, or share text; optional `sort_type` accepts `hot` or `time_descending`.
 - `bilibili_get_content_comment_replies_by_comment_id`: use when comment_object_id, comment_object_type, and first-level comment ID are known.
@@ -303,11 +303,11 @@ For Kuaishou comments and replies, continue only when `next_page_token` is non-e
 - `weibo_get_post_comments_by_post_id`: use when the post_id is known.
 - `weibo_get_post_comments_by_post_url`: use for Weibo post URLs, short links, or share text.
 - `weibo_get_post_comment_replies_by_comment_id`: use when the post_id and first-level comment ID are known.
-For Weibo comments and replies, continue only when `next_page_token` is non-empty; an empty string means there are no more comments or replies to request.
+- For Weibo comments and replies, continue only when `next_page_token` is non-empty; an empty string means there are no more comments or replies to request.
 - `wechat_get_video_comments_by_object_id`: use when both object_id and object_nonce_id are known.
 - `wechat_get_video_comments_by_url`: use for WeChat Channels / 视频号 video links or share text.
 - `wechat_get_video_comment_replies_by_comment_id`: use when object_id, object_nonce_id, and first-level comment ID are known.
-For WeChat Channels / 视频号 comments and replies, continue only when `next_page_token` is non-empty; an empty string means there are no more comments or replies to request.
+- For WeChat Channels / 视频号 comments and replies, continue only when `next_page_token` is non-empty; an empty string means there are no more comments or replies to request.
 
 ## Output Guidance
 
@@ -320,6 +320,7 @@ For Weibo and WeChat Channels / 视频号 comments, preserve returned content ID
 
 ## Troubleshooting
 
+- If an SDK/dependency, npm network, Node.js/npm/npx availability, permission, or missing runtime error appears, treat it as a local runtime, dependency installation, network, or agent authorization issue, not a SocialDataX API key or business data error. If the current environment has permission, install or restore automatically. When network or execution authorization is needed, ask the user to approve or finish authorization, then continue the same command; do not use public web search as a substitute for SocialDataX data.
 - For non-balance network or API errors, preserve the error message, check `SOCIALDATAX_API_KEY`, parameters, and link or ID format, then retry once when appropriate.
 - If the response returns `insufficient_balance` or says the balance/credits are insufficient, do not retry repeatedly. Show the recharge URL from the error exactly as returned, then continue the same command after the user recharges.
 - If the user has recharged but still sees insufficient balance, confirm `SOCIALDATAX_API_KEY` belongs to the same account that was recharged; if needed, copy a fresh API Key from the official dashboard.

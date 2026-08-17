@@ -2,7 +2,7 @@
 name: "socialdatax-content-research-assistant"
 description: "Use when doing cross-platform content research, topic planning, competitor research, trend insight, comment insight, or creator research across SocialDataX public platforms including 小红书 / XHS, Douyin, Kuaishou, Bilibili, Zhihu, Instagram, X / Twitter, YouTube, TikTok, Weibo, and WeChat Channels, plus WeChat Official Account article link details."
 source_client: "socialdatax-skills"
-source_platform: "npm"
+source_platform: "github"
 source_skill: "socialdatax-content-research-assistant"
 metadata:
   openclaw:
@@ -18,7 +18,7 @@ metadata:
         package: "socialdatax-skills"
         bins: []
     emoji: "🔎"
-    homepage: "https://socialdatax.com/ai?from=npm"
+    homepage: "https://socialdatax.com/ai?from=github"
 ---
 <!-- AUTO-GENERATED from socialdatax-skill-source. Do not edit directly; run `node scripts/generate_socialdatax_skills.mjs`. -->
 
@@ -95,167 +95,167 @@ Current platform support:
 
 ## API Key
 
-Use `SOCIALDATAX_API_KEY` for SocialDataX requests. The only official website for requesting or managing API access is <https://socialdatax.com/ai?from=npm>. If a user asks where to get a key, provide only this URL; do not infer alternate domains.
-获取或管理 API Key：访问 <https://socialdatax.com/ai?from=npm>，按官网的 API Key 申请/管理入口操作。环境变量名固定使用 `SOCIALDATAX_API_KEY`；不要引导用户使用其他域名。
+Use `SOCIALDATAX_API_KEY` for SocialDataX requests. The only official website for requesting or managing API access is <https://socialdatax.com/ai?from=github>. If a user asks where to get a key, provide only this URL; do not infer alternate domains.
+获取或管理 API Key：访问 <https://socialdatax.com/ai?from=github>，按官网的 API Key 申请/管理入口操作。环境变量名固定使用 `SOCIALDATAX_API_KEY`；不要引导用户使用其他域名。
 
 ## Preferred Direct CLI
 
 Prefer the direct CLI when the agent can run shell commands. It does not require MCP server configuration:
 
 ```bash
-npx -y socialdatax-skills@latest xhs hot-search --pretty --source-client socialdatax-skills --source-platform npm --source-skill socialdatax-content-research-assistant
-npx -y socialdatax-skills@latest xhs search --keyword "<keyword>" --pretty --source-client socialdatax-skills --source-platform npm --source-skill socialdatax-content-research-assistant
-npx -y socialdatax-skills@latest xhs search --keyword "<keyword>" --pages 3 --pretty --source-client socialdatax-skills --source-platform npm --source-skill socialdatax-content-research-assistant
-npx -y socialdatax-skills@latest xhs detail --note-id "<note_id>" --pretty --source-client socialdatax-skills --source-platform npm --source-skill socialdatax-content-research-assistant
-npx -y socialdatax-skills@latest xhs comments --note-id "<note_id>" --pretty --source-client socialdatax-skills --source-platform npm --source-skill socialdatax-content-research-assistant
-npx -y socialdatax-skills@latest xhs comments --note-id "<note_id>" --all --include-replies --pretty --source-client socialdatax-skills --source-platform npm --source-skill socialdatax-content-research-assistant
-npx -y socialdatax-skills@latest xhs user-info --user-id "<user_id>" --pretty --source-client socialdatax-skills --source-platform npm --source-skill socialdatax-content-research-assistant
-npx -y socialdatax-skills@latest xhs user-posts --user-id "<user_id>" --pretty --source-client socialdatax-skills --source-platform npm --source-skill socialdatax-content-research-assistant
-npx -y socialdatax-skills@latest xhs user-posts --user-id "<user_id>" --all --pretty --source-client socialdatax-skills --source-platform npm --source-skill socialdatax-content-research-assistant
-npx -y socialdatax-skills@latest douyin hot-search --pretty --source-client socialdatax-skills --source-platform npm --source-skill socialdatax-content-research-assistant
-npx -y socialdatax-skills@latest douyin search --keyword "<keyword>" --pretty --source-client socialdatax-skills --source-platform npm --source-skill socialdatax-content-research-assistant
-npx -y socialdatax-skills@latest douyin search --keyword "<keyword>" --pages 3 --pretty --source-client socialdatax-skills --source-platform npm --source-skill socialdatax-content-research-assistant
-npx -y socialdatax-skills@latest douyin detail --aweme-id "<aweme_id>" --pretty --source-client socialdatax-skills --source-platform npm --source-skill socialdatax-content-research-assistant
-npx -y socialdatax-skills@latest douyin comments --aweme-id "<aweme_id>" --pretty --source-client socialdatax-skills --source-platform npm --source-skill socialdatax-content-research-assistant
-npx -y socialdatax-skills@latest douyin comments --aweme-id "<aweme_id>" --all --include-replies --pretty --source-client socialdatax-skills --source-platform npm --source-skill socialdatax-content-research-assistant
-npx -y socialdatax-skills@latest douyin user-info --sec-user-id "<sec_user_id>" --pretty --source-client socialdatax-skills --source-platform npm --source-skill socialdatax-content-research-assistant
-npx -y socialdatax-skills@latest douyin user-posts --sec-user-id "<sec_user_id>" --pretty --source-client socialdatax-skills --source-platform npm --source-skill socialdatax-content-research-assistant
-npx -y socialdatax-skills@latest douyin user-posts --sec-user-id "<sec_user_id>" --all --pretty --source-client socialdatax-skills --source-platform npm --source-skill socialdatax-content-research-assistant
-npx -y socialdatax-skills@latest kuaishou hot-search --pretty --source-client socialdatax-skills --source-platform npm --source-skill socialdatax-content-research-assistant
-npx -y socialdatax-skills@latest kuaishou search --keyword "<keyword>" --pretty --source-client socialdatax-skills --source-platform npm --source-skill socialdatax-content-research-assistant
-npx -y socialdatax-skills@latest kuaishou search --keyword "<keyword>" --pages 3 --pretty --source-client socialdatax-skills --source-platform npm --source-skill socialdatax-content-research-assistant
-npx -y socialdatax-skills@latest kuaishou user-search --keyword "<creator_keyword>" --pretty --source-client socialdatax-skills --source-platform npm --source-skill socialdatax-content-research-assistant
-npx -y socialdatax-skills@latest kuaishou detail --photo-id "<photo_id>" --pretty --source-client socialdatax-skills --source-platform npm --source-skill socialdatax-content-research-assistant
-npx -y socialdatax-skills@latest kuaishou comments --photo-id "<photo_id>" --pretty --source-client socialdatax-skills --source-platform npm --source-skill socialdatax-content-research-assistant
-npx -y socialdatax-skills@latest kuaishou comments --photo-id "<photo_id>" --all --include-replies --pretty --source-client socialdatax-skills --source-platform npm --source-skill socialdatax-content-research-assistant
-npx -y socialdatax-skills@latest kuaishou user-info --user-id "<user_id>" --pretty --source-client socialdatax-skills --source-platform npm --source-skill socialdatax-content-research-assistant
-npx -y socialdatax-skills@latest kuaishou user-posts --user-id "<user_id>" --pretty --source-client socialdatax-skills --source-platform npm --source-skill socialdatax-content-research-assistant
-npx -y socialdatax-skills@latest kuaishou user-posts --user-id "<user_id>" --all --pretty --source-client socialdatax-skills --source-platform npm --source-skill socialdatax-content-research-assistant
-npx -y socialdatax-skills@latest bilibili search-videos --keyword "<keyword>" --pretty --source-client socialdatax-skills --source-platform npm --source-skill socialdatax-content-research-assistant
-npx -y socialdatax-skills@latest bilibili search-articles --keyword "<keyword>" --pretty --source-client socialdatax-skills --source-platform npm --source-skill socialdatax-content-research-assistant
-npx -y socialdatax-skills@latest bilibili detail --content-id "<content_id>" --pretty --source-client socialdatax-skills --source-platform npm --source-skill socialdatax-content-research-assistant
-npx -y socialdatax-skills@latest bilibili comments --content-id "<content_id>" --pretty --source-client socialdatax-skills --source-platform npm --source-skill socialdatax-content-research-assistant
-npx -y socialdatax-skills@latest bilibili user-info --user-id "<user_id>" --pretty --source-client socialdatax-skills --source-platform npm --source-skill socialdatax-content-research-assistant
-npx -y socialdatax-skills@latest bilibili user-videos --user-id "<user_id>" --pretty --source-client socialdatax-skills --source-platform npm --source-skill socialdatax-content-research-assistant
-npx -y socialdatax-skills@latest bilibili user-articles --user-id "<user_id>" --pretty --source-client socialdatax-skills --source-platform npm --source-skill socialdatax-content-research-assistant
-npx -y socialdatax-skills@latest bilibili user-dynamics --user-id "<user_id>" --pretty --source-client socialdatax-skills --source-platform npm --source-skill socialdatax-content-research-assistant
-npx -y socialdatax-skills@latest zhihu hot-list --pretty --source-client socialdatax-skills --source-platform npm --source-skill socialdatax-content-research-assistant
-npx -y socialdatax-skills@latest zhihu search --keyword "<keyword>" --pretty --source-client socialdatax-skills --source-platform npm --source-skill socialdatax-content-research-assistant
-npx -y socialdatax-skills@latest zhihu search --keyword "<keyword>" --pages 3 --pretty --source-client socialdatax-skills --source-platform npm --source-skill socialdatax-content-research-assistant
-npx -y socialdatax-skills@latest zhihu detail --content-url "<zhihu_content_url_or_share_text>" --pretty --source-client socialdatax-skills --source-platform npm --source-skill socialdatax-content-research-assistant
-npx -y socialdatax-skills@latest zhihu comments --content-url "<zhihu_content_url_or_share_text>" --pretty --source-client socialdatax-skills --source-platform npm --source-skill socialdatax-content-research-assistant
-npx -y socialdatax-skills@latest zhihu user-info --profile-url "<profile_url_or_share_text>" --pretty --source-client socialdatax-skills --source-platform npm --source-skill socialdatax-content-research-assistant
-npx -y socialdatax-skills@latest zhihu user-posts --profile-url "<profile_url_or_share_text>" --pretty --source-client socialdatax-skills --source-platform npm --source-skill socialdatax-content-research-assistant
-npx -y socialdatax-skills@latest zhihu user-posts --profile-url "<profile_url_or_share_text>" --all --pretty --source-client socialdatax-skills --source-platform npm --source-skill socialdatax-content-research-assistant
-npx -y socialdatax-skills@latest instagram search --keyword "<keyword>" --pretty --source-client socialdatax-skills --source-platform npm --source-skill socialdatax-content-research-assistant
-npx -y socialdatax-skills@latest instagram search --keyword "<keyword>" --pages 3 --pretty --source-client socialdatax-skills --source-platform npm --source-skill socialdatax-content-research-assistant
-npx -y socialdatax-skills@latest instagram detail --post-id "<post_id>" --pretty --source-client socialdatax-skills --source-platform npm --source-skill socialdatax-content-research-assistant
-npx -y socialdatax-skills@latest instagram comments --post-url "<instagram_post_url_or_share_text>" --pretty --source-client socialdatax-skills --source-platform npm --source-skill socialdatax-content-research-assistant
-npx -y socialdatax-skills@latest instagram user-info --username "<username>" --pretty --source-client socialdatax-skills --source-platform npm --source-skill socialdatax-content-research-assistant
-npx -y socialdatax-skills@latest instagram user-posts --username "<username>" --pretty --source-client socialdatax-skills --source-platform npm --source-skill socialdatax-content-research-assistant
-npx -y socialdatax-skills@latest instagram user-posts --username "<username>" --all --pretty --source-client socialdatax-skills --source-platform npm --source-skill socialdatax-content-research-assistant
-npx -y socialdatax-skills@latest x search --keyword "<keyword>" --pretty --source-client socialdatax-skills --source-platform npm --source-skill socialdatax-content-research-assistant
-npx -y socialdatax-skills@latest x search --keyword "<keyword>" --pages 3 --pretty --source-client socialdatax-skills --source-platform npm --source-skill socialdatax-content-research-assistant
-npx -y socialdatax-skills@latest x detail --post-id "<post_id>" --pretty --source-client socialdatax-skills --source-platform npm --source-skill socialdatax-content-research-assistant
-npx -y socialdatax-skills@latest x comments --post-id "<post_id>" --pretty --source-client socialdatax-skills --source-platform npm --source-skill socialdatax-content-research-assistant
-npx -y socialdatax-skills@latest x user-info --username "<username>" --pretty --source-client socialdatax-skills --source-platform npm --source-skill socialdatax-content-research-assistant
-npx -y socialdatax-skills@latest x user-posts --username "<username>" --pretty --source-client socialdatax-skills --source-platform npm --source-skill socialdatax-content-research-assistant
-npx -y socialdatax-skills@latest x user-posts --username "<username>" --all --pretty --source-client socialdatax-skills --source-platform npm --source-skill socialdatax-content-research-assistant
-npx -y socialdatax-skills@latest youtube search --keyword "<keyword>" --pretty --source-client socialdatax-skills --source-platform npm --source-skill socialdatax-content-research-assistant
-npx -y socialdatax-skills@latest youtube search --keyword "<keyword>" --pages 3 --pretty --source-client socialdatax-skills --source-platform npm --source-skill socialdatax-content-research-assistant
-npx -y socialdatax-skills@latest youtube detail --url "<youtube_video_url>" --pretty --source-client socialdatax-skills --source-platform npm --source-skill socialdatax-content-research-assistant
-npx -y socialdatax-skills@latest youtube comments --url "<youtube_video_url>" --pretty --source-client socialdatax-skills --source-platform npm --source-skill socialdatax-content-research-assistant
-npx -y socialdatax-skills@latest youtube channel-info --channel-url "<youtube_channel_url>" --pretty --source-client socialdatax-skills --source-platform npm --source-skill socialdatax-content-research-assistant
-npx -y socialdatax-skills@latest youtube user-posts --channel-url "<youtube_channel_url>" --pretty --source-client socialdatax-skills --source-platform npm --source-skill socialdatax-content-research-assistant
-npx -y socialdatax-skills@latest youtube user-posts --channel-url "<youtube_channel_url>" --all --pretty --source-client socialdatax-skills --source-platform npm --source-skill socialdatax-content-research-assistant
-npx -y socialdatax-skills@latest tiktok search --keyword "<keyword>" --pretty --source-client socialdatax-skills --source-platform npm --source-skill socialdatax-content-research-assistant
-npx -y socialdatax-skills@latest tiktok search --keyword "<keyword>" --pages 3 --pretty --source-client socialdatax-skills --source-platform npm --source-skill socialdatax-content-research-assistant
-npx -y socialdatax-skills@latest tiktok detail --url "<tiktok_post_url_or_share_text>" --pretty --source-client socialdatax-skills --source-platform npm --source-skill socialdatax-content-research-assistant
-npx -y socialdatax-skills@latest tiktok comments --post-id "<post_id>" --pretty --source-client socialdatax-skills --source-platform npm --source-skill socialdatax-content-research-assistant
-npx -y socialdatax-skills@latest tiktok user-info --tiktok-id "<tiktok_id>" --pretty --source-client socialdatax-skills --source-platform npm --source-skill socialdatax-content-research-assistant
-npx -y socialdatax-skills@latest tiktok user-posts --tiktok-id "<tiktok_id>" --pretty --source-client socialdatax-skills --source-platform npm --source-skill socialdatax-content-research-assistant
-npx -y socialdatax-skills@latest tiktok user-posts --tiktok-id "<tiktok_id>" --all --pretty --source-client socialdatax-skills --source-platform npm --source-skill socialdatax-content-research-assistant
-npx -y socialdatax-skills@latest weibo hot-search --pretty --source-client socialdatax-skills --source-platform npm --source-skill socialdatax-content-research-assistant
-npx -y socialdatax-skills@latest weibo search --keyword "<keyword>" --pretty --source-client socialdatax-skills --source-platform npm --source-skill socialdatax-content-research-assistant
-npx -y socialdatax-skills@latest weibo search --keyword "<keyword>" --pages 3 --pretty --source-client socialdatax-skills --source-platform npm --source-skill socialdatax-content-research-assistant
-npx -y socialdatax-skills@latest weibo detail --post-id "<post_id>" --pretty --source-client socialdatax-skills --source-platform npm --source-skill socialdatax-content-research-assistant
-npx -y socialdatax-skills@latest weibo comments --post-id "<post_id>" --pretty --source-client socialdatax-skills --source-platform npm --source-skill socialdatax-content-research-assistant
-npx -y socialdatax-skills@latest weibo comments --post-id "<post_id>" --all --include-replies --pretty --source-client socialdatax-skills --source-platform npm --source-skill socialdatax-content-research-assistant
-npx -y socialdatax-skills@latest weibo user-info --user-id "<user_id>" --pretty --source-client socialdatax-skills --source-platform npm --source-skill socialdatax-content-research-assistant
-npx -y socialdatax-skills@latest weibo user-posts --user-id "<user_id>" --pretty --source-client socialdatax-skills --source-platform npm --source-skill socialdatax-content-research-assistant
-npx -y socialdatax-skills@latest weibo user-posts --user-id "<user_id>" --all --pretty --source-client socialdatax-skills --source-platform npm --source-skill socialdatax-content-research-assistant
-npx -y socialdatax-skills@latest wechat hot-search --pretty --source-client socialdatax-skills --source-platform npm --source-skill socialdatax-content-research-assistant
-npx -y socialdatax-skills@latest wechat search --keyword "<keyword>" --pretty --source-client socialdatax-skills --source-platform npm --source-skill socialdatax-content-research-assistant
-npx -y socialdatax-skills@latest wechat search --keyword "<keyword>" --pages 3 --pretty --source-client socialdatax-skills --source-platform npm --source-skill socialdatax-content-research-assistant
-npx -y socialdatax-skills@latest wechat detail --encrypted-object-id "<encrypted_object_id>" --pretty --source-client socialdatax-skills --source-platform npm --source-skill socialdatax-content-research-assistant
-npx -y socialdatax-skills@latest wechat comments --object-id "<object_id>" --object-nonce-id "<object_nonce_id>" --pretty --source-client socialdatax-skills --source-platform npm --source-skill socialdatax-content-research-assistant
-npx -y socialdatax-skills@latest wechat comments --object-id "<object_id>" --object-nonce-id "<object_nonce_id>" --all --include-replies --pretty --source-client socialdatax-skills --source-platform npm --source-skill socialdatax-content-research-assistant
-npx -y socialdatax-skills@latest wechat user-info --user-id "<v2_finder_user_id>" --pretty --source-client socialdatax-skills --source-platform npm --source-skill socialdatax-content-research-assistant
-npx -y socialdatax-skills@latest wechat user-posts --user-id "<v2_finder_user_id>" --pretty --source-client socialdatax-skills --source-platform npm --source-skill socialdatax-content-research-assistant
-npx -y socialdatax-skills@latest wechat user-posts --user-id "<v2_finder_user_id>" --all --pretty --source-client socialdatax-skills --source-platform npm --source-skill socialdatax-content-research-assistant
+npx -y socialdatax-skills@latest xhs hot-search --pretty --source-client socialdatax-skills --source-platform github --source-skill socialdatax-content-research-assistant
+npx -y socialdatax-skills@latest xhs search --keyword "<keyword>" --pretty --source-client socialdatax-skills --source-platform github --source-skill socialdatax-content-research-assistant
+npx -y socialdatax-skills@latest xhs search --keyword "<keyword>" --pages 3 --pretty --source-client socialdatax-skills --source-platform github --source-skill socialdatax-content-research-assistant
+npx -y socialdatax-skills@latest xhs detail --note-id "<note_id>" --pretty --source-client socialdatax-skills --source-platform github --source-skill socialdatax-content-research-assistant
+npx -y socialdatax-skills@latest xhs comments --note-id "<note_id>" --pretty --source-client socialdatax-skills --source-platform github --source-skill socialdatax-content-research-assistant
+npx -y socialdatax-skills@latest xhs comments --note-id "<note_id>" --all --include-replies --pretty --source-client socialdatax-skills --source-platform github --source-skill socialdatax-content-research-assistant
+npx -y socialdatax-skills@latest xhs user-info --user-id "<user_id>" --pretty --source-client socialdatax-skills --source-platform github --source-skill socialdatax-content-research-assistant
+npx -y socialdatax-skills@latest xhs user-posts --user-id "<user_id>" --pretty --source-client socialdatax-skills --source-platform github --source-skill socialdatax-content-research-assistant
+npx -y socialdatax-skills@latest xhs user-posts --user-id "<user_id>" --all --pretty --source-client socialdatax-skills --source-platform github --source-skill socialdatax-content-research-assistant
+npx -y socialdatax-skills@latest douyin hot-search --pretty --source-client socialdatax-skills --source-platform github --source-skill socialdatax-content-research-assistant
+npx -y socialdatax-skills@latest douyin search --keyword "<keyword>" --pretty --source-client socialdatax-skills --source-platform github --source-skill socialdatax-content-research-assistant
+npx -y socialdatax-skills@latest douyin search --keyword "<keyword>" --pages 3 --pretty --source-client socialdatax-skills --source-platform github --source-skill socialdatax-content-research-assistant
+npx -y socialdatax-skills@latest douyin detail --aweme-id "<aweme_id>" --pretty --source-client socialdatax-skills --source-platform github --source-skill socialdatax-content-research-assistant
+npx -y socialdatax-skills@latest douyin comments --aweme-id "<aweme_id>" --pretty --source-client socialdatax-skills --source-platform github --source-skill socialdatax-content-research-assistant
+npx -y socialdatax-skills@latest douyin comments --aweme-id "<aweme_id>" --all --include-replies --pretty --source-client socialdatax-skills --source-platform github --source-skill socialdatax-content-research-assistant
+npx -y socialdatax-skills@latest douyin user-info --sec-user-id "<sec_user_id>" --pretty --source-client socialdatax-skills --source-platform github --source-skill socialdatax-content-research-assistant
+npx -y socialdatax-skills@latest douyin user-posts --sec-user-id "<sec_user_id>" --pretty --source-client socialdatax-skills --source-platform github --source-skill socialdatax-content-research-assistant
+npx -y socialdatax-skills@latest douyin user-posts --sec-user-id "<sec_user_id>" --all --pretty --source-client socialdatax-skills --source-platform github --source-skill socialdatax-content-research-assistant
+npx -y socialdatax-skills@latest kuaishou hot-search --pretty --source-client socialdatax-skills --source-platform github --source-skill socialdatax-content-research-assistant
+npx -y socialdatax-skills@latest kuaishou search --keyword "<keyword>" --pretty --source-client socialdatax-skills --source-platform github --source-skill socialdatax-content-research-assistant
+npx -y socialdatax-skills@latest kuaishou search --keyword "<keyword>" --pages 3 --pretty --source-client socialdatax-skills --source-platform github --source-skill socialdatax-content-research-assistant
+npx -y socialdatax-skills@latest kuaishou user-search --keyword "<creator_keyword>" --pretty --source-client socialdatax-skills --source-platform github --source-skill socialdatax-content-research-assistant
+npx -y socialdatax-skills@latest kuaishou detail --photo-id "<photo_id>" --pretty --source-client socialdatax-skills --source-platform github --source-skill socialdatax-content-research-assistant
+npx -y socialdatax-skills@latest kuaishou comments --photo-id "<photo_id>" --pretty --source-client socialdatax-skills --source-platform github --source-skill socialdatax-content-research-assistant
+npx -y socialdatax-skills@latest kuaishou comments --photo-id "<photo_id>" --all --include-replies --pretty --source-client socialdatax-skills --source-platform github --source-skill socialdatax-content-research-assistant
+npx -y socialdatax-skills@latest kuaishou user-info --user-id "<user_id>" --pretty --source-client socialdatax-skills --source-platform github --source-skill socialdatax-content-research-assistant
+npx -y socialdatax-skills@latest kuaishou user-posts --user-id "<user_id>" --pretty --source-client socialdatax-skills --source-platform github --source-skill socialdatax-content-research-assistant
+npx -y socialdatax-skills@latest kuaishou user-posts --user-id "<user_id>" --all --pretty --source-client socialdatax-skills --source-platform github --source-skill socialdatax-content-research-assistant
+npx -y socialdatax-skills@latest bilibili search-videos --keyword "<keyword>" --pretty --source-client socialdatax-skills --source-platform github --source-skill socialdatax-content-research-assistant
+npx -y socialdatax-skills@latest bilibili search-articles --keyword "<keyword>" --pretty --source-client socialdatax-skills --source-platform github --source-skill socialdatax-content-research-assistant
+npx -y socialdatax-skills@latest bilibili detail --content-id "<content_id>" --pretty --source-client socialdatax-skills --source-platform github --source-skill socialdatax-content-research-assistant
+npx -y socialdatax-skills@latest bilibili comments --content-id "<content_id>" --pretty --source-client socialdatax-skills --source-platform github --source-skill socialdatax-content-research-assistant
+npx -y socialdatax-skills@latest bilibili user-info --user-id "<user_id>" --pretty --source-client socialdatax-skills --source-platform github --source-skill socialdatax-content-research-assistant
+npx -y socialdatax-skills@latest bilibili user-videos --user-id "<user_id>" --pretty --source-client socialdatax-skills --source-platform github --source-skill socialdatax-content-research-assistant
+npx -y socialdatax-skills@latest bilibili user-articles --user-id "<user_id>" --pretty --source-client socialdatax-skills --source-platform github --source-skill socialdatax-content-research-assistant
+npx -y socialdatax-skills@latest bilibili user-dynamics --user-id "<user_id>" --pretty --source-client socialdatax-skills --source-platform github --source-skill socialdatax-content-research-assistant
+npx -y socialdatax-skills@latest zhihu hot-list --pretty --source-client socialdatax-skills --source-platform github --source-skill socialdatax-content-research-assistant
+npx -y socialdatax-skills@latest zhihu search --keyword "<keyword>" --pretty --source-client socialdatax-skills --source-platform github --source-skill socialdatax-content-research-assistant
+npx -y socialdatax-skills@latest zhihu search --keyword "<keyword>" --pages 3 --pretty --source-client socialdatax-skills --source-platform github --source-skill socialdatax-content-research-assistant
+npx -y socialdatax-skills@latest zhihu detail --content-url "<zhihu_content_url_or_share_text>" --pretty --source-client socialdatax-skills --source-platform github --source-skill socialdatax-content-research-assistant
+npx -y socialdatax-skills@latest zhihu comments --content-url "<zhihu_content_url_or_share_text>" --pretty --source-client socialdatax-skills --source-platform github --source-skill socialdatax-content-research-assistant
+npx -y socialdatax-skills@latest zhihu user-info --profile-url "<profile_url_or_share_text>" --pretty --source-client socialdatax-skills --source-platform github --source-skill socialdatax-content-research-assistant
+npx -y socialdatax-skills@latest zhihu user-posts --profile-url "<profile_url_or_share_text>" --pretty --source-client socialdatax-skills --source-platform github --source-skill socialdatax-content-research-assistant
+npx -y socialdatax-skills@latest zhihu user-posts --profile-url "<profile_url_or_share_text>" --all --pretty --source-client socialdatax-skills --source-platform github --source-skill socialdatax-content-research-assistant
+npx -y socialdatax-skills@latest instagram search --keyword "<keyword>" --pretty --source-client socialdatax-skills --source-platform github --source-skill socialdatax-content-research-assistant
+npx -y socialdatax-skills@latest instagram search --keyword "<keyword>" --pages 3 --pretty --source-client socialdatax-skills --source-platform github --source-skill socialdatax-content-research-assistant
+npx -y socialdatax-skills@latest instagram detail --post-id "<post_id>" --pretty --source-client socialdatax-skills --source-platform github --source-skill socialdatax-content-research-assistant
+npx -y socialdatax-skills@latest instagram comments --post-url "<instagram_post_url_or_share_text>" --pretty --source-client socialdatax-skills --source-platform github --source-skill socialdatax-content-research-assistant
+npx -y socialdatax-skills@latest instagram user-info --username "<username>" --pretty --source-client socialdatax-skills --source-platform github --source-skill socialdatax-content-research-assistant
+npx -y socialdatax-skills@latest instagram user-posts --username "<username>" --pretty --source-client socialdatax-skills --source-platform github --source-skill socialdatax-content-research-assistant
+npx -y socialdatax-skills@latest instagram user-posts --username "<username>" --all --pretty --source-client socialdatax-skills --source-platform github --source-skill socialdatax-content-research-assistant
+npx -y socialdatax-skills@latest x search --keyword "<keyword>" --pretty --source-client socialdatax-skills --source-platform github --source-skill socialdatax-content-research-assistant
+npx -y socialdatax-skills@latest x search --keyword "<keyword>" --pages 3 --pretty --source-client socialdatax-skills --source-platform github --source-skill socialdatax-content-research-assistant
+npx -y socialdatax-skills@latest x detail --post-id "<post_id>" --pretty --source-client socialdatax-skills --source-platform github --source-skill socialdatax-content-research-assistant
+npx -y socialdatax-skills@latest x comments --post-id "<post_id>" --pretty --source-client socialdatax-skills --source-platform github --source-skill socialdatax-content-research-assistant
+npx -y socialdatax-skills@latest x user-info --username "<username>" --pretty --source-client socialdatax-skills --source-platform github --source-skill socialdatax-content-research-assistant
+npx -y socialdatax-skills@latest x user-posts --username "<username>" --pretty --source-client socialdatax-skills --source-platform github --source-skill socialdatax-content-research-assistant
+npx -y socialdatax-skills@latest x user-posts --username "<username>" --all --pretty --source-client socialdatax-skills --source-platform github --source-skill socialdatax-content-research-assistant
+npx -y socialdatax-skills@latest youtube search --keyword "<keyword>" --pretty --source-client socialdatax-skills --source-platform github --source-skill socialdatax-content-research-assistant
+npx -y socialdatax-skills@latest youtube search --keyword "<keyword>" --pages 3 --pretty --source-client socialdatax-skills --source-platform github --source-skill socialdatax-content-research-assistant
+npx -y socialdatax-skills@latest youtube detail --url "<youtube_video_url>" --pretty --source-client socialdatax-skills --source-platform github --source-skill socialdatax-content-research-assistant
+npx -y socialdatax-skills@latest youtube comments --url "<youtube_video_url>" --pretty --source-client socialdatax-skills --source-platform github --source-skill socialdatax-content-research-assistant
+npx -y socialdatax-skills@latest youtube channel-info --channel-url "<youtube_channel_url>" --pretty --source-client socialdatax-skills --source-platform github --source-skill socialdatax-content-research-assistant
+npx -y socialdatax-skills@latest youtube user-posts --channel-url "<youtube_channel_url>" --pretty --source-client socialdatax-skills --source-platform github --source-skill socialdatax-content-research-assistant
+npx -y socialdatax-skills@latest youtube user-posts --channel-url "<youtube_channel_url>" --all --pretty --source-client socialdatax-skills --source-platform github --source-skill socialdatax-content-research-assistant
+npx -y socialdatax-skills@latest tiktok search --keyword "<keyword>" --pretty --source-client socialdatax-skills --source-platform github --source-skill socialdatax-content-research-assistant
+npx -y socialdatax-skills@latest tiktok search --keyword "<keyword>" --pages 3 --pretty --source-client socialdatax-skills --source-platform github --source-skill socialdatax-content-research-assistant
+npx -y socialdatax-skills@latest tiktok detail --url "<tiktok_post_url_or_share_text>" --pretty --source-client socialdatax-skills --source-platform github --source-skill socialdatax-content-research-assistant
+npx -y socialdatax-skills@latest tiktok comments --post-id "<post_id>" --pretty --source-client socialdatax-skills --source-platform github --source-skill socialdatax-content-research-assistant
+npx -y socialdatax-skills@latest tiktok user-info --tiktok-id "<tiktok_id>" --pretty --source-client socialdatax-skills --source-platform github --source-skill socialdatax-content-research-assistant
+npx -y socialdatax-skills@latest tiktok user-posts --tiktok-id "<tiktok_id>" --pretty --source-client socialdatax-skills --source-platform github --source-skill socialdatax-content-research-assistant
+npx -y socialdatax-skills@latest tiktok user-posts --tiktok-id "<tiktok_id>" --all --pretty --source-client socialdatax-skills --source-platform github --source-skill socialdatax-content-research-assistant
+npx -y socialdatax-skills@latest weibo hot-search --pretty --source-client socialdatax-skills --source-platform github --source-skill socialdatax-content-research-assistant
+npx -y socialdatax-skills@latest weibo search --keyword "<keyword>" --pretty --source-client socialdatax-skills --source-platform github --source-skill socialdatax-content-research-assistant
+npx -y socialdatax-skills@latest weibo search --keyword "<keyword>" --pages 3 --pretty --source-client socialdatax-skills --source-platform github --source-skill socialdatax-content-research-assistant
+npx -y socialdatax-skills@latest weibo detail --post-id "<post_id>" --pretty --source-client socialdatax-skills --source-platform github --source-skill socialdatax-content-research-assistant
+npx -y socialdatax-skills@latest weibo comments --post-id "<post_id>" --pretty --source-client socialdatax-skills --source-platform github --source-skill socialdatax-content-research-assistant
+npx -y socialdatax-skills@latest weibo comments --post-id "<post_id>" --all --include-replies --pretty --source-client socialdatax-skills --source-platform github --source-skill socialdatax-content-research-assistant
+npx -y socialdatax-skills@latest weibo user-info --user-id "<user_id>" --pretty --source-client socialdatax-skills --source-platform github --source-skill socialdatax-content-research-assistant
+npx -y socialdatax-skills@latest weibo user-posts --user-id "<user_id>" --pretty --source-client socialdatax-skills --source-platform github --source-skill socialdatax-content-research-assistant
+npx -y socialdatax-skills@latest weibo user-posts --user-id "<user_id>" --all --pretty --source-client socialdatax-skills --source-platform github --source-skill socialdatax-content-research-assistant
+npx -y socialdatax-skills@latest wechat hot-search --pretty --source-client socialdatax-skills --source-platform github --source-skill socialdatax-content-research-assistant
+npx -y socialdatax-skills@latest wechat search --keyword "<keyword>" --pretty --source-client socialdatax-skills --source-platform github --source-skill socialdatax-content-research-assistant
+npx -y socialdatax-skills@latest wechat search --keyword "<keyword>" --pages 3 --pretty --source-client socialdatax-skills --source-platform github --source-skill socialdatax-content-research-assistant
+npx -y socialdatax-skills@latest wechat detail --encrypted-object-id "<encrypted_object_id>" --pretty --source-client socialdatax-skills --source-platform github --source-skill socialdatax-content-research-assistant
+npx -y socialdatax-skills@latest wechat comments --object-id "<object_id>" --object-nonce-id "<object_nonce_id>" --pretty --source-client socialdatax-skills --source-platform github --source-skill socialdatax-content-research-assistant
+npx -y socialdatax-skills@latest wechat comments --object-id "<object_id>" --object-nonce-id "<object_nonce_id>" --all --include-replies --pretty --source-client socialdatax-skills --source-platform github --source-skill socialdatax-content-research-assistant
+npx -y socialdatax-skills@latest wechat user-info --user-id "<v2_finder_user_id>" --pretty --source-client socialdatax-skills --source-platform github --source-skill socialdatax-content-research-assistant
+npx -y socialdatax-skills@latest wechat user-posts --user-id "<v2_finder_user_id>" --pretty --source-client socialdatax-skills --source-platform github --source-skill socialdatax-content-research-assistant
+npx -y socialdatax-skills@latest wechat user-posts --user-id "<v2_finder_user_id>" --all --pretty --source-client socialdatax-skills --source-platform github --source-skill socialdatax-content-research-assistant
 ```
 
 Additional direct CLI entrypoints:
 
 ```bash
-npx -y socialdatax-skills@latest xhs detail --url "<note_url_or_share_text>" --pretty --source-client socialdatax-skills --source-platform npm --source-skill socialdatax-content-research-assistant
-npx -y socialdatax-skills@latest xhs comments --url "<note_url_or_share_text>" --pretty --source-client socialdatax-skills --source-platform npm --source-skill socialdatax-content-research-assistant
-npx -y socialdatax-skills@latest xhs user-info --profile-url "<profile_url_or_share_text>" --pretty --source-client socialdatax-skills --source-platform npm --source-skill socialdatax-content-research-assistant
-npx -y socialdatax-skills@latest xhs user-posts --profile-url "<profile_url_or_share_text>" --pretty --source-client socialdatax-skills --source-platform npm --source-skill socialdatax-content-research-assistant
-npx -y socialdatax-skills@latest douyin detail --url "<douyin_content_url_or_share_text>" --pretty --source-client socialdatax-skills --source-platform npm --source-skill socialdatax-content-research-assistant
-npx -y socialdatax-skills@latest douyin comments --url "<douyin_content_url_or_share_text>" --pretty --source-client socialdatax-skills --source-platform npm --source-skill socialdatax-content-research-assistant
-npx -y socialdatax-skills@latest douyin user-info --profile-url "<profile_url_or_share_text>" --pretty --source-client socialdatax-skills --source-platform npm --source-skill socialdatax-content-research-assistant
-npx -y socialdatax-skills@latest douyin user-posts --profile-url "<profile_url_or_share_text>" --pretty --source-client socialdatax-skills --source-platform npm --source-skill socialdatax-content-research-assistant
-npx -y socialdatax-skills@latest douyin user-series --sec-user-id "<sec_user_id>" --pretty --source-client socialdatax-skills --source-platform npm --source-skill socialdatax-content-research-assistant
-npx -y socialdatax-skills@latest douyin user-series --sec-user-id "<sec_user_id>" --all --pretty --source-client socialdatax-skills --source-platform npm --source-skill socialdatax-content-research-assistant
-npx -y socialdatax-skills@latest douyin user-series --profile-url "<profile_url_or_share_text>" --pretty --source-client socialdatax-skills --source-platform npm --source-skill socialdatax-content-research-assistant
-npx -y socialdatax-skills@latest xhs sub-comments --note-id "<note_id>" --comment-id "<comment_id>" --pretty --source-client socialdatax-skills --source-platform npm --source-skill socialdatax-content-research-assistant
-npx -y socialdatax-skills@latest douyin replies --aweme-id "<aweme_id>" --comment-id "<comment_id>" --pretty --source-client socialdatax-skills --source-platform npm --source-skill socialdatax-content-research-assistant
-npx -y socialdatax-skills@latest kuaishou user-search --keyword "<creator_keyword>" --pages 3 --pretty --source-client socialdatax-skills --source-platform npm --source-skill socialdatax-content-research-assistant
-npx -y socialdatax-skills@latest kuaishou detail --url "<kuaishou_content_url_or_share_text>" --pretty --source-client socialdatax-skills --source-platform npm --source-skill socialdatax-content-research-assistant
-npx -y socialdatax-skills@latest kuaishou comments --url "<kuaishou_content_url_or_share_text>" --pretty --source-client socialdatax-skills --source-platform npm --source-skill socialdatax-content-research-assistant
-npx -y socialdatax-skills@latest kuaishou user-info --profile-url "<profile_url_or_share_text>" --pretty --source-client socialdatax-skills --source-platform npm --source-skill socialdatax-content-research-assistant
-npx -y socialdatax-skills@latest kuaishou user-posts --profile-url "<profile_url_or_share_text>" --pretty --source-client socialdatax-skills --source-platform npm --source-skill socialdatax-content-research-assistant
-npx -y socialdatax-skills@latest kuaishou replies --photo-id "<photo_id>" --comment-id "<comment_id>" --pretty --source-client socialdatax-skills --source-platform npm --source-skill socialdatax-content-research-assistant
-npx -y socialdatax-skills@latest bilibili detail --url "<bilibili_content_url_or_share_text>" --pretty --source-client socialdatax-skills --source-platform npm --source-skill socialdatax-content-research-assistant
-npx -y socialdatax-skills@latest bilibili comments --url "<bilibili_content_url_or_share_text>" --pretty --source-client socialdatax-skills --source-platform npm --source-skill socialdatax-content-research-assistant
-npx -y socialdatax-skills@latest bilibili replies --comment-object-id "<comment_object_id>" --comment-object-type "<comment_object_type>" --comment-id "<comment_id>" --pretty --source-client socialdatax-skills --source-platform npm --source-skill socialdatax-content-research-assistant
-npx -y socialdatax-skills@latest bilibili reactions --post-id "<post_id>" --pretty --source-client socialdatax-skills --source-platform npm --source-skill socialdatax-content-research-assistant
-npx -y socialdatax-skills@latest bilibili reactions --url "<bilibili_opus_or_dynamic_url_or_share_text>" --pretty --source-client socialdatax-skills --source-platform npm --source-skill socialdatax-content-research-assistant
-npx -y socialdatax-skills@latest bilibili user-info --profile-url "<profile_url_or_share_text>" --pretty --source-client socialdatax-skills --source-platform npm --source-skill socialdatax-content-research-assistant
-npx -y socialdatax-skills@latest bilibili user-videos --profile-url "<profile_url_or_share_text>" --pretty --source-client socialdatax-skills --source-platform npm --source-skill socialdatax-content-research-assistant
-npx -y socialdatax-skills@latest bilibili user-articles --profile-url "<profile_url_or_share_text>" --pretty --source-client socialdatax-skills --source-platform npm --source-skill socialdatax-content-research-assistant
-npx -y socialdatax-skills@latest bilibili user-dynamics --profile-url "<profile_url_or_share_text>" --pretty --source-client socialdatax-skills --source-platform npm --source-skill socialdatax-content-research-assistant
-npx -y socialdatax-skills@latest bilibili download --url "<bilibili_video_url_or_share_text>" --output-dir ./downloads --pretty --source-client socialdatax-skills --source-platform npm --source-skill socialdatax-content-research-assistant
-npx -y socialdatax-skills@latest zhihu replies --content-url "<zhihu_content_url_or_share_text>" --comment-id "<comment_id>" --pretty --source-client socialdatax-skills --source-platform npm --source-skill socialdatax-content-research-assistant
-npx -y socialdatax-skills@latest instagram detail --post-url "<instagram_post_url_or_share_text>" --pretty --source-client socialdatax-skills --source-platform npm --source-skill socialdatax-content-research-assistant
-npx -y socialdatax-skills@latest instagram replies --post-id "<post_id>" --comment-id "<comment_id>" --pretty --source-client socialdatax-skills --source-platform npm --source-skill socialdatax-content-research-assistant
-npx -y socialdatax-skills@latest instagram user-info --profile-url "<profile_url_or_share_text>" --pretty --source-client socialdatax-skills --source-platform npm --source-skill socialdatax-content-research-assistant
-npx -y socialdatax-skills@latest instagram user-posts --profile-url "<profile_url_or_share_text>" --pretty --source-client socialdatax-skills --source-platform npm --source-skill socialdatax-content-research-assistant
-npx -y socialdatax-skills@latest x detail --post-url "<x_post_url_or_share_text>" --pretty --source-client socialdatax-skills --source-platform npm --source-skill socialdatax-content-research-assistant
-npx -y socialdatax-skills@latest x comments --post-url "<x_post_url_or_share_text>" --pretty --source-client socialdatax-skills --source-platform npm --source-skill socialdatax-content-research-assistant
-npx -y socialdatax-skills@latest x replies --post-id "<post_id>" --comment-id "<comment_id>" --pretty --source-client socialdatax-skills --source-platform npm --source-skill socialdatax-content-research-assistant
-npx -y socialdatax-skills@latest x user-info --user-id "<user_id>" --pretty --source-client socialdatax-skills --source-platform npm --source-skill socialdatax-content-research-assistant
-npx -y socialdatax-skills@latest x user-info --profile-url "<profile_url_or_share_text>" --pretty --source-client socialdatax-skills --source-platform npm --source-skill socialdatax-content-research-assistant
-npx -y socialdatax-skills@latest x user-posts --user-id "<user_id>" --pretty --source-client socialdatax-skills --source-platform npm --source-skill socialdatax-content-research-assistant
-npx -y socialdatax-skills@latest x user-posts --profile-url "<profile_url_or_share_text>" --pretty --source-client socialdatax-skills --source-platform npm --source-skill socialdatax-content-research-assistant
-npx -y socialdatax-skills@latest youtube replies --reply-token "<reply_token>" --pretty --source-client socialdatax-skills --source-platform npm --source-skill socialdatax-content-research-assistant
-npx -y socialdatax-skills@latest tiktok comments --url "<tiktok_post_url_or_share_text>" --pretty --source-client socialdatax-skills --source-platform npm --source-skill socialdatax-content-research-assistant
-npx -y socialdatax-skills@latest tiktok replies --post-id "<post_id>" --comment-id "<comment_id>" --pretty --source-client socialdatax-skills --source-platform npm --source-skill socialdatax-content-research-assistant
-npx -y socialdatax-skills@latest tiktok user-info --profile-url "<profile_url_or_share_text>" --pretty --source-client socialdatax-skills --source-platform npm --source-skill socialdatax-content-research-assistant
-npx -y socialdatax-skills@latest tiktok user-posts --profile-url "<profile_url_or_share_text>" --pretty --source-client socialdatax-skills --source-platform npm --source-skill socialdatax-content-research-assistant
-npx -y socialdatax-skills@latest weibo detail --post-url "<weibo_post_url_or_share_text>" --pretty --source-client socialdatax-skills --source-platform npm --source-skill socialdatax-content-research-assistant
-npx -y socialdatax-skills@latest weibo comments --post-url "<weibo_post_url_or_share_text>" --pretty --source-client socialdatax-skills --source-platform npm --source-skill socialdatax-content-research-assistant
-npx -y socialdatax-skills@latest weibo likers --post-id "<post_id>" --pretty --source-client socialdatax-skills --source-platform npm --source-skill socialdatax-content-research-assistant
-npx -y socialdatax-skills@latest weibo reposts --post-id "<post_id>" --pretty --source-client socialdatax-skills --source-platform npm --source-skill socialdatax-content-research-assistant
-npx -y socialdatax-skills@latest weibo user-info --profile-url "<profile_url_or_share_text>" --pretty --source-client socialdatax-skills --source-platform npm --source-skill socialdatax-content-research-assistant
-npx -y socialdatax-skills@latest weibo user-posts --profile-url "<profile_url_or_share_text>" --pretty --source-client socialdatax-skills --source-platform npm --source-skill socialdatax-content-research-assistant
-npx -y socialdatax-skills@latest weibo replies --post-id "<post_id>" --comment-id "<comment_id>" --pretty --source-client socialdatax-skills --source-platform npm --source-skill socialdatax-content-research-assistant
-npx -y socialdatax-skills@latest wechat detail --url "<wechat_video_url_or_share_text>" --pretty --source-client socialdatax-skills --source-platform npm --source-skill socialdatax-content-research-assistant
-npx -y socialdatax-skills@latest wechat article --url "<mp_article_url_or_share_text>" --pretty --source-client socialdatax-skills --source-platform npm --source-skill socialdatax-content-research-assistant
-npx -y socialdatax-skills@latest wechat comments --url "<wechat_video_url_or_share_text>" --pretty --source-client socialdatax-skills --source-platform npm --source-skill socialdatax-content-research-assistant
-npx -y socialdatax-skills@latest wechat user-posts --url "<wechat_video_url_or_share_text>" --pretty --source-client socialdatax-skills --source-platform npm --source-skill socialdatax-content-research-assistant
-npx -y socialdatax-skills@latest wechat replies --object-id "<object_id>" --object-nonce-id "<object_nonce_id>" --comment-id "<comment_id>" --pretty --source-client socialdatax-skills --source-platform npm --source-skill socialdatax-content-research-assistant
+npx -y socialdatax-skills@latest xhs detail --url "<note_url_or_share_text>" --pretty --source-client socialdatax-skills --source-platform github --source-skill socialdatax-content-research-assistant
+npx -y socialdatax-skills@latest xhs comments --url "<note_url_or_share_text>" --pretty --source-client socialdatax-skills --source-platform github --source-skill socialdatax-content-research-assistant
+npx -y socialdatax-skills@latest xhs user-info --profile-url "<profile_url_or_share_text>" --pretty --source-client socialdatax-skills --source-platform github --source-skill socialdatax-content-research-assistant
+npx -y socialdatax-skills@latest xhs user-posts --profile-url "<profile_url_or_share_text>" --pretty --source-client socialdatax-skills --source-platform github --source-skill socialdatax-content-research-assistant
+npx -y socialdatax-skills@latest douyin detail --url "<douyin_content_url_or_share_text>" --pretty --source-client socialdatax-skills --source-platform github --source-skill socialdatax-content-research-assistant
+npx -y socialdatax-skills@latest douyin comments --url "<douyin_content_url_or_share_text>" --pretty --source-client socialdatax-skills --source-platform github --source-skill socialdatax-content-research-assistant
+npx -y socialdatax-skills@latest douyin user-info --profile-url "<profile_url_or_share_text>" --pretty --source-client socialdatax-skills --source-platform github --source-skill socialdatax-content-research-assistant
+npx -y socialdatax-skills@latest douyin user-posts --profile-url "<profile_url_or_share_text>" --pretty --source-client socialdatax-skills --source-platform github --source-skill socialdatax-content-research-assistant
+npx -y socialdatax-skills@latest douyin user-series --sec-user-id "<sec_user_id>" --pretty --source-client socialdatax-skills --source-platform github --source-skill socialdatax-content-research-assistant
+npx -y socialdatax-skills@latest douyin user-series --sec-user-id "<sec_user_id>" --all --pretty --source-client socialdatax-skills --source-platform github --source-skill socialdatax-content-research-assistant
+npx -y socialdatax-skills@latest douyin user-series --profile-url "<profile_url_or_share_text>" --pretty --source-client socialdatax-skills --source-platform github --source-skill socialdatax-content-research-assistant
+npx -y socialdatax-skills@latest xhs sub-comments --note-id "<note_id>" --comment-id "<comment_id>" --pretty --source-client socialdatax-skills --source-platform github --source-skill socialdatax-content-research-assistant
+npx -y socialdatax-skills@latest douyin replies --aweme-id "<aweme_id>" --comment-id "<comment_id>" --pretty --source-client socialdatax-skills --source-platform github --source-skill socialdatax-content-research-assistant
+npx -y socialdatax-skills@latest kuaishou user-search --keyword "<creator_keyword>" --pages 3 --pretty --source-client socialdatax-skills --source-platform github --source-skill socialdatax-content-research-assistant
+npx -y socialdatax-skills@latest kuaishou detail --url "<kuaishou_content_url_or_share_text>" --pretty --source-client socialdatax-skills --source-platform github --source-skill socialdatax-content-research-assistant
+npx -y socialdatax-skills@latest kuaishou comments --url "<kuaishou_content_url_or_share_text>" --pretty --source-client socialdatax-skills --source-platform github --source-skill socialdatax-content-research-assistant
+npx -y socialdatax-skills@latest kuaishou user-info --profile-url "<profile_url_or_share_text>" --pretty --source-client socialdatax-skills --source-platform github --source-skill socialdatax-content-research-assistant
+npx -y socialdatax-skills@latest kuaishou user-posts --profile-url "<profile_url_or_share_text>" --pretty --source-client socialdatax-skills --source-platform github --source-skill socialdatax-content-research-assistant
+npx -y socialdatax-skills@latest kuaishou replies --photo-id "<photo_id>" --comment-id "<comment_id>" --pretty --source-client socialdatax-skills --source-platform github --source-skill socialdatax-content-research-assistant
+npx -y socialdatax-skills@latest bilibili detail --url "<bilibili_content_url_or_share_text>" --pretty --source-client socialdatax-skills --source-platform github --source-skill socialdatax-content-research-assistant
+npx -y socialdatax-skills@latest bilibili comments --url "<bilibili_content_url_or_share_text>" --pretty --source-client socialdatax-skills --source-platform github --source-skill socialdatax-content-research-assistant
+npx -y socialdatax-skills@latest bilibili replies --comment-object-id "<comment_object_id>" --comment-object-type "<comment_object_type>" --comment-id "<comment_id>" --pretty --source-client socialdatax-skills --source-platform github --source-skill socialdatax-content-research-assistant
+npx -y socialdatax-skills@latest bilibili reactions --post-id "<post_id>" --pretty --source-client socialdatax-skills --source-platform github --source-skill socialdatax-content-research-assistant
+npx -y socialdatax-skills@latest bilibili reactions --url "<bilibili_opus_or_dynamic_url_or_share_text>" --pretty --source-client socialdatax-skills --source-platform github --source-skill socialdatax-content-research-assistant
+npx -y socialdatax-skills@latest bilibili user-info --profile-url "<profile_url_or_share_text>" --pretty --source-client socialdatax-skills --source-platform github --source-skill socialdatax-content-research-assistant
+npx -y socialdatax-skills@latest bilibili user-videos --profile-url "<profile_url_or_share_text>" --pretty --source-client socialdatax-skills --source-platform github --source-skill socialdatax-content-research-assistant
+npx -y socialdatax-skills@latest bilibili user-articles --profile-url "<profile_url_or_share_text>" --pretty --source-client socialdatax-skills --source-platform github --source-skill socialdatax-content-research-assistant
+npx -y socialdatax-skills@latest bilibili user-dynamics --profile-url "<profile_url_or_share_text>" --pretty --source-client socialdatax-skills --source-platform github --source-skill socialdatax-content-research-assistant
+npx -y socialdatax-skills@latest bilibili download --url "<bilibili_video_url_or_share_text>" --output-dir ./downloads --pretty --source-client socialdatax-skills --source-platform github --source-skill socialdatax-content-research-assistant
+npx -y socialdatax-skills@latest zhihu replies --content-url "<zhihu_content_url_or_share_text>" --comment-id "<comment_id>" --pretty --source-client socialdatax-skills --source-platform github --source-skill socialdatax-content-research-assistant
+npx -y socialdatax-skills@latest instagram detail --post-url "<instagram_post_url_or_share_text>" --pretty --source-client socialdatax-skills --source-platform github --source-skill socialdatax-content-research-assistant
+npx -y socialdatax-skills@latest instagram replies --post-id "<post_id>" --comment-id "<comment_id>" --pretty --source-client socialdatax-skills --source-platform github --source-skill socialdatax-content-research-assistant
+npx -y socialdatax-skills@latest instagram user-info --profile-url "<profile_url_or_share_text>" --pretty --source-client socialdatax-skills --source-platform github --source-skill socialdatax-content-research-assistant
+npx -y socialdatax-skills@latest instagram user-posts --profile-url "<profile_url_or_share_text>" --pretty --source-client socialdatax-skills --source-platform github --source-skill socialdatax-content-research-assistant
+npx -y socialdatax-skills@latest x detail --post-url "<x_post_url_or_share_text>" --pretty --source-client socialdatax-skills --source-platform github --source-skill socialdatax-content-research-assistant
+npx -y socialdatax-skills@latest x comments --post-url "<x_post_url_or_share_text>" --pretty --source-client socialdatax-skills --source-platform github --source-skill socialdatax-content-research-assistant
+npx -y socialdatax-skills@latest x replies --post-id "<post_id>" --comment-id "<comment_id>" --pretty --source-client socialdatax-skills --source-platform github --source-skill socialdatax-content-research-assistant
+npx -y socialdatax-skills@latest x user-info --user-id "<user_id>" --pretty --source-client socialdatax-skills --source-platform github --source-skill socialdatax-content-research-assistant
+npx -y socialdatax-skills@latest x user-info --profile-url "<profile_url_or_share_text>" --pretty --source-client socialdatax-skills --source-platform github --source-skill socialdatax-content-research-assistant
+npx -y socialdatax-skills@latest x user-posts --user-id "<user_id>" --pretty --source-client socialdatax-skills --source-platform github --source-skill socialdatax-content-research-assistant
+npx -y socialdatax-skills@latest x user-posts --profile-url "<profile_url_or_share_text>" --pretty --source-client socialdatax-skills --source-platform github --source-skill socialdatax-content-research-assistant
+npx -y socialdatax-skills@latest youtube replies --reply-token "<reply_token>" --pretty --source-client socialdatax-skills --source-platform github --source-skill socialdatax-content-research-assistant
+npx -y socialdatax-skills@latest tiktok comments --url "<tiktok_post_url_or_share_text>" --pretty --source-client socialdatax-skills --source-platform github --source-skill socialdatax-content-research-assistant
+npx -y socialdatax-skills@latest tiktok replies --post-id "<post_id>" --comment-id "<comment_id>" --pretty --source-client socialdatax-skills --source-platform github --source-skill socialdatax-content-research-assistant
+npx -y socialdatax-skills@latest tiktok user-info --profile-url "<profile_url_or_share_text>" --pretty --source-client socialdatax-skills --source-platform github --source-skill socialdatax-content-research-assistant
+npx -y socialdatax-skills@latest tiktok user-posts --profile-url "<profile_url_or_share_text>" --pretty --source-client socialdatax-skills --source-platform github --source-skill socialdatax-content-research-assistant
+npx -y socialdatax-skills@latest weibo detail --post-url "<weibo_post_url_or_share_text>" --pretty --source-client socialdatax-skills --source-platform github --source-skill socialdatax-content-research-assistant
+npx -y socialdatax-skills@latest weibo comments --post-url "<weibo_post_url_or_share_text>" --pretty --source-client socialdatax-skills --source-platform github --source-skill socialdatax-content-research-assistant
+npx -y socialdatax-skills@latest weibo likers --post-id "<post_id>" --pretty --source-client socialdatax-skills --source-platform github --source-skill socialdatax-content-research-assistant
+npx -y socialdatax-skills@latest weibo reposts --post-id "<post_id>" --pretty --source-client socialdatax-skills --source-platform github --source-skill socialdatax-content-research-assistant
+npx -y socialdatax-skills@latest weibo user-info --profile-url "<profile_url_or_share_text>" --pretty --source-client socialdatax-skills --source-platform github --source-skill socialdatax-content-research-assistant
+npx -y socialdatax-skills@latest weibo user-posts --profile-url "<profile_url_or_share_text>" --pretty --source-client socialdatax-skills --source-platform github --source-skill socialdatax-content-research-assistant
+npx -y socialdatax-skills@latest weibo replies --post-id "<post_id>" --comment-id "<comment_id>" --pretty --source-client socialdatax-skills --source-platform github --source-skill socialdatax-content-research-assistant
+npx -y socialdatax-skills@latest wechat detail --url "<wechat_video_url_or_share_text>" --pretty --source-client socialdatax-skills --source-platform github --source-skill socialdatax-content-research-assistant
+npx -y socialdatax-skills@latest wechat article --url "<mp_article_url_or_share_text>" --pretty --source-client socialdatax-skills --source-platform github --source-skill socialdatax-content-research-assistant
+npx -y socialdatax-skills@latest wechat comments --url "<wechat_video_url_or_share_text>" --pretty --source-client socialdatax-skills --source-platform github --source-skill socialdatax-content-research-assistant
+npx -y socialdatax-skills@latest wechat user-posts --url "<wechat_video_url_or_share_text>" --pretty --source-client socialdatax-skills --source-platform github --source-skill socialdatax-content-research-assistant
+npx -y socialdatax-skills@latest wechat replies --object-id "<object_id>" --object-nonce-id "<object_nonce_id>" --comment-id "<comment_id>" --pretty --source-client socialdatax-skills --source-platform github --source-skill socialdatax-content-research-assistant
 ```
 
 For hot topics, content URLs, profile URLs, comment review, Bilibili reaction review, Weibo liker/repost review, creator facts, creator content lists, or short-drama series, call the matching `socialdatax-skills` platform subcommand instead of forcing every request through keyword research.
@@ -287,7 +287,7 @@ Optional arguments:
 - Keyword research filters: use only the documented search filter flags for the selected platform; Bilibili, Zhihu, YouTube, TikTok, XHS, Douyin, and WeChat Channels each expose different filter sets.
 - `--comment-id`: required for reply/sub-comment commands when the selected platform reply command uses comment IDs; YouTube replies use `--reply-token` instead.
 - `--pretty`: output formatting only.
-- `--source-client socialdatax-skills --source-platform npm --source-skill socialdatax-content-research-assistant`: usage attribution for this Agent Skill; keep these values unchanged when running examples from this Skill.
+- `--source-client socialdatax-skills --source-platform github --source-skill socialdatax-content-research-assistant`: usage attribution for this Agent Skill; keep these values unchanged when running examples from this Skill.
 
 ## Choose The Platform
 
@@ -310,7 +310,7 @@ When the selected command exposes `--since-days`, pass it with bounded `--pages`
 
 ## Safety Boundary
 
-This skill is read-only. It uses `SOCIALDATAX_API_KEY` from the user's environment at runtime. Generated Skill files do not contain API keys. It does not read local browser data or perform login, posting, liking, commenting, or account changes. Prefer the direct CLI; hosted MCP tools are optional when the current agent already supports authenticated streamable HTTP MCP.
+This skill is read-only. It uses `SOCIALDATAX_API_KEY` from the user's environment at runtime. Generated Skill files do not contain API keys. It does not read local browser data or perform login, posting, liking, commenting, or account changes.
 
 ## MCP Tools
 
@@ -338,13 +338,14 @@ XHS search parameter naming reminder: direct CLI uses `--sort-type`, `--publish-
 
 For broad research, summarize visible evidence separately from interpretation and organize findings by platform, content angles, audience needs, trend signals, comment themes, creator positioning, and practical next steps.
 For XHS search or detail results, in every use of a returned `note_url`, such as final answers, display, references, storage, output, or forwarding, preserve it exactly as the full URL, including `xsec_token` query parameters. Do not modify, truncate, redact, mask, normalize, rebuild, or synthesize the URL from `note_id`; if detail `note_url` is null, show the `note_id` or say that no directly openable full link is available.
-For XHS `note_id`, copy the complete 24-character lowercase hexadecimal ID exactly; do not pass or display only a prefix.
+For XHS `note_id`, copy the entire returned `note_id` exactly; do not pass or display only a prefix.
 For comments, group observed themes before inferring sentiment or demand.
 For creators, separate profile facts from content-list evidence; include Douyin short-drama series facts when the series command is used, Kuaishou work-list evidence when Kuaishou commands are used, Bilibili video/article/dynamic evidence when Bilibili creator commands are used, YouTube channel video-list evidence when YouTube commands are used, Weibo post-list evidence when Weibo commands are used, and 视频号 video-list evidence when WeChat Channels commands are used.
 For hot-search, report ranking signals separately from keyword search results.
 
 ## Troubleshooting
 
+- If an SDK/dependency, npm network, Node.js/npm/npx availability, permission, or missing runtime error appears, treat it as a local runtime, dependency installation, network, or agent authorization issue, not a SocialDataX API key or business data error. If the current environment has permission, install or restore automatically. When network or execution authorization is needed, ask the user to approve or finish authorization, then continue the same command; do not use public web search as a substitute for SocialDataX data.
 - For non-balance, non-rate-limit network or API errors, preserve the error message, check `SOCIALDATAX_API_KEY`, parameters, and link or ID format, then retry once when appropriate.
 - If the response returns `insufficient_balance` or says the balance/credits are insufficient, do not retry repeatedly. Show the recharge URL from the error exactly as returned, then continue the same command after the user recharges.
 - If the user has recharged but still sees insufficient balance, confirm `SOCIALDATAX_API_KEY` belongs to the same account that was recharged; if needed, copy a fresh API Key from the official dashboard.
