@@ -6,7 +6,7 @@ Official website and API Key access: <https://socialdatax.com/ai?from=github>
 
 ## Quick Start
 
-Set your API Key in the environment:
+For installed AI clients, persist `SOCIALDATAX_API_KEY` in the client Secret or user environment. The `export` below is only for a one-off shell run:
 
 ```bash
 export SOCIALDATAX_API_KEY="<your_api_key>"
@@ -28,14 +28,14 @@ This table is a curated marketplace catalog, not the complete platform support l
 
 | Skill | Use When | Primary Capability | Marketplace Slugs |
 | --- | --- | --- | --- |
-| 社媒内容研究助手 | Research supported SocialDataX public platforms including XHS, Douyin, Kuaishou, Bilibili, Zhihu, Instagram, X / Twitter, YouTube, TikTok, Weibo, and WeChat Channels, plus WeChat Official Account article details. | Cross-platform social content research | SkillHub: `socialdatax-content-research-assistant` |
-| 小红书内容研究 | Research popular XHS / Xiaohongshu / RedNote note samples, content angles, keywords, competitor content, and trend material. | XHS note search | SkillHub / ClawHub / ModelScope: `xhs-content-research` |
-| 小红书评论分析与需求挖掘 | Analyze comments from a provided XHS note URL or complete `note_id` for user feedback, pain points, purchase objections, FAQ, and demand signals. | XHS comments and replies | SkillHub / ClawHub / ModelScope: `xhs-comment-insights` |
-| 小红书热榜选题分析 | Turn current XHS hot-list signals and related popular note samples into actionable topic ideas. | XHS hot search plus note search | SkillHub / ClawHub / ModelScope: `xhs-hot-topic-selection` |
-| 小红书爆款笔记研究 | Study high-engagement XHS note samples from a keyword, niche, product, or scenario. | XHS note search | SkillHub / ModelScope: `xhs-viral-note-research` |
-| 小红书爆款文案拆解 | Break down XHS viral copy structure, title hooks, opening style, selling points, emotional wording, CTA, and reusable copy framework. | XHS search and note detail | SkillHub / ModelScope: `xhs-viral-copy-breakdown` |
+| 社媒内容研究助手 | Research supported SocialDataX public platforms including XHS, Douyin, Kuaishou, Bilibili, Zhihu, Instagram, X / Twitter, YouTube, TikTok, Weibo, and WeChat Channels, plus WeChat Official Account article details. | Cross-platform social content research | SkillHub / ModelScope: `socialdatax-content-research-assistant` |
+| 小红书内容研究 | Research popular XHS / Xiaohongshu / RedNote note samples, content angles, keywords, competitor content, and trend material. | XHS note search | SkillHub: `xhs-content-research-v5`; ClawHub / ModelScope: `xhs-content-research` |
+| 小红书评论分析与需求挖掘 | Analyze comments from a provided XHS note URL or complete `note_id` for user feedback, pain points, purchase objections, FAQ, and demand signals. | XHS comments and replies | SkillHub: `xhs-comment-insights-v3`; ClawHub / ModelScope: `xhs-comment-insights` |
+| 小红书热榜选题分析 | Turn current XHS hot-list signals and related popular note samples into actionable topic ideas. | XHS hot search plus note search | SkillHub: `xhs-hot-topic-selection-v3`; ClawHub / ModelScope: `xhs-hot-topic-selection` |
+| 小红书爆款笔记研究 | Study high-engagement XHS note samples from a keyword, niche, product, or scenario. | XHS note search | SkillHub: `xhs-viral-note-research-v3`; ClawHub / ModelScope: `xhs-viral-note-research` |
+| 小红书爆款文案拆解 | Break down XHS viral copy structure, title hooks, opening style, selling points, emotional wording, CTA, and reusable copy framework. | XHS search and note detail | SkillHub: `xhs-viral-copy-breakdown-v3`; ClawHub / ModelScope: `xhs-viral-copy-breakdown` |
 | 抖音文案提取 | Extract Douyin video context, original description, spoken transcript, copy-ready version, and task status from a URL, share text, `aweme_id`, or transcript `job_id`. | Douyin transcript job | SkillHub / ClawHub / ModelScope: `douyin-video-copy-extract` |
-| 敏感词检测与违禁词检查 | Check copy before publishing for sensitive terms, platform risk hints, and safer rewrite suggestions. | Copy safety review | SkillHub / ClawHub: `socialdatax-sensitive-check` |
+| 敏感词检测与违禁词检查 | Check copy before publishing for sensitive terms, platform risk hints, and safer rewrite suggestions. | Copy safety review | SkillHub / ClawHub / ModelScope: `socialdatax-sensitive-check` |
 
 ## Direct CLI Examples
 
@@ -134,8 +134,9 @@ npx -y socialdatax-skills@latest sensitive-check text \
 Use the marketplace that matches your agent runtime:
 
 - ClawHub: search the Chinese skill title or slug shown above.
-- SkillHub: search the Chinese skill title or slug shown above.
+- SkillHub: search the SkillHub slug shown above. For XHS rows, the first-column catalog title is not the SkillHub display title; SkillHub display titles use neutral wording while keeping `xhs` in the slug for discovery. This catalog can keep the broader 小红书 wording for non-SkillHub surfaces.
 - ModelScope: search the Chinese skill title or slug shown above.
+- GitHub / skills.sh: install the currently published Skills from [`DevinChen2014/socialdatax-skills`](https://github.com/DevinChen2014/socialdatax-skills); skills.sh reads the repository's `skills/` directory.
 - npm/direct CLI: use `npx -y socialdatax-skills@latest ...`.
 
 ## Safety Boundary

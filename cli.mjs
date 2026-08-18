@@ -22,7 +22,7 @@ import { decryptWechatMediaCommand } from "./lib/media/wechat-decrypt.mjs";
 export { decryptWechatMediaCommand };
 
 const PACKAGE_NAME = "socialdatax-skills";
-const PACKAGE_VERSION = "0.2.35";
+const PACKAGE_VERSION = "0.2.38";
 const PACKAGE_SPEC = `${PACKAGE_NAME}@latest`;
 const LOG_PREFIX = `[${PACKAGE_NAME}]`;
 const MIN_NODE_VERSION = "20.18.1";
@@ -172,7 +172,7 @@ const XHS_DIRECT_ACTION_OPTIONS = {
     "pretty",
   ],
   transcript: ["url", "noteId", "jobId", "maxWaitSeconds", "pretty"],
-  "download-media": ["url", "output", "outputDir", "pretty"],
+  "download-media": ["url", "output", "outputDir", "proxy", "pretty"],
 };
 const XHS_DIRECT_ACTION_NAMES = Object.keys(XHS_DIRECT_ACTION_OPTIONS).join(", ");
 const XHS_OPTION_DISPLAY_NAMES = {
@@ -195,6 +195,7 @@ const XHS_OPTION_DISPLAY_NAMES = {
   maxWaitSeconds: "--max-wait-seconds",
   output: "--output",
   outputDir: "--output-dir",
+  proxy: "--proxy",
 };
 const XHS_SEARCH_SORT_TYPES = [
   "general",
@@ -262,7 +263,7 @@ const DOUYIN_DIRECT_ACTION_OPTIONS = {
   ],
   "user-series": ["secUserId", "profileUrl", "pageToken", "pages", "all", "maxItems", "pretty"],
   transcript: ["url", "awemeId", "jobId", "maxWaitSeconds", "pretty"],
-  "download-media": ["url", "output", "outputDir", "pretty"],
+  "download-media": ["url", "output", "outputDir", "proxy", "pretty"],
 };
 const DOUYIN_DIRECT_ACTION_NAMES = Object.keys(DOUYIN_DIRECT_ACTION_OPTIONS).join(", ");
 const DOUYIN_SEARCH_SORT_TYPES = ["general", "time_descending", "like_count_descending"];
@@ -295,6 +296,7 @@ const DOUYIN_OPTION_DISPLAY_NAMES = {
   maxWaitSeconds: "--max-wait-seconds",
   output: "--output",
   outputDir: "--output-dir",
+  proxy: "--proxy",
 };
 const KUAISHOU_DIRECT_ACTION_OPTIONS = {
   "hot-search": ["pretty"],
@@ -333,7 +335,7 @@ const KUAISHOU_DIRECT_ACTION_OPTIONS = {
     "pretty",
   ],
   transcript: ["url", "photoId", "jobId", "maxWaitSeconds", "pretty"],
-  "download-media": ["url", "output", "outputDir", "pretty"],
+  "download-media": ["url", "output", "outputDir", "proxy", "pretty"],
 };
 const KUAISHOU_DIRECT_ACTION_NAMES = Object.keys(KUAISHOU_DIRECT_ACTION_OPTIONS).join(", ");
 const KUAISHOU_OPTION_DISPLAY_NAMES = {
@@ -353,6 +355,7 @@ const KUAISHOU_OPTION_DISPLAY_NAMES = {
   maxWaitSeconds: "--max-wait-seconds",
   output: "--output",
   outputDir: "--output-dir",
+  proxy: "--proxy",
 };
 const BILIBILI_DIRECT_ACTION_OPTIONS = {
   "search-videos": [
@@ -578,6 +581,7 @@ const X_DIRECT_ACTION_OPTIONS = {
     "maxItems",
     "pretty",
   ],
+  "download-media": ["url", "output", "outputDir", "proxy", "pretty"],
 };
 const X_DIRECT_ACTION_NAMES = Object.keys(X_DIRECT_ACTION_OPTIONS).join(", ");
 const X_OPTION_DISPLAY_NAMES = {
@@ -593,6 +597,10 @@ const X_OPTION_DISPLAY_NAMES = {
   userId: "--user-id",
   username: "--username",
   profileUrl: "--profile-url",
+  url: "--url",
+  output: "--output",
+  outputDir: "--output-dir",
+  proxy: "--proxy",
 };
 const X_SEARCH_SORT_TYPES = ["hot", "time_descending"];
 const YOUTUBE_DIRECT_ACTION_OPTIONS = {
@@ -720,7 +728,7 @@ const WEIBO_DIRECT_ACTION_OPTIONS = {
     "pretty",
   ],
   transcript: ["postUrl", "postId", "jobId", "maxWaitSeconds", "pretty"],
-  "download-media": ["url", "output", "outputDir", "pretty"],
+  "download-media": ["url", "output", "outputDir", "proxy", "pretty"],
 };
 const WEIBO_DIRECT_ACTION_NAMES = Object.keys(WEIBO_DIRECT_ACTION_OPTIONS).join(", ");
 const WEIBO_OPTION_DISPLAY_NAMES = {
@@ -741,6 +749,7 @@ const WEIBO_OPTION_DISPLAY_NAMES = {
   url: "--url",
   output: "--output",
   outputDir: "--output-dir",
+  proxy: "--proxy",
 };
 const WECHAT_DIRECT_ACTION_OPTIONS = {
   "hot-search": ["pretty"],
@@ -1737,11 +1746,65 @@ async function main() {
       process.exitCode = 1;
     }
   } catch (error) {
-    console.error(`${LOG_PREFIX} ${error.message}`);
+    console.error(`${LOG_PREFIX} ${formatCliErrorMessage(error)}`);
     process.exit(1);
   }
 }
 
+export function formatCliErrorMessage(error) {
+  const message = error?.message || String(error);
+  if (error?.structuredContent) {
+    return message;
+  }
+  if (isLocalDependencyInstallError(message)) {
+    return `${message}
+Local dependency/runtime/network/authorization issue, not a SocialDataX API key or business data error: install or restore the required CLI dependencies or Node.js runtime when missing, allow node/npm/npx and npm registry access, allow required local file or directory permissions, then retry the same command. 本地依赖/运行环境/网络/授权问题，不是 SocialDataX API Key 或业务数据返回错误：缺少依赖或 node/npm/npx 时请安装或启用当前 CLI 所需依赖/运行时；已有环境时允许当前 Agent 运行 node/npm/npx、访问 npm registry 和目标文件或目录权限，然后重试原命令；不要改用公开网页搜索替代 SocialDataX 数据。`;
+  }
+  return message;
+}
+
+function isLocalDependencyInstallError(message) {
+  if (isWrappedSocialDataxDirectCallError(message)) {
+    return false;
+  }
+
+  return (
+    isMissingNodeDependencyError(message) ||
+    /Node\.js \d+\.\d+\.\d+ or newer is required/i.test(message) ||
+    isLocalFilesystemPermissionError(message) ||
+    /npm ERR!.*\bENOTFOUND\b/i.test(message) ||
+    (/\bENOSPC\b/i.test(message) &&
+      /(?:npm|npx|socialdatax-skills|node_modules)/i.test(message)) ||
+    (/\b(?:ENOTFOUND|EAI_AGAIN|ECONNRESET|ECONNREFUSED|ETIMEDOUT)\b/.test(message) &&
+      /(?:npm|registry\.npmjs\.org|npm registry)/i.test(message)) ||
+    (/(?:npm|registry\.npmjs\.org|npm registry)/i.test(message) &&
+      /\b(?:E401|E403|401|403|SELF_SIGNED_CERT_IN_CHAIN|UNABLE_TO_VERIFY_LEAF_SIGNATURE|CERT_HAS_EXPIRED|certificate)\b/i.test(message)) ||
+    /\bnpx\b.*(?:EACCES|EPERM|ENOENT|permission|denied|not found|被拒绝)/i.test(message) ||
+    /(?:EACCES|EPERM|ENOENT|permission|denied|not found|被拒绝).*\bnpx\b/i.test(message) ||
+    /\bnpm\b.*(?:EACCES|EPERM|permission|denied|被拒绝)/i.test(message)
+  );
+}
+
+function isLocalFilesystemPermissionError(message) {
+  return (
+    /\b(?:EACCES|EPERM)\b/i.test(message) &&
+    /(?:permission|denied|operation not permitted|mkdir|open|copyfile|cp|scandir|rename|unlink|rmdir)/i.test(message) &&
+    !/https?:\/\//i.test(message)
+  );
+}
+
+function isWrappedSocialDataxDirectCallError(message) {
+  return /Direct CLI call failed[\s\S]* at https?:\/\/\S+/i.test(message);
+}
+
+function isMissingNodeDependencyError(message) {
+  return (
+    /Cannot find (?:package|module)/i.test(message) &&
+    (/(?:imported from|ERR_MODULE_NOT_FOUND)[\s\S]*(?:cli\.mjs|socialdatax-skills|node_modules)/i.test(message) ||
+      /Cannot find module ['"][^'"]*node_modules[\\/]/i.test(message) ||
+      /Require stack:[\s\S]*(?:cli\.mjs|socialdatax-skills)/i.test(message))
+  );
+}
 function parseCommandArgs(args) {
   const options = {};
   const positional = [];
@@ -2072,6 +2135,21 @@ function validateInstagramDirectActionOptions(action, options) {
 }
 
 function validateXDirectActionOptions(action, options) {
+  const allowedOptions = X_DIRECT_ACTION_OPTIONS[action];
+  if (!allowedOptions) {
+    return;
+  }
+
+  if (action === "download-media") {
+    validateDownloadMediaDirectActionOptions(
+      "x",
+      options,
+      allowedOptions,
+      X_OPTION_DISPLAY_NAMES
+    );
+    return;
+  }
+
   validateMcpDirectActionOptions(
     "x",
     action,
@@ -2329,6 +2407,15 @@ function expandHome(path) {
   if (path.startsWith("~/")) {
     return join(homedir(), path.slice(2));
   }
+  if (path.startsWith("~\\")) {
+    return join(
+      homedir(),
+      ...path
+        .slice(2)
+        .split(/[\\/]+/)
+        .filter(Boolean)
+    );
+  }
   return path;
 }
 
@@ -2474,11 +2561,13 @@ async function installSkills(args) {
   console.log("No MCP server setup is required for the bundled skills.");
   console.log("No API key was stored by this installer.");
   console.log("No MCP server configuration was changed.");
-  console.log("Installed files are AgentSkills files only.");
+  console.log("Installed files are Skill files only.");
   console.log(`Authenticated data calls require ${PRIMARY_API_KEY_ENV} at runtime.`);
   console.log("Data calls do not perform login, posting, editing, liking, commenting, or account actions.");
   console.log("Configure your API Key before making authenticated calls:");
-  console.log(`  export ${PRIMARY_API_KEY_ENV}="<${PRIMARY_API_KEY_ENV}>"`);
+  console.log(
+    `  Persist ${PRIMARY_API_KEY_ENV} in the target AI client Secret or user environment; do not rely on a temporary shell export.`
+  );
   printInstalledSkillAttributionNote();
 }
 
@@ -2497,7 +2586,7 @@ function resolveInstallDestination({
   path,
   usePathAsParent,
 }) {
-  const customPath = path && usePathAsParent ? join(path, skillName) : path;
+  const customPath = path && usePathAsParent ? join(expandHome(path), skillName) : path;
   return resolveInstallDir({
     target,
     scope,
@@ -2633,7 +2722,7 @@ function buildDoctorReport() {
       recommendedNode: "22 LTS or newer",
     },
     install: {
-      writes: "AgentSkills directories only",
+      writes: "Skill files only",
       apiKeyStored: false,
       mcpConfigChanged: false,
       supportsDryRun: true,
@@ -2677,7 +2766,7 @@ function printDoctor(args) {
   console.log("");
   console.log("Install safety:");
   console.log("- npm lifecycle scripts: none declared by this package.");
-  console.log("- install writes AgentSkills files only.");
+  console.log("- install writes Skill files only.");
   console.log("- install does not store API keys.");
   console.log("- install does not change MCP server configuration.");
   console.log("- install --dry-run previews destinations without writing files.");
@@ -3023,6 +3112,9 @@ function printHelp() {
   console.log(`  npx -y ${PACKAGE_SPEC} x user-posts --username "<username>" --pretty`);
   console.log("      Call the X creator posts tool by username.");
   console.log("");
+  console.log(`  npx -y ${PACKAGE_SPEC} x download-media --url "<x_media_url>" --output-dir ./downloads --pretty`);
+  console.log("      Save one X image or video media URL returned by search or detail to a local file.");
+  console.log("");
   console.log(`  npx -y ${PACKAGE_SPEC} youtube search --keyword "camping" --pretty`);
   console.log("      Call the YouTube public video search tool directly and print JSON.");
   console.log("");
@@ -3122,6 +3214,14 @@ function printHelp() {
   );
   console.log("      Install one skill to ./.claude/skills.");
   console.log("");
+  console.log(`  npx -y ${PACKAGE_SPEC} install --path ~/.workbuddy/skills/`);
+  console.log("      Install all skills under a custom WorkBuddy Skills parent directory.");
+  console.log("");
+  console.log(
+    `  npx -y ${PACKAGE_SPEC} install media-search --path ~/.workbuddy/skills/media-search`
+  );
+  console.log("      Install one skill to a direct custom Skills directory.");
+  console.log("");
   console.log("Available skills:");
   console.log(`  ${AVAILABLE_SKILL_NAMES.join(", ")}`);
   console.log("");
@@ -3130,6 +3230,7 @@ function printHelp() {
   console.log("  --url <url-or-share-text>");
   console.log("      Content link, short link, or share text for URL-based detail/comment/article commands.");
   console.log("      For xhs/douyin/kuaishou/weibo download-media, pass one media URL returned by detail.");
+  console.log("      For x download-media, pass one media URL returned by search or detail.");
   console.log("      For Douyin detail/comments, pass a content page link, not video.play_url.");
   console.log("  --media-url <video.video_url>");
   console.log("      WeChat detail result media URL for local decrypt-media download.");
@@ -3137,6 +3238,8 @@ function printHelp() {
   console.log("      Output file path for local decrypt-media, download-media, or Bilibili download.");
   console.log("  --output-dir <directory>");
   console.log("      Directory for download-media or Bilibili download output when --output is omitted.");
+  console.log("  --proxy <http-or-https-proxy-url>");
+  console.log("      Proxy for local download-media requests; otherwise HTTPS_PROXY, HTTP_PROXY, or ALL_PROXY is used when set.");
   console.log("  --ffmpeg-path <path>");
   console.log("      ffmpeg executable path for Bilibili download; defaults to ffmpeg.");
   console.log("  --keep-tracks");
@@ -3250,7 +3353,8 @@ function printHelp() {
   console.log("  --target <openclaw|hermes|agents|codex|claude-code|claude>");
   console.log("      For install.");
   console.log("  --scope <user|workspace|shared>  shared is only for --target hermes.");
-  console.log("  --path <directory>   Override install destination.");
+  console.log("  --path <directory>");
+  console.log("      For install. Multiple/all skills: parent directory; one skill: skill destination directory.");
   console.log("  --dry-run           Preview install without writing files.");
   console.log("  --force              Replace an existing directory for the same skill.");
 }
@@ -3323,7 +3427,9 @@ async function runXhsDirectCommand(args) {
   validateXhsDirectActionOptions(action, options);
 
   if (action === "download-media") {
-    const data = await downloadPlatformMediaFromUrl("xhs", options.url, options);
+    const data = await downloadPlatformMediaFromUrl("xhs", options.url, options, {
+      env: process.env,
+    });
     process.stdout.write(JSON.stringify(data, null, options.pretty ? 2 : 0));
     process.stdout.write("\n");
     return;
@@ -3359,7 +3465,9 @@ async function runDouyinDirectCommand(args) {
   validateDouyinDirectActionOptions(action, options);
 
   if (action === "download-media") {
-    const data = await downloadPlatformMediaFromUrl("douyin", options.url, options);
+    const data = await downloadPlatformMediaFromUrl("douyin", options.url, options, {
+      env: process.env,
+    });
     process.stdout.write(JSON.stringify(data, null, options.pretty ? 2 : 0));
     process.stdout.write("\n");
     return;
@@ -3395,7 +3503,9 @@ async function runKuaishouDirectCommand(args) {
   validateKuaishouDirectActionOptions(action, options);
 
   if (action === "download-media") {
-    const data = await downloadPlatformMediaFromUrl("kuaishou", options.url, options);
+    const data = await downloadPlatformMediaFromUrl("kuaishou", options.url, options, {
+      env: process.env,
+    });
     process.stdout.write(JSON.stringify(data, null, options.pretty ? 2 : 0));
     process.stdout.write("\n");
     return;
@@ -3541,7 +3651,9 @@ async function runWeiboDirectCommand(args) {
   validateWeiboDirectActionOptions(action, options);
 
   if (action === "download-media") {
-    const data = await downloadPlatformMediaFromUrl("weibo", options.url, options);
+    const data = await downloadPlatformMediaFromUrl("weibo", options.url, options, {
+      env: process.env,
+    });
     process.stdout.write(JSON.stringify(data, null, options.pretty ? 2 : 0));
     process.stdout.write("\n");
     return;
@@ -3644,12 +3756,39 @@ async function runInstagramDirectCommand(args) {
 }
 
 async function runXDirectCommand(args) {
-  await runMcpDirectCommand(args, {
-    displayName: "X",
-    actionNames: X_DIRECT_ACTION_NAMES,
-    validateActionOptions: validateXDirectActionOptions,
-    buildOperation: buildXOperation,
-  });
+  const { options, positional } = parseCommandArgs(args);
+  if (shouldPrintDirectHelp(options, positional)) {
+    printHelp();
+    return;
+  }
+  const action = positional[0];
+  if (!action) {
+    throw new Error(`Missing X command. Use ${X_DIRECT_ACTION_NAMES}.`);
+  }
+  if (positional.length > 1) {
+    throw new Error(`Unexpected argument: ${positional[1]}`);
+  }
+  validateXDirectActionOptions(action, options);
+
+  if (action === "download-media") {
+    const data = await downloadPlatformMediaFromUrl("x", options.url, options, {
+      env: process.env,
+    });
+    process.stdout.write(JSON.stringify(data, null, options.pretty ? 2 : 0));
+    process.stdout.write("\n");
+    return;
+  }
+
+  const operation = attachDirectMetadata(buildXOperation(action, options), options);
+  const data = await callDirectOperationWithOptions(operation, options);
+  const envelope = {
+    platform: operation.platform.id,
+    tool: operation.tool,
+    arguments: operation.arguments,
+    data,
+  };
+  process.stdout.write(JSON.stringify(envelope, null, options.pretty ? 2 : 0));
+  process.stdout.write("\n");
 }
 
 async function runYoutubeDirectCommand(args) {

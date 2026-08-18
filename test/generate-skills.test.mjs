@@ -1,4 +1,5 @@
 import assert from "node:assert/strict";
+import { spawnSync } from "node:child_process";
 import {
   copyFileSync,
   existsSync,
@@ -24,6 +25,7 @@ const DEFAULT_PACKAGE_SPEC = "socialdatax-skills@latest";
 const XHS_VIRAL_NOTE_RESEARCH_PACKAGE_SPEC = "socialdatax-skills@0.2.30";
 const packageDir = dirname(dirname(fileURLToPath(import.meta.url)));
 const projectRoot = resolve(packageDir, "..", "..");
+const generatorScript = join(projectRoot, "scripts", "generate_socialdatax_skills.mjs");
 
 function readGeneratedSkill(tempRoot, host, slug, hosts) {
   return readFileSync(
@@ -53,13 +55,23 @@ function readRepoAgent(projectRoot, host, slug, hosts) {
   );
 }
 
+function normalizeMirroredSkill(skill) {
+  return skill
+    .replace(/source_platform: "(?:skillhub|clawhub)"/g, 'source_platform: "<host>"')
+    .replace(/from=(?:skillhub|clawhub)/g, "from=<host>")
+    .replace(/--source-platform (?:skillhub|clawhub)/g, "--source-platform <host>")
+    .replace(/\n小红书搜索参数命名提醒：.*不要传 `sortType`、`publishTimeRange` 或 `noteType`。\n/g, "")
+    .replace(/\nXHS search parameter naming reminder:.*Do not pass `sortType`, `publishTimeRange`, or `noteType`\.\n/g, "");
+}
+
 function isChineseLanguageHost(host) {
   return host === "skillhub" || host === "modelscope";
 }
 
 function isChineseRenderedListing(listing) {
+  const contentHost = listing.mirrorFrom?.host ?? listing.host;
   return (
-    isChineseLanguageHost(listing.host) ||
+    isChineseLanguageHost(contentHost) ||
     (listing.host === "clawhub" && listing.slug === "socialdatax-sensitive-check")
   );
 }
@@ -70,6 +82,10 @@ function escapeRegExp(text) {
 
 function countMatches(text, pattern) {
   return (text.match(pattern) ?? []).length;
+}
+
+function assertContainsChinese(text, context) {
+  assert.match(text, /[\u4e00-\u9fff]/, `${context} should contain Chinese copy`);
 }
 
 function extractFrontmatter(skill) {
@@ -83,6 +99,12 @@ function frontmatterScalar(frontmatter, key) {
   assert.ok(match, `frontmatter should include ${key}`);
   const raw = match[1].trim();
   return raw.startsWith('"') ? JSON.parse(raw) : raw;
+}
+
+function frontmatterJsonScalar(frontmatter, key) {
+  const match = frontmatter.match(new RegExp(`^${escapeRegExp(key)}: (.+)$`, "m"));
+  assert.ok(match, `frontmatter should include ${key}`);
+  return JSON.parse(match[1].trim());
 }
 
 function assertJsonQuotedFrontmatterScalar(frontmatter, key) {
@@ -188,6 +210,68 @@ function commandRefsForListing(catalog, listing) {
   return [...new Set([...commands, ...extraCommands])];
 }
 
+function mcpOnlyToolRefsForListing(catalog, listing) {
+  const capabilityIds = listing.capabilities ?? (listing.capability ? [listing.capability] : []);
+  const defaultTools = capabilityIds.flatMap(
+    (capabilityId) => catalog.capabilities[capabilityId]?.mcpOnlyTools ?? []
+  );
+  const tools = Object.hasOwn(listing, "mcpOnlyTools")
+    ? listing.mcpOnlyTools
+    : defaultTools;
+  return [...new Set(tools)];
+}
+
+function tencentCapabilityRefsForListing(catalog, listing) {
+  return [
+    ...commandRefsForListing(catalog, listing),
+    ...mcpOnlyToolRefsForListing(catalog, listing),
+  ];
+}
+
+function isTencentEcosystemRef(ref) {
+  const normalized = ref.toLowerCase();
+  return (
+    normalized.startsWith("wechat.") ||
+    normalized.startsWith("wechat_") ||
+    normalized.startsWith("tencent.") ||
+    normalized.startsWith("tencent_") ||
+    normalized.startsWith("mp.weixin.") ||
+    normalized.startsWith("mp_weixin_") ||
+    normalized.startsWith("weixin.") ||
+    normalized.startsWith("weixin_") ||
+    normalized.startsWith("wechatchannels.") ||
+    normalized.startsWith("wechatchannels_") ||
+    normalized.startsWith("wechatmp.") ||
+    normalized.startsWith("wechatmp_") ||
+    normalized.startsWith("wechatofficialaccount.") ||
+    normalized.startsWith("wechatofficialaccount_")
+  );
+}
+
+const approvedCrossPlatformTencentSkillhubSlugs = new Set([
+  "socialdatax-content-research-assistant",
+  "socialdatax-short-video-copy-extract",
+  "short-video-copy-extract-v2",
+]);
+const skillhubTencentTerms =
+  /(?<![A-Za-z0-9])tencent(?![A-Za-z0-9])|腾讯|(?<![A-Za-z0-9])wechat(?![A-Za-z0-9])|WeChat Channels|WeChatChannels|WeChat Official Account|WeChatOfficialAccount|(?<![A-Za-z0-9])weixin(?![A-Za-z0-9])|微信|视频号|公众号|公号|订阅号|服务号|(?<![A-Za-z0-9])official[-_\s]?account(?![A-Za-z0-9])|wechat_|mp\.weixin|wechatchannels|wechatmp/i;
+
+function isCrossPlatformTencentCapability(catalog, listing) {
+  if (!approvedCrossPlatformTencentSkillhubSlugs.has(listing.slug)) {
+    return false;
+  }
+  const commandRefs = tencentCapabilityRefsForListing(catalog, listing);
+  return (
+    commandRefs.some((commandRef) => isTencentEcosystemRef(commandRef)) &&
+    commandRefs.some((commandRef) => !isTencentEcosystemRef(commandRef))
+  );
+}
+
+function hasTencentCapability(catalog, listing) {
+  const commandRefs = tencentCapabilityRefsForListing(catalog, listing);
+  return commandRefs.some((commandRef) => isTencentEcosystemRef(commandRef));
+}
+
 function resolveCommandInfo(catalog, commandRef) {
   const [platformName, commandName] = commandRef.split(".");
   const platform = catalog.platforms[platformName];
@@ -247,6 +331,65 @@ function copySkillSourceTo(root) {
   return sourceDir;
 }
 
+async function assertMirrorSourceRejected(mutateListings, expectedPattern) {
+  const badRoot = mkdtempSync(join(tmpdir(), "socialdatax-mirror-source-"));
+
+  try {
+    const sourceDir = copySkillSourceTo(badRoot);
+    const listingsPath = join(sourceDir, "listings.json");
+    const source = JSON.parse(readFileSync(listingsPath, "utf8"));
+    mutateListings(source.listings);
+    writeFileSync(listingsPath, `${JSON.stringify(source, null, 2)}\n`);
+
+    await assert.rejects(loadSkillSource({ repoRoot: badRoot }), expectedPattern);
+  } finally {
+    rmSync(badRoot, { recursive: true, force: true });
+  }
+}
+
+function copyGeneratorCliFixtureTo(root) {
+  const scriptsDir = join(root, "scripts");
+  mkdirSync(scriptsDir, { recursive: true });
+  copyFileSync(
+    generatorScript,
+    join(scriptsDir, "generate_socialdatax_skills.mjs")
+  );
+  copySkillSourceTo(root);
+  return join(scriptsDir, "generate_socialdatax_skills.mjs");
+}
+
+test("skill generator CLI shows help or rejects unknown flags without generating", () => {
+  const tempRoot = mkdtempSync(join(tmpdir(), "socialdatax-generator-cli-"));
+
+  try {
+    const fixtureScript = copyGeneratorCliFixtureTo(tempRoot);
+    const help = spawnSync(process.execPath, [fixtureScript, "--help"], {
+      cwd: tempRoot,
+      encoding: "utf8",
+    });
+
+    assert.equal(help.status, 0);
+    assert.match(help.stdout, /Usage:/);
+    assert.doesNotMatch(help.stdout, /^generated /m);
+    assert.equal(help.stderr, "");
+
+    const unknown = spawnSync(process.execPath, [fixtureScript, "--check"], {
+      cwd: tempRoot,
+      encoding: "utf8",
+    });
+
+    assert.notEqual(unknown.status, 0);
+    assert.match(unknown.stderr, /Unknown option: --check/);
+    assert.doesNotMatch(unknown.stdout, /^generated /m);
+    assert.equal(
+      existsSync(join(tempRoot, "public-listings", "socialdatax-skillhub-skills")),
+      false
+    );
+  } finally {
+    rmSync(tempRoot, { recursive: true, force: true });
+  }
+});
+
 test("skill generator emits valid host-specific skill files", async () => {
   const tempRoot = mkdtempSync(join(tmpdir(), "socialdatax-skills-"));
 
@@ -278,13 +421,75 @@ test("skill generator emits valid host-specific skill files", async () => {
       assert.equal(frontmatterScalar(frontmatter, "source_skill"), listing.slug);
       assertJsonQuotedFrontmatterScalar(frontmatter, "description");
       assert.match(skill, /<!-- AUTO-GENERATED from socialdatax-skill-source/);
-      assert.match(skill, /SOCIALDATAX_API_KEY/);
       assert.match(skill, new RegExp(escapeRegExp(host.homepage)));
       assert.match(skill, new RegExp(`\\?from=${escapeRegExp(listing.host)}`));
+
+      if (listing.listingKind === "prompt_only") {
+        assert.doesNotMatch(skill, /API Key/);
+        assert.doesNotMatch(skill, /direct CLI|Direct CLI/);
+        assert.doesNotMatch(skill, /MCP 工具|MCP tools/);
+        assert.doesNotMatch(skill, /SOCIALDATAX_API_KEY/);
+        assert.doesNotMatch(skill, /npx -y socialdatax-skills/);
+        assert.doesNotMatch(skill, /`insufficient_balance`|积分不足/);
+        assert.doesNotMatch(skill, /SDK\/依赖缺失|SDK\/dependency/);
+        assert.doesNotMatch(skill, /--source-client|--source-platform|--source-skill/);
+        assert.match(skill, /纯文本生成型 skill/);
+        continue;
+      }
+
+      assert.match(skill, /SOCIALDATAX_API_KEY/);
       assert.match(
         skill,
         /`insufficient_balance`|`insufficient_balance` 或“积分不足”/,
         `${listing.host}/${listing.slug} should document insufficient balance handling`
+      );
+      assert.match(
+        skill,
+        isChineseRenderedListing(listing)
+          ? /SDK\/依赖缺失、npm 网络、Node\.js\/npm\/npx 不可用或执行权限错误/
+          : /SDK\/dependency, npm network, Node\.js\/npm\/npx availability, permission, or missing runtime error/,
+        `${listing.host}/${listing.slug} should document local dependency and authorization failures`
+      );
+      assert.doesNotMatch(skill, /Cannot find package '@modelcontextprotocol\/sdk'/);
+      assert.doesNotMatch(skill, /Node\.js 20\.18\.1\+/);
+      const dependencyHintIndex = skill.search(
+        isChineseRenderedListing(listing)
+          ? /SDK\/依赖缺失/
+          : /SDK\/dependency/
+      );
+      assert.notEqual(
+        dependencyHintIndex,
+        -1,
+        `${listing.host}/${listing.slug} should surface dependency authorization`
+      );
+      const genericTroubleshootingMarkers = isChineseRenderedListing(listing)
+        ? ["- 非余额不足的网络或 API 异常", "- 提交或查询异常"]
+        : [
+            "- For non-balance network or API errors",
+            "- If the response returns `insufficient_balance`",
+          ];
+      for (const marker of genericTroubleshootingMarkers) {
+        const markerIndex = skill.indexOf(marker);
+        if (markerIndex !== -1) {
+          assert.ok(
+            dependencyHintIndex < markerIndex,
+            `${listing.host}/${listing.slug} should surface dependency authorization before generic troubleshooting`
+          );
+        }
+      }
+      assert.match(
+        skill,
+        isChineseRenderedListing(listing)
+          ? /不要改用公开网页搜索替代 SocialDataX 数据/
+          : /do not use public web search as a substitute for SocialDataX data/,
+        `${listing.host}/${listing.slug} should keep agents from replacing SocialDataX data with web search`
+      );
+      assert.match(
+        skill,
+        isChineseRenderedListing(listing)
+          ? /不是 SocialDataX API Key 或业务数据返回错误/
+          : /not a SocialDataX API key or business data error/,
+        `${listing.host}/${listing.slug} should not classify dependency failures as API key or business data errors`
       );
       assert.match(
         skill,
@@ -300,6 +505,64 @@ test("skill generator emits valid host-specific skill files", async () => {
           : /continue the same command after the user recharges/,
         `${listing.host}/${listing.slug} should continue the same command after recharge`
       );
+      if (listing.host === "npm") {
+        assert.match(
+          skill,
+          /SDK\/dependency, npm network, Node\.js\/npm\/npx availability, permission, or missing runtime error/,
+          `${listing.host}/${listing.slug} should document local dependency and authorization failures`
+        );
+        assert.doesNotMatch(skill, /Cannot find package '@modelcontextprotocol\/sdk'/);
+        assert.doesNotMatch(skill, /Node\.js 20\.18\.1\+/);
+        const dependencyHintIndex = skill.search(/SDK\/dependency/);
+        assert.notEqual(
+          dependencyHintIndex,
+          -1,
+          `${listing.host}/${listing.slug} should surface dependency authorization`
+        );
+        const genericTroubleshootingMarkers = [
+          "- For non-balance network or API errors",
+          "- If the response returns `insufficient_balance`",
+        ];
+        for (const marker of genericTroubleshootingMarkers) {
+          const markerIndex = skill.indexOf(marker);
+          if (markerIndex !== -1) {
+            assert.ok(
+              dependencyHintIndex < markerIndex,
+              `${listing.host}/${listing.slug} should surface dependency authorization before generic troubleshooting`
+            );
+          }
+        }
+        assert.match(
+          skill,
+          /do not use public web search as a substitute for SocialDataX data/,
+          `${listing.host}/${listing.slug} should keep agents from replacing SocialDataX data with web search`
+        );
+        assert.match(
+          skill,
+          /not a SocialDataX API key or business data error/,
+          `${listing.host}/${listing.slug} should not classify dependency failures as API key or business data errors`
+        );
+      } else if (isChineseRenderedListing(listing)) {
+        assert.match(
+          skill,
+          /需要网络或执行授权时提醒用户同意或完成授权/,
+          `${listing.host}/${listing.slug} should tell agents to ask for network or execution authorization`
+        );
+        assert.doesNotMatch(
+          skill,
+          /可替代输入方式/,
+          `${listing.host}/${listing.slug} should not use ambiguous fallback wording`
+        );
+        if (skill.includes("重试仍失败")) {
+          assert.match(
+            skill,
+            /请用户(?:补充或更换关键词、链接、ID 等输入后再重试|确认或更换 mp\.weixin\.qq\.com 文章链接或分享文本后再试|确认视频号视频链接、分享文本或 user_id 后再试)/,
+            `${listing.host}/${listing.slug} should steer retries toward better user inputs`
+          );
+        }
+      } else {
+        assert.doesNotMatch(skill, /SDK\/依赖/);
+      }
       assert.match(
         skill,
         isChineseRenderedListing(listing)
@@ -422,6 +685,66 @@ test("skill generator emits valid host-specific skill files", async () => {
     assert.match(
       kuaishouSearch,
       /Do not pass `page` to `kuaishou_search_videos`; omit `page_token` on the first request\./
+    );
+  } finally {
+    rmSync(tempRoot, { recursive: true, force: true });
+  }
+});
+
+test("github mirrors keep channel-specific attribution without changing npm output", async () => {
+  const tempRoot = mkdtempSync(join(tmpdir(), "socialdatax-github-skills-"));
+  const expectedSlugs = [
+    "socialdatax-content-research-assistant",
+    "media-search",
+    "media-detail",
+    "media-comments",
+    "media-transcript",
+    "media-user-info",
+    "media-user-posts",
+    "sensitive-check",
+  ];
+
+  try {
+    const source = await loadSkillSource({ repoRoot: projectRoot });
+    assert.ok(source.hosts.hosts.github, "source should define a github host");
+    const githubListings = source.listings.listings.filter(
+      (listing) => listing.host === "github"
+    );
+    assert.deepEqual(
+      githubListings.map((listing) => listing.slug).sort(),
+      expectedSlugs.slice().sort()
+    );
+    for (const slug of expectedSlugs) {
+      const listing = githubListings.find((candidate) => candidate.slug === slug);
+      assert.deepEqual(listing?.mirrorFrom, { host: "npm", slug });
+    }
+
+    await generateSkills({ repoRoot: projectRoot, outRoot: tempRoot, quiet: true });
+    const githubSkill = readGeneratedSkill(
+      tempRoot,
+      "github",
+      "media-search",
+      source.hosts.hosts
+    );
+    const npmSkill = readGeneratedSkill(
+      tempRoot,
+      "npm",
+      "media-search",
+      source.hosts.hosts
+    );
+
+    assert.match(githubSkill, /source_platform: "github"/);
+    assert.match(githubSkill, /from=github/);
+    assert.match(
+      githubSkill,
+      /--source-client socialdatax-skills --source-platform github --source-skill media-search/
+    );
+    assert.doesNotMatch(githubSkill, /source_platform: "npm"/);
+    assert.doesNotMatch(githubSkill, /--source-platform npm/);
+    assert.match(npmSkill, /source_platform: "npm"/);
+    assert.match(
+      npmSkill,
+      /--source-client socialdatax-skills --source-platform npm --source-skill media-search/
     );
   } finally {
     rmSync(tempRoot, { recursive: true, force: true });
@@ -657,6 +980,7 @@ test("hot-search listings document no keyword requirement and include the hot-se
       ["skillhub", "douyin-content-research"],
       ["clawhub", "socialdatax-kuaishou"],
       ["skillhub", "short-video-topic-research"],
+      ["skillhub", "zhihu-content-research"],
     ]) {
       const skill = readGeneratedSkill(tempRoot, host, slug, source.hosts.hosts);
       const chineseLanguageHost = isChineseLanguageHost(host);
@@ -703,6 +1027,18 @@ test("hot-search listings document no keyword requirement and include the hot-se
             : /Kuaishou `hot-search`: no required arguments\./
         );
       }
+      if (slug.includes("zhihu")) {
+        assertDirectCliExample(skill, "zhihu hot-list --pretty");
+        assert.match(skill, /`zhihu_get_hot_list`/);
+        assert.match(
+          extractMarkdownSection(skill, "快速开始"),
+          /要观察的平台热榜/
+        );
+        assert.match(
+          skill,
+          /用户要看当前知乎热榜时，使用 `zhihu hot-list`；这个命令不需要 `--keyword`/
+        );
+      }
     }
   } finally {
     rmSync(tempRoot, { recursive: true, force: true });
@@ -724,12 +1060,12 @@ test("clawhub scene entries use no-brand chinese titles and stable attribution",
       {
         slug: "xhs-content-research",
         title: "小红书内容研究",
-        commands: ["xhs.search"],
+        commands: ["xhs.search", "xhs.searchPages"],
         cli: ["xhs search --keyword"],
         forbiddenCli: ["xhs hot-search", "xhs detail", "xhs comments", "douyin transcript"],
         tools: ["xhs_search_notes"],
         forbiddenTools: ["xhs_get_search_hot_list", "xhs_get_note_comments", "douyin_"],
-        output: [/样本表/, /完整原始 URL/, /完整 `note_id`/],
+        output: [/相关样本和主要角度/, /完整原始 URL/, /完整 `note_id`/],
       },
       {
         slug: "xhs-comment-insights",
@@ -816,7 +1152,11 @@ test("clawhub scene entries use no-brand chinese titles and stable attribution",
         assertNoDirectCliExample(skill, command);
       }
 
-      const mcpTools = extractMarkdownSection(skill, "MCP Tools");
+      const chineseBody = isChineseRenderedListing(listing);
+      const mcpTools = extractMarkdownSection(
+        skill,
+        chineseBody ? "MCP 工具" : "MCP Tools"
+      );
       for (const tool of entry.tools) {
         assert.match(mcpTools, new RegExp(`\\\`${escapeRegExp(tool)}\\\``));
       }
@@ -824,10 +1164,111 @@ test("clawhub scene entries use no-brand chinese titles and stable attribution",
         assert.doesNotMatch(mcpTools, new RegExp(pattern));
       }
 
-      const output = extractMarkdownSection(skill, "Output Guidance");
+      const output = extractMarkdownSection(
+        skill,
+        chineseBody ? "输出建议" : "Output Guidance"
+      );
       for (const pattern of entry.output) {
         assert.match(output, pattern);
       }
+    }
+  } finally {
+    rmSync(tempRoot, { recursive: true, force: true });
+  }
+});
+
+test("top-download ClawHub mirrors match SkillHub business content", async () => {
+  const tempRoot = mkdtempSync(join(tmpdir(), "socialdatax-skills-"));
+
+  try {
+    const source = await loadSkillSource({ repoRoot: projectRoot });
+    await generateSkills({
+      repoRoot: projectRoot,
+      outRoot: tempRoot,
+      quiet: true,
+    });
+
+    for (const slug of [
+      "xhs-content-research",
+      "xhs-trend-insights-v2",
+      "xhs-topic-analysis-v2",
+      "xhs-comment-insights",
+      "xhs-competitor-research-v2",
+    ]) {
+      const clawhub = source.listings.listings.find(
+        (listing) => listing.host === "clawhub" && listing.slug === slug
+      );
+      assert.ok(clawhub, `source should include clawhub/${slug}`);
+      assert.deepEqual(clawhub.mirrorFrom, { host: "skillhub", slug });
+
+      const skillhubSkill = readGeneratedSkill(
+        tempRoot,
+        "skillhub",
+        slug,
+        source.hosts.hosts
+      );
+      const clawhubSkill = readGeneratedSkill(
+        tempRoot,
+        "clawhub",
+        slug,
+        source.hosts.hosts
+      );
+      assert.equal(
+        normalizeMirroredSkill(clawhubSkill),
+        normalizeMirroredSkill(skillhubSkill)
+      );
+    }
+  } finally {
+    rmSync(tempRoot, { recursive: true, force: true });
+  }
+});
+
+test("high-intent ClawHub mirrors match SkillHub business content", async () => {
+  const tempRoot = mkdtempSync(join(tmpdir(), "socialdatax-skills-"));
+
+  try {
+    const source = await loadSkillSource({ repoRoot: projectRoot });
+    await generateSkills({
+      repoRoot: projectRoot,
+      outRoot: tempRoot,
+      quiet: true,
+    });
+
+    for (const slug of [
+      "socialdatax-short-video-copy-extract",
+      "douyin-copy-extract-v2",
+      "douyin-account-analysis-report",
+      "xhs-viral-note-research",
+      "xhs-viral-copy-breakdown",
+      "xhs-creator-profile-insights",
+      "xhs-creator-content-research",
+      "douyin-content-research",
+      "douyin-topic-analysis",
+      "douyin-trend-insights",
+      "douyin-competitor-research",
+    ]) {
+      const clawhub = source.listings.listings.find(
+        (listing) => listing.host === "clawhub" && listing.slug === slug
+      );
+      assert.ok(clawhub, `source should include clawhub/${slug}`);
+      assert.deepEqual(clawhub.mirrorFrom, { host: "skillhub", slug });
+
+      const skillhubSkill = readGeneratedSkill(
+        tempRoot,
+        "skillhub",
+        slug,
+        source.hosts.hosts
+      );
+      const clawhubSkill = readGeneratedSkill(
+        tempRoot,
+        "clawhub",
+        slug,
+        source.hosts.hosts
+      );
+      assert.equal(
+        normalizeMirroredSkill(clawhubSkill),
+        normalizeMirroredSkill(skillhubSkill)
+      );
     }
   } finally {
     rmSync(tempRoot, { recursive: true, force: true });
@@ -858,6 +1299,7 @@ test("creator research combines profile, posts, series commands and output guida
       "douyin user-info --profile-url",
       "douyin user-posts --profile-url",
       "douyin user-series --profile-url",
+      "kuaishou user-search --keyword",
       "kuaishou user-info --profile-url",
       "kuaishou user-posts --profile-url",
     ]) {
@@ -870,6 +1312,7 @@ test("creator research combines profile, posts, series commands and output guida
       /`douyin_get_user_info_by_profile_url`/,
       /`douyin_get_user_posted_videos_by_profile_url`/,
       /`douyin_get_user_series_by_profile_url`/,
+      /`kuaishou_search_users`/,
       /`kuaishou_get_user_info_by_profile_url`/,
       /`kuaishou_get_user_posted_videos_by_profile_url`/,
       /输出创作者资料时，优先写昵称|Report profile fields such as name/,
@@ -878,6 +1321,11 @@ test("creator research combines profile, posts, series commands and output guida
     ]) {
       assert.match(skill, pattern);
     }
+
+    const quickStart = extractMarkdownSection(skill, "快速开始");
+    assert.match(quickStart, /账号关键词、达人名称或赛道方向/);
+    assert.match(quickStart, /候选账号/);
+    assert.match(skill, /没结果：确认账号主页、分享文本、平台账号 ID 或账号关键词完整/);
   } finally {
     rmSync(tempRoot, { recursive: true, force: true });
   }
@@ -984,6 +1432,166 @@ test("generated media transcript skill documents direct CLI and MCP transcript j
   }
 });
 
+test("generated short video copy extraction skill documents cross-platform transcript workflow", async () => {
+  const tempRoot = mkdtempSync(join(tmpdir(), "socialdatax-skills-"));
+
+  try {
+    const source = await loadSkillSource({ repoRoot: projectRoot });
+    await generateSkills({
+      repoRoot: projectRoot,
+      outRoot: tempRoot,
+      quiet: true,
+    });
+
+    const shortVideoCopyExtractSlugs = [
+      "socialdatax-short-video-copy-extract",
+      "short-video-copy-extract-v2",
+    ];
+    const [primaryListing, canaryListing] = shortVideoCopyExtractSlugs.map(
+      (slug) =>
+        source.listings.listings.find(
+          (candidate) => candidate.host === "skillhub" && candidate.slug === slug
+        )
+    );
+    assert.ok(
+      primaryListing,
+      "source should include skillhub/socialdatax-short-video-copy-extract"
+    );
+    assert.ok(
+      canaryListing,
+      "source should include skillhub/short-video-copy-extract-v2"
+    );
+    assert.deepEqual(
+      { ...canaryListing, slug: primaryListing.slug },
+      primaryListing,
+      "short-video-copy-extract-v2 should remain a slug-only SkillHub canary"
+    );
+
+    for (const slug of shortVideoCopyExtractSlugs) {
+      const listing = source.listings.listings.find(
+        (candidate) => candidate.host === "skillhub" && candidate.slug === slug
+      );
+      assert.deepEqual(commandRefsForListing(source.catalog, listing), [
+        "xhs.transcriptUrl",
+        "xhs.transcriptId",
+        "xhs.transcriptJob",
+        "douyin.transcriptUrl",
+        "douyin.transcriptId",
+        "douyin.transcriptJob",
+        "kuaishou.transcriptUrl",
+        "kuaishou.transcriptId",
+        "kuaishou.transcriptJob",
+        "weibo.transcriptUrl",
+        "weibo.transcriptId",
+        "weibo.transcriptJob",
+        "wechat.transcriptUrl",
+        "wechat.transcriptId",
+        "wechat.transcriptJob",
+      ]);
+
+      const skill = readGeneratedSkill(
+        tempRoot,
+        "skillhub",
+        slug,
+        source.hosts.hosts
+      );
+
+      assert.match(skill, /^# 短视频文案一键提取$/m);
+      assert.doesNotMatch(skill, /^# .*SocialDataX/m);
+      assert.match(skill, /短视频文案提取/);
+      assert.match(skill, /视频文案提取/);
+      assert.match(skill, /视频链接转文案/);
+      assert.match(skill, /短视频转文字/);
+      assert.match(skill, /视频转文字/);
+      assert.match(skill, /口播转文字/);
+      assert.match(skill, /视频逐字稿/);
+      assert.match(skill, /逐字稿/);
+      assert.match(skill, /小红书、抖音、快手、微博和视频号/);
+      assert.match(
+        skill,
+        /(?:(?:获取|一键提取)视频基础信息|一键提取视频标题\/基础信息)、原视频简介、口播逐字稿、可复制文案和精简版/
+      );
+      assert.doesNotMatch(skill, /可继续追问的角度/);
+      assert.doesNotMatch(skill, /想继续分析/);
+
+      const args = extractMarkdownSection(skill, "参数说明");
+      assert.match(
+        args,
+        /文案提取 \/ 转写：[\s\S]*--url[\s\S]*--post-url[\s\S]*--note-id[\s\S]*--aweme-id[\s\S]*--photo-id[\s\S]*--post-id[\s\S]*--encrypted-object-id/
+      );
+      assert.doesNotMatch(args, /^详情：$/m);
+
+      const directCliExamples = extractDirectCliExamples(skill);
+      for (const command of [
+        "xhs transcript --url",
+        "xhs transcript --note-id",
+        "xhs transcript --job-id",
+        "douyin transcript --url",
+        "douyin transcript --aweme-id",
+        "douyin transcript --job-id",
+        "kuaishou transcript --url",
+        "kuaishou transcript --photo-id",
+        "kuaishou transcript --job-id",
+        "weibo transcript --post-url",
+        "weibo transcript --post-id",
+        "weibo transcript --job-id",
+        "wechat transcript --url",
+        "wechat transcript --encrypted-object-id",
+        "wechat transcript --job-id",
+      ]) {
+        assert.ok(
+          directCliExamples.some((example) =>
+            example.includes(`npx -y socialdatax-skills@latest ${command}`)
+          ),
+          `${slug} should document ${command}`
+        );
+      }
+
+      assert.match(skill, /--source-client socialdatax-skills/);
+      assert.match(skill, /--source-platform skillhub/);
+      assert.match(skill, new RegExp(`--source-skill ${escapeRegExp(slug)}`));
+
+      for (const tool of [
+        "xhs_submit_video_speech_text_by_note_url",
+        "xhs_submit_video_speech_text_by_note_id",
+        "xhs_get_video_speech_text_job",
+        "douyin_submit_video_speech_text_by_video_url",
+        "douyin_submit_video_speech_text_by_aweme_id",
+        "douyin_get_video_speech_text_job",
+        "kuaishou_submit_video_speech_text_by_video_url",
+        "kuaishou_submit_video_speech_text_by_photo_id",
+        "kuaishou_get_video_speech_text_job",
+        "weibo_submit_video_speech_text_by_post_url",
+        "weibo_submit_video_speech_text_by_post_id",
+        "weibo_get_video_speech_text_job",
+        "wechat_submit_video_speech_text_by_video_url",
+        "wechat_submit_video_speech_text_by_encrypted_object_id",
+        "wechat_get_video_speech_text_job",
+      ]) {
+        assert.match(skill, new RegExp(`\\\`${escapeRegExp(tool)}\\\``));
+      }
+
+      const output = extractMarkdownSection(skill, "输出建议");
+      assert.match(output, /固定输出结构/);
+      assert.match(output, /1\. 视频基础信息/);
+      assert.match(output, /2\. 原视频简介/);
+      assert.match(output, /3\. 口播逐字稿/);
+      assert.match(output, /4\. 可复制文案版/);
+      assert.match(output, /5\. 精简版/);
+      assert.match(output, /6\. 任务状态/);
+      assert.match(output, /字段只使用返回中可见内容，缺失时标注未返回，不补造/);
+      assert.doesNotMatch(
+        output,
+        /下载视频|自动改写|保证爆款|封面制作|发布操作|账号诊断/
+      );
+
+      assert.doesNotMatch(skill, /This v1 surface does not return summary/);
+    }
+  } finally {
+    rmSync(tempRoot, { recursive: true, force: true });
+  }
+});
+
 test("generated douyin video copy extraction skill stays douyin-only and transcript-focused", async () => {
   const tempRoot = mkdtempSync(join(tmpdir(), "socialdatax-skills-"));
 
@@ -995,128 +1603,202 @@ test("generated douyin video copy extraction skill stays douyin-only and transcr
       quiet: true,
     });
 
-    const skill = readGeneratedSkill(
+    const douyinCopyExtractSlugs = [
+      "douyin-video-copy-extract",
+      "douyin-copy-extract-v2",
+    ];
+    const [primaryListing, canaryListing] = douyinCopyExtractSlugs.map((slug) =>
+      source.listings.listings.find(
+        (candidate) => candidate.host === "skillhub" && candidate.slug === slug
+      )
+    );
+    assert.ok(
+      primaryListing,
+      "source should include skillhub/douyin-video-copy-extract"
+    );
+    assert.ok(
+      canaryListing,
+      "source should include skillhub/douyin-copy-extract-v2"
+    );
+    assert.equal(canaryListing.title, primaryListing.title);
+    assert.equal(canaryListing.capability, primaryListing.capability);
+    assert.deepEqual(canaryListing.commands, primaryListing.commands);
+    assert.match(canaryListing.description, /粘贴抖音公开可访问/);
+    assert.match(canaryListing.description, /视频标题\/基础信息/);
+    assert.match(canaryListing.description, /内容创作/);
+    assert.match(canaryListing.description, /自媒体运营/);
+    assert.match(canaryListing.description, /短视频脚本/);
+    assert.match(canaryListing.description, /抖音文案提取/);
+    assert.doesNotMatch(
+      canaryListing.description,
+      /违禁|敏感词|优化朗读版|口播时长参考|下载视频|保证爆款/
+    );
+    const primarySkill = readGeneratedSkill(
       tempRoot,
       "skillhub",
       "douyin-video-copy-extract",
       source.hosts.hosts
     );
-
-    assert.match(skill, /^# 抖音文案一键提取$/m);
-    assert.doesNotMatch(skill, /^# .*SocialDataX/m);
-    assert.match(skill, /抖音文案提取/);
-    assert.match(skill, /抖音视频文案提取/);
-    assert.match(skill, /抖音视频转文字/);
-    assert.match(skill, /抖音口播转文字/);
-    assert.match(skill, /提交抖音视频文案提取/);
-    assert.match(skill, /获取视频基础信息、原视频简介、口播逐字稿、可复制文案和精简版/);
-    assert.match(skill, /返回中可见的视频上下文/);
-    assert.match(skill, /视频基础信息、原视频简介、口播逐字稿、可复制文案和精简版/);
-    assert.doesNotMatch(skill, /视频简介、口播逐字稿或任务状态/);
-    assert.doesNotMatch(skill, /可继续追问的角度/);
-    assert.doesNotMatch(skill, /下一步可继续追问的问题/);
-    assert.doesNotMatch(skill, /想继续分析/);
-    assert.doesNotMatch(skill, /继续缩小范围/);
-
-    const directCliExamples = extractDirectCliExamples(skill);
-    for (const command of [
-      "douyin transcript --url",
-      "douyin transcript --aweme-id",
-      "douyin transcript --job-id",
-    ]) {
-      assert.ok(
-        directCliExamples.some((example) =>
-          example.includes(`npx -y socialdatax-skills@latest ${command}`)
-        ),
-        `douyin-video-copy-extract should document ${command}`
-      );
-    }
-
-    assert.match(skill, /--source-client socialdatax-skills/);
-    assert.match(skill, /--source-platform skillhub/);
-    assert.match(skill, /--source-skill douyin-video-copy-extract/);
-
-    for (const tool of [
-      "douyin_submit_video_speech_text_by_video_url",
-      "douyin_submit_video_speech_text_by_aweme_id",
-      "douyin_get_video_speech_text_job",
-    ]) {
-      assert.match(skill, new RegExp(`\\\`${escapeRegExp(tool)}\\\``));
-    }
-
-    const output = extractMarkdownSection(skill, "输出建议");
-    assert.match(output, /固定输出结构/);
-    assert.match(output, /按以下顺序组织/);
-    assert.match(output, /1\. 视频基础信息/);
-    assert.match(output, /标题、作者、发布时间、时长、aweme_id/);
-    assert.match(output, /2\. 原视频简介/);
-    assert.match(output, /`description`/);
-    assert.match(output, /3\. 口播逐字稿/);
-    assert.match(output, /4\. 可复制文案版/);
-    assert.match(output, /5\. 精简版/);
-    assert.match(output, /6\. 任务状态/);
-    assert.match(output, /`job_id`/);
+    const canarySkill = readGeneratedSkill(
+      tempRoot,
+      "skillhub",
+      "douyin-copy-extract-v2",
+      source.hosts.hosts
+    );
+    assert.match(canarySkill, /内容创作/);
+    assert.match(canarySkill, /自媒体运营/);
+    assert.match(canarySkill, /短视频脚本/);
+    assert.match(canarySkill, /视频标题\/基础信息/);
+    assert.match(canarySkill, /口播文案/);
     assert.doesNotMatch(
-      output,
-      /下载视频|自动改写|保证爆款|封面制作|发布操作/
+      canarySkill,
+      /违禁|敏感词|优化朗读版|口播时长参考|下载视频|保证爆款/
     );
 
-    for (const forbidden of [
-      "xhs_submit_video_speech_text",
-      "kuaishou_submit_video_speech_text",
-      "weibo_submit_video_speech_text",
-      "wechat_submit_video_speech_text",
-      "视频号",
-      "WeChat Channels",
-      "评论洞察",
-      "爆款分析",
-      "脚本改写",
-      "This v1 surface does not return summary",
-    ]) {
-      assert.doesNotMatch(skill, new RegExp(escapeRegExp(forbidden)));
-    }
+    for (const slug of douyinCopyExtractSlugs) {
+      const listing = source.listings.listings.find(
+        (candidate) => candidate.host === "skillhub" && candidate.slug === slug
+      );
+      assert.deepEqual(commandRefsForListing(source.catalog, listing), [
+        "douyin.transcriptUrl",
+        "douyin.transcriptId",
+        "douyin.transcriptJob",
+      ]);
 
-    assert.match(skill, /文案提取 \/ 转写：/);
-    assert.match(skill, /输入：`--url <douyin_video_url_or_share_text>`/);
-    assert.match(skill, /输入：`--aweme-id <aweme_id>`/);
-    assert.match(skill, /输入：`--job-id <job_id>`/);
-    assert.doesNotMatch(skill, /必填：`--url <douyin_video_url_or_share_text>`/);
-    assert.doesNotMatch(skill, /必填：`--aweme-id <aweme_id>`/);
-    assert.doesNotMatch(skill, /必填：`--job-id <job_id>`/);
-    assert.match(skill, /`description`/);
-    assert.match(skill, /标题、作者、发布时间、时长、aweme_id、原始链接等；只有返回中存在时才输出/);
-    assert.match(skill, /口播逐字稿/);
-    assert.match(skill, /可复制文案/);
-    assert.match(skill, /执行步骤：第一步/);
-    assert.match(skill, /第二步，先看返回 JSON 里的 `data\.is_terminal`/);
-    assert.match(skill, /如果不是 `true`，复制同一个 `data\.job_id`/);
-    assert.match(skill, /第三步，只有 `data\.is_terminal` 是 `true` 时才交付结果/);
-    assert.match(skill, /循环规则：每次查询返回后都先判断 `data\.is_terminal`/);
-    assert.match(skill, /只要 `data\.is_terminal` 不是 `true`，就继续查询同一个 `data\.job_id`/);
-    assert.match(skill, /停止条件只有三类：终态、工具无法继续运行、用户要求停止/);
-    assert.match(skill, /复制同一个 `data\.job_id`/);
-    assert.match(skill, /运行上方 `douyin transcript --job-id <job_id>` 命令继续查询/);
-    assert.match(skill, /提交动作最多一次/);
-    assert.match(skill, /不要提前写最终文案/);
-    assert.match(skill, /不要把只有 `data\.job_id` 的内容当作最终结果/);
-    assert.match(skill, /只有 `data\.is_terminal` 是 `true` 且 `data\.status` 是 `succeeded` 时才输出逐字稿/);
-    assert.match(skill, /失败时先看 `data\.error\.retryable`/);
-    assert.match(skill, /只有值为 `true` 才建议稍后重试/);
-    assert.match(skill, /值为 `false` 时说明当前视频不适合重复提交/);
-    assert.match(skill, /只有工具无法继续运行、会话被中断或用户要求停止时，才输出 `data\.job_id`、`data\.status` 和 `data\.next_action`/);
-    assert.match(skill, /如果提交失败且没有返回 `data\.job_id`/);
-    assert.match(skill, /如果已经拿到 `data\.job_id`，后续异常只查询同一个任务/);
-    assert.match(skill, /调用失败：如果已有 `job_id`，只查询同一个任务/);
-    assert.match(skill, /如果返回 `insufficient_balance` 或“积分不足”/);
-    assert.match(skill, /把错误里的充值链接原样展示给用户/);
-    assert.match(skill, /充值后继续执行刚才同一条命令/);
-    assert.match(skill, /充值后继续原命令，不要反复重试/);
-    assert.doesNotMatch(skill, /原样重试一次/);
-    assert.doesNotMatch(skill, /调用失败：先确认 `SOCIALDATAX_API_KEY` 已配置，再重试/);
-    assert.doesNotMatch(skill, /标题作者/);
-    assert.doesNotMatch(skill, /作者等上下文/);
-    assert.doesNotMatch(skill, /作者、时长、口播逐字稿/);
-    assert.doesNotMatch(skill, /60 秒|12 次/);
+      const skill = readGeneratedSkill(
+        tempRoot,
+        "skillhub",
+        slug,
+        source.hosts.hosts
+      );
+
+      assert.match(skill, /^# 抖音文案一键提取$/m);
+      assert.doesNotMatch(skill, /^# .*SocialDataX/m);
+      assert.match(skill, /抖音文案提取/);
+      assert.match(skill, /抖音视频文案提取/);
+      assert.match(skill, /抖音视频转文字/);
+      assert.match(skill, /抖音口播转文字/);
+      assert.match(skill, /提交抖音视频文案提取/);
+      assert.match(
+        skill,
+        /(?:(?:获取|一键提取)视频基础信息|一键提取视频标题\/基础信息)、原视频简介、口播逐字稿、可复制文案和精简版/
+      );
+      assert.match(skill, /返回中可见的视频上下文/);
+      assert.match(
+        skill,
+        /视频(?:标题\/)?基础信息、原视频简介、口播逐字稿、可复制文案和精简版/
+      );
+      assert.doesNotMatch(skill, /视频简介、口播逐字稿或任务状态/);
+      assert.doesNotMatch(skill, /可继续追问的角度/);
+      assert.doesNotMatch(skill, /下一步可继续追问的问题/);
+      assert.doesNotMatch(skill, /想继续分析/);
+      assert.doesNotMatch(skill, /继续缩小范围/);
+
+      const directCliExamples = extractDirectCliExamples(skill);
+      for (const command of [
+        "douyin transcript --url",
+        "douyin transcript --aweme-id",
+        "douyin transcript --job-id",
+      ]) {
+        assert.ok(
+          directCliExamples.some((example) =>
+            example.includes(`npx -y socialdatax-skills@latest ${command}`)
+          ),
+          `${slug} should document ${command}`
+        );
+      }
+
+      assert.match(skill, /--source-client socialdatax-skills/);
+      assert.match(skill, /--source-platform skillhub/);
+      assert.match(skill, new RegExp(`--source-skill ${escapeRegExp(slug)}`));
+
+      for (const tool of [
+        "douyin_submit_video_speech_text_by_video_url",
+        "douyin_submit_video_speech_text_by_aweme_id",
+        "douyin_get_video_speech_text_job",
+      ]) {
+        assert.match(skill, new RegExp(`\\\`${escapeRegExp(tool)}\\\``));
+      }
+
+      const output = extractMarkdownSection(skill, "输出建议");
+      assert.match(output, /固定输出结构/);
+      assert.match(output, /按以下顺序组织/);
+      assert.match(output, /1\. 视频基础信息/);
+      assert.match(output, /标题、作者、发布时间、时长、aweme_id/);
+      assert.match(output, /2\. 原视频简介/);
+      assert.match(output, /`description`/);
+      assert.match(output, /3\. 口播逐字稿/);
+      assert.match(output, /4\. 可复制文案版/);
+      assert.match(output, /5\. 精简版/);
+      assert.match(output, /6\. 任务状态/);
+      assert.match(output, /`job_id`/);
+      assert.doesNotMatch(
+        output,
+        /下载视频|自动改写|保证爆款|封面制作|发布操作/
+      );
+
+      for (const forbidden of [
+        "xhs_submit_video_speech_text",
+        "kuaishou_submit_video_speech_text",
+        "weibo_submit_video_speech_text",
+        "wechat_submit_video_speech_text",
+        "视频号",
+        "WeChat Channels",
+        "评论洞察",
+        "爆款分析",
+        "脚本改写",
+        "This v1 surface does not return summary",
+      ]) {
+        assert.doesNotMatch(skill, new RegExp(escapeRegExp(forbidden)));
+      }
+
+      assert.match(skill, /文案提取 \/ 转写：/);
+      assert.match(skill, /输入：`--url <douyin_video_url_or_share_text>`/);
+      assert.match(skill, /输入：`--aweme-id <aweme_id>`/);
+      assert.match(skill, /输入：`--job-id <job_id>`/);
+      assert.doesNotMatch(skill, /必填：`--url <douyin_video_url_or_share_text>`/);
+      assert.doesNotMatch(skill, /必填：`--aweme-id <aweme_id>`/);
+      assert.doesNotMatch(skill, /必填：`--job-id <job_id>`/);
+      assert.match(skill, /`description`/);
+      assert.match(skill, /标题、作者、发布时间、时长、aweme_id、原始链接等；只有返回中存在时才输出/);
+      assert.match(skill, /口播逐字稿/);
+      assert.match(skill, /可复制文案/);
+      assert.match(skill, /执行步骤：第一步/);
+      assert.match(skill, /第二步，先看返回 JSON 里的 `data\.is_terminal`/);
+      assert.match(skill, /如果不是 `true`，复制同一个 `data\.job_id`/);
+      assert.match(skill, /第三步，只有 `data\.is_terminal` 是 `true` 时才交付结果/);
+      assert.match(skill, /循环规则：每次查询返回后都先判断 `data\.is_terminal`/);
+      assert.match(skill, /只要 `data\.is_terminal` 不是 `true`，就继续查询同一个 `data\.job_id`/);
+      assert.match(skill, /停止条件只有三类：终态、工具无法继续运行、用户要求停止/);
+      assert.match(skill, /复制同一个 `data\.job_id`/);
+      assert.match(skill, /运行上方 `douyin transcript --job-id <job_id>` 命令继续查询/);
+      assert.match(skill, /提交动作最多一次/);
+      assert.match(skill, /不要提前写最终文案/);
+      assert.match(skill, /不要把只有 `data\.job_id` 的内容当作最终结果/);
+      assert.match(skill, /只有 `data\.is_terminal` 是 `true` 且 `data\.status` 是 `succeeded` 时才输出逐字稿/);
+      assert.match(skill, /失败时先看 `data\.error\.retryable`/);
+      assert.match(skill, /只有值为 `true` 才建议稍后重试/);
+      assert.match(skill, /值为 `false` 时说明当前视频不适合重复提交/);
+      assert.match(skill, /只有工具无法继续运行、会话被中断或用户要求停止时，才输出 `data\.job_id`、`data\.status` 和 `data\.next_action`/);
+      assert.match(skill, /如果提交失败且没有返回 `data\.job_id`/);
+      assert.match(skill, /如果已经拿到 `data\.job_id`，后续异常只查询同一个任务/);
+      assert.match(skill, /调用失败：如果已有 `job_id`，只查询同一个任务/);
+      assert.match(skill, /SDK\/依赖缺失、npm 网络、Node\.js\/npm\/npx 不可用或执行权限错误/);
+      assert.match(skill, /不是 SocialDataX API Key 或业务数据返回错误/);
+      assert.match(skill, /有权限时可自动安装或修复/);
+      assert.match(skill, /需要网络或执行授权时提醒用户同意或完成授权/);
+      assert.match(skill, /不要改用公开网页搜索替代 SocialDataX 数据/);
+      assert.match(skill, /如果返回 `insufficient_balance` 或“积分不足”/);
+      assert.match(skill, /把错误里的充值链接原样展示给用户/);
+      assert.match(skill, /充值后继续执行刚才同一条命令/);
+      assert.match(skill, /充值后继续原命令，不要反复重试/);
+      assert.doesNotMatch(skill, /原样重试一次/);
+      assert.doesNotMatch(skill, /调用失败：先确认 `SOCIALDATAX_API_KEY` 已配置，再重试/);
+      assert.doesNotMatch(skill, /标题作者/);
+      assert.doesNotMatch(skill, /作者等上下文/);
+      assert.doesNotMatch(skill, /作者、时长、口播逐字稿/);
+      assert.doesNotMatch(skill, /60 秒|12 次/);
+    }
   } finally {
     rmSync(tempRoot, { recursive: true, force: true });
   }
@@ -1338,11 +2020,11 @@ test("generated aggregate scenario skills keep guidance concise", async () => {
     "Use either the ID option or the profile URL option for a single command, not both.",
   ];
   const lineLimits = new Map([
-    ["skillhub/socialdatax-content-research-assistant", 345],
-    ["skillhub/short-video-topic-research", 270],
-    ["skillhub/xhs-content-research-assistant", 165],
-    ["skillhub/socialdatax-creator-research", 185],
-    ["npm/socialdatax-content-research-assistant", 495],
+    ["skillhub/socialdatax-content-research-assistant", 346],
+    ["skillhub/short-video-topic-research", 271],
+    ["skillhub/xhs-content-research-assistant", 166],
+    ["skillhub/socialdatax-creator-research", 186],
+    ["npm/socialdatax-content-research-assistant", 496],
   ]);
 
   try {
@@ -1408,6 +2090,11 @@ test("skillhub generated skills include quick start result examples and troubles
       assert.match(skill, /你通常会得到：/);
       assert.match(skill, /示例展示格式，不代表固定字段/);
       assert.match(skill, /网络或 API 异常：保留错误信息/);
+      assert.match(skill, /SDK\/依赖缺失、npm 网络、Node\.js\/npm\/npx 不可用或执行权限错误/);
+      assert.match(skill, /不是 SocialDataX API Key 或业务数据返回错误/);
+      assert.match(skill, /有权限时可自动安装或修复/);
+      assert.match(skill, /需要网络或执行授权时提醒用户同意或完成授权/);
+      assert.match(skill, /不要改用公开网页搜索替代 SocialDataX 数据/);
       assert.match(skill, /如果返回 `insufficient_balance` 或“积分不足”/);
       assert.match(skill, /把错误里的充值链接原样展示给用户/);
       assert.match(skill, /充值后继续执行刚才同一条命令/);
@@ -1490,6 +2177,72 @@ test("skillhub generated skills keep user-facing sections in a natural order", a
       /Official API access|The only official website|do not infer alternate domains/,
       "SkillHub API key copy should stay Chinese-only in the user-facing section"
     );
+  } finally {
+    rmSync(tempRoot, { recursive: true, force: true });
+  }
+});
+
+test("skillhub prompt-only audience entries omit API key and command setup", async () => {
+  const tempRoot = mkdtempSync(join(tmpdir(), "socialdatax-skills-"));
+
+  try {
+    const source = await loadSkillSource({ repoRoot: projectRoot });
+    await generateSkills({
+      repoRoot: projectRoot,
+      outRoot: tempRoot,
+      quiet: true,
+    });
+
+    const listing = source.listings.listings.find(
+      (candidate) =>
+        candidate.host === "skillhub" &&
+        candidate.slug === "viral-hook-title-generator"
+    );
+    assert.ok(listing, "viral-hook-title-generator listing should exist");
+    assert.equal(listing.listingKind, "prompt_only");
+    assert.equal(
+      "capability" in listing || "capabilities" in listing,
+      false,
+      "prompt-only listing should not inherit API-backed capabilities"
+    );
+
+    const skill = readGeneratedSkill(
+      tempRoot,
+      "skillhub",
+      "viral-hook-title-generator",
+      source.hosts.hosts
+    );
+
+    assert.match(skill, /^# 爆款标题钩子生成器$/m);
+    assert.match(skill, /主题、产品信息、目标人群/);
+    assert.match(skill, /已有草稿或参考标题/);
+    assert.match(skill, /https:\/\/socialdatax\.com\/ai\?from=skillhub/);
+    assert.match(skill, /SocialDataX 支持的平台范围内/);
+    const quickStartIndex = skill.indexOf("## 快速开始");
+    const reviewIndex = skill.indexOf("## SocialDataX 复核");
+    const outputIndex = skill.indexOf("## 输出建议");
+    assert.ok(
+      quickStartIndex < reviewIndex,
+      "prompt-only website review link should appear after quick start guidance"
+    );
+    assert.ok(
+      reviewIndex < outputIndex,
+      "prompt-only website review link should appear before output guidance"
+    );
+    assert.match(skill, /不自动读取平台链接/);
+    assert.match(skill, /产品卖点或转化目标/);
+    const metadata = frontmatterJsonScalar(extractFrontmatter(skill), "metadata");
+    assert.deepEqual(metadata.openclaw.requires, { env: [], bins: [] });
+    assert.deepEqual(metadata.openclaw.install, []);
+    assert.doesNotMatch(skill, /API Key/);
+    assert.doesNotMatch(skill, /direct CLI|Direct CLI/);
+    assert.doesNotMatch(skill, /MCP 工具|MCP tools/);
+    assert.doesNotMatch(skill, /SOCIALDATAX_API_KEY/);
+    assert.doesNotMatch(skill, /## API Key 获取/);
+    assert.doesNotMatch(skill, /## 直接调用命令/);
+    assert.doesNotMatch(skill, /## MCP 工具/);
+    assert.doesNotMatch(skill, /npx -y socialdatax-skills/);
+    assert.doesNotMatch(skill, /--source-client|--source-platform|--source-skill/);
   } finally {
     rmSync(tempRoot, { recursive: true, force: true });
   }
@@ -1743,16 +2496,18 @@ test("modelscope agent metadata stays chinese-first", async () => {
       const shortDescription = parseSimpleYamlScalar(agent, "short_description");
       const defaultPrompt = parseSimpleYamlScalar(agent, "default_prompt");
 
-      const commandRefs = commandRefsForListing(source.catalog, listing);
-      const platformTerm = commandRefs.some((commandRef) =>
-        commandRef.startsWith("douyin.")
-      )
-        ? /抖音/
-        : /小红书/;
-
-      assert.match(displayName, platformTerm);
-      assert.match(shortDescription, platformTerm);
-      assert.match(defaultPrompt, platformTerm);
+      assertContainsChinese(
+        displayName,
+        `${listing.host}/${listing.slug} display name`
+      );
+      assertContainsChinese(
+        shortDescription,
+        `${listing.host}/${listing.slug} short description`
+      );
+      assertContainsChinese(
+        defaultPrompt,
+        `${listing.host}/${listing.slug} default prompt`
+      );
       assert.match(defaultPrompt, new RegExp(`\\$${escapeRegExp(listing.slug)}`));
       assert.doesNotMatch(
         defaultPrompt,
@@ -2075,8 +2830,13 @@ test("complex chinese-language skills group parameter guidance by workflow", asy
     );
     assert.match(
       commentArgSection,
-      /详情 ?\/ ?评论：[\s\S]*XHS `--note-id <note_id>`/,
-      "content IDs returned from creator lists should still stay in the detail/comment group"
+      /评论 ?\/ ?回复：[\s\S]*XHS `--note-id <note_id>`/,
+      "comment-only content ID guidance should stay in the comment/reply group"
+    );
+    assert.doesNotMatch(
+      commentArgSection,
+      /^详情 ?\/ ?评论：$/m,
+      "comment-only SkillHub guidance should not imply detail commands"
     );
     assert.doesNotMatch(
       commentArgSection,
@@ -2085,8 +2845,8 @@ test("complex chinese-language skills group parameter guidance by workflow", asy
     );
     assert.match(
       commentArgSection,
-      /详情 ?\/ ?评论：[\s\S]*`--pages <n>`：获取并合并 N 页一级评论或回复/,
-      "comment pagination guidance should stay in the detail/comment group"
+      /评论 ?\/ ?回复：[\s\S]*`--pages <n>`：获取并合并 N 页一级评论或回复/,
+      "comment pagination guidance should stay in the comment/reply group"
     );
     assert.doesNotMatch(
       commentArgSection,
@@ -2213,6 +2973,9 @@ test("chinese-language parameter guidance labels routing notes as explanation", 
       if (!isChineseLanguageHost(listing.host)) {
         continue;
       }
+      if (listing.listingKind === "prompt_only") {
+        continue;
+      }
 
       const skill = readGeneratedSkill(
         tempRoot,
@@ -2297,6 +3060,23 @@ test("skillhub generated quick-start guidance matches declared command families"
       /先取 1 页/
     );
 
+    const bilibiliSearchSkill = readGeneratedSkill(
+      tempRoot,
+      "skillhub",
+      "bilibili-content-research",
+      source.hosts.hosts
+    );
+    const bilibiliQuickStart = extractMarkdownSection(
+      bilibiliSearchSkill,
+      "快速开始"
+    );
+    assert.match(bilibiliQuickStart, /关键词或选题方向/);
+    assert.match(bilibiliQuickStart, /先取 1 页/);
+    assert.match(
+      extractMarkdownSection(bilibiliSearchSkill, "常见问题"),
+      /放宽关键词/
+    );
+
     const commentSkill = readGeneratedSkill(
       tempRoot,
       "skillhub",
@@ -2304,7 +3084,8 @@ test("skillhub generated quick-start guidance matches declared command families"
       source.hosts.hosts
     );
     const commentQuickStart = extractMarkdownSection(commentSkill, "快速开始");
-    assert.match(commentQuickStart, /内容链接、内容 ID 或一级评论 ID/);
+    assert.match(commentQuickStart, /内容链接或内容 ID/);
+    assert.doesNotMatch(commentQuickStart, /一级评论 ID/);
     assert.doesNotMatch(commentQuickStart, /关键词|选题方向|先取 1 页/);
     assert.doesNotMatch(
       extractMarkdownSection(commentSkill, "示例结果"),
@@ -2340,7 +3121,11 @@ test("skillhub generated quick-start guidance matches declared command families"
     );
     const aggregateQuickStart = extractMarkdownSection(aggregateSkill, "快速开始");
     assert.match(aggregateQuickStart, /关键词或选题方向/);
+    assert.match(aggregateQuickStart, /要观察的平台热榜/);
     assert.match(aggregateQuickStart, /内容链接或内容 ID/);
+    assert.match(aggregateQuickStart, /账号关键词、达人名称或赛道方向/);
+    assert.match(aggregateQuickStart, /账号用户名/);
+    assert.match(aggregateQuickStart, /频道链接/);
     assert.match(aggregateQuickStart, /账号主页、账号分享文本或平台账号 ID/);
   } finally {
     rmSync(tempRoot, { recursive: true, force: true });
@@ -2427,7 +3212,7 @@ test("xhs comment insights is positioned for demand mining without expanding com
   }
 });
 
-test("xhs comment demand-mining copy does not leak into other comment skills", async () => {
+test("comment demand-mining copy stays scoped to standalone comment-demand skills", async () => {
   const tempRoot = mkdtempSync(join(tmpdir(), "socialdatax-skills-"));
 
   try {
@@ -2438,22 +3223,149 @@ test("xhs comment demand-mining copy does not leak into other comment skills", a
       quiet: true,
     });
 
-    for (const slug of [
-      "weibo-comment-insights",
-      "kuaishou-comment-insights",
-      "socialdatax-comment-insights",
-    ]) {
+    for (const slug of ["socialdatax-comment-insights"]) {
       const skill = readGeneratedSkill(
         tempRoot,
         "skillhub",
         slug,
         source.hosts.hosts
       );
+      for (const command of [
+        "xhs comments --note-id",
+        "douyin comments --aweme-id",
+        "kuaishou comments --photo-id",
+        "bilibili comments --content-id",
+        "zhihu comments --content-url",
+        "instagram comments --post-url",
+        "x comments --post-id",
+        "youtube comments --url",
+        "tiktok comments --post-id",
+        "weibo comments --post-id",
+      ]) {
+        assertDirectCliExample(
+          skill,
+          command,
+          `${slug} should document ${command}`
+        );
+      }
+      assertNoDirectCliExample(skill, "wechat comments");
+      assert.doesNotMatch(skill, /WeChat Channels|视频号|wechat_/);
+      assert.doesNotMatch(skill, /^For (Bilibili|YouTube|Zhihu|Weibo).*comments/m);
+      assert.match(skill, /对于 Bilibili 评论，保留返回的 `comment_object_id` 和 `comment_object_type`/);
+      assert.match(skill, /对于 YouTube 评论，保留返回的 `reply_token`/);
+      assert.match(skill, /对于知乎、Instagram、X \/ Twitter 和 TikTok 评论/);
+      assert.match(skill, /对于微博评论，保留返回的内容 ID/);
       assert.match(skill, /评论主题和反馈线索，并标出下一步可继续追问的问题/);
       assert.match(skill, /判断=相关原因和下一步/);
       assert.match(skill, /想继续分析/);
       assert.doesNotMatch(skill, /评论主题、用户反馈、痛点、需求和可行动建议/);
       assert.doesNotMatch(skill, /想继续做需求挖掘/);
+    }
+
+    for (const slug of ["weibo-comment-insights", "kuaishou-comment-insights"]) {
+      const skill = readGeneratedSkill(
+        tempRoot,
+        "skillhub",
+        slug,
+        source.hosts.hosts
+      );
+      assert.match(skill, /评论主题、用户反馈、痛点、需求和可行动建议/);
+      assert.match(skill, /默认按这个结构输出：评论主题、用户痛点、购买顾虑、未满足需求、FAQ、高频原话、可行动建议/);
+      assert.match(skill, /想继续做需求挖掘/);
+      assert.doesNotMatch(skill, /判断=相关原因和下一步/);
+      assert.doesNotMatch(skill, /想继续分析/);
+    }
+  } finally {
+    rmSync(tempRoot, { recursive: true, force: true });
+  }
+});
+
+test("comment MCP guidance keeps continuation hints as list items", async () => {
+  const tempRoot = mkdtempSync(join(tmpdir(), "socialdatax-skills-"));
+
+  try {
+    const source = await loadSkillSource({ repoRoot: projectRoot });
+    await generateSkills({
+      repoRoot: projectRoot,
+      outRoot: tempRoot,
+      quiet: true,
+    });
+
+    const skill = readGeneratedSkill(
+      tempRoot,
+      "skillhub",
+      "socialdatax-comment-insights",
+      source.hosts.hosts
+    );
+    const mcpTools = extractMarkdownSection(skill, "MCP 工具");
+
+    assert.match(
+      mcpTools,
+      /- 抖音评论和回复只有在 `next_page_token` 非空时才继续翻页；空字符串表示没有更多评论或回复可请求。/
+    );
+    assert.match(
+      mcpTools,
+      /- XHS 回复翻页同样使用 `page_token`，并且只适用于当前这条评论链路。/
+    );
+    assert.match(
+      mcpTools,
+      /- 快手评论和回复只有在 `next_page_token` 非空时才继续翻页；空字符串表示没有更多评论或回复可请求。/
+    );
+
+    const npmSkill = readGeneratedSkill(
+      tempRoot,
+      "npm",
+      "media-comments",
+      source.hosts.hosts
+    );
+    const npmMcpTools = extractMarkdownSection(npmSkill, "MCP Tools");
+
+    assert.match(
+      npmMcpTools,
+      /- Comment pagination uses opaque `page_token` values\. Pass the complete returned `next_page_token` back unchanged/
+    );
+    assert.doesNotMatch(
+      npmMcpTools,
+      /\nComment pagination uses opaque `page_token` values/
+    );
+    assert.match(
+      npmMcpTools,
+      /- For Douyin comments and replies, continue only when `next_page_token` is non-empty; an empty string means there are no more comments or replies to request\./
+    );
+    assert.match(
+      npmMcpTools,
+      /- XHS reply pagination also uses `page_token` and is bound to the current comment\./
+    );
+    assert.match(
+      npmMcpTools,
+      /- For Kuaishou comments and replies, continue only when `next_page_token` is non-empty; an empty string means there are no more comments or replies to request\./
+    );
+    assert.match(
+      npmMcpTools,
+      /- For WeChat Channels \/ 视频号 comments and replies, continue only when `next_page_token` is non-empty; an empty string means there are no more comments or replies to request\./
+    );
+
+    for (const slug of [
+      "socialdatax-xhs-comments",
+      "socialdatax-douyin-comments",
+      "socialdatax-kuaishou-comments",
+      "socialdatax-weibo-comments",
+    ]) {
+      const clawhubSkill = readGeneratedSkill(
+        tempRoot,
+        "clawhub",
+        slug,
+        source.hosts.hosts
+      );
+      const clawhubMcpTools = extractMarkdownSection(clawhubSkill, "MCP Tools");
+      assert.match(
+        clawhubMcpTools,
+        /- Comment pagination uses opaque `page_token` values\. Pass the complete returned `next_page_token` back unchanged/
+      );
+      assert.doesNotMatch(
+        clawhubMcpTools,
+        /\nComment pagination uses opaque `page_token` values/
+      );
     }
   } finally {
     rmSync(tempRoot, { recursive: true, force: true });
@@ -2479,6 +3391,76 @@ test("skillhub quick-start platform hints use resolved capability commands", asy
         "Use this skill when the user wants Weibo post research, comment insight, liker or repost review, creator profile review, or creator post lists.",
       capability: "weibo-hub",
     });
+    listings.listings.push({
+      host: "skillhub",
+      slug: "test-bilibili-creator-content-aliases",
+      title: "B站账号内容整理",
+      description:
+        "用于 B站账号内容整理、近期内容复盘和创作者资料整理。来自 SocialDataX 社媒数据助手。",
+      useWhen:
+        "Use this skill when the user wants Bilibili creator videos, articles, dynamics, or creator profile evidence.",
+      capability: "user-posts",
+      commands: [
+        "bilibili.userVideosUrl",
+        "bilibili.userArticlesUrl",
+        "bilibili.userDynamicsUrl",
+      ],
+    });
+    listings.listings.push({
+      host: "skillhub",
+      slug: "test-youtube-channel-info-alias",
+      title: "YouTube 频道资料整理",
+      description:
+        "用于 YouTube 频道资料整理、账号观察和创作者资料整理。来自 SocialDataX 社媒数据助手。",
+      useWhen:
+        "Use this skill when the user wants YouTube channel profile information.",
+      capability: "user-info",
+      commands: ["youtube.channelInfoUrl"],
+    });
+    listings.listings.push({
+      host: "skillhub",
+      slug: "test-youtube-channel-posts-all-alias",
+      title: "YouTube 频道内容整理",
+      description:
+        "用于 YouTube 频道内容整理、近期内容复盘和创作者资料整理。来自 SocialDataX 社媒数据助手。",
+      useWhen:
+        "Use this skill when the user wants YouTube channel videos and Shorts by channel URL.",
+      capability: "user-posts",
+      commands: ["youtube.userPostsAll"],
+    });
+    listings.listings.push({
+      host: "skillhub",
+      slug: "test-instagram-username-profile-alias",
+      title: "Instagram 账号资料整理",
+      description:
+        "用于 Instagram 账号资料整理、账号观察和创作者资料整理。来自 SocialDataX 社媒数据助手。",
+      useWhen:
+        "Use this skill when the user wants Instagram creator profile information by username.",
+      capability: "user-info",
+      commands: ["instagram.userInfoUsername"],
+    });
+    listings.listings.push({
+      host: "skillhub",
+      slug: "test-username-posts-all-aliases",
+      title: "账号内容整理",
+      description:
+        "用于 Instagram 和 X 账号内容整理、近期内容复盘和创作者资料整理。来自 SocialDataX 社媒数据助手。",
+      useWhen:
+        "Use this skill when the user wants Instagram or X creator posts by username.",
+      capability: "user-posts",
+      commands: ["instagram.userPostsAll", "x.userPostsAll"],
+    });
+    listings.listings.push({
+      host: "skillhub",
+      slug: "test-bilibili-reactions-alias",
+      title: "B站互动记录整理",
+      description:
+        "用于 B站点赞转发记录整理和互动线索复盘。来自 SocialDataX 社媒数据助手。",
+      useWhen:
+        "Use this skill when the user wants Bilibili like or repost records.",
+      capability: "aggregate-research",
+      commands: ["bilibili.reactionsUrl"],
+    });
     writeFileSync(listingsPath, `${JSON.stringify(listings, null, 2)}\n`);
 
     const source = await loadSkillSource({ repoRoot: sourceRoot });
@@ -2497,6 +3479,89 @@ test("skillhub quick-start platform hints use resolved capability commands", asy
     const quickStart = extractMarkdownSection(skill, "快速开始");
     assert.match(quickStart, /微博帖子 ID/);
     assert.doesNotMatch(quickStart, /互动内容 ID/);
+
+    const bilibiliCreatorSkill = readGeneratedSkill(
+      tempRoot,
+      "skillhub",
+      "test-bilibili-creator-content-aliases",
+      source.hosts.hosts
+    );
+    const bilibiliCreatorQuickStart = extractMarkdownSection(
+      bilibiliCreatorSkill,
+      "快速开始"
+    );
+    assert.match(bilibiliCreatorQuickStart, /账号主页、账号分享文本或平台账号 ID/);
+    assert.match(bilibiliCreatorQuickStart, /近期内容列表/);
+    assert.doesNotMatch(bilibiliCreatorQuickStart, /账号用户名|频道链接/);
+
+    const youtubeChannelSkill = readGeneratedSkill(
+      tempRoot,
+      "skillhub",
+      "test-youtube-channel-info-alias",
+      source.hosts.hosts
+    );
+    const youtubeChannelQuickStart = extractMarkdownSection(
+      youtubeChannelSkill,
+      "快速开始"
+    );
+    assert.match(youtubeChannelQuickStart, /频道链接/);
+    assert.match(youtubeChannelQuickStart, /账号资料/);
+    assert.doesNotMatch(youtubeChannelQuickStart, /平台账号 ID/);
+
+    const youtubeChannelPostsAllSkill = readGeneratedSkill(
+      tempRoot,
+      "skillhub",
+      "test-youtube-channel-posts-all-alias",
+      source.hosts.hosts
+    );
+    const youtubeChannelPostsAllQuickStart = extractMarkdownSection(
+      youtubeChannelPostsAllSkill,
+      "快速开始"
+    );
+    assert.match(youtubeChannelPostsAllQuickStart, /频道链接/);
+    assert.match(youtubeChannelPostsAllQuickStart, /近期内容列表/);
+    assert.doesNotMatch(youtubeChannelPostsAllQuickStart, /平台账号 ID|账号用户名/);
+
+    const instagramUsernameSkill = readGeneratedSkill(
+      tempRoot,
+      "skillhub",
+      "test-instagram-username-profile-alias",
+      source.hosts.hosts
+    );
+    const instagramUsernameQuickStart = extractMarkdownSection(
+      instagramUsernameSkill,
+      "快速开始"
+    );
+    assert.match(instagramUsernameQuickStart, /账号用户名/);
+    assert.match(instagramUsernameQuickStart, /账号资料/);
+    assert.doesNotMatch(instagramUsernameQuickStart, /平台账号 ID/);
+
+    const usernamePostsAllSkill = readGeneratedSkill(
+      tempRoot,
+      "skillhub",
+      "test-username-posts-all-aliases",
+      source.hosts.hosts
+    );
+    const usernamePostsAllQuickStart = extractMarkdownSection(
+      usernamePostsAllSkill,
+      "快速开始"
+    );
+    assert.match(usernamePostsAllQuickStart, /账号用户名/);
+    assert.match(usernamePostsAllQuickStart, /近期内容列表/);
+    assert.doesNotMatch(usernamePostsAllQuickStart, /平台账号 ID|频道链接/);
+
+    const bilibiliReactionsSkill = readGeneratedSkill(
+      tempRoot,
+      "skillhub",
+      "test-bilibili-reactions-alias",
+      source.hosts.hosts
+    );
+    const bilibiliReactionsQuickStart = extractMarkdownSection(
+      bilibiliReactionsSkill,
+      "快速开始"
+    );
+    assert.match(bilibiliReactionsQuickStart, /互动对象 ID 或链接/);
+    assert.match(bilibiliReactionsQuickStart, /点赞或转发记录/);
   } finally {
     rmSync(tempRoot, { recursive: true, force: true });
     rmSync(sourceRoot, { recursive: true, force: true });
@@ -3175,7 +4240,7 @@ test("kuaishou platform is present in source and generated public skills", async
   }
 });
 
-test("active narrow SkillHub public skills keep WeChat Channels guidance out of unrelated entries", async () => {
+test("active SkillHub public skill titles avoid Tencent ecosystem discovery wording", async () => {
   const tempRoot = mkdtempSync(join(tmpdir(), "socialdatax-skills-"));
 
   try {
@@ -3189,7 +4254,6 @@ test("active narrow SkillHub public skills keep WeChat Channels guidance out of 
     for (const listing of source.listings.listings) {
       if (
         listing.host !== "skillhub" ||
-        listing.slug === "socialdatax-content-research-assistant" ||
         listing.publishStatus === "retained"
       ) {
         continue;
@@ -3200,10 +4264,15 @@ test("active narrow SkillHub public skills keep WeChat Channels guidance out of 
         listing.slug,
         source.hosts.hosts
       );
+      const frontmatter = extractFrontmatter(skill);
+      const generatedPrimaryFields = [
+        frontmatterScalar(frontmatter, "name"),
+        skill.match(/^# (.+)$/m)?.[1] ?? "",
+      ].join("\n");
       assert.doesNotMatch(
-        skill,
-        /WeChat Channels|视频号|wechat_/,
-        `${listing.slug} should not include WeChat Channels guidance in SkillHub public content`
+        generatedPrimaryFields,
+        skillhubTencentTerms,
+        `${listing.slug} generated name/title should avoid Tencent ecosystem discovery wording`
       );
     }
 
@@ -3248,6 +4317,303 @@ test("active narrow SkillHub public skills keep WeChat Channels guidance out of 
       aggregate,
       /仅 hosted MCP 可用、direct CLI 不包含的工具：[\s\S]*`weibo_get_post_liker_list_by_post_url`[\s\S]*`weibo_get_post_repost_list_by_post_url`[\s\S]*`wechat_get_user_info_by_url`/,
       "skillhub aggregate should document MCP-only tools that have no matching direct CLI entrypoint"
+    );
+
+    for (const slug of [
+      "socialdatax-short-video-copy-extract",
+      "short-video-copy-extract-v2",
+    ]) {
+      const shortVideoCopyExtract = readGeneratedSkill(
+        tempRoot,
+        "skillhub",
+        slug,
+        source.hosts.hosts
+      );
+      assert.match(shortVideoCopyExtract, /视频号/);
+      assert.match(shortVideoCopyExtract, /wechat_/);
+      assert.doesNotMatch(
+        shortVideoCopyExtract,
+        /公众号文章|Instagram|X \/ Twitter|YouTube|TikTok/,
+        `${slug} should only use WeChat Channels inside the cross-platform transcript workflow`
+      );
+    }
+  } finally {
+    rmSync(tempRoot, { recursive: true, force: true });
+  }
+});
+
+test("SkillHub Tencent ecosystem cross-platform exception stays explicit", () => {
+  const catalog = { capabilities: {} };
+
+  assert.equal(
+    isCrossPlatformTencentCapability(catalog, {
+      host: "skillhub",
+      slug: "content-breakdown",
+      commands: ["douyin.detailUrl", "wechat.detailUrl"],
+    }),
+    false,
+    "mixed Tencent and non-Tencent refs should not create an implicit SkillHub exception"
+  );
+  assert.equal(
+    isCrossPlatformTencentCapability(catalog, {
+      host: "skillhub",
+      slug: "socialdatax-short-video-copy-extract",
+      commands: ["douyin.transcriptUrl", "wechat.transcriptUrl"],
+    }),
+    true,
+    "recorded cross-platform SkillHub entries may keep Tencent guidance"
+  );
+  assert.equal(
+    isCrossPlatformTencentCapability(catalog, {
+      host: "skillhub",
+      slug: "content-breakdown",
+      commands: ["douyin.detailUrl", "mp.weixin.articleUrl", "weixin.articleUrl"],
+      mcpOnlyTools: [
+        "weixin_get_article_detail_by_url",
+        "mp_weixin_get_article_detail_by_url",
+        "tencent_get_video_detail",
+      ],
+    }),
+    false,
+    "Tencent, Weixin, and mp.weixin command and MCP aliases should stay covered by the Tencent ecosystem guardrail"
+  );
+  assert.equal(
+    hasTencentCapability(catalog, {
+      host: "skillhub",
+      slug: "content-breakdown",
+      mcpOnlyTools: [
+        "WeChat_get_video_detail",
+        "wechatchannels_get_video_detail",
+        "wechatmp_get_article_detail",
+        "wechatofficialaccount_get_article_detail",
+      ],
+    }),
+    true,
+    "WeChat Channels, WeChatMP, and WeChatOfficialAccount MCP aliases should stay covered by the Tencent ecosystem guardrail"
+  );
+  assert.equal(skillhubTencentTerms.test("weixinish-review"), false);
+  assert.equal(skillhubTencentTerms.test("wechatology-review"), false);
+  assert.equal(skillhubTencentTerms.test("Tencent账号分析"), true);
+  assert.equal(skillhubTencentTerms.test("WeChat账号分析"), true);
+  assert.equal(skillhubTencentTerms.test("Weixin account analysis"), true);
+  assert.equal(skillhubTencentTerms.test("Weixin账号分析"), true);
+  assert.equal(skillhubTencentTerms.test("weixin_account analysis"), true);
+});
+
+test("active narrow SkillHub source discovery fields avoid Tencent ecosystem wording", async () => {
+  const source = await loadSkillSource({ repoRoot: projectRoot });
+  const primaryDiscoveryOffenders = source.listings.listings
+    .filter(
+      (listing) =>
+        listing.host === "skillhub" &&
+        listing.publishStatus !== "retained" &&
+        skillhubTencentTerms.test([listing.slug, listing.title ?? ""].join("\n"))
+    )
+    .map((listing) => listing.slug);
+  const unapprovedTencentCapabilityOffenders = source.listings.listings
+    .filter(
+      (listing) =>
+        listing.host === "skillhub" &&
+        listing.publishStatus !== "retained" &&
+        hasTencentCapability(source.catalog, listing) &&
+        !isCrossPlatformTencentCapability(source.catalog, listing)
+    )
+    .map((listing) => listing.slug);
+  const secondaryDiscoveryOffenders = source.listings.listings
+    .filter(
+      (listing) =>
+        listing.host === "skillhub" &&
+        listing.publishStatus !== "retained" &&
+        skillhubTencentTerms.test(
+          [listing.description ?? "", listing.useWhen ?? ""].join("\n")
+        ) &&
+        !isCrossPlatformTencentCapability(source.catalog, listing)
+    )
+    .map((listing) => listing.slug);
+
+  assert.deepEqual(
+    primaryDiscoveryOffenders,
+    [],
+    `Active SkillHub slug/title fields should not use Tencent ecosystem discovery wording: ${primaryDiscoveryOffenders.join(", ")}`
+  );
+  assert.deepEqual(
+    unapprovedTencentCapabilityOffenders,
+    [],
+    `Active SkillHub entries with unapproved Tencent ecosystem capability refs should stay retained-only: ${unapprovedTencentCapabilityOffenders.join(", ")}`
+  );
+  assert.deepEqual(
+    secondaryDiscoveryOffenders,
+    [],
+    `Active SkillHub description/useWhen Tencent ecosystem wording should require an approved cross-platform capability entry: ${secondaryDiscoveryOffenders.join(", ")}`
+  );
+});
+
+test("retained standalone Tencent ecosystem SkillHub skills stay scoped to their historical workflows", async () => {
+  const tempRoot = mkdtempSync(join(tmpdir(), "socialdatax-skills-"));
+  const expectedCommandRefs = {
+    "wechat-channels-viral-video-breakdown": [
+      "wechat.detailUrl",
+      "wechat.transcriptUrl",
+      "wechat.transcriptJob",
+      "wechat.commentsUrl",
+      "wechat.replies",
+    ],
+    "wechat-channels-account-analysis": [
+      "wechat.userInfoId",
+      "wechat.userPostsUrl",
+      "wechat.userPostsId",
+    ],
+    "wechat-mp-article-extract": ["wechat.articleUrl"],
+  };
+
+  try {
+    const source = await loadSkillSource({ repoRoot: projectRoot });
+    await generateSkills({
+      repoRoot: projectRoot,
+      outRoot: tempRoot,
+      quiet: true,
+    });
+
+    for (const [slug, commandRefs] of Object.entries(expectedCommandRefs)) {
+      const listing = source.listings.listings.find(
+        (candidate) => candidate.host === "skillhub" && candidate.slug === slug
+      );
+      assert.ok(listing, `source should include skillhub/${slug}`);
+      assert.deepEqual(
+        commandRefsForListing(source.catalog, listing),
+        commandRefs,
+        `${slug} should keep its historical retained Tencent ecosystem command scope`
+      );
+
+      const skill = readGeneratedSkill(
+        tempRoot,
+        listing.host,
+        listing.slug,
+        source.hosts.hosts
+      );
+      const examples = extractDirectCliExamples(skill);
+      assert.ok(examples.length > 0, `${slug} should render direct CLI examples`);
+      assert.equal(
+        examples.length,
+        new Set(examples).size,
+        `${slug} should not render duplicate direct CLI examples`
+      );
+      assert.ok(
+        examples.every((example) => example.includes(" wechat ")),
+        `${slug} should render only WeChat direct CLI examples`
+      );
+      assert.doesNotMatch(
+        skill,
+        /^搜索：$/m,
+        `${slug} should not label non-search arguments as search guidance`
+      );
+      assert.doesNotMatch(
+        skill,
+        /`(?:xhs|douyin|kuaishou|bilibili|zhihu|instagram|x|youtube|tiktok|weibo)_/,
+        `${slug} should not render other platform MCP tools`
+      );
+
+      for (const commandRef of commandRefs) {
+        const { tool } = resolveCommandInfo(source.catalog, commandRef);
+        assertDirectCliExample(
+          skill,
+          expectedCliCommandForListing(source.catalog, listing, commandRef)
+        );
+        assert.match(skill, new RegExp("`" + escapeRegExp(tool) + "`"));
+      }
+    }
+
+    const expectedQuickStartInputs = {
+      "wechat-channels-viral-video-breakdown":
+        /视频号视频链接、分享文本或已有 job_id/,
+      "wechat-channels-account-analysis":
+        /视频号视频链接、分享文本或已知 user_id/,
+      "wechat-mp-article-extract":
+        /mp\.weixin\.qq\.com 文章链接或包含该链接的分享文本/,
+    };
+    for (const [slug, pattern] of Object.entries(expectedQuickStartInputs)) {
+      const skill = readGeneratedSkill(
+        tempRoot,
+        "skillhub",
+        slug,
+        source.hosts.hosts
+      );
+      const quickStart = extractMarkdownSection(skill, "快速开始");
+      assert.match(quickStart, pattern);
+    }
+  } finally {
+    rmSync(tempRoot, { recursive: true, force: true });
+  }
+});
+
+test("retained Tencent ecosystem SkillHub troubleshooting keeps supported input routes", async () => {
+  const tempRoot = mkdtempSync(join(tmpdir(), "socialdatax-skills-"));
+
+  try {
+    const source = await loadSkillSource({ repoRoot: projectRoot });
+    await generateSkills({
+      repoRoot: projectRoot,
+      outRoot: tempRoot,
+      quiet: true,
+    });
+
+    const accountSkill = readGeneratedSkill(
+      tempRoot,
+      "skillhub",
+      "wechat-channels-account-analysis",
+      source.hosts.hosts
+    );
+    const accountGuidance = [
+      extractMarkdownSection(accountSkill, "异常处理"),
+      extractMarkdownSection(accountSkill, "常见问题"),
+    ].join("\n");
+    assert.match(accountGuidance, /视频号视频链接、分享文本或 user_id/);
+    assert.doesNotMatch(accountGuidance, /关键词|账号主页|账号名/);
+
+    const articleSkill = readGeneratedSkill(
+      tempRoot,
+      "skillhub",
+      "wechat-mp-article-extract",
+      source.hosts.hosts
+    );
+    const articleGuidance = [
+      extractMarkdownSection(articleSkill, "异常处理"),
+      extractMarkdownSection(articleSkill, "常见问题"),
+    ].join("\n");
+    assert.match(articleGuidance, /mp\.weixin\.qq\.com 文章链接或分享文本/);
+    assert.doesNotMatch(articleGuidance, /关键词|链接或 ID|内容研究类 skill/);
+
+    const viralSkill = readGeneratedSkill(
+      tempRoot,
+      "skillhub",
+      "wechat-channels-viral-video-breakdown",
+      source.hosts.hosts
+    );
+    const viralGuidance = [
+      extractMarkdownSection(viralSkill, "异常处理"),
+      extractMarkdownSection(viralSkill, "常见问题"),
+    ].join("\n");
+    assert.match(viralGuidance, /视频号视频链接、分享文本或 job_id/);
+    assert.doesNotMatch(
+      viralGuidance,
+      /关键词|账号主页|账号名|内容研究类 skill/
+    );
+
+    const aggregateSkill = readGeneratedSkill(
+      tempRoot,
+      "skillhub",
+      "socialdatax-content-research-assistant",
+      source.hosts.hosts
+    );
+    const aggregateGuidance = [
+      extractMarkdownSection(aggregateSkill, "异常处理"),
+      extractMarkdownSection(aggregateSkill, "常见问题"),
+    ].join("\n");
+    assert.match(aggregateGuidance, /补充或更换关键词、链接、ID/);
+    assert.match(aggregateGuidance, /结果太多：补场景、人群、品牌、时间范围或账号名/);
+    assert.doesNotMatch(
+      aggregateGuidance,
+      /mp\.weixin\.qq\.com 文章链接或分享文本|视频号视频链接、分享文本或 user_id/
     );
   } finally {
     rmSync(tempRoot, { recursive: true, force: true });
@@ -3354,7 +4720,7 @@ test("weibo platform is present in source and generated public skills", async ()
 test("active SkillHub public title description and useWhen avoid restricted terms", async () => {
   const tempRoot = mkdtempSync(join(tmpdir(), "socialdatax-skills-"));
   const restrictedTerms =
-    /搜索|检索|数据获取|API 数据|只读数据能力|crawler|spider|scrape|爬虫|抓取/i;
+    /搜索|检索|数据获取|API 数据|API数据|只读数据能力|crawler|spider|scrape|scraping|爬虫|抓取/i;
 
   try {
     const source = await loadSkillSource({ repoRoot: projectRoot });
@@ -3377,7 +4743,7 @@ test("active SkillHub public title description and useWhen avoid restricted term
       const frontmatter = extractFrontmatter(skill);
       const title = skill.match(/^# (.+)$/m)?.[1] ?? "";
       const description = frontmatterScalar(frontmatter, "description");
-      const useWhen = skill.split(`\n# ${title}\n\n`)[1]?.split("\n\n")[0] ?? "";
+      const useWhen = extractMarkdownSection(skill, "适用场景");
 
       assert.doesNotMatch(
         `${title}\n${description}\n${useWhen}`,
@@ -3387,6 +4753,81 @@ test("active SkillHub public title description and useWhen avoid restricted term
     }
   } finally {
     rmSync(tempRoot, { recursive: true, force: true });
+  }
+});
+
+test("restricted SkillHub titles stay retained-only", async () => {
+  const source = await loadSkillSource({ repoRoot: projectRoot });
+  const offenders = source.listings.listings
+    .filter(
+      (listing) =>
+        listing.host === "skillhub" &&
+        /小红书|小红薯/.test(listing.title ?? "") &&
+        listing.publishStatus !== "retained"
+    )
+    .map((listing) => listing.slug);
+
+  assert.deepEqual(
+    offenders,
+    [],
+    `SkillHub titles containing 小红书 or 小红薯 must stay retained-only: ${offenders.join(", ")}`
+  );
+});
+
+test("narrow Tencent ecosystem SkillHub listings stay retained-only", async () => {
+  const source = await loadSkillSource({ repoRoot: projectRoot });
+  const retainedOnlySlugs = [
+    "wechat-channels-viral-video-breakdown",
+    "wechat-channels-account-analysis",
+    "wechat-mp-article-extract",
+  ];
+
+  for (const slug of retainedOnlySlugs) {
+    const listing = source.listings.listings.find(
+      (candidate) => candidate.host === "skillhub" && candidate.slug === slug
+    );
+    assert.ok(listing, `source should include skillhub/${slug}`);
+    assert.equal(
+      listing.publishStatus,
+      "retained",
+      `${slug} should not remain an active SkillHub publish candidate`
+    );
+  }
+});
+
+test("replaced SkillHub XHS aggregate slugs stay retained-only", async () => {
+  const source = await loadSkillSource({ repoRoot: projectRoot });
+  const replacements = [
+    [["socialdatax-topic-planning", "socialdatax-topic-planning-v2"], "socialdatax-topic-planning-v3"],
+    [
+      ["socialdatax-competitor-research", "socialdatax-competitor-research-v2"],
+      "socialdatax-competitor-research-v3",
+    ],
+    [["socialdatax-trend-insights", "socialdatax-trend-insights-v2"], "socialdatax-trend-insights-v3"],
+  ];
+
+  for (const [legacySlugs, replacementSlug] of replacements) {
+    for (const legacySlug of legacySlugs) {
+      const legacy = source.listings.listings.find(
+        (listing) => listing.host === "skillhub" && listing.slug === legacySlug
+      );
+      assert.ok(legacy, `source should include skillhub/${legacySlug}`);
+      assert.equal(
+        legacy.publishStatus,
+        "retained",
+        `${legacySlug} should stay retained-only after the later replacement shipped`
+      );
+    }
+
+    const replacement = source.listings.listings.find(
+      (listing) => listing.host === "skillhub" && listing.slug === replacementSlug
+    );
+    assert.ok(replacement, `source should include skillhub/${replacementSlug}`);
+    assert.notEqual(
+      replacement.publishStatus,
+      "retained",
+      `${replacementSlug} should remain an active maintenance candidate`
+    );
   }
 });
 
@@ -3403,6 +4844,9 @@ test("SkillHub listings do not advertise workflow families absent from command r
 
     for (const listing of source.listings.listings) {
       if (listing.host !== "skillhub" || listing.publishStatus === "retained") {
+        continue;
+      }
+      if (listing.listingKind === "prompt_only") {
         continue;
       }
       const commandRefs = commandRefsForListing(source.catalog, listing);
@@ -3449,7 +4893,7 @@ test("SkillHub listings do not advertise workflow families absent from command r
   }
 });
 
-test("xhs viral note research is a search-only SkillHub sample research entry", async () => {
+test("xhs viral note research is a retained search-only SkillHub sample", async () => {
   const tempRoot = mkdtempSync(join(tmpdir(), "socialdatax-skills-"));
 
   try {
@@ -3466,6 +4910,11 @@ test("xhs viral note research is a search-only SkillHub sample research entry", 
         candidate.slug === "xhs-viral-note-research"
     );
     assert.ok(listing, "source should include skillhub/xhs-viral-note-research");
+    assert.equal(
+      listing.publishStatus,
+      "retained",
+      "skillhub/xhs-viral-note-research should remain a retained historical sample"
+    );
     assert.equal(listing.packageSpec, XHS_VIRAL_NOTE_RESEARCH_PACKAGE_SPEC);
     assert.deepEqual(commandRefsForListing(source.catalog, listing), ["xhs.search"]);
 
@@ -3523,7 +4972,7 @@ test("xhs viral note research is a search-only SkillHub sample research entry", 
   }
 });
 
-test("xhs hot topic selection is a SkillHub hot-list plus search topic entry", async () => {
+test("xhs hot topic selection is a retained SkillHub hot-list plus search sample", async () => {
   const tempRoot = mkdtempSync(join(tmpdir(), "socialdatax-skills-"));
 
   try {
@@ -3542,6 +4991,11 @@ test("xhs hot topic selection is a SkillHub hot-list plus search topic entry", a
     assert.ok(
       listing,
       "source should include skillhub/xhs-hot-topic-selection"
+    );
+    assert.equal(
+      listing.publishStatus,
+      "retained",
+      "skillhub/xhs-hot-topic-selection should remain a retained historical sample"
     );
     assert.deepEqual(commandRefsForListing(source.catalog, listing), [
       "xhs.hotSearch",
@@ -3621,7 +5075,7 @@ test("xhs hot topic selection is a SkillHub hot-list plus search topic entry", a
   }
 });
 
-test("xhs viral copy breakdown is a SkillHub search plus detail copy review entry", async () => {
+test("xhs viral copy breakdown is a retained SkillHub search plus detail sample", async () => {
   const tempRoot = mkdtempSync(join(tmpdir(), "socialdatax-skills-"));
 
   try {
@@ -3640,6 +5094,11 @@ test("xhs viral copy breakdown is a SkillHub search plus detail copy review entr
     assert.ok(
       listing,
       "source should include skillhub/xhs-viral-copy-breakdown"
+    );
+    assert.equal(
+      listing.publishStatus,
+      "retained",
+      "skillhub/xhs-viral-copy-breakdown should remain a retained historical sample"
     );
     assert.deepEqual(commandRefsForListing(source.catalog, listing), [
       "xhs.search",
@@ -3870,6 +5329,7 @@ test("generated skills preserve XHS note URLs and complete note IDs", async () =
     const generatedSkills = source.listings.listings.map((listing) => [
       `${listing.host}/${listing.slug}`,
       readGeneratedSkill(tempRoot, listing.host, listing.slug, source.hosts.hosts),
+      listing,
     ]);
 
     const searchOrDetailSkills = generatedSkills.filter(([, skill]) =>
@@ -3879,34 +5339,34 @@ test("generated skills preserve XHS note URLs and complete note IDs", async () =
       searchOrDetailSkills.length > 0,
       "test should find generated skills that expose XHS search or detail tools"
     );
-    for (const [label, skill] of searchOrDetailSkills) {
-      const host = label.split("/", 1)[0];
+    for (const [label, skill, listing] of searchOrDetailSkills) {
+      const chineseBody = isChineseRenderedListing(listing);
       assert.match(
         skill,
-        isChineseLanguageHost(host)
+        chineseBody
           ? /无论是在最终回答、展示、引用、存储、输出还是转发时/
           : /in every use of a returned `note_url`, such as final answers, display, references, storage, output, or forwarding/,
         `${label} should require exact note_url preservation`
       );
       assert.match(
         skill,
-        isChineseLanguageHost(host)
+        chineseBody
           ? /保留完整原始 URL，包括其中的 `xsec_token` 查询参数/
           : /preserve it exactly as the full URL, including `xsec_token` query parameters/,
         `${label} should require preserving the full note_url`
       );
       assert.match(
         skill,
-        isChineseLanguageHost(host)
+        chineseBody
           ? /不要改写、截断、脱敏、重建，也不要只根据 `note_id` 去拼链接/
           : /Do not modify, truncate, redact, mask, normalize, rebuild, or synthesize the URL from `note_id`/,
         `${label} should forbid rebuilding note_url from note_id`
       );
       assert.match(
         skill,
-        isChineseLanguageHost(host)
-          ? /完整复制 24 位小写十六进制 ID；不要只传或只展示前缀/
-          : /complete 24-character lowercase hexadecimal ID exactly; do not pass or display only a prefix/,
+        chineseBody
+          ? /原样复制返回的完整 `note_id`；不要只传或只展示前缀/
+          : /entire returned `note_id` exactly; do not pass or display only a prefix/,
         `${label} should require complete note_id reuse`
       );
     }
@@ -3919,7 +5379,7 @@ test("generated skills preserve XHS note URLs and complete note IDs", async () =
       const skill = readGeneratedSkill(tempRoot, host, slug, source.hosts.hosts);
       assert.match(
         skill,
-        /complete 24-character lowercase hexadecimal `note_id` returned/,
+        /entire `note_id` returned/,
         `${label} should require complete note_id inputs`
       );
       assert.match(
@@ -3954,7 +5414,7 @@ test("generated skills preserve XHS note URLs and complete note IDs", async () =
       const skill = readGeneratedSkill(tempRoot, host, slug, source.hosts.hosts);
       assert.match(
         skill,
-        /complete 24-character lowercase hexadecimal/,
+        /entire `note_id`|returned `note_id` exactly/,
         `${label} should mention complete XHS note_id values`
       );
       assert.doesNotMatch(
@@ -4140,6 +5600,196 @@ test("generator does not write partial output when source validation fails", asy
   }
 });
 
+test("other platform comment demand-mining skills stay comment-scoped on SkillHub", async () => {
+  const tempRoot = mkdtempSync(join(tmpdir(), "socialdatax-skills-"));
+
+  try {
+    const source = await loadSkillSource({ repoRoot: projectRoot });
+    const expectations = [
+      {
+        slug: "douyin-comment-insights",
+        title: "抖音评论分析与需求挖掘",
+        quickStartInput: "作品链接或内容 ID",
+        commandRefs: ["douyin.commentsId", "douyin.commentsUrl", "douyin.replies"],
+        commands: [
+          "douyin comments --aweme-id",
+          "douyin comments --url",
+          "douyin replies --aweme-id",
+        ],
+      },
+      {
+        slug: "bilibili-comment-insights",
+        title: "B站评论分析与需求挖掘",
+        quickStartInput: "视频、专栏、动态链接或内容 ID",
+        commandRefs: ["bilibili.commentsId", "bilibili.commentsUrl", "bilibili.replies"],
+        commands: [
+          "bilibili comments --content-id",
+          "bilibili comments --url",
+          "bilibili replies --comment-object-id",
+        ],
+        argHints: [
+          "Bilibili `--content-id <content_id>`",
+          "Bilibili 回复 `--comment-object-id <comment_object_id>`",
+        ],
+      },
+      {
+        slug: "zhihu-comment-insights",
+        title: "知乎评论分析与需求挖掘",
+        quickStartInput: "内容链接",
+        commandRefs: ["zhihu.commentsUrl", "zhihu.replies"],
+        commands: [
+          "zhihu comments --content-url",
+          "zhihu replies --content-url",
+        ],
+      },
+      {
+        slug: "instagram-comment-insights",
+        title: "Instagram评论分析与需求挖掘",
+        quickStartInput: "帖子链接",
+        commandRefs: ["instagram.commentsUrl", "instagram.replies"],
+        commands: [
+          "instagram comments --post-url",
+          "instagram replies --post-id",
+        ],
+      },
+      {
+        slug: "x-twitter-comment-insights",
+        title: "X / Twitter评论分析与需求挖掘",
+        quickStartInput: "帖子链接或内容 ID",
+        commandRefs: ["x.commentsId", "x.commentsUrl", "x.replies"],
+        commands: [
+          "x comments --post-id",
+          "x comments --post-url",
+          "x replies --post-id",
+        ],
+      },
+      {
+        slug: "youtube-comment-insights",
+        title: "YouTube评论分析与需求挖掘",
+        quickStartInput: "视频链接",
+        commandRefs: ["youtube.commentsUrl", "youtube.replies"],
+        commands: [
+          "youtube comments --url",
+          "youtube replies --reply-token",
+        ],
+        argHints: ["`--reply-token <reply_token>`"],
+      },
+      {
+        slug: "tiktok-comment-insights",
+        title: "TikTok评论分析与需求挖掘",
+        quickStartInput: "帖子链接或内容 ID",
+        commandRefs: ["tiktok.commentsId", "tiktok.commentsUrl", "tiktok.replies"],
+        commands: [
+          "tiktok comments --post-id",
+          "tiktok comments --url",
+          "tiktok replies --post-id",
+        ],
+      },
+      {
+        slug: "weibo-comment-insights",
+        title: "微博评论分析与需求挖掘",
+        quickStartInput: "帖子链接或内容 ID",
+        commandRefs: ["weibo.commentsId", "weibo.commentsUrl", "weibo.replies"],
+        commands: [
+          "weibo comments --post-id",
+          "weibo comments --post-url",
+          "weibo replies --post-id",
+        ],
+      },
+      {
+        slug: "kuaishou-comment-insights",
+        title: "快手评论分析与需求挖掘",
+        quickStartInput: "作品链接或内容 ID",
+        commandRefs: ["kuaishou.commentsId", "kuaishou.commentsUrl", "kuaishou.replies"],
+        commands: [
+          "kuaishou comments --photo-id",
+          "kuaishou comments --url",
+          "kuaishou replies --photo-id",
+        ],
+      },
+    ];
+
+    for (const expected of expectations) {
+      const listing = source.listings.listings.find(
+        (candidate) =>
+          candidate.host === "skillhub" && candidate.slug === expected.slug
+      );
+
+      assert.ok(listing, `source should include skillhub/${expected.slug}`);
+      assert.equal(listing.title, expected.title);
+      assert.deepEqual(commandRefsForListing(source.catalog, listing), expected.commandRefs);
+    }
+
+    await generateSkills({
+      repoRoot: projectRoot,
+      outRoot: tempRoot,
+      quiet: true,
+    });
+
+    for (const expected of expectations) {
+      const skill = readGeneratedSkill(
+        tempRoot,
+        "skillhub",
+        expected.slug,
+        source.hosts.hosts
+      );
+
+      assert.match(skill, new RegExp(`^# ${escapeRegExp(expected.title)}$`, "m"));
+      assert.match(
+        extractMarkdownSection(skill, "快速开始"),
+        new RegExp(escapeRegExp(expected.quickStartInput))
+      );
+      const argSection = extractMarkdownSection(skill, "参数说明");
+      assert.match(argSection, /评论 \/ 回复：/);
+      assert.match(argSection, /使用 CLI 示例里的 URL 入口传内容页链接、短链或分享文本来获取一级评论/);
+      assert.doesNotMatch(argSection, /`--url <url_or_share_text>`/);
+      for (const argHint of expected.argHints ?? []) {
+        assert.match(
+          argSection,
+          new RegExp(escapeRegExp(argHint)),
+          `${expected.slug} should keep platform-specific argument hint ${argHint}`
+        );
+      }
+      if (expected.slug === "youtube-comment-insights") {
+        assert.doesNotMatch(
+          argSection,
+          /`--comment-id <comment_id>`/,
+          "youtube-comment-insights should not advertise comment-id"
+        );
+      }
+      assert.match(skill, /评论主题、用户痛点、购买顾虑、未满足需求、FAQ、高频原话、可行动建议/);
+      assert.match(skill, /结论基于用户提供的目标内容下已返回的评论和回复/);
+      assert.doesNotMatch(skill, /结论基于用户提供的内容链接或内容 ID 下/);
+      assert.match(
+        skill,
+        /一级评论命令一次只使用 CLI 示例里的一个入口；不要在同一条命令里混用多个内容定位参数/
+      );
+      assert.match(skill, /需求挖掘/);
+      assert.match(
+        skill,
+        new RegExp(`--source-platform skillhub --source-skill ${escapeRegExp(expected.slug)}`)
+      );
+
+      for (const command of expected.commands) {
+        assertDirectCliExample(
+          skill,
+          command,
+          `${expected.slug} should document ${command}`
+        );
+      }
+
+      assertNoDirectCliExample(skill, "xhs search");
+      assertNoDirectCliExample(skill, "douyin search");
+      assertNoDirectCliExample(skill, "bilibili search-videos");
+      assertNoDirectCliExample(skill, "instagram search");
+      assertNoDirectCliExample(skill, "youtube search");
+      assertNoDirectCliExample(skill, "tiktok search");
+    }
+  } finally {
+    rmSync(tempRoot, { recursive: true, force: true });
+  }
+});
+
 test("npm installer skill registry stays aligned with npm listings and agent metadata", async () => {
   const source = await loadSkillSource({ repoRoot: projectRoot });
   const npmListingNames = source.listings.listings
@@ -4215,6 +5865,7 @@ test("public listing checker does not hard-code generated skill slugs", async ()
   const generatedSlugs = source.listings.listings.map((listing) => listing.slug);
   const allowedLiteralSlugs = new Set([
     "socialdatax-opencli",
+    ...approvedCrossPlatformTencentSkillhubSlugs,
   ]);
 
   for (const slug of generatedSlugs) {
@@ -4413,6 +6064,78 @@ test("generator rejects listings whose commands resolve to empty arrays", async 
   }
 });
 
+test("generator rejects prompt-only listings with API-backed command fields", async () => {
+  const tempRoot = mkdtempSync(join(tmpdir(), "socialdatax-skills-"));
+  const badRoot = mkdtempSync(join(tmpdir(), "socialdatax-bad-source-"));
+
+  try {
+    const sourceDir = copySkillSourceTo(badRoot);
+    const listingsPath = join(sourceDir, "listings.json");
+    const listings = JSON.parse(readFileSync(listingsPath, "utf8"));
+    const listing = listings.listings.find(
+      (candidate) =>
+        candidate.host === "skillhub" &&
+        candidate.slug === "viral-hook-title-generator"
+    );
+    assert.ok(listing, "viral-hook-title-generator listing should exist");
+    listing.commands = ["xhs.search"];
+    listing.afterCommands = ["- Run this after the direct command."];
+    listing.compactCommandExamples = true;
+    writeFileSync(listingsPath, `${JSON.stringify(listings, null, 2)}\n`);
+
+    await assert.rejects(
+      generateSkills({
+        repoRoot: badRoot,
+        outRoot: tempRoot,
+        quiet: true,
+      }),
+      /Listing skillhub:viral-hook-title-generator prompt_only entries must not define API-backed command fields: commands, afterCommands, compactCommandExamples/
+    );
+  } finally {
+    rmSync(tempRoot, { recursive: true, force: true });
+    rmSync(badRoot, { recursive: true, force: true });
+  }
+});
+
+test("prompt-only fallback safety copy stays user-facing", async () => {
+  const tempRoot = mkdtempSync(join(tmpdir(), "socialdatax-skills-"));
+  const sourceRoot = mkdtempSync(join(tmpdir(), "socialdatax-source-"));
+
+  try {
+    const sourceDir = copySkillSourceTo(sourceRoot);
+    const listingsPath = join(sourceDir, "listings.json");
+    const listings = JSON.parse(readFileSync(listingsPath, "utf8"));
+    const listing = listings.listings.find(
+      (candidate) =>
+        candidate.host === "skillhub" &&
+        candidate.slug === "viral-hook-title-generator"
+    );
+    assert.ok(listing, "viral-hook-title-generator listing should exist");
+    delete listing.safetyBoundary;
+    writeFileSync(listingsPath, `${JSON.stringify(listings, null, 2)}\n`);
+
+    const source = await loadSkillSource({ repoRoot: sourceRoot });
+    await generateSkills({
+      repoRoot: sourceRoot,
+      outRoot: tempRoot,
+      quiet: true,
+    });
+
+    const skill = readGeneratedSkill(
+      tempRoot,
+      "skillhub",
+      "viral-hook-title-generator",
+      source.hosts.hosts
+    );
+
+    assert.match(skill, /纯文本生成型 skill/);
+    assert.doesNotMatch(skill, /prompt-only skill/);
+  } finally {
+    rmSync(tempRoot, { recursive: true, force: true });
+    rmSync(sourceRoot, { recursive: true, force: true });
+  }
+});
+
 test("generator rejects null command overrides instead of falling back to capability commands", async () => {
   const tempRoot = mkdtempSync(join(tmpdir(), "socialdatax-skills-"));
   const badRoot = mkdtempSync(join(tmpdir(), "socialdatax-bad-source-"));
@@ -4510,6 +6233,153 @@ test("generator rejects unknown listing fields instead of silently ignoring typo
     rmSync(tempRoot, { recursive: true, force: true });
     rmSync(badRoot, { recursive: true, force: true });
   }
+});
+
+test("generator resolves one-level listing mirrors", async () => {
+  const mirrorRoot = mkdtempSync(join(tmpdir(), "socialdatax-mirror-source-"));
+
+  try {
+    const sourceDir = copySkillSourceTo(mirrorRoot);
+    const listingsPath = join(sourceDir, "listings.json");
+    const source = JSON.parse(readFileSync(listingsPath, "utf8"));
+    const sourceListing = source.listings.find(
+      (listing) =>
+        listing.host === "skillhub" && listing.slug === "xhs-content-research"
+    );
+    const targetIndex = source.listings.findIndex(
+      (listing) =>
+        listing.host === "clawhub" && listing.slug === "xhs-content-research"
+    );
+    source.listings[targetIndex] = {
+      host: "clawhub",
+      slug: "xhs-content-research",
+      mirrorFrom: { host: "skillhub", slug: "xhs-content-research" },
+    };
+    writeFileSync(listingsPath, `${JSON.stringify(source, null, 2)}\n`);
+
+    const loaded = await loadSkillSource({ repoRoot: mirrorRoot });
+    const target = loaded.listings.listings.find(
+      (listing) =>
+        listing.host === "clawhub" && listing.slug === "xhs-content-research"
+    );
+    assert.equal(target.title, sourceListing.title);
+    assert.equal(
+      target.publishStatus,
+      undefined,
+      "cross-host mirrors should not inherit the source host publish status"
+    );
+    assert.deepEqual(target.mirrorFrom, {
+      host: "skillhub",
+      slug: "xhs-content-research",
+    });
+
+    source.listings[0].publishStatus = "retained";
+    source.listings.push({
+      host: "skillhub",
+      slug: source.listings[0].slug,
+      mirrorFrom: { host: source.listings[0].host, slug: source.listings[0].slug },
+    });
+    writeFileSync(listingsPath, `${JSON.stringify(source, null, 2)}\n`);
+
+    const reloaded = await loadSkillSource({ repoRoot: mirrorRoot });
+    const skillhubTarget = reloaded.listings.listings.find(
+      (listing) =>
+        listing.host === "skillhub" && listing.slug === source.listings[0].slug
+    );
+    assert.equal(
+      skillhubTarget.publishStatus,
+      "retained",
+      "SkillHub mirrors should keep retained source status for publication guardrails"
+    );
+  } finally {
+    rmSync(mirrorRoot, { recursive: true, force: true });
+  }
+});
+
+test("generator rejects mirror targets with business overrides", async () => {
+  await assertMirrorSourceRejected(
+    (listings) => {
+      const targetIndex = listings.findIndex(
+        (listing) =>
+          listing.host === "clawhub" && listing.slug === "xhs-content-research"
+      );
+      listings[targetIndex] = {
+        host: "clawhub",
+        slug: "xhs-content-research",
+        title: "different",
+        mirrorFrom: { host: "skillhub", slug: "xhs-content-research" },
+      };
+    },
+    /mirror listing clawhub:xhs-content-research has unknown field\(s\): title/
+  );
+});
+
+test("generator rejects missing, chained, or cross-slug mirror sources", async () => {
+  await assertMirrorSourceRejected(
+    (listings) => {
+      const targetIndex = listings.findIndex(
+        (listing) =>
+          listing.host === "clawhub" && listing.slug === "xhs-content-research"
+      );
+      listings[targetIndex] = {
+        host: "clawhub",
+        slug: "xhs-content-research",
+        mirrorFrom: { host: "skillhub", slug: "missing" },
+      };
+    },
+    /Mirror source skillhub:missing does not exist/
+  );
+  await assertMirrorSourceRejected(
+    (listings) => {
+      const sourceIndex = listings.findIndex(
+        (listing) =>
+          listing.host === "skillhub" && listing.slug === "xhs-content-research"
+      );
+      const targetIndex = listings.findIndex(
+        (listing) =>
+          listing.host === "clawhub" && listing.slug === "xhs-content-research"
+      );
+      listings[sourceIndex] = {
+        host: "skillhub",
+        slug: "xhs-content-research",
+        mirrorFrom: { host: "modelscope", slug: "xhs-content-research" },
+      };
+      listings[targetIndex] = {
+        host: "clawhub",
+        slug: "xhs-content-research",
+        mirrorFrom: { host: "skillhub", slug: "xhs-content-research" },
+      };
+    },
+    /Mirror source skillhub:xhs-content-research must not be another mirror/
+  );
+  await assertMirrorSourceRejected(
+    (listings) => {
+      const targetIndex = listings.findIndex(
+        (listing) =>
+          listing.host === "clawhub" && listing.slug === "xhs-content-research"
+      );
+      listings[targetIndex] = {
+        host: "clawhub",
+        slug: "xhs-content-research",
+        mirrorFrom: { host: "skillhub", slug: "xhs-topic-analysis-v2" },
+      };
+    },
+    /Mirror listing clawhub:xhs-content-research must keep source slug xhs-topic-analysis-v2/
+  );
+  await assertMirrorSourceRejected(
+    (listings) => {
+      const targetIndex = listings.findIndex(
+        (listing) =>
+          listing.host === "clawhub" && listing.slug === "xhs-content-research"
+      );
+      listings[targetIndex] = {
+        host: "skillhub",
+        slug: "xhs-content-research",
+        mirrorFrom: { host: "skillhub", slug: "xhs-content-research" },
+      };
+    },
+    /Mirror listing skillhub:xhs-content-research must use a different source host/
+  );
 });
 
 test("generator rejects unknown capability fields instead of silently ignoring typos", async () => {
@@ -4872,7 +6742,7 @@ test("generator rejects unsafe listing-level package specs", async () => {
           outRoot: tempRoot,
           quiet: true,
         }),
-        /listing skillhub:xhs-viral-note-research packageSpec must be socialdatax-skills@latest or a fixed socialdatax-skills semver package/
+        /listing (?:skillhub|clawhub):xhs-viral-note-research packageSpec must be socialdatax-skills@latest or a fixed socialdatax-skills semver package/
       );
     } finally {
       rmSync(tempRoot, { recursive: true, force: true });

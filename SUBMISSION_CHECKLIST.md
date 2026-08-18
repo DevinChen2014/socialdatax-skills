@@ -188,7 +188,9 @@ Use this checklist before syncing this listing to the public `socialdatax-skills
 - No `public-listings/socialdatax-skills/server-card.json` is published.
 - Hosted streamable HTTP clients can connect directly to `https://mcp.socialdatax.com/xhs/mcp`, `https://mcp.socialdatax.com/douyin/mcp`, `https://mcp.socialdatax.com/kuaishou/mcp`, `https://mcp.socialdatax.com/bilibili/mcp`, `https://mcp.socialdatax.com/weibo/mcp`, `https://mcp.socialdatax.com/wechat/mcp`, `https://mcp.socialdatax.com/zhihu/mcp`, `https://mcp.socialdatax.com/instagram/mcp`, `https://mcp.socialdatax.com/x/mcp`, `https://mcp.socialdatax.com/youtube/mcp`, `https://mcp.socialdatax.com/tiktok/mcp`, and `https://mcp.socialdatax.com/sensitive-check/mcp` with `Authorization: Bearer <SOCIALDATAX_API_KEY>`.
 - With a valid key, hosted MCP `initialize` succeeds.
-- With a valid key, XHS hosted MCP `tools/list` returns the current 14 public XHS tools.
+- With a valid key, XHS hosted MCP `tools/list` returns the current 20 public XHS tools.
+- With a valid key, XHS hosted MCP `tools/list` includes `xhs_pgy_get_note_detail` and the tool description states the 20-point successful-call cost and that failures are not charged.
+- With a valid key, XHS hosted MCP `tools/list` includes `xhs_get_product_reviews`.
 - With a valid key, Douyin hosted MCP `tools/list` returns the current 16 public Douyin tools.
 - With a valid key, Kuaishou hosted MCP `tools/list` returns the current 15 public Kuaishou tools.
 - With a valid key, Kuaishou hosted MCP `tools/list` includes `kuaishou_get_hot_search_list`.

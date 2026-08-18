@@ -3,6 +3,7 @@ import { spawn, spawnSync } from "node:child_process";
 import { createHash } from "node:crypto";
 import { EventEmitter } from "node:events";
 import { createServer } from "node:http";
+import { connect as connectSocket } from "node:net";
 import {
   chmodSync,
   existsSync,
@@ -14,13 +15,16 @@ import {
   writeFileSync,
 } from "node:fs";
 import { open as openFile } from "node:fs/promises";
-import { tmpdir } from "node:os";
+import { homedir, tmpdir } from "node:os";
 import { dirname, join } from "node:path";
 import { fileURLToPath } from "node:url";
 import test from "node:test";
 
 import { readToken as readPublishToken } from "../../../scripts/publish_social_media_insights_skills.mjs";
-import { decryptWechatMediaCommand } from "../cli.mjs";
+import {
+  decryptWechatMediaCommand,
+  formatCliErrorMessage,
+} from "../cli.mjs";
 import { downloadBilibiliVideoFromManifest } from "../lib/media/bilibili-download.mjs";
 import { downloadPlatformMediaFromUrl } from "../lib/media/platform-download.mjs";
 
@@ -56,6 +60,7 @@ function httpServerUrl(server, path = "/") {
 
 function runCli(args) {
   const env = { ...process.env };
+  deleteProxyEnv(env);
   delete env.SOCIALDATAX_API_KEY;
   delete env.SOCIALDATAX_SOURCE_CLIENT;
   delete env.SOCIALDATAX_SOURCE_PLATFORM;
@@ -90,18 +95,194 @@ function runCli(args) {
 }
 
 function runCliWithEnv(args, extraEnv) {
+  const env = { ...process.env };
+  deleteProxyEnv(env);
   return spawnSync(process.execPath, [cliPath, ...args], {
     cwd: packageDir,
-    env: { ...process.env, ...extraEnv },
+    env: { ...env, ...extraEnv },
     encoding: "utf8",
   });
 }
 
+test("CLI error formatter explains local SDK dependency authorization failures", () => {
+  const message = formatCliErrorMessage(
+    new Error("Cannot find package '@modelcontextprotocol/sdk' imported from cli.mjs")
+  );
+
+  assert.match(message, /install or restore the required CLI dependencies or Node\.js runtime/);
+  assert.match(message, /not a SocialDataX API key or business data error/);
+  assert.match(message, /不是 SocialDataX API Key 或业务数据返回错误/);
+  assert.match(message, /allow node\/npm\/npx and npm registry access/);
+  assert.match(message, /重试原命令/);
+  assert.match(message, /不要改用公开网页搜索替代 SocialDataX 数据/);
+  assert.doesNotMatch(message, /Node\.js 20\.18\.1\+/);
+
+  const pathMessage = formatCliErrorMessage(
+    new Error("Cannot find module '/tmp/node_modules/@modelcontextprotocol/sdk/client/index.js'")
+  );
+  assert.match(pathMessage, /allow node\/npm\/npx and npm registry access/);
+
+  const futureDependencyMessage = formatCliErrorMessage(
+    new Error("Cannot find package 'future-runtime-dependency' imported from /tmp/socialdatax-skills/cli.mjs")
+  );
+  assert.match(futureDependencyMessage, /allow node\/npm\/npx and npm registry access/);
+  assert.match(futureDependencyMessage, /not a SocialDataX API key or business data error/);
+
+  const registryDnsMessage = formatCliErrorMessage(
+    new Error("request to https://registry.npmjs.org/socialdatax-skills failed, reason: getaddrinfo ENOTFOUND registry.npmjs.org")
+  );
+  assert.match(registryDnsMessage, /allow node\/npm\/npx and npm registry access/);
+
+  const npmDnsMessage = formatCliErrorMessage(
+    new Error("npm ERR! code ENOTFOUND request to https://registry.npmjs.org/socialdatax-skills failed")
+  );
+  assert.match(npmDnsMessage, /allow node\/npm\/npx and npm registry access/);
+  const registryRetryMessage = formatCliErrorMessage(
+    new Error("npm ERR! code EAI_AGAIN registry.npmjs.org")
+  );
+  assert.match(registryRetryMessage, /allow node\/npm\/npx and npm registry access/);
+
+  const registryTimeoutMessage = formatCliErrorMessage(
+    new Error("npm ERR! network request to https://registry.npmjs.org/socialdatax-skills failed, reason: ETIMEDOUT")
+  );
+  assert.match(registryTimeoutMessage, /allow node\/npm\/npx and npm registry access/);
+
+  const nodeVersionMessage = formatCliErrorMessage(
+    new Error("Node.js 20.18.1 or newer is required. Current version: v18.19.0.")
+  );
+  assert.match(nodeVersionMessage, /Node\.js 20\.18\.1 or newer is required/);
+  assert.match(
+    nodeVersionMessage,
+    /install or restore the required CLI dependencies or Node\.js runtime/
+  );
+
+  const npxMissingMessage = formatCliErrorMessage(new Error("spawn npx ENOENT"));
+  assert.match(npxMissingMessage, /allow node\/npm\/npx and npm registry access/);
+
+  const reversedNpxMissingMessage = formatCliErrorMessage(
+    new Error("ENOENT: no such file or directory, spawn npx")
+  );
+  assert.match(reversedNpxMissingMessage, /allow node\/npm\/npx and npm registry access/);
+
+  const npmPermissionMessage = formatCliErrorMessage(
+    new Error("npm ERR! code EACCES permission denied while installing socialdatax-skills")
+  );
+  assert.match(npmPermissionMessage, /allow node\/npm\/npx and npm registry access/);
+
+  const noSpaceMessage = formatCliErrorMessage(
+    new Error("npm ERR! code ENOSPC no space left on device while installing socialdatax-skills")
+  );
+  assert.match(noSpaceMessage, /not a SocialDataX API key or business data error/);
+
+  const registryCertificateMessage = formatCliErrorMessage(
+    new Error("npm ERR! code SELF_SIGNED_CERT_IN_CHAIN request to https://registry.npmjs.org/socialdatax-skills failed")
+  );
+  assert.match(registryCertificateMessage, /allow node\/npm\/npx and npm registry access/);
+
+  const registryForbiddenMessage = formatCliErrorMessage(
+    new Error("npm ERR! 403 Forbidden - GET https://registry.npmjs.org/socialdatax-skills")
+  );
+  assert.match(registryForbiddenMessage, /allow node\/npm\/npx and npm registry access/);
+
+  const localWritePermissionMessage = formatCliErrorMessage(
+    new Error("EACCES: permission denied, mkdir '/private/tmp/workbuddy/media-search'")
+  );
+  assert.match(localWritePermissionMessage, /required local file or directory permissions/);
+  assert.match(localWritePermissionMessage, /目标文件或目录权限/);
+  assert.match(localWritePermissionMessage, /重试原命令/);
+});
+
+test("CLI error formatter leaves unrelated errors unchanged", () => {
+  assert.equal(formatCliErrorMessage(new Error("Bad input")), "Bad input");
+  assert.equal(
+    formatCliErrorMessage(
+      new Error("Missing API Key. Set SOCIALDATAX_API_KEY before running direct CLI calls.")
+    ),
+    "Missing API Key. Set SOCIALDATAX_API_KEY before running direct CLI calls."
+  );
+  assert.equal(
+    formatCliErrorMessage(new Error("insufficient_balance: 积分不足，请充值")),
+    "insufficient_balance: 积分不足，请充值"
+  );
+  assert.equal(
+    formatCliErrorMessage(
+      new Error(
+        "Direct CLI call failed for xhs/search at https://mcp.socialdatax.com/xhs/mcp: HTTP 403 permission denied"
+      )
+    ),
+    "Direct CLI call failed for xhs/search at https://mcp.socialdatax.com/xhs/mcp: HTTP 403 permission denied"
+  );
+  const upstreamModuleMessage =
+    "Direct CLI call failed for xhs/search at https://mcp.socialdatax.com/xhs/mcp: HTTP 500 Cannot find module 'remote-service-dependency'\nRequire stack:\n- /app/server.js";
+  assert.equal(
+    formatCliErrorMessage(new Error(upstreamModuleMessage)),
+    upstreamModuleMessage
+  );
+  const upstreamNodeModulesMessage =
+    "Direct CLI call failed for xhs/search at https://mcp.socialdatax.com/xhs/mcp: HTTP 500 Cannot find module '/app/node_modules/remote-service-dependency/index.js'\nRequire stack:\n- /app/server.js";
+  assert.equal(
+    formatCliErrorMessage(new Error(upstreamNodeModulesMessage)),
+    upstreamNodeModulesMessage
+  );
+  const upstreamParenthesizedStatusMessage =
+    "Direct CLI call failed for xhs/search at https://mcp.socialdatax.com/xhs/mcp: POST https://mcp.socialdatax.com/xhs/mcp failed (500): Cannot find module '/app/node_modules/remote-service-dependency/index.js'";
+  assert.equal(
+    formatCliErrorMessage(new Error(upstreamParenthesizedStatusMessage)),
+    upstreamParenthesizedStatusMessage
+  );
+  const upstreamResponseStatusMessage =
+    "Direct CLI call failed for xhs/search at https://mcp.socialdatax.com/xhs/mcp: response status 500: Cannot find module '/app/node_modules/remote-service-dependency/index.js'";
+  assert.equal(
+    formatCliErrorMessage(new Error(upstreamResponseStatusMessage)),
+    upstreamResponseStatusMessage
+  );
+  const upstreamRegistryMessage =
+    "Direct CLI call failed for xhs/search at https://mcp.socialdatax.com/xhs/mcp: HTTP 500 npm ERR! 403 Forbidden - GET https://registry.npmjs.org/remote-service-dependency";
+  assert.equal(
+    formatCliErrorMessage(new Error(upstreamRegistryMessage)),
+    upstreamRegistryMessage
+  );
+  const upstreamNoSpaceMessage =
+    "Direct CLI call failed for xhs/search at https://mcp.socialdatax.com/xhs/mcp: HTTP 500 ENOSPC no space left on device";
+  assert.equal(
+    formatCliErrorMessage(new Error(upstreamNoSpaceMessage)),
+    upstreamNoSpaceMessage
+  );
+  const upstreamModuleWithoutStatusMessage =
+    "Direct CLI call failed for xhs/search at https://mcp.socialdatax.com/xhs/mcp: Cannot find module '/app/node_modules/remote-service-dependency/index.js'\nRequire stack:\n- /app/server.js";
+  assert.equal(
+    formatCliErrorMessage(new Error(upstreamModuleWithoutStatusMessage)),
+    upstreamModuleWithoutStatusMessage
+  );
+  const upstreamRegistryWithoutStatusMessage =
+    "Direct CLI call failed for xhs/search at https://mcp.socialdatax.com/xhs/mcp: npm ERR! 403 Forbidden - GET https://registry.npmjs.org/remote-service-dependency";
+  assert.equal(
+    formatCliErrorMessage(new Error(upstreamRegistryWithoutStatusMessage)),
+    upstreamRegistryWithoutStatusMessage
+  );
+  const customUpstreamModuleMessage =
+    "Direct CLI call failed for xhs/search at https://example.com/xhs/mcp: HTTP 500 Cannot find module '/app/node_modules/remote-service-dependency/index.js'";
+  assert.equal(
+    formatCliErrorMessage(new Error(customUpstreamModuleMessage)),
+    customUpstreamModuleMessage
+  );
+  const upstreamStructuredError = new Error(
+    "Cannot find module '/app/node_modules/remote-service-dependency/index.js'"
+  );
+  upstreamStructuredError.structuredContent = { code: "upstream_error" };
+  assert.equal(
+    formatCliErrorMessage(upstreamStructuredError),
+    upstreamStructuredError.message
+  );
+});
+
 function runCliWithEnvAsync(args, extraEnv) {
   return new Promise((resolve, reject) => {
+    const env = { ...process.env };
+    deleteProxyEnv(env);
     const child = spawn(process.execPath, [cliPath, ...args], {
       cwd: packageDir,
-      env: { ...process.env, ...extraEnv },
+      env: { ...env, ...extraEnv },
       stdio: ["ignore", "pipe", "pipe"],
     });
     let stdout = "";
@@ -132,6 +313,17 @@ function runCliWithEnvAsync(args, extraEnv) {
       resolve({ status, signal, stdout, stderr });
     });
   });
+}
+
+function deleteProxyEnv(env) {
+  delete env.HTTP_PROXY;
+  delete env.http_proxy;
+  delete env.HTTPS_PROXY;
+  delete env.https_proxy;
+  delete env.ALL_PROXY;
+  delete env.all_proxy;
+  delete env.NO_PROXY;
+  delete env.no_proxy;
 }
 
 function extractDirectCliExamples(markdown) {
@@ -789,9 +981,10 @@ test("public package discovery terms include transcript and supported platform w
   assert.match(readme, /douyin download-media --url "<douyin_media_url>" --output-dir \.\/downloads/);
   assert.match(readme, /kuaishou download-media --url "<kuaishou_media_url>" --output-dir \.\/downloads/);
   assert.match(readme, /weibo download-media --url "<weibo_media_url>" --output-dir \.\/downloads/);
+  assert.match(readme, /x download-media --url "<x_media_url>" --output-dir \.\/downloads/);
   assert.match(
     readme,
-    /XHS \/ Douyin \/ Kuaishou \/ Weibo local media download, WeChat Channels local media decrypt\/save, Bilibili local video download/
+    /XHS \/ Douyin \/ Kuaishou \/ Weibo \/ X \/ Twitter local media download, WeChat Channels local media decrypt\/save, Bilibili local video download/
   );
   assert.match(readme, /Transcript commands submit a bounded video speech-to-text job/);
   assert.match(readme, /the CLI automatically continues matching get-job requests for up to 1200 seconds by default/);
@@ -945,8 +1138,8 @@ test("xhs download-media CLI saves a media URL locally without API key", async (
   }
 });
 
-test("douyin/kuaishou/weibo download-media validates required local options", () => {
-  for (const platform of ["douyin", "kuaishou", "weibo"]) {
+test("douyin/kuaishou/weibo/x download-media validates required local options", () => {
+  for (const platform of ["douyin", "kuaishou", "weibo", "x"]) {
     assertCliError(
       runCli([platform, "download-media"]),
       `Missing --url for ${platform} download-media\\.`
@@ -986,10 +1179,22 @@ test("douyin/kuaishou/weibo download-media validates required local options", ()
       ]),
       "Unsupported option --source-client\\."
     );
+    assertCliError(
+      runCli([
+        platform,
+        "download-media",
+        "--url",
+        "https://media.example.test/item.mp4",
+        "--output",
+        "media.mp4",
+        "--proxy",
+      ]),
+      "Missing value for --proxy\\."
+    );
   }
 });
 
-test("douyin/kuaishou/weibo download-media CLI saves media URLs with platform referers", async () => {
+test("douyin/kuaishou/weibo/x download-media CLI saves media URLs with platform referers", async () => {
   const cases = [
     {
       platform: "douyin",
@@ -1011,6 +1216,20 @@ test("douyin/kuaishou/weibo download-media CLI saves media URLs with platform re
       contentType: "image/jpeg",
       expectedFile: "image.jpg",
       referer: "https://weibo.com/",
+    },
+    {
+      platform: "x",
+      path: "/tweet.mp4?tag=29",
+      contentType: "video/mp4",
+      expectedFile: "tweet.mp4",
+      referer: "https://x.com/",
+    },
+    {
+      platform: "x",
+      path: "/tweet-image?format=jpg&name=large",
+      contentType: "application/octet-stream",
+      expectedFile: "tweet-image.jpg",
+      referer: "https://x.com/",
     },
   ];
 
@@ -1078,6 +1297,231 @@ test("douyin/kuaishou/weibo download-media CLI saves media URLs with platform re
       await closeHttpServer(mediaServer);
       rmSync(tempDir, { recursive: true, force: true });
     }
+  }
+});
+
+test("x download-media uses proxy settings from option or environment", async () => {
+  const cases = [
+    {
+      label: "explicit proxy",
+      options: { proxy: "http://127.0.0.1:7890" },
+      env: {},
+    },
+    {
+      label: "env proxy",
+      options: {},
+      env: { HTTPS_PROXY: "http://127.0.0.1:7890" },
+    },
+    {
+      label: "env http proxy for https url",
+      options: {},
+      env: { HTTP_PROXY: "http://127.0.0.1:7890" },
+    },
+  ];
+
+  for (const item of cases) {
+    const tempDir = mkdtempSync(join(tmpdir(), `sdx-x-proxy-${item.label}-`));
+    const outputPath = join(tempDir, "tweet.mp4");
+    let seenDispatcher = null;
+
+    try {
+      const result = await downloadPlatformMediaFromUrl(
+        "x",
+        "https://video.twimg.com/amplify_video/test/vid/avc1/tweet.mp4?tag=29",
+        { output: outputPath, ...item.options },
+        {
+          fetchMedia: async (_url, fetchOptions) => {
+            seenDispatcher = fetchOptions.dispatcher || null;
+            return {
+              status: 200,
+              ok: true,
+              headers: {
+                get(name) {
+                  return {
+                    "content-type": "video/mp4",
+                    "content-length": "4",
+                  }[String(name).toLowerCase()];
+                },
+              },
+              body: [Buffer.from("test")],
+            };
+          },
+          retryDelayMs: 0,
+          env: item.env,
+        }
+      );
+
+      assert.equal(result.status, "downloaded");
+      assert.ok(seenDispatcher, `${item.label} should provide a dispatcher`);
+      assert.equal(readFileSync(outputPath, "utf8"), "test");
+    } finally {
+      rmSync(tempDir, { recursive: true, force: true });
+    }
+  }
+});
+
+test("x download-media real fetch uses an HTTP proxy dispatcher", async () => {
+  const tempDir = mkdtempSync(join(tmpdir(), "sdx-x-real-proxy-"));
+  const outputPath = join(tempDir, "tweet.mp4");
+  const body = Buffer.from("proxied-x-media");
+  const mediaRequests = [];
+  const mediaServer = createServer((request, response) => {
+    mediaRequests.push({
+      url: request.url,
+      referer: request.headers.referer,
+      userAgent: request.headers["user-agent"],
+    });
+    response.writeHead(200, {
+      "content-type": "video/mp4",
+      "content-length": String(body.length),
+      connection: "close",
+    });
+    response.end(body);
+  });
+  const proxyRequests = [];
+  const proxyServer = createServer((request, response) => {
+    proxyRequests.push({
+      method: request.method,
+      url: request.url,
+    });
+    response.writeHead(502);
+    response.end();
+  });
+  proxyServer.on("connect", (request, clientSocket, head) => {
+    proxyRequests.push({
+      method: "CONNECT",
+      url: request.url,
+      host: request.headers.host,
+    });
+    const [host, portText] = String(request.url || "").split(":");
+    const upstreamSocket = connectSocket(Number.parseInt(portText, 10), host, () => {
+      clientSocket.write("HTTP/1.1 200 Connection Established\r\n\r\n");
+      if (head.length > 0) {
+        upstreamSocket.write(head);
+      }
+      upstreamSocket.pipe(clientSocket);
+      clientSocket.pipe(upstreamSocket);
+    });
+    upstreamSocket.on("error", () => clientSocket.destroy());
+    clientSocket.on("error", () => upstreamSocket.destroy());
+  });
+
+  await listenHttpServer(mediaServer);
+  await listenHttpServer(proxyServer);
+
+  try {
+    const mediaUrl = httpServerUrl(
+      mediaServer,
+      "/amplify_video/test/tweet.mp4?tag=29"
+    );
+    const result = await downloadPlatformMediaFromUrl(
+      "x",
+      mediaUrl,
+      { output: outputPath, proxy: httpServerUrl(proxyServer) },
+      { downloadTimeoutMs: 5000 }
+    );
+
+    assert.equal(result.status, "downloaded");
+    assert.equal(result.output_path, outputPath);
+    assert.equal(result.output_bytes, body.length);
+    assert.equal(readFileSync(outputPath, "utf8"), "proxied-x-media");
+    assert.deepEqual(proxyRequests, [
+      {
+        method: "CONNECT",
+        url: `127.0.0.1:${mediaServer.address().port}`,
+        host: `127.0.0.1:${mediaServer.address().port}`,
+      },
+    ]);
+    assert.deepEqual(mediaRequests, [
+      {
+        url: "/amplify_video/test/tweet.mp4?tag=29",
+        referer: "https://x.com/",
+        userAgent: "Mozilla/5.0 (compatible; SocialDataX/1.0; +https://socialdatax.com)",
+      },
+    ]);
+  } finally {
+    mediaServer.closeAllConnections?.();
+    proxyServer.closeAllConnections?.();
+    await closeHttpServer(mediaServer);
+    await closeHttpServer(proxyServer);
+    rmSync(tempDir, { recursive: true, force: true });
+  }
+});
+
+test("x download-media skips an existing output before validating proxy env", async () => {
+  const tempDir = mkdtempSync(join(tmpdir(), "sdx-x-proxy-skip-existing-"));
+  const outputPath = join(tempDir, "tweet.mp4");
+  writeFileSync(outputPath, "existing");
+
+  try {
+    const result = await downloadPlatformMediaFromUrl(
+      "x",
+      "https://video.twimg.com/amplify_video/test/vid/avc1/tweet.mp4?tag=29",
+      { output: outputPath },
+      {
+        fetchMedia: async () => {
+          throw new Error("fetch should not be called for existing output");
+        },
+        retryDelayMs: 0,
+        env: { HTTPS_PROXY: "not-a-url" },
+      }
+    );
+
+    assert.equal(result.status, "skipped_existing");
+    assert.equal(result.output_path, outputPath);
+    assert.equal(result.output_bytes, "existing".length);
+  } finally {
+    rmSync(tempDir, { recursive: true, force: true });
+  }
+});
+
+test("x download-media explains local proxy needs when the media CDN is unreachable", async () => {
+  const tempDir = mkdtempSync(join(tmpdir(), "sdx-x-download-network-failure-"));
+  const outputPath = join(tempDir, "tweet.mp4");
+
+  try {
+    await assert.rejects(
+      downloadPlatformMediaFromUrl(
+        "x",
+        "https://video.twimg.com/amplify_video/test/vid/avc1/tweet.mp4?tag=29",
+        { output: outputPath },
+        {
+          fetchMedia: async () => {
+            throw new TypeError("fetch failed");
+          },
+          retryDelayMs: 0,
+        }
+      ),
+      /X \/ Twitter media download could not reach the media CDN\..*pbs\.twimg\.com.*video\.twimg\.com.*proxy/
+    );
+  } finally {
+    rmSync(tempDir, { recursive: true, force: true });
+  }
+});
+
+test("x download-media explains local proxy needs when the media CDN times out", async () => {
+  const tempDir = mkdtempSync(join(tmpdir(), "sdx-x-download-timeout-"));
+  const outputPath = join(tempDir, "tweet.mp4");
+
+  try {
+    await assert.rejects(
+      downloadPlatformMediaFromUrl(
+        "x",
+        "https://video.twimg.com/amplify_video/test/vid/avc1/tweet.mp4?tag=29",
+        { output: outputPath },
+        {
+          fetchMedia: async () => {
+            const error = new Error("timeout");
+            error.name = "TimeoutError";
+            throw error;
+          },
+          retryDelayMs: 0,
+        }
+      ),
+      /X \/ Twitter media download timed out\..*pbs\.twimg\.com.*video\.twimg\.com.*proxy/
+    );
+  } finally {
+    rmSync(tempDir, { recursive: true, force: true });
   }
 });
 
@@ -2736,6 +3180,7 @@ test("cli still runs when invoked through an npm-style symlink", () => {
     assert.match(result.stdout, /kuaishou download-media --url "<kuaishou_media_url>" --output-dir \.\/downloads/);
     assert.match(result.stdout, /weibo transcript --post-url/);
     assert.match(result.stdout, /weibo download-media --url "<weibo_media_url>" --output-dir \.\/downloads/);
+    assert.match(result.stdout, /x download-media --url "<x_media_url>" --output-dir \.\/downloads/);
     assert.match(result.stdout, /wechat transcript --encrypted-object-id/);
     assert.match(result.stdout, /wechat decrypt-media --media-url/);
     assert.match(result.stdout, /sensitive-check text --text/);
@@ -2857,6 +3302,20 @@ test("aggregate content research skill documents safe SocialDataX entrypoints", 
   assert.doesNotMatch(skill, /SOCIAL_MEDIA_MCP_API_KEY/);
 });
 
+test("media search skill documents X media download from returned media items", () => {
+  const skill = readFileSync(
+    join(packageDir, "skills", "media-search", "SKILL.md"),
+    "utf8"
+  );
+
+  assert.match(skill, /media_items\[\]\.cover_image_url/);
+  assert.match(skill, /media_items\[\]\.video_url/);
+  assert.match(skill, /x download-media --url "<media_url>" --output-dir <directory> --pretty/);
+  assert.match(skill, /If search media fields are absent, use X detail as the fallback before downloading/);
+  assert.match(skill, /optional X \/ Twitter local save command writes only/);
+  assert.match(skill, /does not require `SOCIALDATAX_API_KEY`/);
+});
+
 test("media detail skills document local media download commands", () => {
   const npmSkill = readFileSync(
     join(packageDir, "skills", "media-detail", "SKILL.md"),
@@ -2918,10 +3377,18 @@ test("media detail skills document local media download commands", () => {
   assert.match(npmSkill, /music\.play_url/);
   assert.match(npmSkill, /cover_image_url/);
   assert.match(npmSkill, /image_urls\[\]/);
+  assert.match(npmSkill, /media_items\[\]\.cover_image_url/);
+  assert.match(npmSkill, /media_items\[\]\.video_url/);
   assert.match(npmSkill, /douyin download-media --url "<media_url>" --output-dir <directory> --pretty/);
   assert.match(npmSkill, /kuaishou download-media --url "<media_url>" --output-dir <directory> --pretty/);
   assert.match(npmSkill, /weibo download-media --url "<media_url>" --output-dir <directory> --pretty/);
-  assert.match(npmSkill, /optional XHS, Douyin, Kuaishou, and Weibo local save commands write only/);
+  assert.match(npmSkill, /x download-media --url "<media_url>" --output-dir <directory> --pretty/);
+  assert.match(npmSkill, /pbs\.twimg\.com/);
+  assert.match(npmSkill, /--proxy "http:\/\/127\.0\.0\.1:7890"/);
+  assert.match(npmSkill, /HTTP_PROXY/);
+  assert.match(npmSkill, /HTTPS_PROXY/);
+  assert.match(npmSkill, /ALL_PROXY/);
+  assert.match(npmSkill, /optional XHS, Douyin, Kuaishou, Weibo, and X \/ Twitter local save commands write only/);
   assert.match(douyinSkill, /images\[\]\.url/);
   assert.match(douyinSkill, /images\[\]\.live_photo\.play_url/);
   assert.match(douyinSkill, /douyin download-media --url "<media_url>" --output-dir <directory> --pretty/);
@@ -5474,10 +5941,10 @@ test("xhs openclaw search schema documents semantic sort enums", () => {
   );
   const readme = readFileSync(join(openclawDir, "README.md"), "utf8");
 
-  assert.equal(packageJson.version, "0.1.21");
-  assert.equal(pluginManifest.version, "0.1.21");
-  assert.match(pluginSource, /const PLUGIN_VERSION = "0\.1\.21";/);
-  assert.match(readme, /Version: `0\.1\.21`/);
+  assert.equal(packageJson.version, "0.1.22");
+  assert.equal(pluginManifest.version, "0.1.22");
+  assert.match(pluginSource, /const PLUGIN_VERSION = "0\.1\.22";/);
+  assert.match(readme, /Version: `0\.1\.22`/);
 
   assert.deepEqual(pluginManifest.providerAuthChoices[0], {
     provider: "xhs-insights",
@@ -5512,14 +5979,34 @@ test("xhs openclaw search schema documents semantic sort enums", () => {
     pluginSource,
     /社媒数据助手 小红书 MCP \| Xiaohongshu XHS RedNote MCP/
   );
-  assert.equal(pluginManifest.contracts.tools.length, 11);
+  assert.equal(pluginManifest.contracts.tools.length, 16);
   assert.ok(
     pluginManifest.contracts.tools.includes(
       "xhs-insights__xhs_get_search_hot_list"
     )
   );
+  assert.ok(
+    pluginManifest.contracts.tools.includes(
+      "xhs-insights__xhs_search_products"
+    )
+  );
+  assert.ok(
+    pluginManifest.contracts.tools.includes(
+      "xhs-insights__xhs_get_product_detail"
+    )
+  );
+  assert.ok(
+    pluginManifest.contracts.tools.includes(
+      "xhs-insights__xhs_get_product_reviews"
+    )
+  );
   assert.match(pluginSource, /Get XHS Search Hot List/);
+  assert.match(pluginSource, /xhs_search_products/);
+  assert.match(pluginSource, /Get XHS Product Detail/);
+  assert.match(pluginSource, /Get XHS Product Reviews/);
   assert.match(readme, /search hot list/);
+  assert.match(readme, /product search/);
+  assert.match(readme, /product reviews/);
 
   assert.match(
     pluginSource,
@@ -5529,9 +6016,21 @@ test("xhs openclaw search schema documents semantic sort enums", () => {
     /name: "xhs-insights__xhs_search_notes",[\s\S]*?name: "xhs-insights__xhs_get_note_detail_by_note_url"/
   )?.[0];
   assert.ok(searchDefinition, "xhs search tool definition should exist");
-  assert.match(searchDefinition, /page_token: PAGE_TOKEN_PROPERTY/);
+  assert.match(searchDefinition, /page_token: NOTE_SEARCH_PAGE_TOKEN_PROPERTY/);
   assert.doesNotMatch(searchDefinition, /\n\s+page: \{/);
   assert.doesNotMatch(searchDefinition, /Search result page number/);
+  const productSearchDefinition = pluginSource.match(
+    /name: "xhs-insights__xhs_search_products",[\s\S]*?name: "xhs-insights__xhs_get_product_detail"/
+  )?.[0];
+  assert.ok(
+    productSearchDefinition,
+    "xhs product search tool definition should exist"
+  );
+  assert.match(
+    productSearchDefinition,
+    /page_token: PRODUCT_SEARCH_PAGE_TOKEN_PROPERTY/
+  );
+  assert.doesNotMatch(productSearchDefinition, /\n\s+page: \{/);
   assert.match(
     pluginSource,
     /complete returned next_page_token back unchanged/
@@ -8823,6 +9322,7 @@ test("doctor json prints parseable safety summary", () => {
   assert.equal(report.package.homepage, "https://socialdatax.com");
   assert.equal(report.package.repository, undefined);
   assert.deepEqual(report.package.npmLifecycleScripts, []);
+  assert.equal(report.install.writes, "Skill files only");
   assert.equal(report.install.apiKeyStored, false);
   assert.equal(report.install.mcpConfigChanged, false);
   assert.equal(report.security.readOnly, true);
@@ -9496,6 +9996,7 @@ test("direct CLI README examples include newly supported public platform actions
     'x user-posts --user-id "<user_id>"',
     'x user-posts --username "<username>"',
     'x user-posts --profile-url "<profile_url_or_share_text>"',
+    'x download-media --url "<x_media_url>" --output-dir ./downloads',
     'youtube search --keyword "camping"',
     'youtube detail --url "<youtube_video_url>"',
     'youtube comments --url "<youtube_video_url>"',
@@ -9681,6 +10182,8 @@ test("direct CLI docs keep search pagination platform-specific", () => {
   assert.match(help.stdout, /x replies --post-id "<post_id>" --comment-id "<comment_id>"/);
   assert.match(help.stdout, /x user-info --username "<username>"/);
   assert.match(help.stdout, /x user-posts --username "<username>"/);
+  assert.match(help.stdout, /x download-media --url "<x_media_url>" --output-dir \.\/downloads/);
+  assert.match(help.stdout, /--proxy <http-or-https-proxy-url>/);
   assert.match(help.stdout, /youtube search --keyword/);
   assert.match(help.stdout, /youtube detail --url "<youtube_video_url>"/);
   assert.match(help.stdout, /youtube comments --url "<youtube_video_url>"/);
@@ -9697,6 +10200,15 @@ test("direct CLI docs keep search pagination platform-specific", () => {
   assert.match(help.stdout, /douyin download-media --url "<douyin_media_url>" --output-dir \.\/downloads/);
   assert.match(help.stdout, /kuaishou download-media --url "<kuaishou_media_url>" --output-dir \.\/downloads/);
   assert.match(help.stdout, /weibo download-media --url "<weibo_media_url>" --output-dir \.\/downloads/);
+  assert.match(help.stdout, /install --path ~\/\.workbuddy\/skills\//);
+  assert.match(
+    help.stdout,
+    /install media-search --path ~\/\.workbuddy\/skills\/media-search/
+  );
+  assert.match(
+    help.stdout,
+    /Multiple\/all skills: parent directory; one skill: skill destination directory/
+  );
   assert.match(help.stdout, /--ffmpeg-path <path>/);
   assert.match(help.stdout, /wechat hot-search --pretty/);
   assert.match(help.stdout, /wechat search --keyword/);
@@ -9759,6 +10271,18 @@ test("direct CLI docs keep search pagination platform-specific", () => {
   assert.match(
     readme,
     /Search pagination uses `--page-token` when continuing with a returned `next_page_token`\./
+  );
+  assert.match(
+    readme,
+    /WorkBuddy: use `--path` with the Skills directory supported by your current WorkBuddy client/
+  );
+  assert.match(
+    readme,
+    /npx -y socialdatax-skills@latest install --path ~\/\.workbuddy\/skills\//
+  );
+  assert.match(
+    readme,
+    /npx -y socialdatax-skills@latest install media-search --path ~\/\.workbuddy\/skills\/media-search/
   );
   assert.match(
     readme,
@@ -10068,6 +10592,75 @@ test("install dry-run previews all skills under custom parent", () => {
   assert.equal(spawnSync("test", ["-e", destination]).status, 1);
 });
 
+test("install dry-run expands tilde before appending skills under custom parent", () => {
+  const expectedParent = join(
+    homedir(),
+    ".workbuddy",
+    "socialdatax-cli-dry-run-skills"
+  );
+  for (const path of [
+    "~/.workbuddy/socialdatax-cli-dry-run-skills/",
+    "~\\.workbuddy\\socialdatax-cli-dry-run-skills",
+  ]) {
+    const result = runCli([
+      "install",
+      "--path",
+      path,
+      "--dry-run",
+    ]);
+
+    assert.equal(result.status, 0);
+    assert.equal(result.stderr, "");
+    assert.match(result.stdout, /Dry run: would install 8 skills for custom/);
+    assert.match(result.stdout, new RegExp(escapeRegExp(homedir())));
+    assert.match(result.stdout, new RegExp(escapeRegExp(expectedParent)));
+    assert.doesNotMatch(result.stdout, /~[\\/]/);
+  }
+});
+
+test("install dry-run treats multiple explicit skills path as a custom parent", () => {
+  const parent = join(
+    tmpdir(),
+    `smi-test-dry-run-workbuddy-many-${Date.now()}-${process.pid}`
+  );
+  const result = runCli([
+    "install",
+    "media-search",
+    "media-detail",
+    "--path",
+    parent,
+    "--dry-run",
+  ]);
+
+  assert.equal(result.status, 0);
+  assert.equal(result.stderr, "");
+  assert.match(result.stdout, /Dry run: would install 2 skills for custom/);
+  assert.match(result.stdout, new RegExp(escapeRegExp(join(parent, "media-search"))));
+  assert.match(result.stdout, new RegExp(escapeRegExp(join(parent, "media-detail"))));
+  assert.equal(spawnSync("test", ["-e", parent]).status, 1);
+});
+
+test("install dry-run previews one skill with direct custom destination", () => {
+  const destination = join(
+    tmpdir(),
+    `smi-test-dry-run-workbuddy-one-${Date.now()}-${process.pid}`,
+    "media-search"
+  );
+  const result = runCli([
+    "install",
+    "media-search",
+    "--path",
+    destination,
+    "--dry-run",
+  ]);
+
+  assert.equal(result.status, 0);
+  assert.equal(result.stderr, "");
+  assert.match(result.stdout, /Dry run: would install 1 skill for custom/);
+  assert.match(result.stdout, new RegExp(escapeRegExp(destination)));
+  assert.doesNotMatch(result.stdout, new RegExp(`${escapeRegExp(destination)}[\\/]media-search`));
+  assert.equal(spawnSync("test", ["-e", destination]).status, 1);
+});
 test("install success keeps source attribution automatic without extra user setup", () => {
   const parent = mkdtempSync(join(tmpdir(), "smi-test-install-one-"));
   const destination = join(parent, "media-search");
@@ -10087,6 +10680,11 @@ test("install success keeps source attribution automatic without extra user setu
     assert.match(result.stdout, /Installed 1 skill for openclaw/);
     assert.match(result.stdout, /No API key was stored by this installer/);
     assert.match(result.stdout, /Configure your API Key before making authenticated calls/);
+    assert.match(
+      result.stdout,
+      /Persist SOCIALDATAX_API_KEY in the target AI client Secret or user environment/
+    );
+    assert.doesNotMatch(result.stdout, /export SOCIALDATAX_API_KEY/);
     assert.match(
       result.stdout,
       /Direct CLI examples in installed SKILL\.md files already include source attribution for agents/

@@ -16,7 +16,7 @@ metadata: {"openclaw":{"requires":{"env":["SOCIALDATAX_API_KEY"],"bins":["node",
 
 ## 快速开始
 
-- 先给出当前 skill 支持的输入：内容链接、内容 ID 或一级评论 ID。
+- 先给出当前 skill 支持的输入：内容链接或内容 ID。
 - 如果结果有分页，先取第一页；要继续扩大，再按返回的下一页标记继续。
 - 你通常会得到：评论文本、回复线索和用户反馈主题。
 
@@ -45,10 +45,10 @@ npx -y socialdatax-skills@latest xhs sub-comments \
 
 ## 参数说明
 
-详情 / 评论：
-- 说明：XHS `--note-id <note_id>`：使用搜索、详情、评论或创作者笔记列表返回的完整 24 位小写十六进制 `note_id`；不要只传前缀。
+评论 / 回复：
+- 说明：XHS `--note-id <note_id>`：使用搜索、详情、评论或创作者笔记列表返回的完整 `note_id`；不要只传前缀。
 - 说明：XHS 评论 `--sort-type <default|time_descending|like_count_descending>`：可选一级评论排序；不传就使用平台默认排序。
-- 可选：`--url <url_or_share_text>`：用于一级评论入口的内容页 URL、短链或分享文本。
+- 说明：使用 CLI 示例里的 URL 入口传内容页链接、短链或分享文本来获取一级评论。
 - 可选：`--page-token <next_page_token>`：这是不透明的分页 token；在同一条内容或评论链路下，必须把完整返回的 `next_page_token` 原样传回，不能截断、改写、脱敏、重建，或用省略号替换中间内容。
 - 可选：`--pages <n>`：获取并合并 N 页一级评论或回复。
 - 可选：`--all`：持续获取一级评论或回复，直到 `next_page_token` 为空；默认没有条数或页数上限。
@@ -58,7 +58,7 @@ npx -y socialdatax-skills@latest xhs sub-comments \
 - 可选：`--pretty`：只影响输出格式，不改变实际请求结果。
 - 可选：`--source-client socialdatax-skills --source-platform modelscope --source-skill xhs-comment-insights`：这是当前 Agent Skill 的来源标记；按本 Skill 示例执行时保持这些值不变。
 
-一级评论命令使用平台内容 ID 或 URL 其中一种入口即可，不要同时传；回复命令使用 CLI 示例中对应平台需要的回复定位参数。
+一级评论命令一次只使用 CLI 示例里的一个入口；不要在同一条命令里混用多个内容定位参数。回复命令使用 CLI 示例中对应平台需要的回复定位参数。
 
 命令返回 JSON，包含 `platform`、`tool`、`arguments` 和 `data`。多页结果会把一级评论合并到 `data.items`，并补充 `page_count`、`item_count` 和下一页标记；在支持 `--include-replies` 的平台上，每条一级评论还会带上 `replies`、`replies_page_count` 和 `replies_next_page_token`。
 
@@ -81,11 +81,11 @@ npx -y socialdatax-skills@latest xhs sub-comments \
 - `xhs_get_note_sub_comments_by_comment_id`
 
 如果当前 Agent 已可直接调用 MCP 工具，可按入口选择以下工具：
-- `xhs_get_note_comments_by_note_id`：当你已经拿到完整的 24 位小写十六进制 `note_id` 时使用；不要只传前缀；可选 `sort_type` 支持 `default`、`time_descending` 或 `like_count_descending`。
+- `xhs_get_note_comments_by_note_id`：当你已经拿到完整 `note_id` 时使用；不要只传前缀；可选 `sort_type` 支持 `default`、`time_descending` 或 `like_count_descending`。
 - `xhs_get_note_comments_by_note_url`：用于笔记链接、短链或分享文本；可选 `sort_type` 支持 `default`、`time_descending` 或 `like_count_descending`。
-- `xhs_get_note_sub_comments_by_comment_id`：当你已经拿到完整的 24 位小写十六进制 `note_id` 和一级评论 ID 时使用；不要只传笔记 ID 前缀。
+- `xhs_get_note_sub_comments_by_comment_id`：当你已经拿到完整 `note_id` 和一级评论 ID 时使用；不要只传笔记 ID 前缀。
 
-XHS 回复翻页同样使用 `page_token`，并且只适用于当前这条评论链路。
+- XHS 回复翻页同样使用 `page_token`，并且只适用于当前这条评论链路。
 
 ## 安全边界
 
@@ -97,10 +97,11 @@ XHS 回复翻页同样使用 `page_token`，并且只适用于当前这条评论
 
 ## 异常处理
 
+- 如果出现 SDK/依赖缺失、npm 网络、Node.js/npm/npx 不可用或执行权限错误：这是本地运行环境、依赖安装、网络或 AI 平台授权问题，不是 SocialDataX API Key 或业务数据返回错误；有权限时可自动安装或修复；需要网络或执行授权时提醒用户同意或完成授权；处理后继续原命令；不要改用公开网页搜索替代 SocialDataX 数据。
 - 非余额不足的网络或 API 异常：保留错误信息，检查 `SOCIALDATAX_API_KEY`、参数和链接格式后原样重试一次。
 - 如果返回 `insufficient_balance` 或“积分不足”：不要重复重试；把错误里的充值链接原样展示给用户，并提醒用户充值后继续执行刚才同一条命令。
 - 如果用户已经充值但仍提示余额不足：确认当前环境变量 `SOCIALDATAX_API_KEY` 是否来自刚充值的同一个账号；必要时重新复制官网后台的 API Key。
-- 分页中断：保留已取得的结果；重试仍失败：说明当前调用不可用，给出可替代输入方式。
+- 分页中断：保留已取得的结果；重试仍失败：说明当前调用不可用，请用户补充或更换关键词、链接、ID 等输入后再重试。
 
 ## 常见问题
 

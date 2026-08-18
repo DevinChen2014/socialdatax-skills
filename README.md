@@ -2,7 +2,7 @@
 
 This public package provides the unified skill installer and direct CLI helper for SocialDataX services.
 
-The current public tools support 小红书 / Xiaohongshu / XHS / RedNote, 抖音 / Douyin, 快手 / Kuaishou / Kwai, Bilibili / 哔哩哔哩 / B站, 微博 / Weibo, 视频号 / WeChat Channels, 知乎 / Zhihu, Instagram, X / Twitter, YouTube, and TikTok content research and analysis workflows, plus WeChat Official Account / 微信公众号 article details, XHS / Douyin / Kuaishou / Weibo local media download, WeChat Channels local media decrypt/save, Bilibili local video download, and 敏感词检测 / 违禁词检查 text checks. The public skill layer is intentionally named by capability so supported services can evolve without changing the installation model.
+The current public tools support 小红书 / Xiaohongshu / XHS / RedNote, 抖音 / Douyin, 快手 / Kuaishou / Kwai, Bilibili / 哔哩哔哩 / B站, 微博 / Weibo, 视频号 / WeChat Channels, 知乎 / Zhihu, Instagram, X / Twitter, YouTube, and TikTok content research and analysis workflows, plus WeChat Official Account / 微信公众号 article details, XHS / Douyin / Kuaishou / Weibo / X / Twitter local media download, WeChat Channels local media decrypt/save, Bilibili local video download, and 敏感词检测 / 违禁词检查 text checks. The public skill layer is intentionally named by capability so supported services can evolve without changing the installation model.
 
 - direct `npx` JSON commands for agents that can run shell commands
 - AgentSkills-compatible installers split by capability for OpenClaw, Hermes Agent, Codex, Claude Code, and general agent skill directories
@@ -89,7 +89,7 @@ Common search phrases for this skill package:
 - Reserved future SocialDataX namespace names for existing platform listings without draft files yet: `com.socialdatax/kuaishou-insights`, `com.socialdatax/weibo-insights`, `com.socialdatax/wechat-channels-insights`, and `com.socialdatax/instagram-insights`.
 - Hosted endpoints without repo-tracked standalone listing materials yet: Bilibili, Zhihu, X / Twitter, YouTube, TikTok, and Sensitive Words Check.
 - Unified MCP registry name: none; this package installs skills and calls explicit hosted MCP entries.
-- Current public capability version: `0.2.35`
+- Current public capability version: `0.2.38`
 
 ## Direct CLI
 
@@ -226,6 +226,7 @@ npx -y socialdatax-skills@latest x user-info --profile-url "<profile_url_or_shar
 npx -y socialdatax-skills@latest x user-posts --user-id "<user_id>" --pretty
 npx -y socialdatax-skills@latest x user-posts --username "<username>" --pretty
 npx -y socialdatax-skills@latest x user-posts --profile-url "<profile_url_or_share_text>" --pretty
+npx -y socialdatax-skills@latest x download-media --url "<x_media_url>" --output-dir ./downloads --pretty
 npx -y socialdatax-skills@latest youtube search --keyword "camping" --pretty
 npx -y socialdatax-skills@latest youtube detail --url "<youtube_video_url>" --pretty
 npx -y socialdatax-skills@latest youtube comments --url "<youtube_video_url>" --pretty
@@ -244,7 +245,7 @@ npx -y socialdatax-skills@latest tiktok user-posts --profile-url "<profile_url_o
 npx -y socialdatax-skills@latest sensitive-check text --text "<content>" --platform xhs --pretty
 ```
 
-Most direct CLI commands print a JSON envelope with `platform`, `tool`, `arguments`, and `data`. `sensitive-check` prints `platform`, `tool`, and `data` only; it does not echo the original text in CLI output. `wechat decrypt-media` is a local save command: pass the `video.video_url` returned by WeChat detail and an `--output` file path. It saves the media locally, decrypts when needed, and does not require `SOCIALDATAX_API_KEY`. `xhs/douyin/kuaishou/weibo download-media` is also local: pass one media URL returned by detail and either `--output <file>` or `--output-dir <directory>`. It writes through a `.part` file, resumes partial downloads when the server supports range requests, skips an already existing output file, and infers common image/video/audio extensions in `--output-dir` mode.
+Most direct CLI commands print a JSON envelope with `platform`, `tool`, `arguments`, and `data`. `sensitive-check` prints `platform`, `tool`, and `data` only; it does not echo the original text in CLI output. `wechat decrypt-media` is a local save command: pass the `video.video_url` returned by WeChat detail and an `--output` file path. It saves the media locally, decrypts when needed, and does not require `SOCIALDATAX_API_KEY`. `xhs/douyin/kuaishou/weibo download-media` is also local: pass one media URL returned by detail and either `--output <file>` or `--output-dir <directory>`. `x download-media` accepts one X media URL returned by search or detail. These local commands write through a `.part` file, resume partial downloads when the server supports range requests, skip an already existing output file, and infer common image/video/audio extensions in `--output-dir` mode. X / Twitter media URLs are served from overseas CDN domains such as `pbs.twimg.com` and `video.twimg.com`; if the local download times out, make the CLI process use a proxy with `--proxy "http://127.0.0.1:7890"` or `HTTP_PROXY` / `HTTPS_PROXY` / `ALL_PROXY`, then retry.
 
 For transcript commands, the direct CLI tries to deliver the final result in one run: submit may wait up to 240 seconds, and if `data.is_terminal` is not `true`, the CLI automatically continues matching get-job requests for up to 1200 seconds by default, with each get-job request waiting up to 240 seconds. Use positive `--max-wait-seconds <seconds>` to tune that follow-up window. Do not submit a duplicate transcript job just to poll status.
 
@@ -332,7 +333,7 @@ npx -y socialdatax-skills@latest doctor
 npx -y socialdatax-skills@latest doctor --json
 ```
 
-The public package declares no npm lifecycle scripts such as `preinstall`, `install`, or `postinstall`. The installer copies AgentSkills files only, does not save API keys, and does not change MCP server configuration. Authenticated data calls require `SOCIALDATAX_API_KEY` at runtime, do not read local browser data, and do not perform account actions.
+The public package declares no npm lifecycle scripts such as `preinstall`, `install`, or `postinstall`. The installer copies Skill files only, does not save API keys, and does not change MCP server configuration. Authenticated data calls require `SOCIALDATAX_API_KEY` at runtime, do not read local browser data, and do not perform account actions.
 
 ## Platform Names
 
@@ -403,6 +404,8 @@ npx -y socialdatax-skills@latest install media-search --target codex
 npx -y socialdatax-skills@latest install media-search --target codex --scope workspace
 npx -y socialdatax-skills@latest install media-search --target claude-code
 npx -y socialdatax-skills@latest install media-search --target claude-code --scope workspace
+npx -y socialdatax-skills@latest install --path ~/.workbuddy/skills/
+npx -y socialdatax-skills@latest install media-search --path ~/.workbuddy/skills/media-search
 npx -y socialdatax-skills@latest xhs search --keyword "露营" --pretty
 npx -y socialdatax-skills@latest xhs hot-search --pretty
 npx -y socialdatax-skills@latest xhs transcript --url "<note_url_or_share_text>" --pretty
@@ -428,10 +431,13 @@ npx -y socialdatax-skills@latest wechat transcript --encrypted-object-id "<encry
 npx -y socialdatax-skills@latest zhihu search --keyword "露营" --pretty
 npx -y socialdatax-skills@latest instagram search --keyword "camping" --pretty
 npx -y socialdatax-skills@latest x search --keyword "camping" --pretty
+npx -y socialdatax-skills@latest x download-media --url "<x_media_url>" --output-dir ./downloads --pretty
 npx -y socialdatax-skills@latest youtube search --keyword "camping" --pretty
 npx -y socialdatax-skills@latest tiktok search --keyword "camping" --pretty
 npx -y socialdatax-skills@latest sensitive-check text --text "<content>" --platform xhs --pretty
 ```
+
+Use `--path` for clients that expect a direct Skills directory. When installing all skills, `--path` is the parent directory; when installing one skill, `--path` is that skill's destination directory.
 
 Available skills:
 
@@ -455,6 +461,7 @@ Default install locations:
 - Codex workspace scope: `./.codex/skills/<skill-name>`
 - Claude Code: `~/.claude/skills/<skill-name>`
 - Claude Code workspace scope: `./.claude/skills/<skill-name>`
+- WorkBuddy: use `--path` with the Skills directory supported by your current WorkBuddy client, for example `npx -y socialdatax-skills@latest install --path ~/.workbuddy/skills/`
 
 If no skill name is provided, all skills are installed. If a destination already exists, re-run with `--force` to replace an existing directory for the same skill. Use `--path <directory>` to install one skill to a custom directory, or multiple skills under a custom parent directory. The `shared` scope is only meaningful for `--target hermes`; use `--target agents` for the shared AgentSkills directory directly.
 
@@ -570,6 +577,7 @@ Current X / Twitter workflows include:
 - Fetch paginated replies under a first-level comment by post_id and comment_id.
 - Read creator profile data by user_id, username, or profile URL/share text.
 - Fetch paginated public posts by creator user_id, username, or profile URL/share text.
+- Save returned `media_items[].cover_image_url` or `media_items[].video_url` media links locally with `x download-media`. Search results may already include these URLs; use detail as a fallback when search media fields are absent. If X CDN downloads time out, make the CLI process use a proxy with `--proxy "http://127.0.0.1:7890"` or `HTTP_PROXY` / `HTTPS_PROXY` / `ALL_PROXY`, then retry.
 
 Current YouTube workflows include:
 
@@ -800,6 +808,8 @@ Current Sensitive Words Check workflows include:
 ## Quick Start
 
 For agents that can execute shell commands, use the direct CLI. This is the recommended default for installed skills:
+
+For installed AI clients, persist `SOCIALDATAX_API_KEY` in the client Secret or user environment. The `export` below is only for a one-off shell run.
 
 ```bash
 export SOCIALDATAX_API_KEY="<SOCIALDATAX_API_KEY>"

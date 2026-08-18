@@ -59,7 +59,7 @@ npx -y socialdatax-skills@latest xhs detail \
 - 可选：`--since-days <1-365>`：只保留最近 N 天内公开 `publish_time` 落在范围内的结果；范围仍受 `--pages` 限制，不承诺全平台完整覆盖。
 
 详情：
-- 条件必填：`--note-id <note_id>`：详情命令使用 ID 入口时必填；当用户提供完整 `note_id`，或需要打开某条样本详情时使用完整 24 位小写十六进制 ID，不要只传前缀。
+- 条件必填：`--note-id <note_id>`：详情命令使用 ID 入口时必填；当用户提供完整 `note_id`，或需要打开某条样本详情时使用完整 `note_id`，不要只传前缀。
 - 条件必填：`--url <note_url_or_share_text>`：详情命令使用链接入口时必填；用于笔记链接、短链或分享文本。
 
 通用：
@@ -87,7 +87,7 @@ npx -y socialdatax-skills@latest xhs detail \
 
 如果用户给出笔记链接或完整 `note_id`，优先围绕该笔记详情做拆解；如果用户给出关键词或赛道，先用高互动样本建立可复用表达模式。
 对于 XHS 搜索或详情结果里的 `note_url`，无论是在最终回答、展示、引用、存储、输出还是转发时，都要保留完整原始 URL，包括其中的 `xsec_token` 查询参数；不要改写、截断、脱敏、重建，也不要只根据 `note_id` 去拼链接。如果详情里的 `note_url` 为空，就展示 `note_id`，或者明确说明当前没有可直接打开的完整链接。
-对于 XHS `note_id`，要完整复制 24 位小写十六进制 ID；不要只传或只展示前缀。
+对于 XHS `note_id`，要原样复制返回的完整 `note_id`；不要只传或只展示前缀。
 只基于用户输入和当前返回样本或详情范围内的公开结果做判断；不承诺全平台完整覆盖，也不把当前样本说成唯一结论。
 不承诺产出完整发布稿、设计封面、诊断账号、执行发布或确定性流量结果。
 
@@ -104,7 +104,7 @@ npx -y socialdatax-skills@latest xhs detail \
 调用 `xhs_search_notes` 时不要传 `page`；第一页也不要传 `page_token`。
 只有在 `next_page_token` 非空时才继续翻页；并且在同一个关键词、排序、内容类型、发布时间范围和调用链路下，把完整返回的 `next_page_token` 原样作为 `page_token` 传回。
 如果当前 Agent 已可直接调用 MCP 工具，可按入口选择以下工具：
-- `xhs_get_note_detail_by_note_id`：当你已经拿到完整的 24 位小写十六进制 `note_id` 时使用；不要只传前缀。
+- `xhs_get_note_detail_by_note_id`：当你已经拿到完整 `note_id` 时使用；不要只传前缀。
 - `xhs_get_note_detail_by_note_url`：用于笔记链接、短链或分享文本。
 
 小红书搜索参数命名提醒：direct CLI 使用 `--sort-type`、`--publish-time-range`、`--note-type`；MCP 工具 `xhs_search_notes` 使用 `sort_type`、`publish_time_range`、`note_type`。不要传 `sortType`、`publishTimeRange` 或 `noteType`。
@@ -119,10 +119,11 @@ npx -y socialdatax-skills@latest xhs detail \
 
 ## 异常处理
 
+- 如果出现 SDK/依赖缺失、npm 网络、Node.js/npm/npx 不可用或执行权限错误：这是本地运行环境、依赖安装、网络或 AI 平台授权问题，不是 SocialDataX API Key 或业务数据返回错误；有权限时可自动安装或修复；需要网络或执行授权时提醒用户同意或完成授权；处理后继续原命令；不要改用公开网页搜索替代 SocialDataX 数据。
 - 非余额不足的网络或 API 异常：保留错误信息，检查 `SOCIALDATAX_API_KEY`、参数和链接格式后原样重试一次。
 - 如果返回 `insufficient_balance` 或“积分不足”：不要重复重试；把错误里的充值链接原样展示给用户，并提醒用户充值后继续执行刚才同一条命令。
 - 如果用户已经充值但仍提示余额不足：确认当前环境变量 `SOCIALDATAX_API_KEY` 是否来自刚充值的同一个账号；必要时重新复制官网后台的 API Key。
-- 分页中断：保留已取得的结果；重试仍失败：说明当前调用不可用，给出可替代输入方式。
+- 分页中断：保留已取得的结果；重试仍失败：说明当前调用不可用，请用户补充或更换关键词、链接、ID 等输入后再重试。
 
 ## 常见问题
 

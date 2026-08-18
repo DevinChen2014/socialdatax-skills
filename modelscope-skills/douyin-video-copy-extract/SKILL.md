@@ -102,6 +102,7 @@ npx -y socialdatax-skills@latest douyin transcript \
 
 ## 异常处理
 
+- 如果出现 SDK/依赖缺失、npm 网络、Node.js/npm/npx 不可用或执行权限错误：这是本地运行环境、依赖安装、网络或 AI 平台授权问题，不是 SocialDataX API Key 或业务数据返回错误；有权限时可自动安装或修复；需要网络或执行授权时提醒用户同意或完成授权；处理后继续原命令；不要改用公开网页搜索替代 SocialDataX 数据。
 - 提交或查询异常：保留错误信息，先检查 `SOCIALDATAX_API_KEY`、输入链接或 ID、以及 `job_id` 是否完整。
 - 如果返回 `insufficient_balance` 或“积分不足”：不要重复提交或反复查询；把错误里的充值链接原样展示给用户，并提醒用户充值后继续执行刚才同一条命令。
 - 如果用户已经充值但仍提示余额不足：确认当前环境变量 `SOCIALDATAX_API_KEY` 是否来自刚充值的同一个账号；必要时重新复制官网后台的 API Key。
