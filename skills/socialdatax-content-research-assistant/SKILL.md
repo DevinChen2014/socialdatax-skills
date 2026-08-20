@@ -55,7 +55,7 @@ Current platform support:
 - YouTube videos through `youtube_get_video_detail_by_url`.
 - TikTok videos and image posts through `tiktok_get_post_detail_by_url`.
 - Weibo / 微博 posts through the `weibo_get_post_detail_by_*` tools.
-- WeChat Channels / 视频号 videos through the `wechat_get_video_detail_by_*` tools.
+- WeChat Channels / 视频号 video and image-post details through the `wechat_get_video_detail_by_*` tools.
 - WeChat Official Account / 微信公众号 articles through `wechat_get_mp_article_detail_by_url`.
 - Xiaohongshu / XHS / RedNote notes through the `xhs_get_note_comments_by_*` and `xhs_get_note_sub_comments_by_comment_id` tools.
 - Douyin / 抖音 works, including video and image/text posts, through the `douyin_get_video_comments_by_*` and `douyin_get_video_comment_replies_by_comment_id` tools.
@@ -79,7 +79,7 @@ Current platform support:
 - YouTube channels through `youtube_get_channel_info_by_url`.
 - TikTok creators through the `tiktok_get_user_info_by_*` tools.
 - Weibo / 微博 creators through the `weibo_get_user_info_by_*` tools.
-- WeChat Channels / 视频号 creators through `wechat_get_user_info_by_url` for video links or share text, or `wechat_get_user_info_by_user_id` when a `v2_...@finder` user_id is already known.
+- WeChat Channels / 视频号 creators through `wechat_get_user_info_by_url` for video or image-post links or share text, or `wechat_get_user_info_by_user_id` when a `v2_...@finder` user_id is already known.
 - Xiaohongshu / XHS / RedNote creator notes through the `xhs_get_user_posted_notes_by_*` tools.
 - Douyin / 抖音 creator works, including video and image/text posts, through the `douyin_get_user_posted_videos_by_*` tools.
 - Douyin / 抖音 creator short-drama series through the `douyin_get_user_series_by_*` tools.
@@ -248,13 +248,13 @@ npx -y socialdatax-skills@latest weibo detail --post-url "<weibo_post_url_or_sha
 npx -y socialdatax-skills@latest weibo comments --post-url "<weibo_post_url_or_share_text>" --pretty --source-client socialdatax-skills --source-platform github --source-skill socialdatax-content-research-assistant
 npx -y socialdatax-skills@latest weibo likers --post-id "<post_id>" --pretty --source-client socialdatax-skills --source-platform github --source-skill socialdatax-content-research-assistant
 npx -y socialdatax-skills@latest weibo reposts --post-id "<post_id>" --pretty --source-client socialdatax-skills --source-platform github --source-skill socialdatax-content-research-assistant
-npx -y socialdatax-skills@latest weibo user-info --profile-url "<profile_url_or_share_text>" --pretty --source-client socialdatax-skills --source-platform github --source-skill socialdatax-content-research-assistant
-npx -y socialdatax-skills@latest weibo user-posts --profile-url "<profile_url_or_share_text>" --pretty --source-client socialdatax-skills --source-platform github --source-skill socialdatax-content-research-assistant
+npx -y socialdatax-skills@latest weibo user-info --profile-url "<profile_url>" --pretty --source-client socialdatax-skills --source-platform github --source-skill socialdatax-content-research-assistant
+npx -y socialdatax-skills@latest weibo user-posts --profile-url "<profile_url>" --pretty --source-client socialdatax-skills --source-platform github --source-skill socialdatax-content-research-assistant
 npx -y socialdatax-skills@latest weibo replies --post-id "<post_id>" --comment-id "<comment_id>" --pretty --source-client socialdatax-skills --source-platform github --source-skill socialdatax-content-research-assistant
-npx -y socialdatax-skills@latest wechat detail --url "<wechat_video_url_or_share_text>" --pretty --source-client socialdatax-skills --source-platform github --source-skill socialdatax-content-research-assistant
+npx -y socialdatax-skills@latest wechat detail --url "<wechat_work_url_or_share_text>" --pretty --source-client socialdatax-skills --source-platform github --source-skill socialdatax-content-research-assistant
 npx -y socialdatax-skills@latest wechat article --url "<mp_article_url_or_share_text>" --pretty --source-client socialdatax-skills --source-platform github --source-skill socialdatax-content-research-assistant
 npx -y socialdatax-skills@latest wechat comments --url "<wechat_video_url_or_share_text>" --pretty --source-client socialdatax-skills --source-platform github --source-skill socialdatax-content-research-assistant
-npx -y socialdatax-skills@latest wechat user-posts --url "<wechat_video_url_or_share_text>" --pretty --source-client socialdatax-skills --source-platform github --source-skill socialdatax-content-research-assistant
+npx -y socialdatax-skills@latest wechat user-posts --url "<wechat_work_url_or_share_text>" --pretty --source-client socialdatax-skills --source-platform github --source-skill socialdatax-content-research-assistant
 npx -y socialdatax-skills@latest wechat replies --object-id "<object_id>" --object-nonce-id "<object_nonce_id>" --comment-id "<comment_id>" --pretty --source-client socialdatax-skills --source-platform github --source-skill socialdatax-content-research-assistant
 ```
 
@@ -328,7 +328,7 @@ MCP tools matching the direct CLI commands above:
 - WEIBO: `weibo_get_hot_search_list`, `weibo_search_posts`, `weibo_get_post_detail_by_post_id`, `weibo_get_post_comments_by_post_id`, `weibo_get_user_info_by_user_id`, `weibo_get_user_posts_by_user_id`, `weibo_get_post_detail_by_post_url`, `weibo_get_post_comments_by_post_url`, `weibo_get_post_liker_list_by_post_id`, `weibo_get_post_repost_list_by_post_id`, `weibo_get_user_info_by_profile_url`, `weibo_get_user_posts_by_profile_url`, `weibo_get_post_comment_replies_by_comment_id`
 - WECHAT: `wechat_get_hot_search_list`, `wechat_search_videos`, `wechat_get_video_detail_by_encrypted_object_id`, `wechat_get_video_comments_by_object_id`, `wechat_get_user_info_by_user_id`, `wechat_get_user_posted_videos_by_user_id`, `wechat_get_video_detail_by_url`, `wechat_get_mp_article_detail_by_url`, `wechat_get_video_comments_by_url`, `wechat_get_user_posted_videos_by_url`, `wechat_get_video_comment_replies_by_comment_id`
 
-MCP-only tools not available through the direct CLI: `weibo_get_post_liker_list_by_post_url`, `weibo_get_post_repost_list_by_post_url`, `wechat_get_user_info_by_url`
+MCP-only tools not available through the direct CLI: `douyin_search_users`, `douyin_get_user_info_by_douyin_id`, `weibo_get_post_liker_list_by_post_url`, `weibo_get_post_repost_list_by_post_url`, `wechat_get_user_info_by_url`
 
 Use the automatically listed MCP tools above as the source of truth for tool names. Pick the narrowest tool for the user's platform and task. For search pagination, omit `page_token` on the first request and pass only the complete returned `next_page_token` when continuing the same chain.
 

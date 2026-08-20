@@ -1,6 +1,6 @@
 ---
 name: "media-user-info"
-description: "Retrieve social media creator profile information from platform user IDs, usernames, channel URLs, profile URLs, short links, or share text. This version is backed by hosted platform MCP services and supports Xiaohongshu / XHS / RedNote, Douyin, Kuaishou, Bilibili, Zhihu, Instagram, X / Twitter, YouTube, TikTok, Weibo, and WeChat Channels creators."
+description: "Retrieve social media creator profile information from platform-supported user IDs, usernames, channel URLs, profile URLs, short links, or share text. Supported input forms vary by platform. This version is backed by hosted platform MCP services and supports Xiaohongshu / XHS / RedNote, Douyin, Kuaishou, Bilibili, Zhihu, Instagram, X / Twitter, YouTube, TikTok, Weibo, and WeChat Channels creators."
 source_client: "socialdatax-skills"
 source_platform: "github"
 source_skill: "media-user-info"
@@ -39,7 +39,7 @@ Current platform support:
 - YouTube channels through `youtube_get_channel_info_by_url`.
 - TikTok creators through the `tiktok_get_user_info_by_*` tools.
 - Weibo / 微博 creators through the `weibo_get_user_info_by_*` tools.
-- WeChat Channels / 视频号 creators through `wechat_get_user_info_by_url` for video links or share text, or `wechat_get_user_info_by_user_id` when a `v2_...@finder` user_id is already known.
+- WeChat Channels / 视频号 creators through `wechat_get_user_info_by_url` for video or image-post links or share text, or `wechat_get_user_info_by_user_id` when a `v2_...@finder` user_id is already known.
 
 ## API Key
 
@@ -136,9 +136,8 @@ npx -y socialdatax-skills@latest weibo user-info \
   --source-platform github --source-skill media-user-info
 
 npx -y socialdatax-skills@latest weibo user-info \
-  --profile-url "<profile_url_or_share_text>" --pretty \
-  --source-client socialdatax-skills --source-platform github \
-  --source-skill media-user-info
+  --profile-url "<profile_url>" --pretty --source-client socialdatax-skills \
+  --source-platform github --source-skill media-user-info
 
 npx -y socialdatax-skills@latest wechat user-info \
   --user-id "<v2_finder_user_id>" --pretty --source-client socialdatax-skills \
@@ -165,7 +164,7 @@ Optional arguments:
 - YouTube `--channel-url <youtube_channel_url>`: use for a YouTube channel profile URL.
 - TikTok `--tiktok-id <tiktok_id>` or `--profile-url <profile_url_or_share_text>`: use exactly one creator profile entrypoint.
 - Weibo `--user-id <user_id>`: preferred when the creator user_id is already known.
-- Weibo `--profile-url <profile_url_or_share_text>`: use for a profile URL, short link, or profile share text.
+- Weibo `--profile-url <profile_url>`: use for a Weibo user profile URL.
 - WeChat Channels / 视频号 `--user-id <v2_finder_user_id>`: use when the creator `v2_...@finder` user_id is already known.
 - `--source-client socialdatax-skills --source-platform github --source-skill media-user-info`: usage attribution for this Agent Skill; keep these values unchanged when running examples from this Skill.
 
@@ -193,11 +192,12 @@ MCP tools matching the direct CLI commands above:
 - WEIBO: `weibo_get_user_info_by_user_id`, `weibo_get_user_info_by_profile_url`
 - WECHAT: `wechat_get_user_info_by_user_id`
 
-MCP-only tools not available through the direct CLI: `wechat_get_user_info_by_url`
+MCP-only tools not available through the direct CLI: `douyin_get_user_info_by_douyin_id`, `wechat_get_user_info_by_url`
 
 If MCP tools are already available in the current agent, use one of these tools:
 - `xhs_get_user_info_by_user_id`: preferred when `user_id` is already known from search, detail, comments, or creator note lists.
 - `xhs_get_user_info_by_profile_url`: use for profile URLs, short links, or profile share text.
+- `douyin_get_user_info_by_douyin_id`: use when the user provides the public Douyin account ID / 抖音号, not a nickname, search keyword, sec_user_id, or profile URL.
 - `douyin_get_user_info_by_sec_user_id`: preferred when `sec_user_id` is already known from search, detail, comments, or creator work lists.
 - `douyin_get_user_info_by_profile_url`: use for profile URLs, short links, or profile share text.
 - `kuaishou_search_users`: use when the user only has a creator keyword and needs possible Kuaishou user_id candidates. Pass `keyword`; pass `page_token` only for continuation. Do not pass `page`.
@@ -215,9 +215,9 @@ If MCP tools are already available in the current agent, use one of these tools:
 - `tiktok_get_user_info_by_tiktok_id`: use when the TikTok tiktok_id is known.
 - `tiktok_get_user_info_by_profile_url`: use for TikTok profile URLs.
 - `weibo_get_user_info_by_user_id`: preferred when `user_id` is already known.
-- `weibo_get_user_info_by_profile_url`: use for profile URLs, short links, or profile share text.
+- `weibo_get_user_info_by_profile_url`: use for Weibo user profile URLs.
 - `wechat_get_user_info_by_user_id`: use when the WeChat Channels / 视频号 creator `v2_...@finder` user_id is already known.
-- `wechat_get_user_info_by_url`: use for a WeChat Channels / 视频号 video link or share text to resolve the creator profile.
+- `wechat_get_user_info_by_url`: use for a WeChat Channels / 视频号 video or image-post link or share text to resolve the creator profile.
 
 ## Output Guidance
 

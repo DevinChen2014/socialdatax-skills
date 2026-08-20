@@ -38,7 +38,7 @@ Current platform support:
 - YouTube videos through `youtube_get_video_detail_by_url`.
 - TikTok videos and image posts through `tiktok_get_post_detail_by_url`.
 - Weibo / 微博 posts through the `weibo_get_post_detail_by_*` tools.
-- WeChat Channels / 视频号 videos through the `wechat_get_video_detail_by_*` tools.
+- WeChat Channels / 视频号 video and image-post details through the `wechat_get_video_detail_by_*` tools.
 - WeChat Official Account / 微信公众号 articles through `wechat_get_mp_article_detail_by_url`.
 
 ## API Key
@@ -131,7 +131,7 @@ npx -y socialdatax-skills@latest wechat detail \
   --source-skill media-detail
 
 npx -y socialdatax-skills@latest wechat detail \
-  --url "<wechat_video_url_or_share_text>" --pretty --source-client socialdatax-skills \
+  --url "<wechat_work_url_or_share_text>" --pretty --source-client socialdatax-skills \
   --source-platform github --source-skill media-detail
 
 npx -y socialdatax-skills@latest wechat article \
@@ -160,7 +160,7 @@ Optional arguments:
 - Weibo `--post-id <post_id>`: preferred when the Weibo post ID is already known.
 - Weibo `--post-url <weibo_post_url_or_share_text>`: use for a Weibo post URL, short link, or share text.
 - WeChat Channels / 视频号 `--encrypted-object-id <encrypted_object_id>`: use when the encrypted_object_id from search is already known.
-- WeChat Channels / 视频号 `--url <wechat_video_url_or_share_text>`: use for a WeChat Channels video link or share text.
+- WeChat Channels / 视频号 `--url <wechat_work_url_or_share_text>`: use for a WeChat Channels video or image-post link or share text.
 - WeChat Official Account / 微信公众号 `article --url <mp_article_url_or_share_text>`: use for an mp.weixin.qq.com article link or share text.
 - `--source-client socialdatax-skills --source-platform github --source-skill media-detail`: usage attribution for this Agent Skill; keep these values unchanged when running examples from this Skill.
 
@@ -216,7 +216,7 @@ If MCP tools are already available in the current agent, use one of these tools:
 - `weibo_get_post_detail_by_post_id`: use when a post_id is already known.
 - `weibo_get_post_detail_by_post_url`: use for Weibo post URLs, short links, or share text.
 - `wechat_get_video_detail_by_encrypted_object_id`: use when encrypted_object_id from search is already known.
-- `wechat_get_video_detail_by_url`: use for WeChat Channels / 视频号 video links or share text.
+- `wechat_get_video_detail_by_url`: use for a WeChat Channels / 视频号 video or image-post link or share text.
 - `wechat_get_mp_article_detail_by_url`: use for WeChat Official Account / 微信公众号 article links or share text.
 
 ## Output Guidance

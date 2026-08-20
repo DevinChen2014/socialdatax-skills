@@ -175,9 +175,9 @@ npx -y socialdatax-skills@latest weibo replies --post-id "<post_id>" --comment-i
 npx -y socialdatax-skills@latest weibo likers --post-id "<post_id>" --pretty
 npx -y socialdatax-skills@latest weibo reposts --post-id "<post_id>" --pretty
 npx -y socialdatax-skills@latest weibo user-info --user-id "<user_id>" --pretty
-npx -y socialdatax-skills@latest weibo user-info --profile-url "<profile_url_or_share_text>" --pretty
+npx -y socialdatax-skills@latest weibo user-info --profile-url "<profile_url>" --pretty
 npx -y socialdatax-skills@latest weibo user-posts --user-id "<user_id>" --pretty
-npx -y socialdatax-skills@latest weibo user-posts --profile-url "<profile_url_or_share_text>" --pretty
+npx -y socialdatax-skills@latest weibo user-posts --profile-url "<profile_url>" --pretty
 npx -y socialdatax-skills@latest weibo transcript --post-url "<weibo_post_url_or_share_text>" --pretty
 npx -y socialdatax-skills@latest weibo transcript --post-id "<post_id>" --pretty
 npx -y socialdatax-skills@latest weibo transcript --job-id "<job_id>" --pretty
@@ -185,7 +185,7 @@ npx -y socialdatax-skills@latest weibo download-media --url "<weibo_media_url>" 
 npx -y socialdatax-skills@latest wechat hot-search --pretty
 npx -y socialdatax-skills@latest wechat search --keyword "露营" --pretty
 npx -y socialdatax-skills@latest wechat detail --encrypted-object-id "<encrypted_object_id>" --pretty
-npx -y socialdatax-skills@latest wechat detail --url "<wechat_video_url_or_share_text>" --pretty
+npx -y socialdatax-skills@latest wechat detail --url "<wechat_work_url_or_share_text>" --pretty
 npx -y socialdatax-skills@latest wechat decrypt-media --media-url "<video.video_url>" --output video.mp4
 npx -y socialdatax-skills@latest wechat article --url "<mp_article_url_or_share_text>" --pretty
 npx -y socialdatax-skills@latest wechat comments --object-id "<object_id>" --object-nonce-id "<object_nonce_id>" --pretty
@@ -194,7 +194,7 @@ npx -y socialdatax-skills@latest wechat comments --url "<wechat_video_url_or_sha
 npx -y socialdatax-skills@latest wechat replies --object-id "<object_id>" --object-nonce-id "<object_nonce_id>" --comment-id "<comment_id>" --pretty
 npx -y socialdatax-skills@latest wechat user-info --user-id "<v2_finder_user_id>" --pretty
 npx -y socialdatax-skills@latest wechat user-posts --user-id "<v2_finder_user_id>" --pretty
-npx -y socialdatax-skills@latest wechat user-posts --url "<wechat_video_url_or_share_text>" --pretty
+npx -y socialdatax-skills@latest wechat user-posts --url "<wechat_work_url_or_share_text>" --pretty
 npx -y socialdatax-skills@latest wechat transcript --url "<wechat_video_url_or_share_text>" --pretty
 npx -y socialdatax-skills@latest wechat transcript --encrypted-object-id "<encrypted_object_id>" --pretty
 npx -y socialdatax-skills@latest wechat transcript --job-id "<job_id>" --pretty
@@ -531,8 +531,8 @@ Current Weibo workflows include:
 - Fetch paginated first-level comments for comment analysis.
 - Fetch paginated replies under a first-level comment.
 - Continue Weibo list pagination only when `next_page_token` is non-empty; an empty string means there are no more results to request.
-- Read creator profile data from a profile link, short link, share text, or user_id.
-- Fetch paginated creator post lists from a user_id, profile link, short link, or share text.
+- Read Weibo creator profile data from a user profile link or user_id.
+- Fetch paginated Weibo creator post lists from a user profile link or user_id.
 - Submit and check Weibo video 口播转文字 / speech-to-text transcript jobs; submit tools 提交后最多等待 240 秒，未完成时继续查询同一个 job_id 直到终态.
 - Save returned `image_urls[]` or `video.video_url` media links locally with `weibo download-media`.
 
@@ -630,12 +630,14 @@ Current Sensitive Words Check workflows include:
 | --- | --- |
 | `douyin_get_hot_search_list` | Fetch the current Douyin main hot search list. |
 | `douyin_search_videos` | Search Douyin works by keyword with optional `page_token` continuation and filters; do not pass `page`. |
+| `douyin_search_users` | Search Douyin creators/accounts by keyword with optional `page_token` continuation and filters; do not pass `page`. |
 | `douyin_get_video_detail_by_aweme_id` | Fetch structured Douyin work details when the caller already has an aweme_id. |
 | `douyin_get_video_detail_by_url` | Resolve a Douyin content page link, short link, or share text into structured Douyin work details. |
 | `douyin_get_video_comments_by_aweme_id` | Fetch paginated first-level comments when the caller already has an aweme_id. |
 | `douyin_get_video_comments_by_url` | Fetch paginated first-level comments directly from a Douyin content page URL, short link, or share text. |
 | `douyin_get_video_comment_replies_by_comment_id` | Fetch paginated replies under a first-level Douyin comment; pass both aweme_id and comment_id, and use page_token to continue pagination. |
 | `douyin_get_user_info_by_sec_user_id` | Fetch creator profile data when the caller already has a sec_user_id. |
+| `douyin_get_user_info_by_douyin_id` | Fetch creator profile data when the caller has the public Douyin account ID / douyin_id. |
 | `douyin_get_user_info_by_profile_url` | Resolve a profile link, short link, or share text into creator profile data. |
 | `douyin_get_user_posted_videos_by_sec_user_id` | Fetch a paginated list of works published by a creator when the caller already has a sec_user_id. |
 | `douyin_get_user_posted_videos_by_profile_url` | Fetch a paginated list of works published by a creator from a profile link, short link, or share text. |
@@ -704,12 +706,12 @@ Current Sensitive Words Check workflows include:
 | `weibo_get_post_repost_list_by_post_id` | Fetch paginated reposts for a Weibo post by post_id. |
 | `weibo_get_post_repost_list_by_post_url` | Fetch paginated reposts for a Weibo post from a post page link, short link, or share text. |
 | `weibo_get_user_info_by_user_id` | Fetch creator profile data when the caller already has a user_id. |
-| `weibo_get_user_info_by_profile_url` | Resolve a Weibo profile link, short link, or share text into creator profile data. |
+| `weibo_get_user_info_by_profile_url` | Resolve a Weibo user profile link into creator profile data. |
 | `weibo_get_user_posts_by_user_id` | Fetch a paginated list of posts published by a creator when the caller already has a user_id. |
-| `weibo_get_user_posts_by_profile_url` | Fetch a paginated list of posts published by a creator from a profile link, short link, or share text. |
+| `weibo_get_user_posts_by_profile_url` | Fetch a paginated list of posts published by a creator from a Weibo user profile link. |
 | `weibo_submit_video_speech_text_by_post_url` | Submit a Weibo video speech-to-text transcript job from a post URL, short link, or share text; submit waits up to 240 seconds. If unfinished, continue checking the same job_id until is_terminal is true. |
 | `weibo_submit_video_speech_text_by_post_id` | Submit a Weibo video speech-to-text transcript job when the caller already has a post_id; submit waits up to 240 seconds. If unfinished, continue checking the same job_id until is_terminal is true. |
-| `weibo_get_video_speech_text_job` | Check a Weibo speech-to-text transcript job by job_id without creating a new task. Each call waits up to 240 seconds for the same job. If unfinished, continue querying the same job_id until is_terminal is true. Returns transcript plus content context, not summary. |
+| `weibo_get_video_speech_text_job` | Continue checking a Weibo speech-to-text transcript job by job_id returned from a submit tool, without creating a new task. Each call waits up to 240 seconds for the same job. If unfinished, continue querying the same job_id until is_terminal is true. Returns transcript plus content context, not summary. |
 
 ## WeChat Tools
 
@@ -718,18 +720,18 @@ Current Sensitive Words Check workflows include:
 | `wechat_get_hot_search_list` | Fetch the current WeChat Channels / 视频号 hot-search list. |
 | `wechat_search_videos` | Search WeChat Channels / 视频号 videos by keyword with optional `page_token` continuation and filters; do not pass `page`. |
 | `wechat_get_video_detail_by_encrypted_object_id` | Fetch structured WeChat Channels video details when encrypted_object_id is already known. |
-| `wechat_get_video_detail_by_url` | Resolve a WeChat Channels / 视频号 video link or share text into structured video details. |
+| `wechat_get_video_detail_by_url` | Resolve a WeChat Channels / 视频号 video or image-post link or share text into structured work details. |
 | `wechat_get_mp_article_detail_by_url` | Fetch WeChat Official Account / 微信公众号 article detail and body text from an article link or share text. |
 | `wechat_get_video_comments_by_object_id` | Fetch paginated first-level comments when object_id and object_nonce_id are known. |
 | `wechat_get_video_comments_by_url` | Fetch paginated first-level comments directly from a WeChat Channels / 视频号 video link or share text. |
 | `wechat_get_video_comment_replies_by_comment_id` | Fetch paginated replies under a first-level comment by object_id, object_nonce_id, and comment_id. |
 | `wechat_get_user_info_by_user_id` | Fetch creator profile data when the `v2_...@finder` user_id is already known. |
-| `wechat_get_user_info_by_url` | Resolve a WeChat Channels / 视频号 video link or share text into creator profile data. |
+| `wechat_get_user_info_by_url` | Resolve a WeChat Channels / 视频号 video or image-post link or share text into creator profile data. |
 | `wechat_get_user_posted_videos_by_user_id` | Fetch a paginated list of videos published by a creator when the `v2_...@finder` user_id is already known. |
-| `wechat_get_user_posted_videos_by_url` | Fetch a paginated list of videos published by a creator from a video link or share text. |
+| `wechat_get_user_posted_videos_by_url` | Fetch a paginated list of videos published by a creator from a video or image-post link or share text. |
 | `wechat_submit_video_speech_text_by_video_url` | Submit a WeChat Channels / 视频号 video speech-to-text transcript job from a video link or share text; submit waits up to 240 seconds. If unfinished, continue checking the same job_id until is_terminal is true. |
 | `wechat_submit_video_speech_text_by_encrypted_object_id` | Submit a WeChat Channels / 视频号 video speech-to-text transcript job when encrypted_object_id is already known; submit waits up to 240 seconds. If unfinished, continue checking the same job_id until is_terminal is true. |
-| `wechat_get_video_speech_text_job` | Check a WeChat Channels / 视频号 speech-to-text transcript job by job_id without creating a new task. Each call waits up to 240 seconds for the same job. If unfinished, continue querying the same job_id until is_terminal is true. Returns transcript plus content context, not summary. |
+| `wechat_get_video_speech_text_job` | Continue checking a WeChat Channels / 视频号 speech-to-text transcript job by job_id returned from a submit tool, without creating a new task. Each call waits up to 240 seconds for the same job. If unfinished, continue querying the same job_id until is_terminal is true. Returns transcript plus content context, not summary. |
 
 ## Zhihu Tools
 

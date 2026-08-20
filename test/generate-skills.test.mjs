@@ -253,6 +253,26 @@ const approvedCrossPlatformTencentSkillhubSlugs = new Set([
   "socialdatax-short-video-copy-extract",
   "short-video-copy-extract-v2",
 ]);
+const approvedNarrowXhsSkillhubSlugs = new Set([
+  "content-research-v3",
+  "social-content-research",
+  "social-content-research-v1",
+  "socialdatax-content-research-v3",
+  "socialdatax-content-insights",
+  "socialdatax-topic-planning-v3",
+  "socialdatax-competitor-research-v3",
+  "socialdatax-trend-insights-v3",
+  "social-note-topic-analysis",
+  "social-note-trend-insights",
+  "social-note-competitor-research",
+  "social-note-comment-insights",
+  "social-note-viral-research",
+  "social-note-copy-breakdown",
+  "social-note-hot-topic-selection",
+  "social-note-creator-profile",
+  "social-note-creator-content",
+  "social-note-research-assistant",
+]);
 const skillhubTencentTerms =
   /(?<![A-Za-z0-9])tencent(?![A-Za-z0-9])|腾讯|(?<![A-Za-z0-9])wechat(?![A-Za-z0-9])|WeChat Channels|WeChatChannels|WeChat Official Account|WeChatOfficialAccount|(?<![A-Za-z0-9])weixin(?![A-Za-z0-9])|微信|视频号|公众号|公号|订阅号|服务号|(?<![A-Za-z0-9])official[-_\s]?account(?![A-Za-z0-9])|wechat_|mp\.weixin|wechatchannels|wechatmp/i;
 
@@ -955,6 +975,37 @@ test("douyin creator skills keep sec-user-id argument guidance", async () => {
 
     assert.match(creatorProfile, /Douyin `--sec-user-id <sec_user_id>`/);
     assert.match(creatorVideos, /Douyin `--sec-user-id <sec_user_id>`/);
+  } finally {
+    rmSync(tempRoot, { recursive: true, force: true });
+  }
+});
+
+test("douyin search skill documents MCP-only creator search", async () => {
+  const tempRoot = mkdtempSync(join(tmpdir(), "socialdatax-skills-"));
+
+  try {
+    const source = await loadSkillSource({ repoRoot: projectRoot });
+    await generateSkills({
+      repoRoot: projectRoot,
+      outRoot: tempRoot,
+      quiet: true,
+    });
+
+    const douyinSearch = readGeneratedSkill(
+      tempRoot,
+      "clawhub",
+      "socialdatax-douyin-search",
+      source.hosts.hosts
+    );
+
+    assert.match(
+      douyinSearch,
+      /MCP-only tools not available through the direct CLI:[^\n]*`douyin_search_users`/
+    );
+    assert.match(
+      douyinSearch,
+      /`douyin_search_users`: use when the user wants to discover Douyin creator or account candidates/
+    );
   } finally {
     rmSync(tempRoot, { recursive: true, force: true });
   }
@@ -3875,6 +3926,7 @@ test("generated media skills document weibo and wechat channel support", async (
     assert.match(mediaDetail, /weibo_get_post_detail_by_post_id/);
     assert.match(mediaDetail, /wechat_get_video_detail_by_encrypted_object_id/);
     assert.match(mediaDetail, /wechat_get_mp_article_detail_by_url/);
+    assert.match(mediaDetail, /video or image-post link/);
     assertDirectCliExample(
       mediaDetail,
       'wechat article --url "<mp_article_url_or_share_text>"'
@@ -4315,7 +4367,7 @@ test("active SkillHub public skill titles avoid Tencent ecosystem discovery word
     assertDirectCliExample(aggregate, 'youtube replies --reply-token "<reply_token>"');
     assert.match(
       aggregate,
-      /仅 hosted MCP 可用、direct CLI 不包含的工具：[\s\S]*`weibo_get_post_liker_list_by_post_url`[\s\S]*`weibo_get_post_repost_list_by_post_url`[\s\S]*`wechat_get_user_info_by_url`/,
+      /仅 hosted MCP 可用、direct CLI 不包含的工具：[\s\S]*`douyin_search_users`[\s\S]*`douyin_get_user_info_by_douyin_id`[\s\S]*`weibo_get_post_liker_list_by_post_url`[\s\S]*`weibo_get_post_repost_list_by_post_url`[\s\S]*`wechat_get_user_info_by_url`/,
       "skillhub aggregate should document MCP-only tools that have no matching direct CLI entrypoint"
     );
 
@@ -4717,6 +4769,49 @@ test("weibo platform is present in source and generated public skills", async ()
   }
 });
 
+test("weibo creator skills only advertise supported profile URLs", async () => {
+  const tempRoot = mkdtempSync(join(tmpdir(), "socialdatax-skills-"));
+
+  try {
+    const source = await loadSkillSource({ repoRoot: projectRoot });
+    await generateSkills({
+      repoRoot: projectRoot,
+      outRoot: tempRoot,
+      quiet: true,
+    });
+
+    for (const commandKey of ["userInfoUrl", "userPostsUrl"]) {
+      assert.doesNotMatch(
+        source.catalog.platforms.weibo.commands[commandKey],
+        /profile_url_or_share_text/
+      );
+    }
+
+    const profileSkill = readGeneratedSkill(
+      tempRoot,
+      "clawhub",
+      "socialdatax-weibo-creator-profile",
+      source.hosts.hosts
+    );
+    const postsSkill = readGeneratedSkill(
+      tempRoot,
+      "clawhub",
+      "socialdatax-weibo-creator-posts",
+      source.hosts.hosts
+    );
+    assert.doesNotMatch(
+      profileSkill,
+      /weibo_get_user_info_by_profile_url`: use for profile URLs, short links, or profile share text/
+    );
+    assert.doesNotMatch(
+      postsSkill,
+      /weibo_get_user_posts_by_profile_url`: use for profile URLs, short links, or profile share text/
+    );
+  } finally {
+    rmSync(tempRoot, { recursive: true, force: true });
+  }
+});
+
 test("active SkillHub public title description and useWhen avoid restricted terms", async () => {
   const tempRoot = mkdtempSync(join(tmpdir(), "socialdatax-skills-"));
   const restrictedTerms =
@@ -4828,6 +4923,83 @@ test("replaced SkillHub XHS aggregate slugs stay retained-only", async () => {
       "retained",
       `${replacementSlug} should remain an active maintenance candidate`
     );
+  }
+});
+
+test("approved clean-slug SkillHub recovery entries preserve one canonical workflow per demand", async () => {
+  const tempRoot = mkdtempSync(join(tmpdir(), "socialdatax-skills-"));
+  const replacements = [
+    ["xhs-topic-analysis-v4", "social-note-topic-analysis"],
+    ["xhs-trend-insights-v5", "social-note-trend-insights"],
+    ["xhs-competitor-research-v5", "social-note-competitor-research"],
+    ["xhs-comment-insights-v3", "social-note-comment-insights"],
+    ["xhs-viral-note-research-v3", "social-note-viral-research"],
+    ["xhs-viral-copy-breakdown-v3", "social-note-copy-breakdown"],
+    ["xhs-hot-topic-selection-v3", "social-note-hot-topic-selection"],
+    ["xhs-creator-profile-insights-v3", "social-note-creator-profile"],
+    ["xhs-creator-content-research-v3", "social-note-creator-content"],
+    ["xhs-content-research-assistant-v3", "social-note-research-assistant"],
+  ];
+
+  try {
+    const source = await loadSkillSource({ repoRoot: projectRoot });
+    await generateSkills({
+      repoRoot: projectRoot,
+      outRoot: tempRoot,
+      quiet: true,
+    });
+
+    for (const [legacySlug, cleanSlug] of replacements) {
+      const legacy = source.listings.listings.find(
+        (listing) => listing.host === "skillhub" && listing.slug === legacySlug
+      );
+      const replacement = source.listings.listings.find(
+        (listing) => listing.host === "skillhub" && listing.slug === cleanSlug
+      );
+
+      assert.ok(legacy, `source should include skillhub/${legacySlug}`);
+      assert.equal(
+        legacy.publishStatus,
+        "retained",
+        `${legacySlug} should stay retained-only after clean-slug recovery`
+      );
+      assert.ok(replacement, `source should include skillhub/${cleanSlug}`);
+      assert.notEqual(
+        replacement.publishStatus,
+        "retained",
+        `${cleanSlug} should be an active maintenance candidate`
+      );
+
+      for (const field of [
+        "title",
+        "description",
+        "useWhen",
+        "capability",
+        "capabilities",
+        "commands",
+        "emoji",
+      ]) {
+        assert.deepEqual(
+          replacement[field],
+          legacy[field],
+          `${cleanSlug} should preserve ${field} from ${legacySlug}`
+        );
+      }
+
+      const skill = readGeneratedSkill(
+        tempRoot,
+        "skillhub",
+        cleanSlug,
+        source.hosts.hosts
+      );
+      assert.equal(
+        frontmatterScalar(extractFrontmatter(skill), "source_skill"),
+        cleanSlug
+      );
+      assert.match(skill, new RegExp(`--source-skill ${cleanSlug}`));
+    }
+  } finally {
+    rmSync(tempRoot, { recursive: true, force: true });
   }
 });
 
@@ -5866,6 +6038,7 @@ test("public listing checker does not hard-code generated skill slugs", async ()
   const allowedLiteralSlugs = new Set([
     "socialdatax-opencli",
     ...approvedCrossPlatformTencentSkillhubSlugs,
+    ...approvedNarrowXhsSkillhubSlugs,
   ]);
 
   for (const slug of generatedSlugs) {

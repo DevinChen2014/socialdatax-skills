@@ -188,23 +188,34 @@ Use this checklist before syncing this listing to the public `socialdatax-skills
 - No `public-listings/socialdatax-skills/server-card.json` is published.
 - Hosted streamable HTTP clients can connect directly to `https://mcp.socialdatax.com/xhs/mcp`, `https://mcp.socialdatax.com/douyin/mcp`, `https://mcp.socialdatax.com/kuaishou/mcp`, `https://mcp.socialdatax.com/bilibili/mcp`, `https://mcp.socialdatax.com/weibo/mcp`, `https://mcp.socialdatax.com/wechat/mcp`, `https://mcp.socialdatax.com/zhihu/mcp`, `https://mcp.socialdatax.com/instagram/mcp`, `https://mcp.socialdatax.com/x/mcp`, `https://mcp.socialdatax.com/youtube/mcp`, `https://mcp.socialdatax.com/tiktok/mcp`, and `https://mcp.socialdatax.com/sensitive-check/mcp` with `Authorization: Bearer <SOCIALDATAX_API_KEY>`.
 - With a valid key, hosted MCP `initialize` succeeds.
-- With a valid key, XHS hosted MCP `tools/list` returns the current 20 public XHS tools.
+- With a valid key, XHS hosted MCP `tools/list` returns the current 21 public XHS tools.
+- With a valid key, XHS hosted MCP `tools/list` includes `socialdatax_get_points_balance`.
 - With a valid key, XHS hosted MCP `tools/list` includes `xhs_pgy_get_note_detail` and the tool description states the 20-point successful-call cost and that failures are not charged.
 - With a valid key, XHS hosted MCP `tools/list` includes `xhs_get_product_reviews`.
-- With a valid key, Douyin hosted MCP `tools/list` returns the current 16 public Douyin tools.
-- With a valid key, Kuaishou hosted MCP `tools/list` returns the current 15 public Kuaishou tools.
+- With a valid key, Douyin hosted MCP `tools/list` returns the current 19 public Douyin tools.
+- With a valid key, Douyin hosted MCP `tools/list` includes `socialdatax_get_points_balance` and `douyin_search_users`.
+- With a valid key, Kuaishou hosted MCP `tools/list` returns the current 16 public Kuaishou tools.
+- With a valid key, Kuaishou hosted MCP `tools/list` includes `socialdatax_get_points_balance`.
 - With a valid key, Kuaishou hosted MCP `tools/list` includes `kuaishou_get_hot_search_list`.
-- With a valid key, Bilibili hosted MCP `tools/list` returns the current 18 public Bilibili tools.
-- With a valid key, Weibo hosted MCP `tools/list` returns the current 18 public Weibo tools.
+- With a valid key, Bilibili hosted MCP `tools/list` returns the current 19 public Bilibili tools.
+- With a valid key, Bilibili hosted MCP `tools/list` includes `socialdatax_get_points_balance`.
+- With a valid key, Weibo hosted MCP `tools/list` returns the current 19 public Weibo tools.
+- With a valid key, Weibo hosted MCP `tools/list` includes `socialdatax_get_points_balance`.
 - With a valid key, Weibo hosted MCP `tools/list` includes `weibo_get_post_liker_list_by_post_url` and `weibo_get_post_repost_list_by_post_url`.
-- With a valid key, WeChat Content hosted MCP `tools/list` returns the current 15 public WeChat tools.
+- With a valid key, WeChat Content hosted MCP `tools/list` returns the current 16 public WeChat tools.
+- With a valid key, WeChat Content hosted MCP `tools/list` includes `socialdatax_get_points_balance`.
 - With a valid key, WeChat Content hosted MCP `tools/list` includes `wechat_get_user_info_by_url` and `wechat_get_mp_article_detail_by_url`.
-- With a valid key, Zhihu hosted MCP `tools/list` returns the current 7 public Zhihu tools.
-- With a valid key, Instagram hosted MCP `tools/list` returns the current 9 public Instagram tools.
-- With a valid key, X / Twitter hosted MCP `tools/list` returns the current 12 public X / Twitter tools.
-- With a valid key, YouTube hosted MCP `tools/list` returns the current 6 public YouTube tools.
-- With a valid key, TikTok hosted MCP `tools/list` returns the current 9 public TikTok tools.
-- With a valid key, Sensitive Words Check hosted MCP `tools/list` returns the current 1 public text-check tool.
+- With a valid key, Zhihu hosted MCP `tools/list` returns the current 8 public Zhihu tools.
+- With a valid key, Zhihu hosted MCP `tools/list` includes `socialdatax_get_points_balance`.
+- With a valid key, Instagram hosted MCP `tools/list` returns the current 10 public Instagram tools.
+- With a valid key, Instagram hosted MCP `tools/list` includes `socialdatax_get_points_balance`.
+- With a valid key, X / Twitter hosted MCP `tools/list` returns the current 13 public X / Twitter tools.
+- With a valid key, X / Twitter hosted MCP `tools/list` includes `socialdatax_get_points_balance`.
+- With a valid key, YouTube hosted MCP `tools/list` returns the current 7 public YouTube tools.
+- With a valid key, YouTube hosted MCP `tools/list` includes `socialdatax_get_points_balance`.
+- With a valid key, TikTok hosted MCP `tools/list` returns the current 10 public TikTok tools.
+- With a valid key, TikTok hosted MCP `tools/list` includes `socialdatax_get_points_balance`.
+- With a valid key, Sensitive Words Check hosted MCP `tools/list` returns the current 2 public tools: `check_sensitive_text` and `socialdatax_get_points_balance`.
 
 ## Directory Submission Order
 

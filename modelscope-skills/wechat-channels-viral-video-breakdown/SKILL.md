@@ -30,7 +30,7 @@ metadata: {"openclaw":{"requires":{"env":["SOCIALDATAX_API_KEY"],"bins":["node",
 
 ```bash
 npx -y socialdatax-skills@latest wechat detail \
-  --url "<wechat_video_url_or_share_text>" --pretty --source-client socialdatax-skills \
+  --url "<wechat_work_url_or_share_text>" --pretty --source-client socialdatax-skills \
   --source-platform modelscope --source-skill wechat-channels-viral-video-breakdown
 
 npx -y socialdatax-skills@latest wechat transcript \

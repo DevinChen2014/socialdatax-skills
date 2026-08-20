@@ -1,6 +1,6 @@
 ---
 name: "wechat-channels-account-analysis"
-description: "当用户提供视频号视频链接、分享文本或已知 user_id，需要做视频号账号分析、账号复盘、近期内容表现整理、内容栏目归纳或运营方向判断时使用。整理公开账号资料和近 30 天视频结果，来自 SocialDataX 社媒数据助手。"
+description: "当用户提供视频号作品链接、分享文本或已知 user_id，需要做视频号账号分析、账号复盘、近期内容表现整理、内容栏目归纳或运营方向判断时使用。整理公开账号资料和近 30 天视频结果，来自 SocialDataX 社媒数据助手。"
 source_client: "socialdatax-skills"
 source_platform: "modelscope"
 source_skill: "wechat-channels-account-analysis"
@@ -12,7 +12,7 @@ metadata: {"openclaw":{"requires":{"env":["SOCIALDATAX_API_KEY"],"bins":["node",
 
 ## 适用场景
 
-当用户提供视频号视频链接、分享文本或已知 user_id，需要做视频号账号分析、账号复盘、近期内容表现整理、内容栏目归纳或运营方向判断时使用。整理公开账号资料和近 30 天视频结果，来自 SocialDataX 社媒数据助手。
+当用户提供视频号作品链接、分享文本或已知 user_id，需要做视频号账号分析、账号复盘、近期内容表现整理、内容栏目归纳或运营方向判断时使用。整理公开账号资料和近 30 天视频结果，来自 SocialDataX 社媒数据助手。
 
 ## 快速开始
 
@@ -34,7 +34,7 @@ npx -y socialdatax-skills@latest wechat user-info \
   --source-platform modelscope --source-skill wechat-channels-account-analysis
 
 npx -y socialdatax-skills@latest wechat user-posts \
-  --url "<wechat_video_url_or_share_text>" --since-days 30 --max-items 50 --pretty \
+  --url "<wechat_work_url_or_share_text>" --since-days 30 --max-items 50 --pretty \
   --source-client socialdatax-skills --source-platform modelscope \
   --source-skill wechat-channels-account-analysis
 ```
@@ -53,7 +53,7 @@ npx -y socialdatax-skills@latest wechat user-posts \
 ## 参数说明
 
 创作者 / 账号：
-- 说明：二选一入口：`--url <wechat_video_url_or_share_text>`，当用户提供该账号的视频链接或分享文本时，用它解析作者并读取账号视频列表。
+- 说明：二选一入口：`--url <wechat_work_url_or_share_text>`，当用户提供该账号的视频或图文作品链接或分享文本时，用它解析作者并读取账号视频列表。
 - 说明：二选一入口：`--user-id <v2_finder_user_id>`，当已经知道视频号 user_id 时，用它读取账号资料和近期视频。
 - 说明：不支持只凭账号名称完成本流程；缺少视频链接、分享文本和 user_id 时，先请用户补充其中一种。
 - 说明：账号视频列表默认观察近 30 天、最多 50 条样本；用户指定其它时间范围或数量时按用户要求调整。
@@ -63,8 +63,8 @@ npx -y socialdatax-skills@latest wechat user-posts \
 - 可选：`--pretty`：只影响输出格式，不改变实际请求结果。
 - 可选：`--source-client socialdatax-skills --source-platform modelscope --source-skill wechat-channels-account-analysis`：这是当前 Agent Skill 的来源标记；按本 Skill 示例执行时保持这些值不变。
 
-推荐流程：先确认账号资料，再查看近 30 天最多 50 条视频样本；如果只有视频链接或分享文本，先通过链接解析作者和视频列表。
-MCP 可用时，视频链接可调用 wechat_get_user_info_by_url 获取作者资料；direct CLI 的账号资料入口使用已知 user_id。
+推荐流程：先确认账号资料，再查看近 30 天最多 50 条视频样本；如果只有视频或图文作品链接或分享文本，先通过链接解析作者和视频列表。
+MCP 可用时，作品链接可调用 wechat_get_user_info_by_url 获取作者资料；direct CLI 的账号资料入口使用已知 user_id。
 
 ## 输出建议
 
@@ -92,7 +92,7 @@ MCP 可用时，视频链接可调用 wechat_get_user_info_by_url 获取作者�
 
 仅 hosted MCP 可用、direct CLI 不包含的工具： `wechat_get_user_info_by_url`
 
-如果当前 Agent 已接入 MCP，视频链接或分享文本使用 `wechat_get_user_info_by_url` 和 `wechat_get_user_posted_videos_by_url`；已知 user_id 使用对应 ID 工具。
+如果当前 Agent 已接入 MCP，视频或图文作品链接或分享文本使用 `wechat_get_user_info_by_url` 和 `wechat_get_user_posted_videos_by_url`；已知 user_id 使用对应 ID 工具。
 创作者视频列表的 page_token 是不透明值；同一账号续页时原样传回完整 next_page_token。
 
 ## 安全边界

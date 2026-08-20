@@ -1,6 +1,6 @@
 ---
 name: "media-user-posts"
-description: "Retrieve social media creator content lists from platform user IDs, usernames, channel URLs, profile URLs, short links, or share text for account research and content style analysis. This version is backed by hosted platform MCP services and supports Xiaohongshu / XHS / RedNote, Douyin, Kuaishou, Bilibili, Zhihu, Instagram, X / Twitter, YouTube, TikTok, Weibo, and WeChat Channels creators."
+description: "Retrieve social media creator content lists from platform-supported user IDs, usernames, channel URLs, profile URLs, short links, or share text for account research and content style analysis. Supported input forms vary by platform. This version is backed by hosted platform MCP services and supports Xiaohongshu / XHS / RedNote, Douyin, Kuaishou, Bilibili, Zhihu, Instagram, X / Twitter, YouTube, TikTok, Weibo, and WeChat Channels creators."
 source_client: "socialdatax-skills"
 source_platform: "github"
 source_skill: "media-user-posts"
@@ -201,9 +201,8 @@ npx -y socialdatax-skills@latest weibo user-posts \
   --source-platform github --source-skill media-user-posts
 
 npx -y socialdatax-skills@latest weibo user-posts \
-  --profile-url "<profile_url_or_share_text>" --pretty \
-  --source-client socialdatax-skills --source-platform github \
-  --source-skill media-user-posts
+  --profile-url "<profile_url>" --pretty --source-client socialdatax-skills \
+  --source-platform github --source-skill media-user-posts
 
 npx -y socialdatax-skills@latest wechat user-posts \
   --user-id "<v2_finder_user_id>" --pretty --source-client socialdatax-skills \
@@ -214,7 +213,7 @@ npx -y socialdatax-skills@latest wechat user-posts \
   --source-platform github --source-skill media-user-posts
 
 npx -y socialdatax-skills@latest wechat user-posts \
-  --url "<wechat_video_url_or_share_text>" --pretty --source-client socialdatax-skills \
+  --url "<wechat_work_url_or_share_text>" --pretty --source-client socialdatax-skills \
   --source-platform github --source-skill media-user-posts
 ```
 
@@ -242,9 +241,9 @@ Optional arguments:
 - YouTube `user-posts --video-type <video|short>`: optional channel video-list filter; omit it for default channel videos.
 - TikTok `--tiktok-id <tiktok_id>` or `--profile-url <profile_url_or_share_text>`: use exactly one creator post-list entrypoint.
 - Weibo `--user-id <user_id>`: preferred when the creator user_id is already known.
-- Weibo `--profile-url <profile_url_or_share_text>`: use for a profile URL, short link, or profile share text.
+- Weibo `--profile-url <profile_url>`: use for a Weibo user profile URL.
 - WeChat Channels / 视频号 `--user-id <v2_finder_user_id>`: preferred when the creator `v2_...@finder` user_id is already known.
-- WeChat Channels / 视频号 `--url <wechat_video_url_or_share_text>`: use a video link or share text to resolve the author and list that creator's videos.
+- WeChat Channels / 视频号 `--url <wechat_work_url_or_share_text>`: use a video or image-post link or share text to resolve the author and list that creator's videos.
 - `--source-client socialdatax-skills --source-platform github --source-skill media-user-posts`: usage attribution for this Agent Skill; keep these values unchanged when running examples from this Skill.
 
 Use either the ID option or the profile URL option for a single command, not both.
@@ -293,10 +292,10 @@ Kuaishou creator work pagination uses opaque `page_token` values; pass the compl
 - `youtube_get_user_posted_videos_by_channel_url`: use for YouTube channel videos and Shorts; optional `video_type` accepts `video` or `short`.
 - `tiktok_get_user_posts_by_tiktok_id` and `tiktok_get_user_posts_by_profile_url`: use for TikTok creator post lists.
 - `weibo_get_user_posts_by_user_id`: preferred when `user_id` is already known.
-- `weibo_get_user_posts_by_profile_url`: use for profile URLs, short links, or profile share text.
+- `weibo_get_user_posts_by_profile_url`: use for Weibo user profile URLs.
 Weibo creator post pagination uses opaque `page_token` values; pass the complete returned `next_page_token` back unchanged for the same user. Do not modify, truncate, redact, mask, omit, normalize, rebuild, generate, or replace the middle with ellipses.
 - `wechat_get_user_posted_videos_by_user_id`: preferred when the WeChat Channels / 视频号 `v2_...@finder` user_id is already known.
-- `wechat_get_user_posted_videos_by_url`: use a WeChat Channels / 视频号 video link or share text to resolve the author and list that creator's videos.
+- `wechat_get_user_posted_videos_by_url`: use a WeChat Channels / 视频号 video or image-post link or share text to resolve the author and list that creator's videos.
 WeChat Channels / 视频号 creator video pagination uses opaque `page_token` values; pass the complete returned `next_page_token` back unchanged for the same user. Do not modify, truncate, redact, mask, omit, normalize, rebuild, generate, or replace the middle with ellipses.
 `--since-days` uses CLI-side filtering only and is not an MCP tool argument; for MCP-only calls, continue pages as needed and filter returned `publish_time` values in your analysis.
 

@@ -17,7 +17,7 @@ import {
 import { open as openFile } from "node:fs/promises";
 import { homedir, tmpdir } from "node:os";
 import { dirname, join } from "node:path";
-import { fileURLToPath } from "node:url";
+import { fileURLToPath, pathToFileURL } from "node:url";
 import test from "node:test";
 
 import { readToken as readPublishToken } from "../../../scripts/publish_social_media_insights_skills.mjs";
@@ -5748,7 +5748,7 @@ test("douyin user profile direct commands reject legacy url option", () => {
   }
 });
 
-test("douyin openclaw plugin only exposes profile-url user tools", () => {
+test("douyin openclaw plugin exposes supported user info tools", () => {
   const openclawDir = join(dirname(packageDir), "douyin-insights-openclaw");
   const pluginSource = readFileSync(join(openclawDir, "index.js"), "utf8");
   const pluginManifest = JSON.parse(
@@ -5759,10 +5759,10 @@ test("douyin openclaw plugin only exposes profile-url user tools", () => {
   );
   const readme = readFileSync(join(openclawDir, "README.md"), "utf8");
 
-  assert.equal(packageJson.version, "0.2.8");
-  assert.equal(pluginManifest.version, "0.2.8");
-  assert.match(pluginSource, /const PLUGIN_VERSION = "0\.2\.8";/);
-  assert.match(readme, /Version: `0\.2\.8`/);
+  assert.equal(packageJson.version, "0.2.9");
+  assert.equal(pluginManifest.version, "0.2.9");
+  assert.match(pluginSource, /const PLUGIN_VERSION = "0\.2\.9";/);
+  assert.match(readme, /Version: `0\.2\.9`/);
   assert.deepEqual(Object.keys(pluginManifest.configSchema.properties), [
     "connectionTimeoutMs",
   ]);
@@ -5816,9 +5816,12 @@ test("douyin openclaw plugin only exposes profile-url user tools", () => {
     ),
     [
       "douyin-insights__douyin_get_user_info_by_sec_user_id",
+      "douyin-insights__douyin_get_user_info_by_douyin_id",
       "douyin-insights__douyin_get_user_info_by_profile_url",
     ]
   );
+  assert.match(pluginSource, /remoteName: "douyin_get_user_info_by_douyin_id"/);
+  assert.match(pluginSource, /required: \["douyin_id"\]/);
   assert.deepEqual(
     pluginManifest.contracts.tools.filter((tool) =>
       tool.includes("user_posted")
@@ -5828,12 +5831,20 @@ test("douyin openclaw plugin only exposes profile-url user tools", () => {
       "douyin-insights__douyin_get_user_posted_videos_by_profile_url",
     ]
   );
-  assert.equal(pluginManifest.contracts.tools.length, 13);
+  assert.equal(pluginManifest.contracts.tools.length, 15);
   assert.ok(
     pluginManifest.contracts.tools.includes(
       "douyin-insights__douyin_get_hot_search_list"
     )
   );
+  assert.ok(
+    pluginManifest.contracts.tools.includes(
+      "douyin-insights__douyin_search_users"
+    )
+  );
+  assert.match(pluginSource, /remoteName: "douyin_search_users"/);
+  assert.match(pluginSource, /follower_count_range/);
+  assert.match(pluginSource, /user_type/);
   assert.ok(
     pluginManifest.contracts.tools.includes(
       "douyin-insights__douyin_get_video_comment_replies_by_comment_id"
@@ -6059,6 +6070,93 @@ test("xhs openclaw search schema documents semantic sort enums", () => {
       /enum: \["default", "time_descending", "like_count_descending"\]/
     );
     assert.match(commentDefinition, /default \(platform default\)/);
+  }
+});
+
+test("xhs openclaw metadata describes search and ID input boundaries", async () => {
+  const openclawDir = join(dirname(packageDir), "xhs-insights-openclaw");
+  const plugin = await import(pathToFileURL(join(openclawDir, "index.js")).href);
+  const tools = [];
+
+  plugin.register({
+    registerTool(factory) {
+      tools.push(factory({}));
+    },
+  });
+
+  const toolsByName = Object.fromEntries(tools.map((tool) => [tool.name, tool]));
+  const noteSearch = toolsByName["xhs-insights__xhs_search_notes"];
+  const noteKeywordDescription =
+    noteSearch.parameters.properties.keyword.description;
+  for (const expectedText of [
+    "brand",
+    "topic",
+    "person",
+    "note link",
+    "profile link",
+    "note_id",
+    "user_id",
+    "page_token",
+  ]) {
+    assert.match(noteKeywordDescription, new RegExp(expectedText));
+  }
+
+  const productSearch = toolsByName["xhs-insights__xhs_search_products"];
+  const productKeywordDescription =
+    productSearch.parameters.properties.keyword.description;
+  for (const expectedText of [
+    "product name",
+    "brand",
+    "category",
+    "product link",
+    "sku_id",
+    "spu_id",
+    "page_token",
+  ]) {
+    assert.match(productKeywordDescription, new RegExp(expectedText));
+  }
+  assert.match(productSearch.description, /product detail or product review tool/);
+  assert.doesNotMatch(
+    productSearch.description,
+    /use xhs_get_product_detail or xhs_get_product_reviews/
+  );
+
+  for (const [toolName, fieldName] of [
+    ["xhs-insights__xhs_get_note_detail_by_note_id", "note_id"],
+    ["xhs-insights__xhs_get_note_comments_by_note_id", "note_id"],
+    ["xhs-insights__xhs_get_note_sub_comments_by_comment_id", "note_id"],
+  ]) {
+    const description =
+      toolsByName[toolName].parameters.properties[fieldName].description;
+    assert.match(description, /complete note_id/);
+    assert.match(description, /note search/);
+    assert.match(description, /Do not truncate/);
+    assert.match(description, /prefix/);
+  }
+
+  for (const toolName of [
+    "xhs-insights__xhs_get_user_info_by_user_id",
+    "xhs-insights__xhs_get_user_posted_notes_by_user_id",
+  ]) {
+    const description =
+      toolsByName[toolName].parameters.properties.user_id.description;
+    assert.match(description, /user_id or author\.user_id/);
+    assert.match(description, /profile link/);
+    assert.match(description, /profile URL tool/);
+    assert.match(description, /account number/);
+    assert.match(description, /display name/);
+  }
+
+  for (const toolName of [
+    "xhs-insights__xhs_get_user_info_by_profile_url",
+    "xhs-insights__xhs_get_user_posted_notes_by_profile_url",
+  ]) {
+    const description =
+      toolsByName[toolName].parameters.properties.profile_url.description;
+    assert.match(description, /profile link/);
+    assert.match(description, /short link/);
+    assert.match(description, /share text/);
+    assert.match(description, /Do not pass a note link/);
   }
 });
 
@@ -9617,6 +9715,9 @@ test("doctor json prints parseable safety summary", () => {
   const wechatJobTranscriptTool = wechatPlatform.toolDetails.find(
     (tool) => tool.name === "wechat_get_video_speech_text_job"
   );
+  const wechatDetailByUrlTool = wechatPlatform.toolDetails.find(
+    (tool) => tool.name === "wechat_get_video_detail_by_url"
+  );
   assert.match(xhsSubmitTranscriptTool.description, /speech-to-text transcript/);
   assert.match(xhsSubmitTranscriptTool.description, /提交后最多等待 240 秒/);
   assert.match(xhsSubmitTranscriptTool.description, /同一个 job_id 直到终态/);
@@ -9645,8 +9746,10 @@ test("doctor json prints parseable safety summary", () => {
   assert.match(wechatSubmitTranscriptTool.description, /提交后最多等待 240 秒/);
   assert.match(wechatSubmitTranscriptTool.description, /同一个 job_id 直到终态/);
   assert.match(wechatJobTranscriptTool.description, /content context/);
+  assert.match(wechatJobTranscriptTool.description, /returned from a submit tool/);
   assert.match(wechatJobTranscriptTool.description, /is_terminal is true/);
   assert.match(wechatJobTranscriptTool.description, /not summary/);
+  assert.match(wechatDetailByUrlTool.description, /video or image-post link/);
   assert.doesNotMatch(result.stdout, /69cf45899948d391e7b5e879/);
 });
 
@@ -9670,11 +9773,11 @@ test("README documents transcript job output as transcript plus content context"
   );
   assert.match(
     readme,
-    /Check a Weibo speech-to-text transcript job by job_id without creating a new task\. Each call waits up to 240 seconds for the same job\. If unfinished, continue querying the same job_id until is_terminal is true\. Returns transcript plus content context, not summary\./
+    /Continue checking a Weibo speech-to-text transcript job by job_id returned from a submit tool, without creating a new task\. Each call waits up to 240 seconds for the same job\. If unfinished, continue querying the same job_id until is_terminal is true\. Returns transcript plus content context, not summary\./
   );
   assert.match(
     readme,
-    /Check a WeChat Channels \/ 视频号 speech-to-text transcript job by job_id without creating a new task\. Each call waits up to 240 seconds for the same job\. If unfinished, continue querying the same job_id until is_terminal is true\. Returns transcript plus content context, not summary\./
+    /Continue checking a WeChat Channels \/ 视频号 speech-to-text transcript job by job_id returned from a submit tool, without creating a new task\. Each call waits up to 240 seconds for the same job\. If unfinished, continue querying the same job_id until is_terminal is true\. Returns transcript plus content context, not summary\./
   );
 });
 
@@ -10076,9 +10179,9 @@ test("direct CLI README examples include public weibo and wechat actions", () =>
     'weibo likers --post-id "<post_id>"',
     'weibo reposts --post-id "<post_id>"',
     'weibo user-info --user-id "<user_id>"',
-    'weibo user-info --profile-url "<profile_url_or_share_text>"',
+    'weibo user-info --profile-url "<profile_url>"',
     'weibo user-posts --user-id "<user_id>"',
-    'weibo user-posts --profile-url "<profile_url_or_share_text>"',
+    'weibo user-posts --profile-url "<profile_url>"',
     'weibo transcript --post-url "<weibo_post_url_or_share_text>"',
     'weibo transcript --post-id "<post_id>"',
     'weibo transcript --job-id "<job_id>"',
@@ -10086,7 +10189,7 @@ test("direct CLI README examples include public weibo and wechat actions", () =>
     'wechat hot-search',
     'wechat search --keyword "露营"',
     'wechat detail --encrypted-object-id "<encrypted_object_id>"',
-    'wechat detail --url "<wechat_video_url_or_share_text>"',
+    'wechat detail --url "<wechat_work_url_or_share_text>"',
     'wechat decrypt-media --media-url "<video.video_url>" --output video.mp4',
     'wechat article --url "<mp_article_url_or_share_text>"',
     'wechat comments --object-id "<object_id>" --object-nonce-id "<object_nonce_id>"',
@@ -10094,7 +10197,7 @@ test("direct CLI README examples include public weibo and wechat actions", () =>
     'wechat replies --object-id "<object_id>" --object-nonce-id "<object_nonce_id>" --comment-id "<comment_id>"',
     'wechat user-info --user-id "<v2_finder_user_id>"',
     'wechat user-posts --user-id "<v2_finder_user_id>"',
-    'wechat user-posts --url "<wechat_video_url_or_share_text>"',
+    'wechat user-posts --url "<wechat_work_url_or_share_text>"',
     'wechat transcript --url "<wechat_video_url_or_share_text>"',
     'wechat transcript --encrypted-object-id "<encrypted_object_id>"',
     'wechat transcript --job-id "<job_id>"',
@@ -10296,6 +10399,10 @@ test("direct CLI docs keep search pagination platform-specific", () => {
   );
   assert.match(
     readme,
+    /`douyin_search_users` \| Search Douyin creators\/accounts by keyword with optional `page_token` continuation and filters; do not pass `page`\./
+  );
+  assert.match(
+    readme,
     /`kuaishou_search_videos` \| Search Kuaishou works by natural-language keyword with optional `page_token` continuation; do not pass `page`\./
   );
   assert.match(
@@ -10386,7 +10493,7 @@ test("user skill docs describe douyin profile-url entry without legacy url wordi
   }
 });
 
-test("media user info skill documents the WeChat video-link MCP entry", () => {
+test("media user info skill documents the WeChat work-link MCP entry", () => {
   const skill = readFileSync(
     join(packageDir, "skills", "media-user-info", "SKILL.md"),
     "utf8"
@@ -10394,7 +10501,7 @@ test("media user info skill documents the WeChat video-link MCP entry", () => {
 
   assert.match(
     skill,
-    /wechat_get_user_info_by_url.*WeChat Channels \/ 视频号 video link or share text/
+    /wechat_get_user_info_by_url.*WeChat Channels \/ 视频号 video or image-post link or share text/
   );
   assert.match(
     skill,

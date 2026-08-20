@@ -17,7 +17,7 @@ Run a direct CLI command:
 ```bash
 npx -y socialdatax-skills@latest xhs search \
   --keyword "露营" --sort-type like_count_descending --pages 2 --max-items 20 --pretty \
-  --source-client socialdatax-skills --source-platform github --source-skill xhs-content-research
+  --source-client socialdatax-skills --source-platform github --source-skill media-search
 ```
 
 The CLI does not log in to user accounts, post content, like, comment, or change account settings.
@@ -28,12 +28,12 @@ This table is a curated marketplace catalog, not the complete platform support l
 
 | Skill | Use When | Primary Capability | Marketplace Slugs |
 | --- | --- | --- | --- |
-| 社媒内容研究助手 | Research supported SocialDataX public platforms including XHS, Douyin, Kuaishou, Bilibili, Zhihu, Instagram, X / Twitter, YouTube, TikTok, Weibo, and WeChat Channels, plus WeChat Official Account article details. | Cross-platform social content research | SkillHub / ModelScope: `socialdatax-content-research-assistant` |
-| 小红书内容研究 | Research popular XHS / Xiaohongshu / RedNote note samples, content angles, keywords, competitor content, and trend material. | XHS note search | SkillHub: `xhs-content-research-v5`; ClawHub / ModelScope: `xhs-content-research` |
-| 小红书评论分析与需求挖掘 | Analyze comments from a provided XHS note URL or complete `note_id` for user feedback, pain points, purchase objections, FAQ, and demand signals. | XHS comments and replies | SkillHub: `xhs-comment-insights-v3`; ClawHub / ModelScope: `xhs-comment-insights` |
-| 小红书热榜选题分析 | Turn current XHS hot-list signals and related popular note samples into actionable topic ideas. | XHS hot search plus note search | SkillHub: `xhs-hot-topic-selection-v3`; ClawHub / ModelScope: `xhs-hot-topic-selection` |
-| 小红书爆款笔记研究 | Study high-engagement XHS note samples from a keyword, niche, product, or scenario. | XHS note search | SkillHub: `xhs-viral-note-research-v3`; ClawHub / ModelScope: `xhs-viral-note-research` |
-| 小红书爆款文案拆解 | Break down XHS viral copy structure, title hooks, opening style, selling points, emotional wording, CTA, and reusable copy framework. | XHS search and note detail | SkillHub: `xhs-viral-copy-breakdown-v3`; ClawHub / ModelScope: `xhs-viral-copy-breakdown` |
+| 社媒内容研究助手 | Research supported SocialDataX public platforms including XHS, Douyin, Kuaishou, Bilibili, Zhihu, Instagram, X / Twitter, YouTube, TikTok, Weibo, and WeChat Channels, plus WeChat Official Account article details. | Cross-platform social content research | SkillHub / ModelScope / GitHub: `socialdatax-content-research-assistant` |
+| 小红书内容研究 | Research popular XHS / Xiaohongshu / RedNote note samples, content angles, keywords, competitor content, and trend material. | XHS note search | ClawHub / ModelScope: `xhs-content-research` |
+| 小红书评论分析与需求挖掘 | Analyze comments from a provided XHS note URL or complete `note_id` for user feedback, pain points, purchase objections, FAQ, and demand signals. | XHS comments and replies | ClawHub / ModelScope: `xhs-comment-insights` |
+| 小红书热榜选题分析 | Turn current XHS hot-list signals and related popular note samples into actionable topic ideas. | XHS hot search plus note search | ClawHub / ModelScope: `xhs-hot-topic-selection` |
+| 小红书爆款笔记研究 | Study high-engagement XHS note samples from a keyword, niche, product, or scenario. | XHS note search | ClawHub / ModelScope: `xhs-viral-note-research` |
+| 小红书爆款文案拆解 | Break down XHS viral copy structure, title hooks, opening style, selling points, emotional wording, CTA, and reusable copy framework. | XHS search and note detail | ClawHub / ModelScope: `xhs-viral-copy-breakdown` |
 | 抖音文案提取 | Extract Douyin video context, original description, spoken transcript, copy-ready version, and task status from a URL, share text, `aweme_id`, or transcript `job_id`. | Douyin transcript job | SkillHub / ClawHub / ModelScope: `douyin-video-copy-extract` |
 | 敏感词检测与违禁词检查 | Check copy before publishing for sensitive terms, platform risk hints, and safer rewrite suggestions. | Copy safety review | SkillHub / ClawHub / ModelScope: `socialdatax-sensitive-check` |
 
@@ -44,7 +44,7 @@ This table is a curated marketplace catalog, not the complete platform support l
 ```bash
 npx -y socialdatax-skills@latest xhs search \
   --keyword "<keyword>" --sort-type like_count_descending --pages 2 --max-items 20 --pretty \
-  --source-client socialdatax-skills --source-platform github --source-skill xhs-content-research
+  --source-client socialdatax-skills --source-platform github --source-skill media-search
 ```
 
 ### XHS Viral Note Research
@@ -52,7 +52,7 @@ npx -y socialdatax-skills@latest xhs search \
 ```bash
 npx -y socialdatax-skills@latest xhs search \
   --keyword "<keyword>" --sort-type like_count_descending --pages 2 --max-items 20 --pretty \
-  --source-client socialdatax-skills --source-platform github --source-skill xhs-viral-note-research
+  --source-client socialdatax-skills --source-platform github --source-skill media-search
 ```
 
 ### XHS Viral Copy Breakdown
@@ -62,7 +62,7 @@ Find candidate notes:
 ```bash
 npx -y socialdatax-skills@latest xhs search \
   --keyword "<keyword>" --sort-type like_count_descending --pages 2 --max-items 20 --pretty \
-  --source-client socialdatax-skills --source-platform github --source-skill xhs-viral-copy-breakdown
+  --source-client socialdatax-skills --source-platform github --source-skill socialdatax-content-research-assistant
 ```
 
 Read one selected note for copy breakdown:
@@ -70,7 +70,7 @@ Read one selected note for copy breakdown:
 ```bash
 npx -y socialdatax-skills@latest xhs detail \
   --url "<xhs_note_url_or_share_text>" --pretty \
-  --source-client socialdatax-skills --source-platform github --source-skill xhs-viral-copy-breakdown
+  --source-client socialdatax-skills --source-platform github --source-skill socialdatax-content-research-assistant
 ```
 
 ### XHS Comment Analysis
@@ -78,7 +78,7 @@ npx -y socialdatax-skills@latest xhs detail \
 ```bash
 npx -y socialdatax-skills@latest xhs comments \
   --url "<xhs_note_url_or_share_text>" --pages 2 --max-items 20 --include-replies --pretty \
-  --source-client socialdatax-skills --source-platform github --source-skill xhs-comment-insights
+  --source-client socialdatax-skills --source-platform github --source-skill media-comments
 ```
 
 ### XHS Hot Topic Planning
@@ -86,7 +86,7 @@ npx -y socialdatax-skills@latest xhs comments \
 ```bash
 npx -y socialdatax-skills@latest xhs hot-search \
   --pretty --source-client socialdatax-skills --source-platform github \
-  --source-skill xhs-hot-topic-selection
+  --source-skill socialdatax-content-research-assistant
 ```
 
 Then search notes for one selected hot topic:
@@ -94,7 +94,7 @@ Then search notes for one selected hot topic:
 ```bash
 npx -y socialdatax-skills@latest xhs search \
   --keyword "<hot_topic_keyword>" --sort-type like_count_descending --pages 2 --max-items 20 --pretty \
-  --source-client socialdatax-skills --source-platform github --source-skill xhs-hot-topic-selection
+  --source-client socialdatax-skills --source-platform github --source-skill socialdatax-content-research-assistant
 ```
 
 ### Douyin Copy Extraction
@@ -102,7 +102,7 @@ npx -y socialdatax-skills@latest xhs search \
 ```bash
 npx -y socialdatax-skills@latest douyin transcript \
   --url "<douyin_video_url_or_share_text>" --pretty \
-  --source-client socialdatax-skills --source-platform github --source-skill douyin-video-copy-extract
+  --source-client socialdatax-skills --source-platform github --source-skill media-transcript
 ```
 
 If the transcript job is still pending, keep the returned `job_id` and query it again:
@@ -110,7 +110,7 @@ If the transcript job is still pending, keep the returned `job_id` and query it 
 ```bash
 npx -y socialdatax-skills@latest douyin transcript \
   --job-id "<job_id>" --pretty \
-  --source-client socialdatax-skills --source-platform github --source-skill douyin-video-copy-extract
+  --source-client socialdatax-skills --source-platform github --source-skill media-transcript
 ```
 
 ### Sensitive Term Check
@@ -118,7 +118,7 @@ npx -y socialdatax-skills@latest douyin transcript \
 ```bash
 npx -y socialdatax-skills@latest sensitive-check text \
   --text "<copy_to_check>" --platform xhs --pretty \
-  --source-client socialdatax-skills --source-platform github --source-skill socialdatax-sensitive-check
+  --source-client socialdatax-skills --source-platform github --source-skill sensitive-check
 ```
 
 ## Output Principles
@@ -134,7 +134,7 @@ npx -y socialdatax-skills@latest sensitive-check text \
 Use the marketplace that matches your agent runtime:
 
 - ClawHub: search the Chinese skill title or slug shown above.
-- SkillHub: search the SkillHub slug shown above. For XHS rows, the first-column catalog title is not the SkillHub display title; SkillHub display titles use neutral wording while keeping `xhs` in the slug for discovery. This catalog can keep the broader 小红书 wording for non-SkillHub surfaces.
+- SkillHub: search the SkillHub slug shown above where one is listed. Rows without a SkillHub slug are not currently available through SkillHub.
 - ModelScope: search the Chinese skill title or slug shown above.
 - GitHub / skills.sh: install the currently published Skills from [`DevinChen2014/socialdatax-skills`](https://github.com/DevinChen2014/socialdatax-skills); skills.sh reads the repository's `skills/` directory.
 - npm/direct CLI: use `npx -y socialdatax-skills@latest ...`.

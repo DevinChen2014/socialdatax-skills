@@ -155,6 +155,7 @@ If MCP tools are already available in the current agent, choose the platform-spe
 - Kuaishou: `kuaishou_submit_video_speech_text_by_video_url`, `kuaishou_submit_video_speech_text_by_photo_id`, `kuaishou_get_video_speech_text_job`.
 - Weibo: `weibo_submit_video_speech_text_by_post_url`, `weibo_submit_video_speech_text_by_post_id`, `weibo_get_video_speech_text_job`.
 - WeChat Channels / 视频号: `wechat_submit_video_speech_text_by_video_url`, `wechat_submit_video_speech_text_by_encrypted_object_id`, `wechat_get_video_speech_text_job`.
+For `wechat_get_video_speech_text_job`, pass only the `job_id` returned by a WeChat Channels submit tool; do not pass `encrypted_object_id`, `object_id`, or a content link.
 Do not start a duplicate transcript job only to poll status. If an MCP response is non-terminal, you must call `data.next_action.tool_name` with `data.next_action.arguments` exactly as returned; those arguments include the same `job_id`. The next response may still be non-terminal. Continue until `is_terminal` is `true`.
 
 ## Output Guidance

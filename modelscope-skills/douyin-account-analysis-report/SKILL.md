@@ -98,7 +98,8 @@ npx -y socialdatax-skills@latest douyin user-posts \
 - `douyin_get_user_info_by_sec_user_id`
 - `douyin_get_user_posted_videos_by_sec_user_id`
 
-如果当前 Agent 已可直接调用 MCP 工具，只使用上面四个抖音账号资料和作品列表工具。
+如果当前 Agent 已可直接调用 MCP 工具，优先使用上面的抖音账号资料和作品列表工具；只有用户给的是公开抖音号 douyin_id 时，才使用 `douyin_get_user_info_by_douyin_id`。
+`douyin_get_user_info_by_douyin_id`：用于公开抖音号 douyin_id，不要传昵称、搜索关键词、sec_user_id、主页链接或作品链接。
 `douyin_get_user_info_by_profile_url` / `douyin_get_user_posted_videos_by_profile_url`：用于主页链接、短链或主页分享文本。
 `douyin_get_user_info_by_sec_user_id` / `douyin_get_user_posted_videos_by_sec_user_id`：用于已知 `sec_user_id` 的账号。
 账号作品列表翻页使用不透明的 `page_token`。同一账号、同一命令下，必须把完整返回的 `next_page_token` 原样传回，不能改写、截断、脱敏、重建，或用省略号替换中间部分。

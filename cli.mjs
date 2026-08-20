@@ -1278,7 +1278,7 @@ const PLATFORMS = {
       },
       {
         name: "weibo_get_user_info_by_profile_url",
-        description: "Resolve a Weibo profile URL, short link, or share text into creator profile data.",
+        description: "Resolve a Weibo user profile URL into creator profile data.",
       },
       {
         name: "weibo_get_user_posts_by_user_id",
@@ -1286,7 +1286,7 @@ const PLATFORMS = {
       },
       {
         name: "weibo_get_user_posts_by_profile_url",
-        description: "Fetch creator posts from a profile URL, short link, or profile share text.",
+        description: "Fetch creator posts from a Weibo user profile URL.",
       },
       {
         name: "weibo_submit_video_speech_text_by_post_url",
@@ -1301,7 +1301,8 @@ const PLATFORMS = {
       {
         name: "weibo_get_video_speech_text_job",
         description:
-          buildTranscriptJobDescription("a Weibo video speech-to-text transcript job"),
+          "Continue checking a Weibo video speech-to-text transcript job by job_id returned from a submit tool without creating a new task. " +
+          `${TRANSCRIPT_GET_JOB_WAIT_DESCRIPTION} ${TRANSCRIPT_JOB_DESCRIPTION_SUFFIX}`,
       },
     ],
   },
@@ -1334,7 +1335,8 @@ const PLATFORMS = {
       },
       {
         name: "wechat_get_video_detail_by_url",
-        description: "Resolve a WeChat Channels / 视频号 video link or share text into structured video details.",
+        description:
+          "Resolve a WeChat Channels / 视频号 video or image-post link or share text into structured work details.",
       },
       {
         name: "wechat_get_mp_article_detail_by_url",
@@ -1360,7 +1362,7 @@ const PLATFORMS = {
       {
         name: "wechat_get_user_info_by_url",
         description:
-          "Resolve a WeChat Channels / 视频号 video link or share text into creator profile data.",
+          "Resolve a WeChat Channels / 视频号 video or image-post link or share text into creator profile data.",
       },
       {
         name: "wechat_get_user_posted_videos_by_user_id",
@@ -1368,7 +1370,8 @@ const PLATFORMS = {
       },
       {
         name: "wechat_get_user_posted_videos_by_url",
-        description: "Fetch creator videos from a WeChat Channels / 视频号 video link or share text.",
+        description:
+          "Fetch creator videos from a WeChat Channels / 视频号 video or image-post link or share text.",
       },
       {
         name: "wechat_submit_video_speech_text_by_video_url",
@@ -1383,9 +1386,8 @@ const PLATFORMS = {
       {
         name: "wechat_get_video_speech_text_job",
         description:
-          buildTranscriptJobDescription(
-            "a WeChat Channels / 视频号 video speech-to-text transcript job"
-          ),
+          "Continue checking a WeChat Channels / 视频号 video speech-to-text transcript job by job_id returned from a submit tool without creating a new task. " +
+          `${TRANSCRIPT_GET_JOB_WAIT_DESCRIPTION} ${TRANSCRIPT_JOB_DESCRIPTION_SUFFIX}`,
       },
     ],
   },
@@ -2999,14 +3001,14 @@ function printHelp() {
   console.log(`  npx -y ${PACKAGE_SPEC} weibo user-info --user-id "<user_id>" --pretty`);
   console.log("      Call the Weibo creator profile tool directly and print JSON.");
   console.log("");
-  console.log(`  npx -y ${PACKAGE_SPEC} weibo user-info --profile-url "<profile_url_or_share_text>" --pretty`);
-  console.log("      Call the Weibo creator profile tool from a profile link or share text.");
+  console.log(`  npx -y ${PACKAGE_SPEC} weibo user-info --profile-url "<profile_url>" --pretty`);
+  console.log("      Call the Weibo creator profile tool from a user profile URL.");
   console.log("");
   console.log(`  npx -y ${PACKAGE_SPEC} weibo user-posts --user-id "<user_id>" --pretty`);
   console.log("      Call the Weibo creator posts tool directly and print JSON.");
   console.log("");
-  console.log(`  npx -y ${PACKAGE_SPEC} weibo user-posts --profile-url "<profile_url_or_share_text>" --pretty`);
-  console.log("      Call the Weibo creator posts tool from a profile link or share text.");
+  console.log(`  npx -y ${PACKAGE_SPEC} weibo user-posts --profile-url "<profile_url>" --pretty`);
+  console.log("      Call the Weibo creator posts tool from a user profile URL.");
   console.log("");
   console.log(`  npx -y ${PACKAGE_SPEC} weibo transcript --post-url "<weibo_post_url_or_share_text>" --pretty`);
   console.log("      Submit or check a Weibo video speech-to-text transcript job.");
@@ -3023,8 +3025,8 @@ function printHelp() {
   console.log(`  npx -y ${PACKAGE_SPEC} wechat detail --encrypted-object-id "<encrypted_object_id>" --pretty`);
   console.log("      Call the WeChat Channels / 视频号 video detail tool directly and print JSON.");
   console.log("");
-  console.log(`  npx -y ${PACKAGE_SPEC} wechat detail --url "<wechat_video_url_or_share_text>" --pretty`);
-  console.log("      Call the WeChat Channels / 视频号 video detail tool from a video link or share text.");
+  console.log(`  npx -y ${PACKAGE_SPEC} wechat detail --url "<wechat_work_url_or_share_text>" --pretty`);
+  console.log("      Call the WeChat Channels / 视频号 work detail tool from a video or image-post link or share text.");
   console.log("");
   console.log(`  npx -y ${PACKAGE_SPEC} wechat decrypt-media --media-url "<video.video_url>" --output video.mp4`);
   console.log("      Save the WeChat Channels / 视频号 media URL returned by detail and locally decrypt when needed.");
@@ -3049,8 +3051,8 @@ function printHelp() {
   console.log(`  npx -y ${PACKAGE_SPEC} wechat user-posts --user-id "<v2_finder_user_id>" --pretty`);
   console.log("      Call the WeChat Channels / 视频号 creator videos tool with a v2_...@finder user_id.");
   console.log("");
-  console.log(`  npx -y ${PACKAGE_SPEC} wechat user-posts --url "<wechat_video_url_or_share_text>" --pretty`);
-  console.log("      Call the WeChat Channels / 视频号 creator videos tool from a video link or share text.");
+  console.log(`  npx -y ${PACKAGE_SPEC} wechat user-posts --url "<wechat_work_url_or_share_text>" --pretty`);
+  console.log("      Call the WeChat Channels / 视频号 creator videos tool from a video or image-post link or share text.");
   console.log("");
   console.log(`  npx -y ${PACKAGE_SPEC} wechat transcript --encrypted-object-id "<encrypted_object_id>" --pretty`);
   console.log("      Submit or check a WeChat Channels / 视频号 video speech-to-text transcript job.");
