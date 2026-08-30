@@ -29,6 +29,25 @@ curl -X PATCH "$MODELSCOPE_ENDPOINT/openapi/v1/skills/socialhelper/<slug>/settin
   -d '{"display_name":"<中文展示名>","description":"<描述>","skill_file":"<upload.data.id>","source_url":"https://github.com/DevinChen2014/socialdatax-skills/tree/main/modelscope-skills/<slug>","category":"marketing-seo","license":"MIT License"}'
 ```
 
+## 2026-08-25 focused content refresh
+
+Goal: update only ModelScope Skills whose public archive no longer matched the current generated `SKILL.md`; do not recreate or refresh already-matching entries.
+
+Result:
+
+- Five existing `socialhelper/*` entries were refreshed through the authenticated file upload plus settings PATCH flow: `douyin-account-analysis-report`, `socialdatax-content-research-assistant`, `socialdatax-short-video-copy-extract`, `wechat-channels-account-analysis`, and `wechat-channels-viral-video-breakdown`.
+- Public archive verification after refresh matched the repo-tracked files for all five entries:
+
+| Slug | Remote/local `SKILL.md` SHA256 |
+| --- | --- |
+| `douyin-account-analysis-report` | `fa6cff3340f6cf810d9b235d4db761020e4faaf7cb945f4f3e7f01826eade66f` |
+| `socialdatax-content-research-assistant` | `4f72595aaa6c48c4834b8c494e5db61988ba17b9de1ded31e568b269c9f3396b` |
+| `socialdatax-short-video-copy-extract` | `6be99ac54723a5ef3c7d3011bfe75c6a7de8e35e57de12a9d334c5dbc9c9666a` |
+| `wechat-channels-account-analysis` | `1f2a1bafbe1e4b11bdb8513a2704a22ff35fe2ecd9b407b602dc975db7a01899` |
+| `wechat-channels-viral-video-breakdown` | `7dd46d67c22bc924d22282503d3a36934b727c836e17629948ad14ba00fb8649` |
+
+- The remaining ModelScope entries were left untouched because their public archive already matched local output.
+
 ## 2026-08-13 full ModelScope expansion
 
 Goal: publish the ability-backed “other platform” SocialDataX skills to ModelScope after the SkillHub/ClawHub growth experiments, while keeping SkillHub-only wording restrictions isolated to SkillHub.

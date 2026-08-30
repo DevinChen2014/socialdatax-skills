@@ -1,6 +1,6 @@
 ---
 name: "socialdatax-short-video-copy-extract"
-description: "面向短视频文案提取、短视频文案一键提取、视频文案提取、视频链接转文案、短视频转文字、视频转文字、口播转文字、视频逐字稿和逐字稿整理。用户粘贴小红书、抖音、快手、微博和视频号公开视频链接、分享文案、内容 ID 或已有 job_id 后，获取视频基础信息、原视频简介、口播逐字稿、可复制文案和精简版，来自 SocialDataX 社媒数据助手。"
+description: "面向短视频文案提取、短视频文案一键提取、视频文案提取、视频链接转文案、短视频转文字、视频转文字、口播转文字、视频逐字稿和逐字稿整理。当前 direct CLI 入口支持小红书、抖音、快手、微博和视频号公开视频链接、分享文案、内容 ID 或已有 job_id，获取视频基础信息、原视频简介、口播逐字稿、可复制文案和精简版；其他平台不在本 Skill 范围内，来自 SocialDataX 社媒数据助手。"
 source_client: "socialdatax-skills"
 source_platform: "modelscope"
 source_skill: "socialdatax-short-video-copy-extract"
@@ -12,11 +12,12 @@ metadata: {"openclaw":{"requires":{"env":["SOCIALDATAX_API_KEY"],"bins":["node",
 
 ## 适用场景
 
-面向短视频文案提取、短视频文案一键提取、视频文案提取、视频链接转文案、短视频转文字、视频转文字、口播转文字、视频逐字稿和逐字稿整理。用户粘贴小红书、抖音、快手、微博和视频号公开视频链接、分享文案、内容 ID 或已有 job_id 后，获取视频基础信息、原视频简介、口播逐字稿、可复制文案和精简版，来自 SocialDataX 社媒数据助手。
+面向短视频文案提取、短视频文案一键提取、视频文案提取、视频链接转文案、短视频转文字、视频转文字、口播转文字、视频逐字稿和逐字稿整理。当前 direct CLI 入口支持小红书、抖音、快手、微博和视频号公开视频链接、分享文案、内容 ID 或已有 job_id，获取视频基础信息、原视频简介、口播逐字稿、可复制文案和精简版；其他平台不在本 Skill 范围内，来自 SocialDataX 社媒数据助手。
 
 ## 快速开始
 
 - 先给出当前 skill 支持的输入：视频链接、分享文案、内容 ID 或已有 job_id。
+- 平台边界：当前 direct CLI 入口只支持小红书、抖音、快手、微博和视频号；其他平台不在本 Skill 范围内，请先确认是否存在对应口播转文字入口。
 - 你通常会得到：视频基础信息、原视频简介、口播逐字稿、可复制文案和精简版；适合短视频文案提取、视频转文字、口播转文字和逐字稿整理；未完成时先继续查询任务状态。
 
 ## API Key 获取
@@ -106,8 +107,8 @@ npx -y socialdatax-skills@latest wechat transcript \
 - 可选：`--source-client socialdatax-skills --source-platform modelscope --source-skill socialdatax-short-video-copy-extract`：这是当前 Agent Skill 的来源标记；按本 Skill 示例执行时保持这些值不变。
 
 常见说法：短视频文案提取、短视频文案一键提取、视频文案提取、视频链接转文案、短视频转文字、视频转文字、口播转文字、视频逐字稿和逐字稿整理，均按当前文案提取 / 转写流程处理。
-平台选择：小红书 / XHS / RedNote 视频笔记使用 `xhs transcript`；抖音视频使用 `douyin transcript`；快手视频使用 `kuaishou transcript`；微博视频博文使用 `weibo transcript`；视频号视频使用 `wechat transcript`。
-如果输入平台不在上述支持列表，先说明当前入口只支持小红书、抖音、快手、微博和视频号的公开视频文案提取。
+平台选择：小红书 / XHS / RedNote 视频笔记使用 `xhs transcript`；抖音视频使用 `douyin transcript`；快手视频使用 `kuaishou transcript`；微博视频博文使用 `weibo transcript`；视频号视频使用 `wechat transcript`。当前 direct CLI 入口支持小红书、抖音、快手、微博和视频号。
+当前 direct CLI 只覆盖上述五个平台；其他平台不在本 Skill 范围内，先确认是否存在对应口播转文字入口，不要为当前 Skill 拼接不存在的命令。
 执行步骤：第一步，用对应平台的 URL/share text 或内容 ID 入口提交短视频文案提取；如果用户已经给了 `job_id`，直接用同平台 `--job-id` 查询。
 第二步，先看返回 JSON 里的 `data.is_terminal`：如果不是 `true`，复制同一个 `data.job_id`，运行同平台 `transcript --job-id <job_id>` 命令继续查询。
 第三步，只有 `data.is_terminal` 是 `true` 时才交付结果：如果 `data.status` 是 `succeeded`，整理视频信息、简介和逐字稿；否则说明 `data.error.message` 或 `data.message`。

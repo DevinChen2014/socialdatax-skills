@@ -84,12 +84,12 @@ Common search phrases for this skill package:
 - Hosted transport: `streamable-http`
 - Authentication: `Authorization: Bearer <SOCIALDATAX_API_KEY>`
 - Website: <https://socialdatax.com>
-- Repo-tracked platform MCP listings: `com.52choujiang/xhs-insights`, `com.52choujiang/douyin-insights`, `com.52choujiang/kuaishou-insights`, `com.52choujiang/weibo-insights`, `com.52choujiang/wechat-channels-insights`, and `com.52choujiang/instagram-insights`.
+- Repo-tracked platform MCP listings: `com.52choujiang/xhs-insights`, `com.52choujiang/douyin-insights`, `com.52choujiang/kuaishou-insights`, `com.52choujiang/bilibili-insights`, `com.52choujiang/weibo-insights`, `com.52choujiang/wechat-channels-insights`, `com.52choujiang/zhihu-insights`, `com.52choujiang/instagram-insights`, `com.52choujiang/x-insights`, `com.52choujiang/youtube-insights`, and `com.52choujiang/tiktok-insights`.
 - Repo-tracked future SocialDataX namespace draft files exist for XHS and Douyin: `com.socialdatax/xhs-insights` and `com.socialdatax/douyin-insights`.
-- Reserved future SocialDataX namespace names for existing platform listings without draft files yet: `com.socialdatax/kuaishou-insights`, `com.socialdatax/weibo-insights`, `com.socialdatax/wechat-channels-insights`, and `com.socialdatax/instagram-insights`.
-- Hosted endpoints without repo-tracked standalone listing materials yet: Bilibili, Zhihu, X / Twitter, YouTube, TikTok, and Sensitive Words Check.
+- Reserved future SocialDataX namespace names for existing platform listings without draft files yet: `com.socialdatax/kuaishou-insights`, `com.socialdatax/bilibili-insights`, `com.socialdatax/weibo-insights`, `com.socialdatax/wechat-channels-insights`, `com.socialdatax/zhihu-insights`, `com.socialdatax/instagram-insights`, `com.socialdatax/x-insights`, `com.socialdatax/youtube-insights`, and `com.socialdatax/tiktok-insights`.
+- Hosted endpoint without a repo-tracked standalone listing: Sensitive Words Check.
 - Unified MCP registry name: none; this package installs skills and calls explicit hosted MCP entries.
-- Current public capability version: `0.2.38`
+- Current public capability version: `0.2.41`
 
 ## Direct CLI
 
@@ -443,11 +443,11 @@ Available skills:
 
 - `socialdatax-content-research-assistant`: combine SocialDataX search, detail, comment, creator profile, and creator content workflows for cross-platform content research across XHS, Douyin, Kuaishou, Bilibili, Weibo, WeChat Channels, Zhihu, Instagram, X / Twitter, YouTube, and TikTok; also reads WeChat Official Account article link details.
 - `media-search`: search social media content by keyword; supports XHS notes, Douyin works, Kuaishou works, Bilibili videos/articles, Weibo posts, WeChat Channels videos, Zhihu content, Instagram posts, X / Twitter posts, YouTube videos, and TikTok posts.
-- `media-detail`: read WeChat Official Account article details and body text from article links. Read structured content details and metrics for XHS notes, Douyin works, Kuaishou works, Bilibili content, Weibo posts, WeChat Channels videos, Zhihu content, Instagram posts, X / Twitter posts, YouTube videos, and TikTok posts.
+- `media-detail`: read WeChat Official Account article details and body text from article links. Read structured content details and metrics for XHS notes, Douyin works, Kuaishou works, Bilibili content, Weibo posts, WeChat Channels videos and image posts, Zhihu content, Instagram posts, X / Twitter posts, YouTube videos, and TikTok posts.
 - `media-comments`: fetch and analyze comments/replies for XHS, Douyin, Kuaishou, Bilibili, Weibo, WeChat Channels, Zhihu, Instagram, X / Twitter, YouTube, and TikTok.
-- `media-transcript`: submit and check video 口播转文字 / speech-to-text transcript jobs through direct CLI commands or hosted MCP tools; supports XHS, Douyin, Kuaishou, Weibo, and WeChat Channels.
+- `media-transcript`: submit and check video 口播转文字 / speech-to-text transcript jobs; supports XHS, Douyin, Kuaishou, Weibo, and WeChat Channels through direct CLI commands or hosted MCP tools, plus Bilibili, Zhihu independent videos and video answers, Instagram regular video posts/Reels, X / Twitter video posts, TikTok, and YouTube through hosted MCP tools. Instagram photo and carousel posts and Zhihu plain answers without video are not processable.
 - `media-user-info`: retrieve creator profile information; supports XHS, Douyin, Kuaishou, Bilibili, Weibo, WeChat Channels, Zhihu, Instagram, X / Twitter, YouTube channels, and TikTok creators.
-- `media-user-posts`: retrieve creator content lists; supports XHS notes, Douyin works, Kuaishou works, Bilibili videos/articles/dynamics, Weibo posts, WeChat Channels videos, Zhihu creator articles, Instagram posts, X / Twitter posts, YouTube channel videos/Shorts, TikTok posts, and Douyin creator short-drama series.
+- `media-user-posts`: retrieve creator content lists; supports XHS notes, Douyin works, Kuaishou works, Bilibili videos/articles/dynamics, Weibo posts, WeChat Channels videos and image posts, Zhihu creator articles, Instagram posts, X / Twitter posts, YouTube channel videos/Shorts, TikTok posts, and Douyin creator short-drama series.
 - `sensitive-check`: run 敏感词检测 / 违禁词检查 text checks; supports `generic`, `xhs`, `douyin`, and `kuaishou` platform contexts.
 
 Default install locations:
@@ -506,6 +506,7 @@ Current Bilibili workflows include:
 - Fetch paginated likes and reposts for Bilibili opus/dynamic content by post_id or opus/dynamic URL/share text. If starting from a `/read/cv...` article URL, call `bilibili detail` first and use the returned `post.post_id` or `post.share_url`.
 - Read creator profile data from a user_id, profile link, short link, or share text.
 - Fetch paginated creator videos, articles, and dynamics.
+- Submit and check Bilibili video 口播转文字 / speech-to-text transcript jobs through hosted MCP tools. Submit by video URL, short link, share text, or BV number; each job processes one video part. Submit tools 提交后最多等待 240 秒，未完成时继续查询同一个 job_id 直到终态.
 - Resolve a Bilibili video page link or share text into short-lived DASH download links.
 - Download the selected video and audio tracks locally and merge them with `ffmpeg -c copy`.
 
@@ -540,14 +541,14 @@ Current WeChat Content / 微信内容 workflows include:
 
 - Fetch the current WeChat Channels / 视频号 hot-search list.
 - Search related WeChat Channels videos by keyword with optional sort and duration filters.
-- Resolve a WeChat Channels video link, share text, or encrypted_object_id into structured video details.
+- Resolve a WeChat Channels video or image-post link, share text, or encrypted_object_id into structured work details.
 - Save the `video.video_url` returned by WeChat Channels video detail locally and decrypt when needed.
 - Resolve a WeChat Official Account / 微信公众号 article link or share text into article detail and body text.
 - Fetch paginated WeChat Channels / 视频号 first-level comments for comment analysis.
 - Fetch paginated WeChat Channels / 视频号 replies under a first-level comment; pass `object_id`, `object_nonce_id`, and `comment_id`.
 - Continue WeChat Channels list pagination only when `next_page_token` is non-empty; an empty string means there are no more results to request.
-- Read WeChat Channels / 视频号 creator profile data from a `v2_...@finder` user_id; hosted MCP can also resolve creator profile data from a video link or share text.
-- Fetch paginated creator video lists from a `v2_...@finder` user_id or a video link/share text.
+- Read WeChat Channels / 视频号 creator profile data from a `v2_...@finder` user_id; hosted MCP can also resolve creator profile data from a video or image-post link or share text.
+- Fetch paginated creator video and image-post lists from a `v2_...@finder` user_id or a video/image-post link or share text.
 - Submit and check WeChat Channels / 视频号 video 口播转文字 / speech-to-text transcript jobs; submit tools 提交后最多等待 240 秒，未完成时继续查询同一个 job_id 直到终态.
 
 Current Zhihu / 知乎 workflows include:
@@ -559,6 +560,7 @@ Current Zhihu / 知乎 workflows include:
 - Fetch paginated replies under a first-level comment by content URL and comment_id.
 - Read creator profile data from a profile URL.
 - Fetch paginated creator article lists from a profile URL.
+- Submit and check independent `/zvideo/{zvideo_id}` or video-answer `/question/{question_id}/answer/{answer_id}` 口播转文字 / speech-to-text transcript jobs through hosted MCP tools. Numeric `zvideo_id` remains independent-video only; submit tools 提交后最多等待 240 秒，未完成时继续查询同一个 job_id 直到终态.
 
 Current Instagram workflows include:
 
@@ -568,6 +570,7 @@ Current Instagram workflows include:
 - Fetch paginated replies under a first-level comment by post_id and comment_id.
 - Read creator profile data by username or profile URL/share text.
 - Fetch paginated public posts by creator username or profile URL/share text.
+- Submit and check speech-to-text transcript jobs for regular video posts and Reels through hosted MCP tools; photo and carousel posts are not supported.
 
 Current X / Twitter workflows include:
 
@@ -597,6 +600,7 @@ Current TikTok workflows include:
 - Fetch paginated replies under a first-level comment by post_id and comment_id.
 - Read creator profile data by tiktok_id or profile URL/share text.
 - Fetch paginated creator posts by tiktok_id or profile URL/share text.
+- Submit TikTok video speech-to-text transcript jobs through hosted MCP using a video URL or aweme_id, or query an existing valid job_id directly; reuse the same job_id until the task is terminal.
 
 Current Sensitive Words Check workflows include:
 
@@ -689,6 +693,9 @@ Current Sensitive Words Check workflows include:
 | `bilibili_get_user_posted_articles_by_profile_url` | Fetch creator articles from a Bilibili profile link, short link, or share text. |
 | `bilibili_get_user_posted_dynamics_by_user_id` | Fetch a paginated list of dynamics published by a Bilibili creator by user_id. |
 | `bilibili_get_user_posted_dynamics_by_profile_url` | Fetch creator dynamics from a Bilibili profile link, short link, or share text. |
+| `bilibili_submit_video_speech_text_by_video_url` | Submit a Bilibili video speech-to-text transcript job from a video URL, short link, or share text. Each job processes one video part and waits up to 240 seconds. |
+| `bilibili_submit_video_speech_text_by_bvid` | Submit a Bilibili video P1 speech-to-text transcript job by BV number; use the URL tool with a `p` parameter for later video parts. Submit waits up to 240 seconds. |
+| `bilibili_get_video_speech_text_job` | Check a Bilibili speech-to-text transcript job by job_id without creating a new task. Each call waits up to 240 seconds; if unfinished, continue querying the same job_id until is_terminal is true. |
 
 ## Weibo Tools
 
@@ -711,7 +718,7 @@ Current Sensitive Words Check workflows include:
 | `weibo_get_user_posts_by_profile_url` | Fetch a paginated list of posts published by a creator from a Weibo user profile link. |
 | `weibo_submit_video_speech_text_by_post_url` | Submit a Weibo video speech-to-text transcript job from a post URL, short link, or share text; submit waits up to 240 seconds. If unfinished, continue checking the same job_id until is_terminal is true. |
 | `weibo_submit_video_speech_text_by_post_id` | Submit a Weibo video speech-to-text transcript job when the caller already has a post_id; submit waits up to 240 seconds. If unfinished, continue checking the same job_id until is_terminal is true. |
-| `weibo_get_video_speech_text_job` | Continue checking a Weibo speech-to-text transcript job by job_id returned from a submit tool, without creating a new task. Each call waits up to 240 seconds for the same job. If unfinished, continue querying the same job_id until is_terminal is true. Returns transcript plus content context, not summary. |
+| `weibo_get_video_speech_text_job` | Continue checking a Weibo speech-to-text transcript job using a valid job_id supplied by the user, or a job_id returned by a submit tool, without creating a new task. Each call waits up to 240 seconds for the same job. If unfinished, continue querying the same job_id until is_terminal is true. Returns transcript plus content context, not summary. |
 
 ## WeChat Tools
 
@@ -727,11 +734,11 @@ Current Sensitive Words Check workflows include:
 | `wechat_get_video_comment_replies_by_comment_id` | Fetch paginated replies under a first-level comment by object_id, object_nonce_id, and comment_id. |
 | `wechat_get_user_info_by_user_id` | Fetch creator profile data when the `v2_...@finder` user_id is already known. |
 | `wechat_get_user_info_by_url` | Resolve a WeChat Channels / 视频号 video or image-post link or share text into creator profile data. |
-| `wechat_get_user_posted_videos_by_user_id` | Fetch a paginated list of videos published by a creator when the `v2_...@finder` user_id is already known. |
-| `wechat_get_user_posted_videos_by_url` | Fetch a paginated list of videos published by a creator from a video or image-post link or share text. |
+| `wechat_get_user_posted_videos_by_user_id` | Fetch a paginated list of videos and image posts published by a creator when the `v2_...@finder` user_id is already known. |
+| `wechat_get_user_posted_videos_by_url` | Fetch a paginated list of videos and image posts published by a creator from a video or image-post link or share text. |
 | `wechat_submit_video_speech_text_by_video_url` | Submit a WeChat Channels / 视频号 video speech-to-text transcript job from a video link or share text; submit waits up to 240 seconds. If unfinished, continue checking the same job_id until is_terminal is true. |
 | `wechat_submit_video_speech_text_by_encrypted_object_id` | Submit a WeChat Channels / 视频号 video speech-to-text transcript job when encrypted_object_id is already known; submit waits up to 240 seconds. If unfinished, continue checking the same job_id until is_terminal is true. |
-| `wechat_get_video_speech_text_job` | Continue checking a WeChat Channels / 视频号 speech-to-text transcript job by job_id returned from a submit tool, without creating a new task. Each call waits up to 240 seconds for the same job. If unfinished, continue querying the same job_id until is_terminal is true. Returns transcript plus content context, not summary. |
+| `wechat_get_video_speech_text_job` | Continue checking a WeChat Channels / 视频号 speech-to-text transcript job using a valid job_id supplied by the user, or a job_id returned by a submit tool, without creating a new task. Each call waits up to 240 seconds for the same job. If unfinished, continue querying the same job_id until is_terminal is true. Returns transcript plus content context, not summary. |
 
 ## Zhihu Tools
 
@@ -744,6 +751,9 @@ Current Sensitive Words Check workflows include:
 | `zhihu_get_comment_replies_by_url` | Fetch paginated replies under a first-level Zhihu comment by content URL and comment_id. |
 | `zhihu_get_user_info_by_profile_url` | Fetch Zhihu creator profile data from a profile URL. |
 | `zhihu_get_user_posted_articles_by_profile_url` | Fetch a paginated list of articles published by a Zhihu creator from a profile URL. |
+| `zhihu_submit_video_speech_text_by_video_url` | Submit a Zhihu speech-to-text transcript job from an independent `/zvideo/{zvideo_id}` URL or a video-answer page URL. |
+| `zhihu_submit_video_speech_text_by_zvideo_id` | Submit a Zhihu independent-video speech-to-text transcript job from a numeric `zvideo_id`. |
+| `zhihu_get_video_speech_text_job` | Check a Zhihu independent-video or video-answer speech-to-text transcript job by `job_id`. |
 
 ## Instagram Tools
 
@@ -758,6 +768,9 @@ Current Sensitive Words Check workflows include:
 | `instagram_get_user_info_by_profile_url` | Fetch Instagram creator profile data from a profile URL. |
 | `instagram_get_user_posts_by_username` | Fetch a paginated list of public posts by an Instagram creator username. |
 | `instagram_get_user_posts_by_profile_url` | Fetch a paginated list of public posts by an Instagram creator profile URL. |
+| `instagram_submit_video_speech_text_by_post_url` | Submit a speech-to-text transcript job for an Instagram regular video post or Reels URL. Photo and carousel posts are not supported. |
+| `instagram_submit_video_speech_text_by_post_id` | Submit a speech-to-text transcript job for an Instagram regular video post or Reels post_id. Photo and carousel posts are not supported. |
+| `instagram_get_video_speech_text_job` | Continue checking an Instagram speech-to-text transcript job using a valid job_id supplied by the user, or a job_id returned by a submit tool, without creating a new task. Each call waits up to 240 seconds for the same job. If unfinished, continue querying the same job_id until is_terminal is true. Returns transcript plus content context, not summary. |
 
 ## X Tools
 
@@ -786,6 +799,9 @@ Current Sensitive Words Check workflows include:
 | `youtube_get_user_posted_videos_by_channel_url` | Fetch a paginated list of videos or Shorts published by a YouTube channel URL. |
 | `youtube_get_video_comments_by_url` | Fetch paginated first-level comments from a YouTube video URL. |
 | `youtube_get_video_comment_replies` | Fetch paginated YouTube comment replies by the first-level comment reply_token. |
+| `youtube_submit_video_speech_text_by_url` | Submit a YouTube video speech-to-text transcript job from a video URL. |
+| `youtube_submit_video_speech_text_by_video_id` | Submit a YouTube video speech-to-text transcript job from an 11-character video_id. |
+| `youtube_get_video_speech_text_job` | Check a YouTube video speech-to-text transcript job by `job_id`. |
 
 ## TikTok Tools
 
@@ -800,6 +816,9 @@ Current Sensitive Words Check workflows include:
 | `tiktok_get_user_info_by_profile_url` | Fetch TikTok creator profile data from a profile URL. |
 | `tiktok_get_user_posts_by_tiktok_id` | Fetch a paginated list of posts by a TikTok creator tiktok_id. |
 | `tiktok_get_user_posts_by_profile_url` | Fetch a paginated list of posts by a TikTok creator profile URL. |
+| `tiktok_submit_video_speech_text_by_url` | Submit a TikTok video speech-to-text transcript job from a video URL. |
+| `tiktok_submit_video_speech_text_by_aweme_id` | Submit a TikTok video speech-to-text transcript job from an aweme_id. |
+| `tiktok_get_video_speech_text_job` | Check a TikTok video speech-to-text transcript job by `job_id`. |
 
 ## Sensitive Words Check Tools
 
@@ -829,7 +848,7 @@ npx -y socialdatax-skills@latest tiktok search --keyword "camping" --pretty
 npx -y socialdatax-skills@latest sensitive-check text --text "<content>" --platform xhs --pretty
 ```
 
-MCP client configuration belongs to repo-tracked platform MCP listings when those materials exist. Current repo-tracked standalone listings cover XHS, Douyin, Kuaishou, Weibo, WeChat Content / 微信内容 under the historical `wechat-channels-insights` Registry name, and Instagram. WeChat Official Account article details are included in the WeChat endpoint and skills package, not a separate standalone listing. For Bilibili, Zhihu, X / Twitter, YouTube, TikTok, and 敏感词检测 / 违禁词检查, use the hosted endpoints above or `mcp-remote` until standalone listing and registry materials are created.
+MCP client configuration belongs to repo-tracked platform MCP listings when those materials exist. Current repo-tracked standalone listings cover XHS, Douyin, Kuaishou, Bilibili, Weibo, WeChat Content / 微信内容 under the historical `wechat-channels-insights` Registry name, Zhihu, Instagram, X / Twitter, YouTube, and TikTok. WeChat Official Account article details are included in the WeChat endpoint and skills package, not a separate standalone listing. Sensitive Words Check remains hosted-only; use its hosted endpoint above or `mcp-remote`.
 
 Aily is treated as an OpenClaw / AgentSkills ecosystem channel for this package. Use the OpenClaw skill install flow for now; a dedicated `--target aily` will be added only after its official skill import or package format is confirmed.
 

@@ -26,10 +26,10 @@ Use this checklist before syncing this listing to the public `socialdatax-skills
 - TikTok hosted MCP endpoint: `https://mcp.socialdatax.com/tiktok/mcp`
 - Sensitive Words Check hosted MCP endpoint: `https://mcp.socialdatax.com/sensitive-check/mcp`
 - Hosted auth: `Authorization: Bearer <SOCIALDATAX_API_KEY>`
-- Repo-tracked platform MCP listings: `com.52choujiang/xhs-insights`, `com.52choujiang/douyin-insights`, `com.52choujiang/kuaishou-insights`, `com.52choujiang/weibo-insights`, `com.52choujiang/wechat-channels-insights`, and `com.52choujiang/instagram-insights`.
+- Repo-tracked platform MCP listings: `com.52choujiang/xhs-insights`, `com.52choujiang/douyin-insights`, `com.52choujiang/kuaishou-insights`, `com.52choujiang/bilibili-insights`, `com.52choujiang/weibo-insights`, `com.52choujiang/wechat-channels-insights`, `com.52choujiang/zhihu-insights`, `com.52choujiang/instagram-insights`, `com.52choujiang/x-insights`, `com.52choujiang/youtube-insights`, and `com.52choujiang/tiktok-insights`.
 - Repo-tracked future SocialDataX namespace draft files exist for XHS and Douyin: `com.socialdatax/xhs-insights` and `com.socialdatax/douyin-insights`.
-- Reserved future SocialDataX namespace names for existing platform listings without draft files yet: `com.socialdatax/kuaishou-insights`, `com.socialdatax/weibo-insights`, `com.socialdatax/wechat-channels-insights`, and `com.socialdatax/instagram-insights`.
-- Hosted endpoints without repo-tracked standalone listing materials yet: Bilibili, Zhihu, X / Twitter, YouTube, TikTok, and Sensitive Words Check.
+- Reserved future SocialDataX namespace names for existing platform listings without draft files yet: `com.socialdatax/kuaishou-insights`, `com.socialdatax/bilibili-insights`, `com.socialdatax/weibo-insights`, `com.socialdatax/wechat-channels-insights`, `com.socialdatax/zhihu-insights`, `com.socialdatax/instagram-insights`, `com.socialdatax/x-insights`, `com.socialdatax/youtube-insights`, and `com.socialdatax/tiktok-insights`.
+- Hosted endpoint without a repo-tracked standalone listing: Sensitive Words Check.
 - Unified MCP registry name: none
 - Direct CLI startup: `npx -y socialdatax-skills@latest xhs search --keyword "露营" --pretty`
 - Runtime env: `SOCIALDATAX_API_KEY=<SOCIALDATAX_API_KEY>`
@@ -182,39 +182,44 @@ Use this checklist before syncing this listing to the public `socialdatax-skills
 - WeChat Content current platform listing remains in `public-listings/wechat-channels-insights`.
 - WeChat Content server metadata is publicly listed as `com.52choujiang/wechat-channels-insights`; `com.socialdatax/wechat-channels-insights` is only a reserved future namespace name until a repo-tracked draft file is created.
 - Instagram current platform listing remains in `public-listings/instagram-insights`.
-- Instagram server metadata is staged as `com.52choujiang/instagram-insights`; `com.socialdatax/instagram-insights` is only a reserved future namespace name until a repo-tracked draft file is created.
-- Bilibili, Zhihu, X / Twitter, YouTube, TikTok, and Sensitive Words Check are supported by the skills package and hosted MCP endpoints, but do not yet have repo-tracked standalone MCP listing directories in `public-listings/` or `registry/`.
-- Do not submit Bilibili, Zhihu, X / Twitter, YouTube, TikTok, or Sensitive Words Check as standalone MCP registry entries until their listing directories, server-card metadata, examples, and registry files are created and checked.
+- Instagram server metadata is publicly listed as `com.52choujiang/instagram-insights`; `com.socialdatax/instagram-insights` is only a reserved future namespace name until a repo-tracked draft file is created.
+- Bilibili, Zhihu, X / Twitter, YouTube, and TikTok have repo-tracked standalone listing directories and published `com.52choujiang/*` Registry entries; their `com.socialdatax/*` names remain reserved future namespaces without draft files.
+- Sensitive Words Check is supported by the skills package and hosted MCP endpoint, but is not published as a standalone platform Registry listing.
 - No `public-listings/socialdatax-skills/server-card.json` is published.
 - Hosted streamable HTTP clients can connect directly to `https://mcp.socialdatax.com/xhs/mcp`, `https://mcp.socialdatax.com/douyin/mcp`, `https://mcp.socialdatax.com/kuaishou/mcp`, `https://mcp.socialdatax.com/bilibili/mcp`, `https://mcp.socialdatax.com/weibo/mcp`, `https://mcp.socialdatax.com/wechat/mcp`, `https://mcp.socialdatax.com/zhihu/mcp`, `https://mcp.socialdatax.com/instagram/mcp`, `https://mcp.socialdatax.com/x/mcp`, `https://mcp.socialdatax.com/youtube/mcp`, `https://mcp.socialdatax.com/tiktok/mcp`, and `https://mcp.socialdatax.com/sensitive-check/mcp` with `Authorization: Bearer <SOCIALDATAX_API_KEY>`.
 - With a valid key, hosted MCP `initialize` succeeds.
-- With a valid key, XHS hosted MCP `tools/list` returns the current 21 public XHS tools.
-- With a valid key, XHS hosted MCP `tools/list` includes `socialdatax_get_points_balance`.
-- With a valid key, XHS hosted MCP `tools/list` includes `xhs_pgy_get_note_detail` and the tool description states the 20-point successful-call cost and that failures are not charged.
+- With a valid key, XHS hosted MCP `tools/list` returns the current 24 public XHS tools.
+- With a valid key, XHS hosted MCP `tools/list` includes `xhs_pgy_get_note_detail_by_note_id` and `xhs_pgy_get_note_detail_by_note_url`, excludes the old MCP tool name, and both descriptions state the 20-point successful-call cost and that failures are not charged.
 - With a valid key, XHS hosted MCP `tools/list` includes `xhs_get_product_reviews`.
-- With a valid key, Douyin hosted MCP `tools/list` returns the current 19 public Douyin tools.
-- With a valid key, Douyin hosted MCP `tools/list` includes `socialdatax_get_points_balance` and `douyin_search_users`.
+- With a valid key, XHS hosted MCP `tools/list` includes `xhs_get_product_review_replies`, whose `review_id` is copied from product review items.
+- With a valid key, Douyin hosted MCP `tools/list` returns the current 20 public Douyin tools.
+- With a valid key, Douyin hosted MCP `tools/list` includes `socialdatax_get_points_balance`, `douyin_search_products`, and `douyin_search_users`.
 - With a valid key, Kuaishou hosted MCP `tools/list` returns the current 16 public Kuaishou tools.
 - With a valid key, Kuaishou hosted MCP `tools/list` includes `socialdatax_get_points_balance`.
 - With a valid key, Kuaishou hosted MCP `tools/list` includes `kuaishou_get_hot_search_list`.
-- With a valid key, Bilibili hosted MCP `tools/list` returns the current 19 public Bilibili tools.
+- With a valid key, Bilibili hosted MCP `tools/list` returns the current 22 public Bilibili tools.
 - With a valid key, Bilibili hosted MCP `tools/list` includes `socialdatax_get_points_balance`.
+- With a valid key, Bilibili hosted MCP `tools/list` includes `bilibili_submit_video_speech_text_by_video_url`, `bilibili_submit_video_speech_text_by_bvid`, and `bilibili_get_video_speech_text_job`.
 - With a valid key, Weibo hosted MCP `tools/list` returns the current 19 public Weibo tools.
 - With a valid key, Weibo hosted MCP `tools/list` includes `socialdatax_get_points_balance`.
 - With a valid key, Weibo hosted MCP `tools/list` includes `weibo_get_post_liker_list_by_post_url` and `weibo_get_post_repost_list_by_post_url`.
 - With a valid key, WeChat Content hosted MCP `tools/list` returns the current 16 public WeChat tools.
 - With a valid key, WeChat Content hosted MCP `tools/list` includes `socialdatax_get_points_balance`.
 - With a valid key, WeChat Content hosted MCP `tools/list` includes `wechat_get_user_info_by_url` and `wechat_get_mp_article_detail_by_url`.
-- With a valid key, Zhihu hosted MCP `tools/list` returns the current 8 public Zhihu tools.
+- With a valid key, Zhihu hosted MCP `tools/list` returns the current 11 public Zhihu tools.
 - With a valid key, Zhihu hosted MCP `tools/list` includes `socialdatax_get_points_balance`.
-- With a valid key, Instagram hosted MCP `tools/list` returns the current 10 public Instagram tools.
+- With a valid key, Zhihu hosted MCP `tools/list` includes `zhihu_submit_video_speech_text_by_video_url`, `zhihu_submit_video_speech_text_by_zvideo_id`, and `zhihu_get_video_speech_text_job`.
+- With a valid key, Instagram hosted MCP `tools/list` returns the current 13 public Instagram tools.
 - With a valid key, Instagram hosted MCP `tools/list` includes `socialdatax_get_points_balance`.
-- With a valid key, X / Twitter hosted MCP `tools/list` returns the current 13 public X / Twitter tools.
+- With a valid key, X / Twitter hosted MCP `tools/list` returns the current 16 public X / Twitter tools.
 - With a valid key, X / Twitter hosted MCP `tools/list` includes `socialdatax_get_points_balance`.
-- With a valid key, YouTube hosted MCP `tools/list` returns the current 7 public YouTube tools.
+- With a valid key, X / Twitter hosted MCP `tools/list` includes `x_submit_video_speech_text_by_post_url`, `x_submit_video_speech_text_by_post_id`, and `x_get_video_speech_text_job`.
+- With a valid key, YouTube hosted MCP `tools/list` returns the current 10 public YouTube tools.
 - With a valid key, YouTube hosted MCP `tools/list` includes `socialdatax_get_points_balance`.
-- With a valid key, TikTok hosted MCP `tools/list` returns the current 10 public TikTok tools.
+- With a valid key, YouTube hosted MCP `tools/list` includes `youtube_submit_video_speech_text_by_url`, `youtube_submit_video_speech_text_by_video_id`, and `youtube_get_video_speech_text_job`.
+- With a valid key, TikTok hosted MCP `tools/list` returns the current 13 public TikTok tools.
 - With a valid key, TikTok hosted MCP `tools/list` includes `socialdatax_get_points_balance`.
+- With a valid key, TikTok hosted MCP `tools/list` includes `tiktok_submit_video_speech_text_by_url`, `tiktok_submit_video_speech_text_by_aweme_id`, and `tiktok_get_video_speech_text_job`.
 - With a valid key, Sensitive Words Check hosted MCP `tools/list` returns the current 2 public tools: `check_sensitive_text` and `socialdatax_get_points_balance`.
 
 ## Directory Submission Order
@@ -228,7 +233,8 @@ Use this checklist before syncing this listing to the public `socialdatax-skills
 7. Submit or refresh the Weibo platform MCP listing from `public-listings/weibo-insights`.
 8. Submit or refresh the current WeChat Content platform MCP listing from `public-listings/wechat-channels-insights`.
 9. Submit or refresh the Instagram platform MCP listing from `public-listings/instagram-insights`.
-10. Add Bilibili, Zhihu, X / Twitter, YouTube, TikTok, and Sensitive Words Check standalone MCP listings only after creating their repo-tracked listing and registry materials.
+10. Submit or refresh the Bilibili, Zhihu, X / Twitter, YouTube, and TikTok platform MCP listings from their repo-tracked `public-listings/*-insights` directories.
+11. Keep Sensitive Words Check hosted-only unless a separate platform Registry listing is explicitly approved.
 
 ## Search Keywords To Verify After Approval
 
@@ -324,4 +330,4 @@ Use this checklist before syncing this listing to the public `socialdatax-skills
 - `敏感词检测 skill`
 - `违禁词检查 skill`
 
-Endpoint-only services are supported by the skills package and hosted MCP endpoints; verify their package and skill keywords after approval, but do not submit them as standalone MCP Registry listings until repo-tracked listing and registry materials exist.
+Sensitive Words Check remains hosted-only; verify its package and skill keywords after approval, but do not submit it as a standalone platform MCP Registry listing without explicit approval.

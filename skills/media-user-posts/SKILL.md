@@ -39,7 +39,7 @@ Current platform support:
 - YouTube channel videos and Shorts through `youtube_get_user_posted_videos_by_channel_url`.
 - TikTok creator posts through the `tiktok_get_user_posts_by_*` tools.
 - Weibo / 微博 creator posts through the `weibo_get_user_posts_by_*` tools.
-- WeChat Channels / 视频号 creator videos through the `wechat_get_user_posted_videos_by_*` tools; the user_id entrypoint requires a `v2_...@finder` user_id.
+- WeChat Channels / 视频号 creator videos and image posts through the `wechat_get_user_posted_videos_by_*` tools; the user_id entrypoint requires a `v2_...@finder` user_id.
 
 ## API Key
 
@@ -243,7 +243,7 @@ Optional arguments:
 - Weibo `--user-id <user_id>`: preferred when the creator user_id is already known.
 - Weibo `--profile-url <profile_url>`: use for a Weibo user profile URL.
 - WeChat Channels / 视频号 `--user-id <v2_finder_user_id>`: preferred when the creator `v2_...@finder` user_id is already known.
-- WeChat Channels / 视频号 `--url <wechat_work_url_or_share_text>`: use a video or image-post link or share text to resolve the author and list that creator's videos.
+- WeChat Channels / 视频号 `--url <wechat_work_url_or_share_text>`: use a video or image-post link or share text to resolve the author and list that creator's videos and image posts.
 - `--source-client socialdatax-skills --source-platform github --source-skill media-user-posts`: usage attribution for this Agent Skill; keep these values unchanged when running examples from this Skill.
 
 Use either the ID option or the profile URL option for a single command, not both.
@@ -295,8 +295,8 @@ Kuaishou creator work pagination uses opaque `page_token` values; pass the compl
 - `weibo_get_user_posts_by_profile_url`: use for Weibo user profile URLs.
 Weibo creator post pagination uses opaque `page_token` values; pass the complete returned `next_page_token` back unchanged for the same user. Do not modify, truncate, redact, mask, omit, normalize, rebuild, generate, or replace the middle with ellipses.
 - `wechat_get_user_posted_videos_by_user_id`: preferred when the WeChat Channels / 视频号 `v2_...@finder` user_id is already known.
-- `wechat_get_user_posted_videos_by_url`: use a WeChat Channels / 视频号 video or image-post link or share text to resolve the author and list that creator's videos.
-WeChat Channels / 视频号 creator video pagination uses opaque `page_token` values; pass the complete returned `next_page_token` back unchanged for the same user. Do not modify, truncate, redact, mask, omit, normalize, rebuild, generate, or replace the middle with ellipses.
+- `wechat_get_user_posted_videos_by_url`: use a WeChat Channels / 视频号 video or image-post link or share text to resolve the author and list that creator's videos and image posts.
+WeChat Channels / 视频号 creator work pagination uses opaque `page_token` values; pass the complete returned `next_page_token` back unchanged for the same user. Do not modify, truncate, redact, mask, omit, normalize, rebuild, generate, or replace the middle with ellipses.
 `--since-days` uses CLI-side filtering only and is not an MCP tool argument; for MCP-only calls, continue pages as needed and filter returned `publish_time` values in your analysis.
 
 ## Output Guidance
@@ -310,7 +310,7 @@ For Bilibili creator lists, keep videos, articles, and dynamics separate when mo
 For YouTube creator lists, distinguish regular videos and Shorts when the returned data provides that signal.
 For Zhihu, Instagram, X / Twitter, and TikTok creator lists, preserve returned public content IDs and URLs for follow-up detail or comment analysis.
 For Weibo creator posts, report post IDs, content, media, publish time, interaction counts, and author facts when present.
-For WeChat Channels / 视频号 creator videos, report object IDs, descriptions, media, publish time, interaction counts, and author facts when present.
+For WeChat Channels / 视频号 creator works, report object IDs, descriptions, media, publish time, interaction counts, and author facts when present.
 
 ## Troubleshooting
 

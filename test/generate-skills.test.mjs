@@ -718,7 +718,9 @@ test("github mirrors keep channel-specific attribution without changing npm outp
     "media-search",
     "media-detail",
     "media-comments",
+    "xhs-comment-insights",
     "media-transcript",
+    "douyin-video-copy-extract",
     "media-user-info",
     "media-user-posts",
     "sensitive-check",
@@ -734,9 +736,16 @@ test("github mirrors keep channel-specific attribution without changing npm outp
       githubListings.map((listing) => listing.slug).sort(),
       expectedSlugs.slice().sort()
     );
+    const mirrorSources = new Map([
+      ["xhs-comment-insights", "modelscope"],
+      ["douyin-video-copy-extract", "modelscope"],
+    ]);
     for (const slug of expectedSlugs) {
       const listing = githubListings.find((candidate) => candidate.slug === slug);
-      assert.deepEqual(listing?.mirrorFrom, { host: "npm", slug });
+      assert.deepEqual(listing?.mirrorFrom, {
+        host: mirrorSources.get(slug) ?? "npm",
+        slug,
+      });
     }
 
     await generateSkills({ repoRoot: projectRoot, outRoot: tempRoot, quiet: true });
@@ -766,6 +775,31 @@ test("github mirrors keep channel-specific attribution without changing npm outp
       npmSkill,
       /--source-client socialdatax-skills --source-platform npm --source-skill media-search/
     );
+
+    for (const slug of ["xhs-comment-insights", "douyin-video-copy-extract"]) {
+      const skill = readGeneratedSkill(
+        tempRoot,
+        "github",
+        slug,
+        source.hosts.hosts
+      );
+      assert.match(skill, /source_platform: "github"/);
+      assert.match(skill, /from=github/);
+      assert.match(skill, /--source-client socialdatax-skills/);
+      assert.match(skill, /--source-platform github/);
+      assert.match(skill, new RegExp(`--source-skill ${escapeRegExp(slug)}`));
+      assert.doesNotMatch(skill, /source_platform: "modelscope"/);
+      assert.doesNotMatch(skill, /--source-platform modelscope/);
+
+      const agent = readGeneratedAgent(
+        tempRoot,
+        "github",
+        slug,
+        source.hosts.hosts
+      );
+      assert.match(agent, new RegExp(`\\$${escapeRegExp(slug)}\\b`));
+      assert.match(agent, /allow_implicit_invocation: true/);
+    }
   } finally {
     rmSync(tempRoot, { recursive: true, force: true });
   }
@@ -1408,8 +1442,72 @@ test("generated media transcript skill documents direct CLI and MCP transcript j
       /This skill can submit bounded video speech-to-text analysis jobs through the direct CLI or hosted MCP tools/
     );
     assert.doesNotMatch(skill, /This skill is read-only\./);
-    assert.doesNotMatch(skill, /MCP-only/i);
-    assert.doesNotMatch(skill, /not available through the direct CLI/i);
+    assert.match(
+      skill,
+      /Bilibili \/ 哔哩哔哩 \/ B站 single-part video speech-to-text transcript jobs through hosted/
+    );
+    assert.match(
+      skill,
+      /Instagram .*video posts and Reels.*hosted .*MCP tools/
+    );
+    assert.match(skill, /photo and carousel posts are not supported/);
+    assert.match(
+      skill,
+      /TikTok video speech-to-text transcript jobs (?:through|are available through) hosted TikTok MCP tools/
+    );
+    assert.match(
+      skill,
+      /use the video URL or numeric aweme_id entrypoint, or query an existing valid job_id directly/
+    );
+    assert.match(
+      skill,
+      /YouTube video speech-to-text transcript jobs through hosted YouTube MCP tools/
+    );
+    assert.doesNotMatch(skill, /YouTube 当前没有口播转文字入口/);
+    assert.match(
+      skill,
+      /X \/ Twitter video post speech-to-text transcript jobs through hosted X MCP tools/
+    );
+    assert.doesNotMatch(skill, /X \/ Twitter 当前没有口播转文字入口/);
+    assert.match(
+      skill,
+      /If the user already provides a valid platform-specific `job_id`, call the matching get-job tool directly/
+    );
+    assert.doesNotMatch(skill, /Pass only the returned `job_id`/);
+    assert.match(
+      skill,
+      /Zhihu \/ 知乎 independent-video and video-answer speech-to-text transcript jobs through hosted Zhihu MCP tools/
+    );
+    assert.match(skill, /\/question\/\{question_id\}\/answer\/\{answer_id\}/);
+    assert.doesNotMatch(skill, /知乎当前没有口播转文字入口/);
+    const packageReadme = readFileSync(join(packageDir, "README.md"), "utf8");
+    assert.match(
+      packageReadme,
+      /`media-transcript`:.*Zhihu independent videos and video answers, Instagram regular video posts\/Reels, X \/ Twitter video posts, TikTok, and YouTube through hosted MCP tools/
+    );
+    assert.doesNotMatch(packageReadme, /Zhihu video answers are not supported/);
+    assert.doesNotMatch(packageReadme, /X \/ Twitter transcript jobs, are not supported/);
+    for (const tool of [
+      "instagram_submit_video_speech_text_by_post_url",
+      "instagram_submit_video_speech_text_by_post_id",
+      "instagram_get_video_speech_text_job",
+      "youtube_submit_video_speech_text_by_url",
+      "youtube_submit_video_speech_text_by_video_id",
+      "youtube_get_video_speech_text_job",
+      "zhihu_submit_video_speech_text_by_video_url",
+      "zhihu_submit_video_speech_text_by_zvideo_id",
+      "zhihu_get_video_speech_text_job",
+    ]) {
+      assert.match(packageReadme, new RegExp(`\\\`${escapeRegExp(tool)}\\\``));
+    }
+    for (const tool of [
+      "tiktok_submit_video_speech_text_by_url",
+      "tiktok_submit_video_speech_text_by_aweme_id",
+      "tiktok_get_video_speech_text_job",
+    ]) {
+      assert.match(skill, new RegExp(`\\\`${escapeRegExp(tool)}\\\``));
+    }
+    assert.match(skill, /MCP-only tools not available through the direct CLI/);
 
     const directCliExamples = extractDirectCliExamples(skill);
     for (const command of [
@@ -1439,6 +1537,14 @@ test("generated media transcript skill documents direct CLI and MCP transcript j
     assert.match(skill, /--source-client socialdatax-skills/);
     assert.match(skill, /--source-platform npm/);
     assert.match(skill, /--source-skill media-transcript/);
+    assert.ok(
+      directCliExamples.every((example) => !example.includes("bilibili transcript")),
+      "media-transcript must not advertise a Bilibili direct CLI command"
+    );
+    assert.ok(
+      directCliExamples.every((example) => !example.includes("instagram transcript")),
+      "media-transcript must not advertise an Instagram direct CLI command"
+    );
 
     for (const tool of [
       "xhs_submit_video_speech_text_by_note_url",
@@ -1456,6 +1562,18 @@ test("generated media transcript skill documents direct CLI and MCP transcript j
       "wechat_submit_video_speech_text_by_video_url",
       "wechat_submit_video_speech_text_by_encrypted_object_id",
       "wechat_get_video_speech_text_job",
+      "bilibili_submit_video_speech_text_by_video_url",
+      "bilibili_submit_video_speech_text_by_bvid",
+      "bilibili_get_video_speech_text_job",
+      "instagram_submit_video_speech_text_by_post_url",
+      "instagram_submit_video_speech_text_by_post_id",
+      "instagram_get_video_speech_text_job",
+      "x_submit_video_speech_text_by_post_url",
+      "x_submit_video_speech_text_by_post_id",
+      "x_get_video_speech_text_job",
+      "zhihu_submit_video_speech_text_by_video_url",
+      "zhihu_submit_video_speech_text_by_zvideo_id",
+      "zhihu_get_video_speech_text_job",
     ]) {
       assert.match(
         skill,
@@ -1557,7 +1675,11 @@ test("generated short video copy extraction skill documents cross-platform trans
       assert.match(skill, /口播转文字/);
       assert.match(skill, /视频逐字稿/);
       assert.match(skill, /逐字稿/);
-      assert.match(skill, /小红书、抖音、快手、微博和视频号/);
+      assert.match(
+        skill,
+        /当前 direct CLI 入口支持小红书、抖音、快手、微博和视频号/
+      );
+      assert.match(skill, /其他平台不在本 Skill 范围内/);
       assert.match(
         skill,
         /(?:(?:获取|一键提取)视频基础信息|一键提取视频标题\/基础信息)、原视频简介、口播逐字稿、可复制文案和精简版/
@@ -3910,9 +4032,21 @@ test("generated media skills document weibo and wechat channel support", async (
       "media-transcript",
       source.hosts.hosts
     );
+    const mediaUserPosts = readGeneratedSkill(
+      tempRoot,
+      "npm",
+      "media-user-posts",
+      source.hosts.hosts
+    );
     const aggregateResearch = readGeneratedSkill(
       tempRoot,
       "npm",
+      "socialdatax-content-research-assistant",
+      source.hosts.hosts
+    );
+    const skillhubAggregateResearch = readGeneratedSkill(
+      tempRoot,
+      "skillhub",
       "socialdatax-content-research-assistant",
       source.hosts.hosts
     );
@@ -3941,6 +4075,22 @@ test("generated media skills document weibo and wechat channel support", async (
     assert.match(
       mediaTranscript,
       /wechat_submit_video_speech_text_by_encrypted_object_id/
+    );
+    assert.match(
+      mediaUserPosts,
+      /WeChat Channels \/ 视频号 creator videos and image posts through/
+    );
+    assert.match(
+      aggregateResearch,
+      /^- Use WeChat Channels \/ 视频号 commands for .* creator works, and hot topics;/m
+    );
+    assert.match(
+      aggregateResearch,
+      /WeChat Channels work-list evidence when WeChat Channels commands are used/
+    );
+    assert.match(
+      skillhubAggregateResearch,
+      /保留视频号作品列表证据/
     );
 
     for (const skillName of [
@@ -4292,6 +4442,91 @@ test("kuaishou platform is present in source and generated public skills", async
   }
 });
 
+test("clawhub platform hubs cover the remaining public platforms", async () => {
+  const tempRoot = mkdtempSync(join(tmpdir(), "socialdatax-skills-"));
+
+  try {
+    const source = await loadSkillSource({ repoRoot: projectRoot });
+    await generateSkills({
+      repoRoot: projectRoot,
+      outRoot: tempRoot,
+      quiet: true,
+    });
+
+    const hubs = [
+      {
+        slug: "socialdatax-wechat-channels",
+        capability: "wechat-hub",
+        cli: "wechat hot-search --pretty",
+        tool: "wechat_get_hot_search_list",
+      },
+      {
+        slug: "socialdatax-bilibili",
+        capability: "bilibili-hub",
+        cli: "bilibili search-videos --keyword",
+        tool: "bilibili_search_videos",
+      },
+      {
+        slug: "socialdatax-zhihu",
+        capability: "zhihu-hub",
+        cli: "zhihu hot-list --pretty",
+        tool: "zhihu_get_hot_list",
+      },
+      {
+        slug: "socialdatax-instagram",
+        capability: "instagram-hub",
+        cli: "instagram search --keyword",
+        tool: "instagram_search_posts",
+      },
+      {
+        slug: "socialdatax-x-twitter",
+        capability: "x-hub",
+        cli: "x search --keyword",
+        tool: "x_search_posts",
+      },
+      {
+        slug: "socialdatax-youtube",
+        capability: "youtube-hub",
+        cli: "youtube search --keyword",
+        tool: "youtube_search_videos",
+      },
+      {
+        slug: "socialdatax-tiktok",
+        capability: "tiktok-hub",
+        cli: "tiktok search --keyword",
+        tool: "tiktok_search_posts",
+      },
+    ];
+
+    for (const hub of hubs) {
+      const listing = source.listings.listings.find(
+        (candidate) => candidate.host === "clawhub" && candidate.slug === hub.slug
+      );
+      assert.ok(listing, `source should include clawhub/${hub.slug}`);
+      assert.equal(listing.capability, hub.capability);
+
+      const skill = readGeneratedSkill(
+        tempRoot,
+        "clawhub",
+        hub.slug,
+        source.hosts.hosts
+      );
+      const frontmatter = extractFrontmatter(skill);
+      assert.equal(frontmatterScalar(frontmatter, "source_platform"), "clawhub");
+      assert.equal(frontmatterScalar(frontmatter, "source_skill"), hub.slug);
+      assert.match(skill, /https:\/\/socialdatax\.com\/ai\?from=clawhub/);
+      assert.match(skill, new RegExp(`--source-skill ${escapeRegExp(hub.slug)}`));
+      assertDirectCliExample(skill, hub.cli);
+      assert.match(
+        extractMarkdownSection(skill, "MCP Tools"),
+        new RegExp(`\\\`${escapeRegExp(hub.tool)}\\\``)
+      );
+    }
+  } finally {
+    rmSync(tempRoot, { recursive: true, force: true });
+  }
+});
+
 test("active SkillHub public skill titles avoid Tencent ecosystem discovery wording", async () => {
   const tempRoot = mkdtempSync(join(tmpdir(), "socialdatax-skills-"));
 
@@ -4386,7 +4621,7 @@ test("active SkillHub public skill titles avoid Tencent ecosystem discovery word
       assert.doesNotMatch(
         shortVideoCopyExtract,
         /公众号文章|Instagram|X \/ Twitter|YouTube|TikTok/,
-        `${slug} should only use WeChat Channels inside the cross-platform transcript workflow`
+        `${slug} should keep unrelated platform workflows out of the narrow transcript skill`
       );
     }
   } finally {

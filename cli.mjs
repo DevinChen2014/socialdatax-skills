@@ -22,7 +22,7 @@ import { decryptWechatMediaCommand } from "./lib/media/wechat-decrypt.mjs";
 export { decryptWechatMediaCommand };
 
 const PACKAGE_NAME = "socialdatax-skills";
-const PACKAGE_VERSION = "0.2.38";
+const PACKAGE_VERSION = "0.2.41";
 const PACKAGE_SPEC = `${PACKAGE_NAME}@latest`;
 const LOG_PREFIX = `[${PACKAGE_NAME}]`;
 const MIN_NODE_VERSION = "20.18.1";
@@ -83,7 +83,7 @@ const AVAILABLE_SKILLS = [
   {
     name: "media-transcript",
     summary:
-      "Submit and check video speech-to-text transcript jobs for XHS, Douyin, Kuaishou, Weibo, and WeChat Channels.",
+      "Submit and check video speech-to-text transcript jobs for XHS, Douyin, Kuaishou, Weibo, and WeChat Channels, plus Bilibili, Zhihu, Instagram, X / Twitter, TikTok, and YouTube through hosted MCP tools.",
     emoji: "🎙️",
   },
   {
@@ -851,9 +851,14 @@ const REPO_TRACKED_PLATFORM_LISTINGS = new Set([
   "xhs",
   "douyin",
   "kuaishou",
+  "bilibili",
   "weibo",
   "wechat",
+  "zhihu",
   "instagram",
+  "x",
+  "youtube",
+  "tiktok",
 ]);
 const REPO_TRACKED_FUTURE_REGISTRY_DRAFTS = new Set(["xhs", "douyin"]);
 const PLATFORMS = {
@@ -1112,6 +1117,8 @@ const PLATFORMS = {
     id: "bilibili",
     displayName: "Bilibili / 哔哩哔哩 / B站",
     status: "public",
+    registryName: "com.52choujiang/bilibili-insights",
+    futureRegistryName: "com.socialdatax/bilibili-insights",
     endpoint: "https://mcp.socialdatax.com/bilibili/mcp",
     apiKeyEnv: API_KEY_ENV_NAMES,
     upstreamEnv: [
@@ -1301,7 +1308,7 @@ const PLATFORMS = {
       {
         name: "weibo_get_video_speech_text_job",
         description:
-          "Continue checking a Weibo video speech-to-text transcript job by job_id returned from a submit tool without creating a new task. " +
+          "Continue checking a Weibo video speech-to-text transcript job using a valid job_id supplied by the user, or a job_id returned from a submit tool, without creating a new task. " +
           `${TRANSCRIPT_GET_JOB_WAIT_DESCRIPTION} ${TRANSCRIPT_JOB_DESCRIPTION_SUFFIX}`,
       },
     ],
@@ -1366,12 +1373,12 @@ const PLATFORMS = {
       },
       {
         name: "wechat_get_user_posted_videos_by_user_id",
-        description: "Fetch a paginated list of videos published by a creator when the v2_...@finder user_id is already known.",
+        description: "Fetch a paginated list of videos and image posts published by a creator when the v2_...@finder user_id is already known.",
       },
       {
         name: "wechat_get_user_posted_videos_by_url",
         description:
-          "Fetch creator videos from a WeChat Channels / 视频号 video or image-post link or share text.",
+          "Fetch creator videos and image posts from a WeChat Channels / 视频号 video or image-post link or share text.",
       },
       {
         name: "wechat_submit_video_speech_text_by_video_url",
@@ -1386,7 +1393,7 @@ const PLATFORMS = {
       {
         name: "wechat_get_video_speech_text_job",
         description:
-          "Continue checking a WeChat Channels / 视频号 video speech-to-text transcript job by job_id returned from a submit tool without creating a new task. " +
+          "Continue checking a WeChat Channels / 视频号 video speech-to-text transcript job using a valid job_id supplied by the user, or a job_id returned from a submit tool, without creating a new task. " +
           `${TRANSCRIPT_GET_JOB_WAIT_DESCRIPTION} ${TRANSCRIPT_JOB_DESCRIPTION_SUFFIX}`,
       },
     ],
@@ -1395,6 +1402,8 @@ const PLATFORMS = {
     id: "zhihu",
     displayName: "Zhihu / 知乎",
     status: "public",
+    registryName: "com.52choujiang/zhihu-insights",
+    futureRegistryName: "com.socialdatax/zhihu-insights",
     endpoint: "https://mcp.socialdatax.com/zhihu/mcp",
     apiKeyEnv: API_KEY_ENV_NAMES,
     upstreamEnv: [
@@ -1501,6 +1510,8 @@ const PLATFORMS = {
     id: "x",
     displayName: "X / Twitter",
     status: "public",
+    registryName: "com.52choujiang/x-insights",
+    futureRegistryName: "com.socialdatax/x-insights",
     endpoint: "https://mcp.socialdatax.com/x/mcp",
     apiKeyEnv: API_KEY_ENV_NAMES,
     upstreamEnv: [
@@ -1568,6 +1579,8 @@ const PLATFORMS = {
     id: "youtube",
     displayName: "YouTube",
     status: "public",
+    registryName: "com.52choujiang/youtube-insights",
+    futureRegistryName: "com.socialdatax/youtube-insights",
     endpoint: "https://mcp.socialdatax.com/youtube/mcp",
     apiKeyEnv: API_KEY_ENV_NAMES,
     upstreamEnv: [
@@ -1610,6 +1623,8 @@ const PLATFORMS = {
     id: "tiktok",
     displayName: "TikTok",
     status: "public",
+    registryName: "com.52choujiang/tiktok-insights",
+    futureRegistryName: "com.socialdatax/tiktok-insights",
     endpoint: "https://mcp.socialdatax.com/tiktok/mcp",
     apiKeyEnv: API_KEY_ENV_NAMES,
     upstreamEnv: [
@@ -1659,6 +1674,20 @@ const PLATFORMS = {
         name: "tiktok_get_user_posts_by_profile_url",
         description:
           "Fetch a paginated list of posts by a TikTok creator profile URL.",
+      },
+      {
+        name: "tiktok_submit_video_speech_text_by_url",
+        description:
+          "Submit a TikTok video speech-to-text transcript job from a video URL.",
+      },
+      {
+        name: "tiktok_submit_video_speech_text_by_aweme_id",
+        description:
+          "Submit a TikTok video speech-to-text transcript job from an aweme_id.",
+      },
+      {
+        name: "tiktok_get_video_speech_text_job",
+        description: "Check a TikTok video speech-to-text transcript job by job_id.",
       },
     ],
   },
@@ -2786,7 +2815,7 @@ function printDoctor(args) {
     if (platform.repoTrackedStandaloneListing) {
       console.log(`  registry: ${platform.registryName}`);
     } else {
-      console.log("  listing: hosted endpoint only; standalone listing materials pending");
+      console.log("  listing: hosted-only; no standalone Registry listing");
     }
     if (platform.futureRegistryName) {
       const futureLabel = REPO_TRACKED_FUTURE_REGISTRY_DRAFTS.has(platform.id)
@@ -3049,10 +3078,10 @@ function printHelp() {
   console.log("      Call the WeChat Channels / 视频号 creator profile tool with a v2_...@finder user_id.");
   console.log("");
   console.log(`  npx -y ${PACKAGE_SPEC} wechat user-posts --user-id "<v2_finder_user_id>" --pretty`);
-  console.log("      Call the WeChat Channels / 视频号 creator videos tool with a v2_...@finder user_id.");
+  console.log("      Call the WeChat Channels / 视频号 creator videos and image posts tool with a v2_...@finder user_id.");
   console.log("");
   console.log(`  npx -y ${PACKAGE_SPEC} wechat user-posts --url "<wechat_work_url_or_share_text>" --pretty`);
-  console.log("      Call the WeChat Channels / 视频号 creator videos tool from a video or image-post link or share text.");
+  console.log("      Call the WeChat Channels / 视频号 creator videos and image posts tool from a video or image-post link or share text.");
   console.log("");
   console.log(`  npx -y ${PACKAGE_SPEC} wechat transcript --encrypted-object-id "<encrypted_object_id>" --pretty`);
   console.log("      Submit or check a WeChat Channels / 视频号 video speech-to-text transcript job.");
@@ -3372,6 +3401,11 @@ function printRemovedMcpConfigHelp(command) {
   console.error("  com.52choujiang/weibo-insights");
   console.error("  com.52choujiang/wechat-channels-insights");
   console.error("  com.52choujiang/instagram-insights");
+  console.error("  com.52choujiang/bilibili-insights");
+  console.error("  com.52choujiang/zhihu-insights");
+  console.error("  com.52choujiang/x-insights");
+  console.error("  com.52choujiang/youtube-insights");
+  console.error("  com.52choujiang/tiktok-insights");
   console.error("Repo-tracked future SocialDataX namespace draft files exist for:");
   console.error("  com.socialdatax/xhs-insights");
   console.error("  com.socialdatax/douyin-insights");
@@ -3380,7 +3414,12 @@ function printRemovedMcpConfigHelp(command) {
   console.error("  com.socialdatax/weibo-insights");
   console.error("  com.socialdatax/wechat-channels-insights");
   console.error("  com.socialdatax/instagram-insights");
-  console.error("Additional hosted endpoints for Bilibili, Zhihu, X / Twitter, YouTube, TikTok, and Sensitive Words Check do not yet have repo-tracked standalone listing materials in this repository.");
+  console.error("  com.socialdatax/bilibili-insights");
+  console.error("  com.socialdatax/zhihu-insights");
+  console.error("  com.socialdatax/x-insights");
+  console.error("  com.socialdatax/youtube-insights");
+  console.error("  com.socialdatax/tiktok-insights");
+  console.error("Sensitive Words Check is hosted-only and does not have a standalone Registry listing.");
   console.error("");
   console.error("Use hosted streamable HTTP when your client supports remote MCP:");
   console.error("  https://mcp.socialdatax.com/xhs/mcp");

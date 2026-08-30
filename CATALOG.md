@@ -30,11 +30,11 @@ This table is a curated marketplace catalog, not the complete platform support l
 | --- | --- | --- | --- |
 | 社媒内容研究助手 | Research supported SocialDataX public platforms including XHS, Douyin, Kuaishou, Bilibili, Zhihu, Instagram, X / Twitter, YouTube, TikTok, Weibo, and WeChat Channels, plus WeChat Official Account article details. | Cross-platform social content research | SkillHub / ModelScope / GitHub: `socialdatax-content-research-assistant` |
 | 小红书内容研究 | Research popular XHS / Xiaohongshu / RedNote note samples, content angles, keywords, competitor content, and trend material. | XHS note search | ClawHub / ModelScope: `xhs-content-research` |
-| 小红书评论分析与需求挖掘 | Analyze comments from a provided XHS note URL or complete `note_id` for user feedback, pain points, purchase objections, FAQ, and demand signals. | XHS comments and replies | ClawHub / ModelScope: `xhs-comment-insights` |
+| 小红书评论分析与需求挖掘 | Analyze comments from a provided XHS note URL or complete `note_id` for user feedback, pain points, purchase objections, FAQ, and demand signals. | XHS comments and replies | ClawHub / ModelScope / GitHub: `xhs-comment-insights` |
 | 小红书热榜选题分析 | Turn current XHS hot-list signals and related popular note samples into actionable topic ideas. | XHS hot search plus note search | ClawHub / ModelScope: `xhs-hot-topic-selection` |
 | 小红书爆款笔记研究 | Study high-engagement XHS note samples from a keyword, niche, product, or scenario. | XHS note search | ClawHub / ModelScope: `xhs-viral-note-research` |
 | 小红书爆款文案拆解 | Break down XHS viral copy structure, title hooks, opening style, selling points, emotional wording, CTA, and reusable copy framework. | XHS search and note detail | ClawHub / ModelScope: `xhs-viral-copy-breakdown` |
-| 抖音文案提取 | Extract Douyin video context, original description, spoken transcript, copy-ready version, and task status from a URL, share text, `aweme_id`, or transcript `job_id`. | Douyin transcript job | SkillHub / ClawHub / ModelScope: `douyin-video-copy-extract` |
+| 抖音文案提取 | Extract Douyin video context, original description, spoken transcript, copy-ready version, and task status from a URL, share text, `aweme_id`, or transcript `job_id`. | Douyin transcript job | SkillHub / ClawHub / ModelScope / GitHub: `douyin-video-copy-extract` |
 | 敏感词检测与违禁词检查 | Check copy before publishing for sensitive terms, platform risk hints, and safer rewrite suggestions. | Copy safety review | SkillHub / ClawHub / ModelScope: `socialdatax-sensitive-check` |
 
 ## Direct CLI Examples
@@ -78,7 +78,7 @@ npx -y socialdatax-skills@latest xhs detail \
 ```bash
 npx -y socialdatax-skills@latest xhs comments \
   --url "<xhs_note_url_or_share_text>" --pages 2 --max-items 20 --include-replies --pretty \
-  --source-client socialdatax-skills --source-platform github --source-skill media-comments
+  --source-client socialdatax-skills --source-platform github --source-skill xhs-comment-insights
 ```
 
 ### XHS Hot Topic Planning
@@ -102,7 +102,7 @@ npx -y socialdatax-skills@latest xhs search \
 ```bash
 npx -y socialdatax-skills@latest douyin transcript \
   --url "<douyin_video_url_or_share_text>" --pretty \
-  --source-client socialdatax-skills --source-platform github --source-skill media-transcript
+  --source-client socialdatax-skills --source-platform github --source-skill douyin-video-copy-extract
 ```
 
 If the transcript job is still pending, keep the returned `job_id` and query it again:
@@ -110,7 +110,7 @@ If the transcript job is still pending, keep the returned `job_id` and query it 
 ```bash
 npx -y socialdatax-skills@latest douyin transcript \
   --job-id "<job_id>" --pretty \
-  --source-client socialdatax-skills --source-platform github --source-skill media-transcript
+  --source-client socialdatax-skills --source-platform github --source-skill douyin-video-copy-extract
 ```
 
 ### Sensitive Term Check

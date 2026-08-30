@@ -1,6 +1,6 @@
 {
   "name": "socialdatax-skills",
-  "version": "0.2.38",
+  "version": "0.2.41",
   "description": "SocialDataX / 社媒数据助手 skill installer and direct CLI helper for hosted MCP services.",
   "license": "MIT",
   "type": "module",
@@ -95,11 +95,11 @@
     "node": ">=20.18.1"
   },
   "dependencies": {
-    "@modelcontextprotocol/sdk": "^1.29.0",
+    "@modelcontextprotocol/sdk": "^1.30.0",
     "undici": "^7.29.0"
   },
   "overrides": {
-    "hono": "4.12.27",
+    "hono": "4.13.5",
     "qs": "6.15.3"
   }
 }

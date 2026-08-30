@@ -91,7 +91,7 @@ Current platform support:
 - YouTube channel videos and Shorts through `youtube_get_user_posted_videos_by_channel_url`.
 - TikTok creator posts through the `tiktok_get_user_posts_by_*` tools.
 - Weibo / 微博 creator posts through the `weibo_get_user_posts_by_*` tools.
-- WeChat Channels / 视频号 creator videos through the `wechat_get_user_posted_videos_by_*` tools; the user_id entrypoint requires a `v2_...@finder` user_id.
+- WeChat Channels / 视频号 creator videos and image posts through the `wechat_get_user_posted_videos_by_*` tools; the user_id entrypoint requires a `v2_...@finder` user_id.
 
 ## API Key
 
@@ -301,7 +301,7 @@ Optional arguments:
 - Use YouTube commands for YouTube videos, comments, channel profiles, and channel video lists.
 - Use TikTok commands for TikTok videos or image posts, comments, creators, and creator posts.
 - Use Weibo commands for Weibo / 微博 posts, comments, creators, creator posts, and hot topics.
-- Use WeChat Channels / 视频号 commands for videos, comments, creators, creator videos, and hot topics; use `wechat article` only for WeChat Official Account / 微信公众号 article links/details.
+- Use WeChat Channels / 视频号 commands for videos, comments, creators, creator works, and hot topics; use `wechat article` only for WeChat Official Account / 微信公众号 article links/details.
 - If the user asks for both platforms, keep findings separated by platform before comparing patterns.
 
 ## Choose The Narrowest Entry
@@ -340,7 +340,7 @@ For broad research, summarize visible evidence separately from interpretation an
 For XHS search or detail results, in every use of a returned `note_url`, such as final answers, display, references, storage, output, or forwarding, preserve it exactly as the full URL, including `xsec_token` query parameters. Do not modify, truncate, redact, mask, normalize, rebuild, or synthesize the URL from `note_id`; if detail `note_url` is null, show the `note_id` or say that no directly openable full link is available.
 For XHS `note_id`, copy the entire returned `note_id` exactly; do not pass or display only a prefix.
 For comments, group observed themes before inferring sentiment or demand.
-For creators, separate profile facts from content-list evidence; include Douyin short-drama series facts when the series command is used, Kuaishou work-list evidence when Kuaishou commands are used, Bilibili video/article/dynamic evidence when Bilibili creator commands are used, YouTube channel video-list evidence when YouTube commands are used, Weibo post-list evidence when Weibo commands are used, and 视频号 video-list evidence when WeChat Channels commands are used.
+For creators, separate profile facts from content-list evidence; include Douyin short-drama series facts when the series command is used, Kuaishou work-list evidence when Kuaishou commands are used, Bilibili video/article/dynamic evidence when Bilibili creator commands are used, YouTube channel video-list evidence when YouTube commands are used, Weibo post-list evidence when Weibo commands are used, and WeChat Channels work-list evidence when WeChat Channels commands are used.
 For hot-search, report ranking signals separately from keyword search results.
 
 ## Troubleshooting

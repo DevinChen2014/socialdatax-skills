@@ -756,6 +756,7 @@ test("public package version metadata stays aligned", () => {
   const cli = readFileSync(cliPath, "utf8");
   const versionPattern = escapeRegExp(packageJson.version);
 
+  assert.equal(packageJson.version, "0.2.41");
   assert.equal(packageLock.version, packageJson.version);
   assert.equal(packageLock.packages[""].version, packageJson.version);
   assert.match(
@@ -821,20 +822,20 @@ test("douyin package surface only documents the shared API key", () => {
   assert.doesNotMatch(cli, new RegExp(removedDouyinApiKeyEnv));
 });
 
-test("pending hosted entries do not declare standalone registry names in CLI source", () => {
+test("published platforms declare standalone registry names in CLI source", () => {
   const cli = readFileSync(cliPath, "utf8");
 
   for (const registryName of [
     "com.52choujiang/bilibili-insights",
-    "com.socialdatax/bilibili-insights",
     "com.52choujiang/zhihu-insights",
-    "com.socialdatax/zhihu-insights",
     "com.52choujiang/x-insights",
-    "com.socialdatax/x-insights",
     "com.52choujiang/youtube-insights",
     "com.socialdatax/youtube-insights",
     "com.52choujiang/tiktok-insights",
-    "com.socialdatax/tiktok-insights",
+  ]) {
+    assert.match(cli, new RegExp(escapeRegExp(registryName)));
+  }
+  for (const registryName of [
     'registryName: "sensitive-check"',
     "com.socialdatax/sensitive-check",
   ]) {
@@ -882,7 +883,11 @@ test("public docs keep Official Account articles limited to detail workflows", (
   );
   assert.match(
     readme,
-    /hosted MCP can also resolve creator profile data from a video link or share text/
+    /hosted MCP can also resolve creator profile data from a video or image-post link or share text/
+  );
+  assert.match(
+    readme,
+    /Resolve a WeChat Channels video or image-post link, share text, or encrypted_object_id into structured work details/
   );
   assert.doesNotMatch(
     readme,
@@ -890,7 +895,7 @@ test("public docs keep Official Account articles limited to detail workflows", (
   );
   assert.match(
     readme,
-    /Current repo-tracked standalone listings cover XHS, Douyin, Kuaishou, Weibo, WeChat Content \/ 微信内容 under the historical `wechat-channels-insights` Registry name, and Instagram/
+    /Current repo-tracked standalone listings cover/
   );
   assert.match(
     readme,
@@ -917,6 +922,48 @@ test("public docs keep Official Account articles limited to detail workflows", (
   assert.doesNotMatch(
     checklist,
     /Official Account articles,[^`]*(keyword discovery|comments|replies|creator profiles|creator content lists)/
+  );
+});
+
+test("wechat creator content public descriptions include image posts", () => {
+  const readme = readFileSync(join(packageDir, "README.md"), "utf8");
+  assert.match(
+    readme,
+    /^- `media-detail`:.*WeChat Channels videos and image posts/m
+  );
+  assert.match(
+    readme,
+    /^- `media-user-posts`:.*WeChat Channels videos and image posts/m
+  );
+  assert.match(readme, /Fetch paginated creator video and image-post lists/);
+  assert.match(
+    readme,
+    /wechat_get_user_posted_videos_by_user_id` \| Fetch a paginated list of videos and image posts published by a creator/
+  );
+  assert.match(
+    readme,
+    /wechat_get_user_posted_videos_by_url` \| Fetch a paginated list of videos and image posts published by a creator/
+  );
+
+  const help = runCli(["--help"]);
+  assert.equal(help.status, 0, help.stderr);
+  assert.match(help.stdout, /creator videos and image posts tool with a v2_\.\.\.@finder user_id/);
+  assert.match(help.stdout, /creator videos and image posts tool from a video or image-post link/);
+
+  const doctor = runCli(["doctor", "--json"]);
+  assert.equal(doctor.status, 0, doctor.stderr);
+  const report = JSON.parse(doctor.stdout);
+  const wechat = report.platforms.find((platform) => platform.id === "wechat");
+  const descriptions = Object.fromEntries(
+    wechat.toolDetails.map((tool) => [tool.name, tool.description])
+  );
+  assert.match(
+    descriptions.wechat_get_user_posted_videos_by_user_id,
+    /videos and image posts published by a creator/
+  );
+  assert.match(
+    descriptions.wechat_get_user_posted_videos_by_url,
+    /creator videos and image posts/
   );
 });
 
@@ -5869,10 +5916,12 @@ test("douyin openclaw plugin exposes supported user info tools", () => {
   const serverCardRepliesTool = serverCard.tools.find(
     (tool) => tool.name === "douyin_get_video_comment_replies_by_comment_id"
   );
-  assert.equal(
+  assert.match(
     serverCardRepliesTool.description,
-    "Fetch paginated replies under a first-level comment; pass both aweme_id and comment_id, and use page_token to continue pagination."
+    /需同时传入 aweme_id 和 comment_id/
   );
+  assert.match(serverCardRepliesTool.description, /page_token 翻页/);
+  assert.match(serverCardRepliesTool.description, /不要传回复项自身的 comment_id/);
   assert.match(pluginSource, /Get Douyin Creator Series By ID/);
   assert.match(readme, /creator short-drama series/);
   assert.doesNotMatch(
@@ -5952,10 +6001,10 @@ test("xhs openclaw search schema documents semantic sort enums", () => {
   );
   const readme = readFileSync(join(openclawDir, "README.md"), "utf8");
 
-  assert.equal(packageJson.version, "0.1.22");
-  assert.equal(pluginManifest.version, "0.1.22");
-  assert.match(pluginSource, /const PLUGIN_VERSION = "0\.1\.22";/);
-  assert.match(readme, /Version: `0\.1\.22`/);
+  assert.equal(packageJson.version, "0.1.23");
+  assert.equal(pluginManifest.version, "0.1.23");
+  assert.match(pluginSource, /const PLUGIN_VERSION = "0\.1\.23";/);
+  assert.match(readme, /Version: `0\.1\.23`/);
 
   assert.deepEqual(pluginManifest.providerAuthChoices[0], {
     provider: "xhs-insights",
@@ -5990,7 +6039,7 @@ test("xhs openclaw search schema documents semantic sort enums", () => {
     pluginSource,
     /社媒数据助手 小红书 MCP \| Xiaohongshu XHS RedNote MCP/
   );
-  assert.equal(pluginManifest.contracts.tools.length, 16);
+  assert.equal(pluginManifest.contracts.tools.length, 18);
   assert.ok(
     pluginManifest.contracts.tools.includes(
       "xhs-insights__xhs_get_search_hot_list"
@@ -6011,13 +6060,20 @@ test("xhs openclaw search schema documents semantic sort enums", () => {
       "xhs-insights__xhs_get_product_reviews"
     )
   );
+  assert.ok(
+    pluginManifest.contracts.tools.includes(
+      "xhs-insights__xhs_get_product_review_replies"
+    )
+  );
   assert.match(pluginSource, /Get XHS Search Hot List/);
   assert.match(pluginSource, /xhs_search_products/);
   assert.match(pluginSource, /Get XHS Product Detail/);
   assert.match(pluginSource, /Get XHS Product Reviews/);
+  assert.match(pluginSource, /Get XHS Product Review Replies/);
   assert.match(readme, /search hot list/);
   assert.match(readme, /product search/);
   assert.match(readme, /product reviews/);
+  assert.match(readme, /first-level product review/);
 
   assert.match(
     pluginSource,
@@ -9395,10 +9451,10 @@ test("doctor prints human-readable safety summary", () => {
   assert.match(result.stdout, /endpoint: https:\/\/mcp\.socialdatax\.com\/tiktok\/mcp/);
   assert.match(result.stdout, /Sensitive Words Check \/ 敏感词检测/);
   assert.match(result.stdout, /endpoint: https:\/\/mcp\.socialdatax\.com\/sensitive-check\/mcp/);
-  assert.match(result.stdout, /listing: hosted endpoint only; standalone listing materials pending/);
+  assert.match(result.stdout, /listing: hosted-only; no standalone Registry listing/);
   assert.doesNotMatch(result.stdout, /future registry: com\.socialdatax\/kuaishou-insights/);
-  assert.doesNotMatch(result.stdout, /registry: com\.52choujiang\/youtube-insights/);
-  assert.doesNotMatch(result.stdout, /registry: com\.52choujiang\/bilibili-insights/);
+  assert.match(result.stdout, /registry: com\.52choujiang\/youtube-insights/);
+  assert.match(result.stdout, /registry: com\.52choujiang\/bilibili-insights/);
 });
 
 test("verify is an alias for doctor", () => {
@@ -9511,9 +9567,9 @@ test("doctor json prints parseable safety summary", () => {
     (platform) => platform.id === "bilibili"
   );
   assert.equal(bilibiliPlatform.displayName, "Bilibili / 哔哩哔哩 / B站");
-  assert.equal(bilibiliPlatform.repoTrackedStandaloneListing, false);
-  assert.equal(bilibiliPlatform.registryName, undefined);
-  assert.equal(bilibiliPlatform.futureRegistryName, undefined);
+  assert.equal(bilibiliPlatform.repoTrackedStandaloneListing, true);
+  assert.equal(bilibiliPlatform.registryName, "com.52choujiang/bilibili-insights");
+  assert.equal(bilibiliPlatform.futureRegistryName, "com.socialdatax/bilibili-insights");
   assert.equal(bilibiliPlatform.defaultEndpoint, "https://mcp.socialdatax.com/bilibili/mcp");
   assert.equal(bilibiliPlatform.tools.length, 18);
   assert.ok(bilibiliPlatform.tools.includes("bilibili_search_videos"));
@@ -9575,9 +9631,9 @@ test("doctor json prints parseable safety summary", () => {
     (platform) => platform.id === "zhihu"
   );
   assert.equal(zhihuPlatform.displayName, "Zhihu / 知乎");
-  assert.equal(zhihuPlatform.repoTrackedStandaloneListing, false);
-  assert.equal(zhihuPlatform.registryName, undefined);
-  assert.equal(zhihuPlatform.futureRegistryName, undefined);
+  assert.equal(zhihuPlatform.repoTrackedStandaloneListing, true);
+  assert.equal(zhihuPlatform.registryName, "com.52choujiang/zhihu-insights");
+  assert.equal(zhihuPlatform.futureRegistryName, "com.socialdatax/zhihu-insights");
   assert.equal(zhihuPlatform.defaultEndpoint, "https://mcp.socialdatax.com/zhihu/mcp");
   assert.equal(zhihuPlatform.tools.length, 7);
   assert.ok(zhihuPlatform.tools.includes("zhihu_get_hot_list"));
@@ -9609,9 +9665,9 @@ test("doctor json prints parseable safety summary", () => {
     (platform) => platform.id === "x"
   );
   assert.equal(xPlatform.displayName, "X / Twitter");
-  assert.equal(xPlatform.repoTrackedStandaloneListing, false);
-  assert.equal(xPlatform.registryName, undefined);
-  assert.equal(xPlatform.futureRegistryName, undefined);
+  assert.equal(xPlatform.repoTrackedStandaloneListing, true);
+  assert.equal(xPlatform.registryName, "com.52choujiang/x-insights");
+  assert.equal(xPlatform.futureRegistryName, "com.socialdatax/x-insights");
   assert.equal(xPlatform.defaultEndpoint, "https://mcp.socialdatax.com/x/mcp");
   assert.equal(xPlatform.tools.length, 12);
   assert.ok(xPlatform.tools.includes("x_search_posts"));
@@ -9630,9 +9686,9 @@ test("doctor json prints parseable safety summary", () => {
     (platform) => platform.id === "youtube"
   );
   assert.equal(youtubePlatform.displayName, "YouTube");
-  assert.equal(youtubePlatform.repoTrackedStandaloneListing, false);
-  assert.equal(youtubePlatform.registryName, undefined);
-  assert.equal(youtubePlatform.futureRegistryName, undefined);
+  assert.equal(youtubePlatform.repoTrackedStandaloneListing, true);
+  assert.equal(youtubePlatform.registryName, "com.52choujiang/youtube-insights");
+  assert.equal(youtubePlatform.futureRegistryName, "com.socialdatax/youtube-insights");
   assert.equal(youtubePlatform.defaultEndpoint, "https://mcp.socialdatax.com/youtube/mcp");
   assert.equal(youtubePlatform.tools.length, 6);
   assert.ok(youtubePlatform.tools.includes("youtube_search_videos"));
@@ -9649,11 +9705,11 @@ test("doctor json prints parseable safety summary", () => {
     (platform) => platform.id === "tiktok"
   );
   assert.equal(tiktokPlatform.displayName, "TikTok");
-  assert.equal(tiktokPlatform.repoTrackedStandaloneListing, false);
-  assert.equal(tiktokPlatform.registryName, undefined);
-  assert.equal(tiktokPlatform.futureRegistryName, undefined);
+  assert.equal(tiktokPlatform.repoTrackedStandaloneListing, true);
+  assert.equal(tiktokPlatform.registryName, "com.52choujiang/tiktok-insights");
+  assert.equal(tiktokPlatform.futureRegistryName, "com.socialdatax/tiktok-insights");
   assert.equal(tiktokPlatform.defaultEndpoint, "https://mcp.socialdatax.com/tiktok/mcp");
-  assert.equal(tiktokPlatform.tools.length, 9);
+  assert.equal(tiktokPlatform.tools.length, 12);
   assert.ok(tiktokPlatform.tools.includes("tiktok_search_posts"));
   assert.ok(tiktokPlatform.tools.includes("tiktok_get_post_detail_by_url"));
   assert.ok(tiktokPlatform.tools.includes("tiktok_get_post_comments_by_post_id"));
@@ -9663,6 +9719,9 @@ test("doctor json prints parseable safety summary", () => {
   assert.ok(tiktokPlatform.tools.includes("tiktok_get_user_info_by_profile_url"));
   assert.ok(tiktokPlatform.tools.includes("tiktok_get_user_posts_by_tiktok_id"));
   assert.ok(tiktokPlatform.tools.includes("tiktok_get_user_posts_by_profile_url"));
+  assert.ok(tiktokPlatform.tools.includes("tiktok_submit_video_speech_text_by_url"));
+  assert.ok(tiktokPlatform.tools.includes("tiktok_submit_video_speech_text_by_aweme_id"));
+  assert.ok(tiktokPlatform.tools.includes("tiktok_get_video_speech_text_job"));
   const sensitiveCheckPlatform = report.platforms.find(
     (platform) => platform.id === "sensitive-check"
   );
@@ -9740,12 +9799,14 @@ test("doctor json prints parseable safety summary", () => {
   assert.match(weiboSubmitTranscriptTool.description, /提交后最多等待 240 秒/);
   assert.match(weiboSubmitTranscriptTool.description, /同一个 job_id 直到终态/);
   assert.match(weiboJobTranscriptTool.description, /content context/);
+  assert.match(weiboJobTranscriptTool.description, /valid job_id supplied by the user/);
   assert.match(weiboJobTranscriptTool.description, /is_terminal is true/);
   assert.match(weiboJobTranscriptTool.description, /not summary/);
   assert.match(wechatSubmitTranscriptTool.description, /speech-to-text transcript/);
   assert.match(wechatSubmitTranscriptTool.description, /提交后最多等待 240 秒/);
   assert.match(wechatSubmitTranscriptTool.description, /同一个 job_id 直到终态/);
   assert.match(wechatJobTranscriptTool.description, /content context/);
+  assert.match(wechatJobTranscriptTool.description, /valid job_id supplied by the user/);
   assert.match(wechatJobTranscriptTool.description, /returned from a submit tool/);
   assert.match(wechatJobTranscriptTool.description, /is_terminal is true/);
   assert.match(wechatJobTranscriptTool.description, /not summary/);
@@ -9756,6 +9817,14 @@ test("doctor json prints parseable safety summary", () => {
 test("README documents transcript job output as transcript plus content context", () => {
   const readme = readFileSync(join(packageDir, "README.md"), "utf8");
 
+  assert.match(readme, /Submit TikTok video speech-to-text transcript jobs through hosted MCP/);
+  assert.match(readme, /query an existing valid job_id directly/);
+  assert.match(readme, /`tiktok_submit_video_speech_text_by_url`/);
+  assert.match(readme, /`tiktok_submit_video_speech_text_by_aweme_id`/);
+  assert.match(readme, /`tiktok_get_video_speech_text_job`/);
+  assert.match(readme, /`youtube_submit_video_speech_text_by_url`/);
+  assert.match(readme, /`youtube_submit_video_speech_text_by_video_id`/);
+  assert.match(readme, /`youtube_get_video_speech_text_job`/);
   assert.match(readme, /submit may wait up to 240 seconds/);
   assert.match(readme, /submit waits up to 240 seconds/);
   assert.doesNotMatch(readme, /210 seconds/);
@@ -9771,14 +9840,21 @@ test("README documents transcript job output as transcript plus content context"
     readme,
     /Check a Kuaishou speech-to-text transcript job by job_id without creating a new task\. Each call waits up to 240 seconds for the same job\. If unfinished, continue querying the same job_id until is_terminal is true\. Returns transcript plus content context, not summary\./
   );
-  assert.match(
-    readme,
-    /Continue checking a Weibo speech-to-text transcript job by job_id returned from a submit tool, without creating a new task\. Each call waits up to 240 seconds for the same job\. If unfinished, continue querying the same job_id until is_terminal is true\. Returns transcript plus content context, not summary\./
-  );
-  assert.match(
-    readme,
-    /Continue checking a WeChat Channels \/ 视频号 speech-to-text transcript job by job_id returned from a submit tool, without creating a new task\. Each call waits up to 240 seconds for the same job\. If unfinished, continue querying the same job_id until is_terminal is true\. Returns transcript plus content context, not summary\./
-  );
+  for (const toolName of [
+    "weibo_get_video_speech_text_job",
+    "wechat_get_video_speech_text_job",
+    "instagram_get_video_speech_text_job",
+  ]) {
+    const toolRow = readme
+      .split("\n")
+      .find((line) => line.includes(`\`${toolName}\``));
+    assert.ok(toolRow, `${toolName} README row is missing`);
+    assert.match(toolRow, /valid job_id supplied by the user/);
+    assert.match(toolRow, /job_id returned (?:from|by) a submit tool/);
+    assert.match(toolRow, /waits up to 240 seconds/);
+    assert.match(toolRow, /until is_terminal is true/);
+    assert.match(toolRow, /transcript plus content context, not summary/);
+  }
 });
 
 test("doctor json reports the active endpoint when an upstream override is set", () => {
@@ -10156,7 +10232,11 @@ test("skills package submission checklist verifies newly supported platform keyw
   assert.doesNotMatch(checklist, /future-platform search keywords/);
   assert.match(
     checklist,
-    /do not submit them as standalone MCP Registry listings until repo-tracked listing and registry materials exist/
+    /Sensitive Words Check remains hosted-only/
+  );
+  assert.match(
+    checklist,
+    /do not submit it as a standalone platform MCP Registry listing without explicit approval/
   );
   assert.match(checklist, /`CATALOG\.md`/);
   assert.match(
@@ -10828,6 +10908,18 @@ test("list output documents aggregate skill and Douyin creator series", () => {
   );
   assert.match(result.stdout, /media-transcript/);
   assert.match(result.stdout, /speech-to-text transcript jobs/);
+  for (const platform of [
+    "Bilibili",
+    "Instagram",
+    "X / Twitter",
+    "TikTok",
+    "YouTube",
+  ]) {
+    assert.match(
+      result.stdout,
+      new RegExp(`media-transcript\\n\\s+[^\\n]*${platform}`)
+    );
+  }
   assert.match(result.stdout, /media-user-posts/);
   assert.match(result.stdout, /Douyin creator short-drama series/);
   assert.match(result.stdout, /Kuaishou/);
@@ -10921,6 +11013,16 @@ test("print-config is no longer supported by the skills package", () => {
   assert.match(result.stderr, /\] print-config is no longer supported by this skills package\./);
   assert.match(result.stderr, /hosted streamable HTTP/);
   assert.match(result.stderr, /mcp-remote/);
+  for (const registryName of [
+    "com.52choujiang/bilibili-insights",
+    "com.52choujiang/zhihu-insights",
+    "com.52choujiang/x-insights",
+    "com.52choujiang/youtube-insights",
+    "com.52choujiang/tiktok-insights",
+    "com.socialdatax/tiktok-insights",
+  ]) {
+    assert.match(result.stderr, new RegExp(escapeRegExp(registryName)));
+  }
   for (const platform of [
     "xhs",
     "douyin",
