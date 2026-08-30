@@ -19,7 +19,7 @@
   "scripts": {
     "start": "node ./cli.mjs",
     "pack:check": "npm pack --dry-run --json",
-    "test": "node --test test/*.test.mjs"
+    "test": "node ./test/run-tests.mjs"
   },
   "keywords": [
     "socialdatax",
