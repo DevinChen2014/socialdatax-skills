@@ -756,7 +756,7 @@ test("public package version metadata stays aligned", () => {
   const cli = readFileSync(cliPath, "utf8");
   const versionPattern = escapeRegExp(packageJson.version);
 
-  assert.equal(packageJson.version, "0.2.41");
+  assert.equal(packageJson.version, "0.2.42");
   assert.equal(packageLock.version, packageJson.version);
   assert.equal(packageLock.packages[""].version, packageJson.version);
   assert.match(
@@ -3294,14 +3294,23 @@ test("README catalog link target exists", () => {
   assert.equal(existsSync(join(packageDir, "CATALOG.md")), true);
 });
 
-test("package catalog mirrors GitHub skills catalog source", () => {
+test("package catalog keeps npm attribution while mirroring GitHub catalog copy", () => {
   const catalog = readFileSync(join(packageDir, "CATALOG.md"), "utf8");
   const source = readFileSync(
     join(packageDir, "..", "github-skills-catalog", "README.md"),
     "utf8"
   );
+  const expected = source
+    .replaceAll("?from=github", "?from=npm")
+    .replaceAll("--source-platform github", "--source-platform npm")
+    .replaceAll("--source-skill xhs-comment-insights", "--source-skill media-comments")
+    .replaceAll(
+      "--source-skill douyin-video-copy-extract",
+      "--source-skill media-transcript"
+    );
 
-  assert.equal(catalog, source);
+  assert.equal(catalog, expected);
+  assert.doesNotMatch(catalog, /from=github|--source-platform github/);
 });
 
 test("media user posts skill documents Douyin creator series commands", () => {

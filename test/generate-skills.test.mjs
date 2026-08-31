@@ -4521,6 +4521,12 @@ test("clawhub platform hubs cover the remaining public platforms", async () => {
         extractMarkdownSection(skill, "MCP Tools"),
         new RegExp(`\\\`${escapeRegExp(hub.tool)}\\\``)
       );
+      if (hub.slug === "socialdatax-bilibili") {
+        const safetyBoundary = extractMarkdownSection(skill, "Safety Boundary");
+        assert.match(safetyBoundary, /user-selected local output path/);
+        assert.match(safetyBoundary, /local `ffmpeg`/);
+        assert.match(safetyBoundary, /`--keep-tracks`/);
+      }
     }
   } finally {
     rmSync(tempRoot, { recursive: true, force: true });
