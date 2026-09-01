@@ -2190,6 +2190,7 @@ test("generated aggregate scenario skills keep guidance concise", async () => {
     "The command prints JSON with `platform`, `tool`, `arguments`, and `data`.",
     "If MCP tools are already available in the current agent, use one of these tools:",
     "- `--pretty`: output formatting only.",
+    "Use exactly one supported identifier or URL entrypoint for a single command; do not combine them.",
     "Use either the ID option or the profile URL option for a single command, not both.",
   ];
   const lineLimits = new Map([
@@ -4608,8 +4609,12 @@ test("active SkillHub public skill titles avoid Tencent ecosystem discovery word
     assertDirectCliExample(aggregate, 'youtube replies --reply-token "<reply_token>"');
     assert.match(
       aggregate,
-      /仅 hosted MCP 可用、direct CLI 不包含的工具：[\s\S]*`douyin_search_users`[\s\S]*`douyin_get_user_info_by_douyin_id`[\s\S]*`weibo_get_post_liker_list_by_post_url`[\s\S]*`weibo_get_post_repost_list_by_post_url`[\s\S]*`wechat_get_user_info_by_url`/,
+      /仅 hosted MCP 可用、direct CLI 不包含的工具：[\s\S]*`douyin_search_users`[\s\S]*`douyin_get_user_info_by_douyin_id`[\s\S]*`weibo_get_post_liker_list_by_post_url`[\s\S]*`weibo_get_post_repost_list_by_post_url`/,
       "skillhub aggregate should document MCP-only tools that have no matching direct CLI entrypoint"
+    );
+    assert.doesNotMatch(
+      aggregate,
+      /仅 hosted MCP 可用、direct CLI 不包含的工具：[^\n]*`wechat_get_user_info_by_url`/
     );
 
     for (const slug of [
@@ -4741,7 +4746,7 @@ test("active narrow SkillHub source discovery fields avoid Tencent ecosystem wor
   );
 });
 
-test("retained standalone Tencent ecosystem SkillHub skills stay scoped to their historical workflows", async () => {
+test("retained standalone Tencent ecosystem SkillHub skills stay scoped to their workflows", async () => {
   const tempRoot = mkdtempSync(join(tmpdir(), "socialdatax-skills-"));
   const expectedCommandRefs = {
     "wechat-channels-viral-video-breakdown": [
@@ -4753,6 +4758,7 @@ test("retained standalone Tencent ecosystem SkillHub skills stay scoped to their
     ],
     "wechat-channels-account-analysis": [
       "wechat.userInfoId",
+      "wechat.userInfoUrl",
       "wechat.userPostsUrl",
       "wechat.userPostsId",
     ],

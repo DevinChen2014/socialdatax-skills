@@ -20,7 +20,10 @@ import { dirname, join } from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 import test from "node:test";
 
-import { readToken as readPublishToken } from "../../../scripts/publish_social_media_insights_skills.mjs";
+import {
+  readToken as readPublishToken,
+  validateLegacyWrapperRegistryLock,
+} from "../../../scripts/publish_social_media_insights_skills.mjs";
 import {
   decryptWechatMediaCommand,
   formatCliErrorMessage,
@@ -756,7 +759,7 @@ test("public package version metadata stays aligned", () => {
   const cli = readFileSync(cliPath, "utf8");
   const versionPattern = escapeRegExp(packageJson.version);
 
-  assert.equal(packageJson.version, "0.2.42");
+  assert.equal(packageJson.version, "0.2.43");
   assert.equal(packageLock.version, packageJson.version);
   assert.equal(packageLock.packages[""].version, packageJson.version);
   assert.match(
@@ -789,6 +792,51 @@ test("publish script reads npm auth token from user npmrc", async () => {
   } finally {
     rmSync(tempDir, { recursive: true, force: true });
   }
+});
+
+test("publish script requires the legacy wrapper to use a registry lock", () => {
+  const packageJson = {
+    dependencies: {
+      "socialdatax-skills": "0.2.42",
+    },
+  };
+  const registryLock = {
+    packages: {
+      "": {
+        dependencies: {
+          "socialdatax-skills": "0.2.42",
+        },
+      },
+      "node_modules/socialdatax-skills": {
+        version: "0.2.42",
+        resolved:
+          "https://registry.npmjs.org/socialdatax-skills/-/socialdatax-skills-0.2.42.tgz",
+        integrity: "sha512-test",
+      },
+    },
+  };
+
+  assert.equal(
+    validateLegacyWrapperRegistryLock(packageJson, registryLock),
+    "0.2.42"
+  );
+
+  const localLinkLock = structuredClone(registryLock);
+  localLinkLock.packages["node_modules/socialdatax-skills"] = {
+    resolved: "../socialdatax-skills",
+    link: true,
+  };
+  assert.throws(
+    () => validateLegacyWrapperRegistryLock(packageJson, localLinkLock),
+    /must resolve socialdatax-skills@0\.2\.42 from the npm registry/
+  );
+
+  const missingIntegrityLock = structuredClone(registryLock);
+  delete missingIntegrityLock.packages["node_modules/socialdatax-skills"].integrity;
+  assert.throws(
+    () => validateLegacyWrapperRegistryLock(packageJson, missingIntegrityLock),
+    /must resolve socialdatax-skills@0\.2\.42 from the npm registry/
+  );
 });
 
 test("brand migration preserves published package ids and endpoint ids", () => {
@@ -6913,6 +6961,20 @@ test("wechat user commands map url and finder user ids", async () => {
     },
   });
 
+  const userInfoByUrl = await runCliWithMockMcp([
+    "wechat",
+    "user-info",
+    "--url",
+    "https://weixin.qq.com/sph/ANxgB9MB8i",
+  ]);
+  assert.equal(userInfoByUrl.result.status, 0, userInfoByUrl.result.stderr);
+  assert.deepEqual(userInfoByUrl.toolCalls[0], {
+    name: "wechat_get_user_info_by_url",
+    arguments: {
+      url: "https://weixin.qq.com/sph/ANxgB9MB8i",
+    },
+  });
+
   const userPosts = await runCliWithMockMcp([
     "wechat",
     "user-posts",
@@ -10285,6 +10347,7 @@ test("direct CLI README examples include public weibo and wechat actions", () =>
     'wechat comments --url "<wechat_video_url_or_share_text>"',
     'wechat replies --object-id "<object_id>" --object-nonce-id "<object_nonce_id>" --comment-id "<comment_id>"',
     'wechat user-info --user-id "<v2_finder_user_id>"',
+    'wechat user-info --url "<wechat_work_url_or_share_text>"',
     'wechat user-posts --user-id "<v2_finder_user_id>"',
     'wechat user-posts --url "<wechat_work_url_or_share_text>"',
     'wechat transcript --url "<wechat_video_url_or_share_text>"',
@@ -10555,7 +10618,12 @@ test("direct platform subcommand help exits successfully", () => {
 });
 
 test("user skill docs describe douyin profile-url entry without legacy url wording", () => {
-  for (const skillName of ["media-user-info", "media-user-posts"]) {
+  const entrypointGuidance = new Map([
+    ["media-user-info", /supported identifier or URL entrypoint/],
+    ["media-user-posts", /profile URL option/],
+  ]);
+
+  for (const [skillName, entrypointPattern] of entrypointGuidance) {
     const skill = readFileSync(
       join(packageDir, "skills", skillName, "SKILL.md"),
       "utf8"
@@ -10568,7 +10636,7 @@ test("user skill docs describe douyin profile-url entry without legacy url wordi
         )
       )
     );
-    assert.match(skill, /profile URL option/);
+    assert.match(skill, entrypointPattern);
     assert.doesNotMatch(skill, /douyin user-[a-z-]+ --url/);
     assert.doesNotMatch(skill, /the URL option for a single command/);
     assert.doesNotMatch(
@@ -10596,7 +10664,7 @@ test("media user info skill documents the WeChat work-link MCP entry", () => {
     skill,
     /Prefer the direct CLI; hosted MCP tools are optional/
   );
-  assert.doesNotMatch(skill, /wechat user-info --url/);
+  assert.match(skill, /wechat user-info[\s\\]+--url/);
 });
 
 test("content research skill lists the WeChat video-link profile MCP entry", () => {
@@ -10605,9 +10673,9 @@ test("content research skill lists the WeChat video-link profile MCP entry", () 
     "utf8"
   );
 
-  assert.match(
+  assert.doesNotMatch(
     skill,
-    /MCP-only tools not available through the direct CLI:[\s\S]*`wechat_get_user_info_by_url`/
+    /MCP-only tools not available through the direct CLI:[^\n]*`wechat_get_user_info_by_url`/
   );
   assert.equal(
     skill.match(/MCP-only tools not available through the direct CLI:/g)?.length,

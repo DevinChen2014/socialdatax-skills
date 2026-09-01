@@ -89,7 +89,7 @@ Common search phrases for this skill package:
 - Reserved future SocialDataX namespace names for existing platform listings without draft files yet: `com.socialdatax/kuaishou-insights`, `com.socialdatax/bilibili-insights`, `com.socialdatax/weibo-insights`, `com.socialdatax/wechat-channels-insights`, `com.socialdatax/zhihu-insights`, `com.socialdatax/instagram-insights`, `com.socialdatax/x-insights`, `com.socialdatax/youtube-insights`, and `com.socialdatax/tiktok-insights`.
 - Hosted endpoint without a repo-tracked standalone listing: Sensitive Words Check.
 - Unified MCP registry name: none; this package installs skills and calls explicit hosted MCP entries.
-- Current public capability version: `0.2.42`
+- Current public capability version: `0.2.43`
 
 ## Direct CLI
 
@@ -193,6 +193,7 @@ npx -y socialdatax-skills@latest wechat comments --object-id "<object_id>" --obj
 npx -y socialdatax-skills@latest wechat comments --url "<wechat_video_url_or_share_text>" --pretty
 npx -y socialdatax-skills@latest wechat replies --object-id "<object_id>" --object-nonce-id "<object_nonce_id>" --comment-id "<comment_id>" --pretty
 npx -y socialdatax-skills@latest wechat user-info --user-id "<v2_finder_user_id>" --pretty
+npx -y socialdatax-skills@latest wechat user-info --url "<wechat_work_url_or_share_text>" --pretty
 npx -y socialdatax-skills@latest wechat user-posts --user-id "<v2_finder_user_id>" --pretty
 npx -y socialdatax-skills@latest wechat user-posts --url "<wechat_work_url_or_share_text>" --pretty
 npx -y socialdatax-skills@latest wechat transcript --url "<wechat_video_url_or_share_text>" --pretty

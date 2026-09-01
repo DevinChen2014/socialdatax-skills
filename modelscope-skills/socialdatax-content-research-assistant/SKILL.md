@@ -153,6 +153,7 @@ npx -y socialdatax-skills@latest weibo replies --post-id "<post_id>" --comment-i
 npx -y socialdatax-skills@latest wechat detail --url "<wechat_work_url_or_share_text>" --pretty --source-client socialdatax-skills --source-platform modelscope --source-skill socialdatax-content-research-assistant
 npx -y socialdatax-skills@latest wechat comments --url "<wechat_video_url_or_share_text>" --pretty --source-client socialdatax-skills --source-platform modelscope --source-skill socialdatax-content-research-assistant
 npx -y socialdatax-skills@latest wechat replies --object-id "<object_id>" --object-nonce-id "<object_nonce_id>" --comment-id "<comment_id>" --pretty --source-client socialdatax-skills --source-platform modelscope --source-skill socialdatax-content-research-assistant
+npx -y socialdatax-skills@latest wechat user-info --url "<wechat_work_url_or_share_text>" --pretty --source-client socialdatax-skills --source-platform modelscope --source-skill socialdatax-content-research-assistant
 npx -y socialdatax-skills@latest wechat user-posts --url "<wechat_work_url_or_share_text>" --pretty --source-client socialdatax-skills --source-platform modelscope --source-skill socialdatax-content-research-assistant
 ```
 
@@ -227,9 +228,9 @@ npx -y socialdatax-skills@latest wechat user-posts --url "<wechat_work_url_or_sh
 - YOUTUBE: `youtube_search_videos`, `youtube_get_video_detail_by_url`, `youtube_get_video_comments_by_url`, `youtube_get_channel_info_by_url`, `youtube_get_user_posted_videos_by_channel_url`, `youtube_get_video_comment_replies`
 - TIKTOK: `tiktok_search_posts`, `tiktok_get_post_detail_by_url`, `tiktok_get_post_comments_by_post_id`, `tiktok_get_user_info_by_tiktok_id`, `tiktok_get_user_posts_by_tiktok_id`, `tiktok_get_post_comments_by_url`, `tiktok_get_post_comment_replies`, `tiktok_get_user_info_by_profile_url`, `tiktok_get_user_posts_by_profile_url`
 - WEIBO: `weibo_get_hot_search_list`, `weibo_search_posts`, `weibo_get_post_detail_by_post_id`, `weibo_get_post_comments_by_post_id`, `weibo_get_user_info_by_user_id`, `weibo_get_user_posts_by_user_id`, `weibo_get_post_detail_by_post_url`, `weibo_get_post_comments_by_post_url`, `weibo_get_post_liker_list_by_post_id`, `weibo_get_post_repost_list_by_post_id`, `weibo_get_user_info_by_profile_url`, `weibo_get_user_posts_by_profile_url`, `weibo_get_post_comment_replies_by_comment_id`
-- WECHAT: `wechat_get_hot_search_list`, `wechat_search_videos`, `wechat_get_video_detail_by_encrypted_object_id`, `wechat_get_mp_article_detail_by_url`, `wechat_get_video_comments_by_object_id`, `wechat_get_user_info_by_user_id`, `wechat_get_user_posted_videos_by_user_id`, `wechat_get_video_detail_by_url`, `wechat_get_video_comments_by_url`, `wechat_get_video_comment_replies_by_comment_id`, `wechat_get_user_posted_videos_by_url`
+- WECHAT: `wechat_get_hot_search_list`, `wechat_search_videos`, `wechat_get_video_detail_by_encrypted_object_id`, `wechat_get_mp_article_detail_by_url`, `wechat_get_video_comments_by_object_id`, `wechat_get_user_info_by_user_id`, `wechat_get_user_posted_videos_by_user_id`, `wechat_get_video_detail_by_url`, `wechat_get_video_comments_by_url`, `wechat_get_video_comment_replies_by_comment_id`, `wechat_get_user_info_by_url`, `wechat_get_user_posted_videos_by_url`
 
-仅 hosted MCP 可用、direct CLI 不包含的工具： `douyin_search_users`, `douyin_get_user_info_by_douyin_id`, `weibo_get_post_liker_list_by_post_url`, `weibo_get_post_repost_list_by_post_url`, `wechat_get_user_info_by_url`
+仅 hosted MCP 可用、direct CLI 不包含的工具： `douyin_search_users`, `douyin_get_user_info_by_douyin_id`, `weibo_get_post_liker_list_by_post_url`, `weibo_get_post_repost_list_by_post_url`
 
 上面自动列出的 MCP 工具名就是事实源；根据用户的平台和任务，优先选择最贴近的那个工具。
 搜索翻页时，第一页不要传 `page_token`；继续同一条链路时，只能传完整返回的 `next_page_token`，后续续页都继续用 `page_token`。

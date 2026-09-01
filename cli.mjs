@@ -22,7 +22,7 @@ import { decryptWechatMediaCommand } from "./lib/media/wechat-decrypt.mjs";
 export { decryptWechatMediaCommand };
 
 const PACKAGE_NAME = "socialdatax-skills";
-const PACKAGE_VERSION = "0.2.42";
+const PACKAGE_VERSION = "0.2.43";
 const PACKAGE_SPEC = `${PACKAGE_NAME}@latest`;
 const LOG_PREFIX = `[${PACKAGE_NAME}]`;
 const MIN_NODE_VERSION = "20.18.1";
@@ -788,7 +788,7 @@ const WECHAT_DIRECT_ACTION_OPTIONS = {
     "includeReplies",
     "pretty",
   ],
-  "user-info": ["userId", "pretty"],
+  "user-info": ["userId", "url", "pretty"],
   "user-posts": [
     "userId",
     "url",
@@ -3077,6 +3077,9 @@ function printHelp() {
   console.log(`  npx -y ${PACKAGE_SPEC} wechat user-info --user-id "<v2_finder_user_id>" --pretty`);
   console.log("      Call the WeChat Channels / 视频号 creator profile tool with a v2_...@finder user_id.");
   console.log("");
+  console.log(`  npx -y ${PACKAGE_SPEC} wechat user-info --url "<wechat_work_url_or_share_text>" --pretty`);
+  console.log("      Resolve a WeChat Channels / 视频号 video or image-post link or share text into creator profile data.");
+  console.log("");
   console.log(`  npx -y ${PACKAGE_SPEC} wechat user-posts --user-id "<v2_finder_user_id>" --pretty`);
   console.log("      Call the WeChat Channels / 视频号 creator videos and image posts tool with a v2_...@finder user_id.");
   console.log("");
@@ -4531,12 +4534,15 @@ function buildWechatOperation(action, options) {
     case "user-info":
       return buildDirectOperation(
         "user-info",
-        buildRequiredIdCall(options, {
+        buildOneOfCall(options, {
           idOption: "userId",
-          tool: "wechat_get_user_info_by_user_id",
+          urlOption: "url",
+          idTool: "wechat_get_user_info_by_user_id",
+          urlTool: "wechat_get_user_info_by_url",
           idArgument: "user_id",
+          urlArgument: "url",
           idDisplay: "--user-id",
-          platformLabel: "wechat user-info",
+          urlDisplay: "--url",
         }),
         PLATFORMS.wechat
       );

@@ -48,7 +48,7 @@ npx -y socialdatax-skills@latest xhs user-info \
 - 可选：`--pretty`：只影响输出格式，不改变实际请求结果。
 - 可选：`--source-client socialdatax-skills --source-platform modelscope --source-skill xhs-creator-profile-insights`：这是当前 Agent Skill 的来源标记；按本 Skill 示例执行时保持这些值不变。
 
-单次调用使用 ID 或主页 URL 其中一种入口即可，不要同时传两种。
+单次调用只使用一种受支持的标识符或 URL 入口，不要混用多个入口。
 
 命令返回 JSON，包含 `platform`、`tool`、`arguments` 和 `data`。
 

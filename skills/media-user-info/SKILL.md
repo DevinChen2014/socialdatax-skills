@@ -142,6 +142,10 @@ npx -y socialdatax-skills@latest weibo user-info \
 npx -y socialdatax-skills@latest wechat user-info \
   --user-id "<v2_finder_user_id>" --pretty --source-client socialdatax-skills \
   --source-platform github --source-skill media-user-info
+
+npx -y socialdatax-skills@latest wechat user-info \
+  --url "<wechat_work_url_or_share_text>" --pretty --source-client socialdatax-skills \
+  --source-platform github --source-skill media-user-info
 ```
 
 Optional arguments:
@@ -166,9 +170,10 @@ Optional arguments:
 - Weibo `--user-id <user_id>`: preferred when the creator user_id is already known.
 - Weibo `--profile-url <profile_url>`: use for a Weibo user profile URL.
 - WeChat Channels / 视频号 `--user-id <v2_finder_user_id>`: use when the creator `v2_...@finder` user_id is already known.
+- WeChat Channels / 视频号 `--url <wechat_work_url_or_share_text>`: use for a video or image-post link or share text that can resolve the creator profile.
 - `--source-client socialdatax-skills --source-platform github --source-skill media-user-info`: usage attribution for this Agent Skill; keep these values unchanged when running examples from this Skill.
 
-Use either the ID option or the profile URL option for a single command, not both.
+Use exactly one supported identifier or URL entrypoint for a single command; do not combine them.
 
 The command prints JSON with `platform`, `tool`, `arguments`, and `data`.
 
@@ -190,9 +195,9 @@ MCP tools matching the direct CLI commands above:
 - YOUTUBE: `youtube_get_channel_info_by_url`
 - TIKTOK: `tiktok_get_user_info_by_tiktok_id`, `tiktok_get_user_info_by_profile_url`
 - WEIBO: `weibo_get_user_info_by_user_id`, `weibo_get_user_info_by_profile_url`
-- WECHAT: `wechat_get_user_info_by_user_id`
+- WECHAT: `wechat_get_user_info_by_user_id`, `wechat_get_user_info_by_url`
 
-MCP-only tools not available through the direct CLI: `douyin_get_user_info_by_douyin_id`, `wechat_get_user_info_by_url`
+MCP-only tools not available through the direct CLI: `douyin_get_user_info_by_douyin_id`
 
 If MCP tools are already available in the current agent, use one of these tools:
 - `xhs_get_user_info_by_user_id`: preferred when `user_id` is already known from search, detail, comments, or creator note lists.
