@@ -501,7 +501,7 @@ async function runCliWithMockMcp(
   args,
   extraEnv = {},
   structuredContentForToolCall,
-  { onInitialize, onInitializedNotification } = {}
+  { onInitialize, onInitializedNotification, mcpToolError, mcpToolErrorStructured } = {}
 ) {
   const toolCalls = [];
   const toolCallAuthorizationHeaders = [];
@@ -601,7 +601,11 @@ async function runCliWithMockMcp(
           JSON.stringify({
             jsonrpc: "2.0",
             id: payload.id,
-            result: {
+            result: mcpToolError ? {
+              isError: true,
+              structuredContent: mcpToolErrorStructured,
+              content: [{ type: "text", text: mcpToolError }],
+            } : {
               content: [],
               structuredContent,
             },
@@ -759,7 +763,7 @@ test("public package version metadata stays aligned", () => {
   const cli = readFileSync(cliPath, "utf8");
   const versionPattern = escapeRegExp(packageJson.version);
 
-  assert.equal(packageJson.version, "0.2.43");
+  assert.equal(packageJson.version, "0.2.45");
   assert.equal(packageLock.version, packageJson.version);
   assert.equal(packageLock.packages[""].version, packageJson.version);
   assert.match(
@@ -5518,6 +5522,75 @@ test("xhs search rejects unsupported note type and publish time filters before c
   );
 });
 
+test("xhs pgy-detail routes ID and share text without upgrading ordinary details", async () => {
+  const noteId = "6a123456000000001234abcd";
+  const shareText = "笔记分享 https://www.xiaohongshu.com/explore/6a123456000000001234abcd?xsec_token=keep%2Btoken&xsec_source=pc_share";
+  for (const [action, inputFlag, input, tool, argument] of [
+    ["pgy-detail", "--note-id", noteId, "xhs_pgy_get_note_detail_by_note_id", "note_id"],
+    ["pgy-detail", "--url", shareText, "xhs_pgy_get_note_detail_by_note_url", "note_url"],
+    ["detail", "--note-id", noteId, "xhs_get_note_detail_by_note_id", "note_id"],
+    ["detail", "--url", shareText, "xhs_get_note_detail_by_note_url", "note_url"],
+  ]) {
+    const { result, toolCalls, toolCallSourceClientHeaders,
+      toolCallSourcePlatformHeaders, toolCallSourceSkillHeaders } = await runCliWithMockMcp([
+      "xhs", action, inputFlag, input,
+      "--source-client", "socialdatax-skills",
+      "--source-platform", "npm", "--source-skill", "media-detail",
+    ]);
+    assert.equal(result.status, 0, result.stderr);
+    assert.deepEqual(toolCalls, [{ name: tool, arguments: { [argument]: input } }]);
+    assert.deepEqual(JSON.parse(result.stdout), {
+      platform: "xhs", tool, arguments: { [argument]: input }, data: { ok: true },
+    });
+    assert.deepEqual(toolCallSourceClientHeaders, ["socialdatax-skills"]);
+    assert.deepEqual(toolCallSourcePlatformHeaders, ["npm"]);
+    assert.deepEqual(toolCallSourceSkillHeaders, ["media-detail"]);
+  }
+});
+
+test("xhs pgy-detail rejects missing, conflicting and unrelated options before calling MCP", () => {
+  for (const [args, message] of [
+    [[], "Missing input. Use --note-id or --url"],
+    [["--note-id", "a", "--url", "b"], "Use only one of --note-id or --url"],
+    [["--note-id", "a", "--page", "2"], "Unsupported option --page"],
+    [["--note-id", "a", "--all"], "Unsupported option --all"],
+  ]) {
+    const result = runCli(["xhs", "pgy-detail", ...args]);
+    assert.notEqual(result.status, 0);
+    assert.ok(result.stderr.includes(message), result.stderr);
+    assert.doesNotMatch(result.stderr, /Missing API key/);
+  }
+});
+
+test("xhs pgy-detail surfaces MCP errors without fallback or duplicate calls", async () => {
+  const { result, toolCalls } = await runCliWithMockMcp(
+    ["xhs", "pgy-detail", "--note-id", "6a123456000000001234abcd"],
+    {},
+    undefined,
+    { mcpToolError: "Test commercial detail unavailable" }
+  );
+  assert.notEqual(result.status, 0);
+  assert.match(result.stderr, /Test commercial detail unavailable/);
+  assert.equal(toolCalls.length, 1);
+  assert.equal(toolCalls[0].name, "xhs_pgy_get_note_detail_by_note_id");
+});
+
+test("xhs pgy-detail preserves the no-data code on stderr without leaking internal fields or retrying", async () => {
+  for (const input of [["--note-id", "6a123456000000001234abcd"], ["--url", "https://www.xiaohongshu.com/explore/6a123456000000001234abcd"]]) {
+    const publicError = { code: "pgy_commercial_data_unavailable", message: "Business message may change" };
+    const { result, toolCalls } = await runCliWithMockMcp(
+      ["xhs", "pgy-detail", ...input], {}, undefined,
+      { mcpToolError: "Fallback text", mcpToolErrorStructured: {
+        ...publicError, failure_detail: { reason_code: "internal-only" },
+      } }
+    );
+    assert.equal(result.status, 1);
+    assert.equal(result.stdout, "");
+    assert.deepEqual(JSON.parse(result.stderr), publicError);
+    assert.equal(toolCalls.length, 1);
+  }
+});
+
 test("xhs detail still rejects note-id and url together", () => {
   const result = runCli(["xhs", "detail", "--note-id", "a", "--url", "b"]);
 
@@ -6766,6 +6839,8 @@ test("weibo direct commands map public read operations", async () => {
     "comments",
     "--post-id",
     "post-1",
+    "--sort-type",
+    "time_descending",
     "--page-token",
     "next",
   ]);
@@ -6774,7 +6849,43 @@ test("weibo direct commands map public read operations", async () => {
     name: "weibo_get_post_comments_by_post_id",
     arguments: {
       post_id: "post-1",
+      sort_type: "time_descending",
       page_token: "next",
+    },
+  });
+
+  const commentsWithDefaultSort = await runCliWithMockMcp([
+    "weibo",
+    "comments",
+    "--post-id",
+    "post-1",
+  ]);
+  assert.equal(
+    commentsWithDefaultSort.result.status,
+    0,
+    commentsWithDefaultSort.result.stderr
+  );
+  assert.deepEqual(commentsWithDefaultSort.toolCalls[0], {
+    name: "weibo_get_post_comments_by_post_id",
+    arguments: {
+      post_id: "post-1",
+    },
+  });
+
+  const commentsByUrl = await runCliWithMockMcp([
+    "weibo",
+    "comments",
+    "--post-url",
+    "https://weibo.com/123/post-1",
+    "--sort-type",
+    "hot",
+  ]);
+  assert.equal(commentsByUrl.result.status, 0, commentsByUrl.result.stderr);
+  assert.deepEqual(commentsByUrl.toolCalls[0], {
+    name: "weibo_get_post_comments_by_post_url",
+    arguments: {
+      post_url: "https://weibo.com/123/post-1",
+      sort_type: "hot",
     },
   });
 
@@ -7554,6 +7665,10 @@ test("weibo and wechat validate direct command options before checking the API k
   assertCliError(
     runCli(["weibo", "replies", "--comment-id", "comment-1"]),
     "Missing --post-id for weibo replies\\."
+  );
+  assertCliError(
+    runCli(["weibo", "comments", "--post-id", "post-1", "--sort-type", "latest"]),
+    'Unsupported --sort-type "latest"\\. Use one of: hot, time_descending\\.'
   );
   assertCliError(
     runCli(["wechat", "search", "--keyword", "foo", "--content-type", "video"]),
@@ -9565,7 +9680,9 @@ test("doctor json prints parseable safety summary", () => {
   assert.equal(report.platform.futureRegistryName, "com.socialdatax/xhs-insights");
   assert.equal(report.platform.legacyRegistryName, undefined);
   assert.equal(report.platform.defaultEndpoint, "https://mcp.socialdatax.com/xhs/mcp");
-  assert.equal(report.platform.tools.length, 14);
+  assert.equal(report.platform.tools.length, 16);
+  assert.ok(report.platform.tools.includes("xhs_pgy_get_note_detail_by_note_id"));
+  assert.ok(report.platform.tools.includes("xhs_pgy_get_note_detail_by_note_url"));
   assert.ok(report.platform.tools.includes("xhs_get_search_hot_list"));
   assert.ok(report.platform.tools.includes("xhs_get_note_sub_comments_by_comment_id"));
   assert.ok(report.platform.tools.includes("xhs_submit_video_speech_text_by_note_url"));
@@ -10511,6 +10628,10 @@ test("direct CLI docs keep search pagination platform-specific", () => {
   assert.match(help.stdout, /--sort-type <hot\|time_descending>/);
   assert.match(
     help.stdout,
+    /X search, Weibo comments, and YouTube comments sort; omit for default sort\./
+  );
+  assert.match(
+    help.stdout,
     /--sort-type <general\|time_descending\|view_count_descending\|rating>/
   );
   assert.match(help.stdout, /--video-type <all\|video\|movie>/);
@@ -10575,7 +10696,7 @@ test("direct CLI docs keep search pagination platform-specific", () => {
   );
   assert.match(
     readme,
-    /Bilibili and YouTube comments accept optional `--sort-type` values: `hot` and\s+`time_descending`; Zhihu comments accept `default` and `time_descending`\./
+    /Bilibili, Weibo, and YouTube comments accept optional `--sort-type` values: `hot` and\s+`time_descending`; Zhihu comments accept `default` and `time_descending`\./
   );
   assert.match(
     readme,

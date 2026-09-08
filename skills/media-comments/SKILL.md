@@ -242,6 +242,7 @@ Optional arguments:
 - TikTok `--post-id <post_id>` or `--url <tiktok_post_url_or_share_text>`: use for first-level comments; replies require `--post-id <post_id>` and `--comment-id <comment_id>`.
 - Weibo `--post-id <post_id>`: preferred when the Weibo post ID is already known and should anchor the comment thread.
 - Weibo `--post-url <weibo_post_url_or_share_text>`: use for a Weibo post URL, short link, or share text for first-level comments.
+- Weibo comments `--sort-type <hot|time_descending>`: optional first-level comment sort order; omit it for the default `hot` order, and keep it unchanged when continuing with `--page-token`.
 - WeChat Channels / 视频号 `--object-id <object_id>` and `--object-nonce-id <object_nonce_id>`: use together when both values are already known and should anchor the comment thread.
 - WeChat Channels / 视频号 `--url <wechat_video_url_or_share_text>`: use for a WeChat Channels video link or share text for first-level comments.
 - `--source-client socialdatax-skills --source-platform github --source-skill media-comments`: usage attribution for this Agent Skill; keep these values unchanged when running examples from this Skill.
@@ -300,8 +301,8 @@ If MCP tools are already available in the current agent, use one of these tools:
 - `tiktok_get_post_comments_by_post_id`: use when the TikTok post_id is known.
 - `tiktok_get_post_comments_by_url`: use for TikTok post URLs or share text.
 - `tiktok_get_post_comment_replies`: use when the TikTok post_id and first-level comment ID are known.
-- `weibo_get_post_comments_by_post_id`: use when the post_id is known.
-- `weibo_get_post_comments_by_post_url`: use for Weibo post URLs, short links, or share text.
+- `weibo_get_post_comments_by_post_id`: use when the post_id is known; optional `sort_type` accepts `hot` or `time_descending`.
+- `weibo_get_post_comments_by_post_url`: use for Weibo post URLs, short links, or share text; optional `sort_type` accepts `hot` or `time_descending`.
 - `weibo_get_post_comment_replies_by_comment_id`: use when the post_id and first-level comment ID are known.
 - For Weibo comments and replies, continue only when `next_page_token` is non-empty; an empty string means there are no more comments or replies to request.
 - `wechat_get_video_comments_by_object_id`: use when both object_id and object_nonce_id are known.

@@ -22,7 +22,7 @@ import { decryptWechatMediaCommand } from "./lib/media/wechat-decrypt.mjs";
 export { decryptWechatMediaCommand };
 
 const PACKAGE_NAME = "socialdatax-skills";
-const PACKAGE_VERSION = "0.2.43";
+const PACKAGE_VERSION = "0.2.45";
 const PACKAGE_SPEC = `${PACKAGE_NAME}@latest`;
 const LOG_PREFIX = `[${PACKAGE_NAME}]`;
 const MIN_NODE_VERSION = "20.18.1";
@@ -71,7 +71,7 @@ const AVAILABLE_SKILLS = [
   {
     name: "media-detail",
     summary:
-      "Read WeChat Official Account article details and body text. Read structured content details and metrics for XHS, Douyin, Kuaishou, Bilibili, Weibo, WeChat Channels, Zhihu, Instagram, X / Twitter, YouTube, and TikTok.",
+      "Read WeChat Official Account article details and body text. Read structured content details and metrics for XHS, Douyin, Kuaishou, Bilibili, Weibo, WeChat Channels, Zhihu, Instagram, X / Twitter, YouTube, and TikTok. Supports requested XHS 蒲公英 / Pugongying commercial note details.",
     emoji: "📄",
   },
   {
@@ -139,6 +139,7 @@ const XHS_DIRECT_ACTION_OPTIONS = {
     "pretty",
   ],
   detail: ["noteId", "url", "pretty"],
+  "pgy-detail": ["noteId", "url", "pretty"],
   comments: [
     "noteId",
     "url",
@@ -702,6 +703,7 @@ const WEIBO_DIRECT_ACTION_OPTIONS = {
     "all",
     "maxItems",
     "includeReplies",
+    "sortType",
     "pretty",
   ],
   replies: [
@@ -739,6 +741,7 @@ const WEIBO_OPTION_DISPLAY_NAMES = {
   sinceDays: "--since-days",
   all: "--all",
   includeReplies: "--include-replies",
+  sortType: "--sort-type",
   postId: "--post-id",
   postUrl: "--post-url",
   commentId: "--comment-id",
@@ -751,6 +754,7 @@ const WEIBO_OPTION_DISPLAY_NAMES = {
   outputDir: "--output-dir",
   proxy: "--proxy",
 };
+const WEIBO_COMMENT_SORT_TYPES = ["hot", "time_descending"];
 const WECHAT_DIRECT_ACTION_OPTIONS = {
   "hot-search": ["pretty"],
   search: [
@@ -894,6 +898,16 @@ const PLATFORMS = {
       {
         name: "xhs_get_note_detail_by_note_id",
         description: "Fetch structured note details by note ID.",
+      },
+      {
+        name: "xhs_pgy_get_note_detail_by_note_id",
+        description:
+          "Read XHS 蒲公英 / Pugongying commercial note details by full note ID; 20 points per successful call, failures are not charged.",
+      },
+      {
+        name: "xhs_pgy_get_note_detail_by_note_url",
+        description:
+          "Read XHS 蒲公英 / Pugongying commercial note details from a note URL, short link or share text; 20 points per successful call, failures are not charged.",
       },
       {
         name: "xhs_get_note_comments_by_note_id",
@@ -1251,11 +1265,13 @@ const PLATFORMS = {
       },
       {
         name: "weibo_get_post_comments_by_post_id",
-        description: "Fetch paginated first-level comments when the caller already has a post_id.",
+        description:
+          "Fetch paginated first-level comments by post_id with optional hot or newest-first sorting.",
       },
       {
         name: "weibo_get_post_comments_by_post_url",
-        description: "Fetch paginated first-level comments from a Weibo post URL, short link, or share text.",
+        description:
+          "Fetch paginated first-level comments from a Weibo post URL, short link, or share text with optional hot or newest-first sorting.",
       },
       {
         name: "weibo_get_post_comment_replies_by_comment_id",
@@ -1777,7 +1793,14 @@ async function main() {
       process.exitCode = 1;
     }
   } catch (error) {
-    console.error(`${LOG_PREFIX} ${formatCliErrorMessage(error)}`);
+    if (error?.structuredContent?.code === "pgy_commercial_data_unavailable") {
+      console.error(JSON.stringify({
+        code: error.structuredContent.code,
+        message: error.structuredContent.message || error.message,
+      }));
+    } else {
+      console.error(`${LOG_PREFIX} ${formatCliErrorMessage(error)}`);
+    }
     process.exit(1);
   }
 }
@@ -2848,6 +2871,10 @@ function printHelp() {
   console.log(`  npx -y ${PACKAGE_SPEC} xhs detail --note-id "<note_id>" --pretty`);
   console.log("      Call the XHS note detail tool directly and print JSON.");
   console.log("");
+  console.log(`  npx -y ${PACKAGE_SPEC} xhs pgy-detail --note-id "<note_id>" --pretty`);
+  console.log("      蒲公英 / Pugongying commercial details: 20 points per successful call; failures are not charged.");
+  console.log("      Use --url instead of --note-id for a note link, short link or share text.");
+  console.log("");
   console.log(`  npx -y ${PACKAGE_SPEC} xhs comments --note-id "<note_id>" --pretty`);
   console.log("      Call the XHS comments tool directly and print JSON.");
   console.log("");
@@ -3357,7 +3384,7 @@ function printHelp() {
   console.log("  --publish-time-range <all|day|week|month|three_months|half_year|year>");
   console.log("      Zhihu search publish-time filter; omit for no filter.");
   console.log("  --sort-type <hot|time_descending>");
-  console.log("      X search sort and YouTube comments sort; omit for default sort.");
+  console.log("      X search, Weibo comments, and YouTube comments sort; omit for default sort.");
   console.log("  --sort-type <general|time_descending|view_count_descending|rating>");
   console.log("      YouTube search sort; omit for default sort.");
   console.log("  --video-type <all|video|movie>");
@@ -3907,6 +3934,20 @@ function buildXhsOperation(action, options) {
           urlDisplay: "--url",
         })
       );
+    case "pgy-detail":
+      return buildDirectOperation(
+        "pgy-detail",
+        buildOneOfCall(options, {
+          idOption: "noteId",
+          urlOption: "url",
+          idTool: "xhs_pgy_get_note_detail_by_note_id",
+          urlTool: "xhs_pgy_get_note_detail_by_note_url",
+          idArgument: "note_id",
+          urlArgument: "note_url",
+          idDisplay: "--note-id",
+          urlDisplay: "--url",
+        })
+      );
     case "comments":
       return buildDirectOperation(
         "comments",
@@ -4403,6 +4444,7 @@ function buildWeiboOperation(action, options) {
           idDisplay: "--post-id",
           urlDisplay: "--post-url",
           pageToken: options.pageToken,
+          extraArguments: buildWeiboCommentsExtraArguments(options),
         }),
         PLATFORMS.weibo
       );
@@ -5130,6 +5172,19 @@ function buildXhsCommentsExtraArguments(options) {
       "--sort-type",
       XHS_COMMENT_SORT_TYPES,
       XHS_COMMENT_SORT_TYPES.join(", ")
+    );
+  }
+  return toolArguments;
+}
+
+function buildWeiboCommentsExtraArguments(options) {
+  const toolArguments = {};
+  if (options.sortType !== undefined) {
+    toolArguments.sort_type = parseAllowedStringOption(
+      options.sortType,
+      "--sort-type",
+      WEIBO_COMMENT_SORT_TYPES,
+      WEIBO_COMMENT_SORT_TYPES.join(", ")
     );
   }
   return toolArguments;

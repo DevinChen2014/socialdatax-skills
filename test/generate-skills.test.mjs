@@ -410,6 +410,47 @@ test("skill generator CLI shows help or rejects unknown flags without generating
   }
 });
 
+test("media-detail exposes attributed Pugongying routes with ordinary-detail and billing boundaries", async () => {
+  const tempRoot = mkdtempSync(join(tmpdir(), "socialdatax-pgy-skills-"));
+  try {
+    const source = await loadSkillSource({ repoRoot: projectRoot });
+    await generateSkills({ repoRoot: projectRoot, outRoot: tempRoot, quiet: true });
+    for (const host of ["npm", "github"]) {
+      const skill = readGeneratedSkill(tempRoot, host, "media-detail", source.hosts.hosts);
+      const frontmatter = extractFrontmatter(skill);
+      assert.match(frontmatterScalar(frontmatter, "description"), /蒲公英/);
+      assert.equal(frontmatterScalar(frontmatter, "source_platform"), host);
+      for (const input of ["note-id", "url"]) {
+        assertDirectCliExample(skill, `xhs pgy-detail --${input}`);
+      }
+      assert.match(skill, /xhs_pgy_get_note_detail_by_note_id/);
+      assert.match(skill, /xhs_pgy_get_note_detail_by_note_url/);
+      assert.match(skill, /--source-client socialdatax-skills/);
+      assert.match(skill, new RegExp(`--source-platform ${host} --source-skill media-detail`));
+      assert.match(skill, /20 points/);
+      assert.match(skill, /failed calls are not charged/);
+      assert.match(skill, /Ordinary note-detail requests continue to use `xhs detail`/);
+      assert.match(skill, /do not automatically upgrade/);
+      assert.match(skill, /do not present ordinary note details as a successful commercial result/);
+      assert.match(skill, /only to notes from creators enrolled/);
+      assert.match(skill, /structured code `pgy_commercial_data_unavailable`/);
+      assert.match(skill, /numeric code `1009`/);
+      assert.match(skill, /do not classify errors by matching message text/);
+      assert.match(skill, /该笔记所属博主未入驻蒲公英/);
+      assert.match(skill, /Do not classify timeouts, service outages, authentication failures/);
+      assert.match(skill, /After this no-data outcome, stop/);
+      assert.match(skill, /clarify that scope and the 20-point/);
+      assert.match(skill, /Do not ask again when the conversation/);
+      assert.match(skill, /This retry advice excludes `pgy_commercial_data_unavailable`/);
+      assert.match(skill, /JSON object containing `code` and `message` to stderr/);
+    }
+    const ordinarySearch = readGeneratedSkill(tempRoot, "npm", "media-search", source.hosts.hosts);
+    assert.doesNotMatch(ordinarySearch, /xhs pgy-detail/);
+  } finally {
+    rmSync(tempRoot, { recursive: true, force: true });
+  }
+});
+
 test("skill generator emits valid host-specific skill files", async () => {
   const tempRoot = mkdtempSync(join(tmpdir(), "socialdatax-skills-"));
 
@@ -4333,6 +4374,10 @@ test("generated media skills document newly supported public platforms", async (
     );
     assert.match(
       mediaComments,
+      /Weibo comments `--sort-type <hot\|time_descending>`/
+    );
+    assert.match(
+      mediaComments,
       /Zhihu comments `--sort-type <default\|time_descending>`/
     );
     assert.match(
@@ -4350,6 +4395,10 @@ test("generated media skills document newly supported public platforms", async (
     assert.match(
       mediaComments,
       /`youtube_get_video_comments_by_url`: use for YouTube video URLs; optional `sort_type` accepts `hot` or `time_descending`\./
+    );
+    assert.match(
+      mediaComments,
+      /`weibo_get_post_comments_by_post_id`: use when the post_id is known; optional `sort_type` accepts `hot` or `time_descending`\./
     );
     assert.doesNotMatch(
       mediaComments,
@@ -4984,6 +5033,30 @@ test("weibo platform is present in source and generated public skills", async ()
       assert.match(skill, /Weibo|微博/);
       assert.match(skill, /npx -y socialdatax-skills@latest weibo/);
     }
+
+    const clawhubComments = readGeneratedSkill(
+      tempRoot,
+      "clawhub",
+      "socialdatax-weibo-comments",
+      source.hosts.hosts
+    );
+    assert.match(clawhubComments, /Weibo comments `--sort-type <hot\|time_descending>`/);
+    assert.match(
+      clawhubComments,
+      /`weibo_get_post_comments_by_post_id`: use when the post_id is known; optional `sort_type` accepts `hot` or `time_descending`\./
+    );
+
+    const skillhubComments = readGeneratedSkill(
+      tempRoot,
+      "skillhub",
+      "weibo-comment-insights",
+      source.hosts.hosts
+    );
+    assert.match(
+      skillhubComments,
+      /评论 \/ 回复：[\s\S]*微博评论 `--sort-type <hot\|time_descending>`/
+    );
+    assert.doesNotMatch(skillhubComments, /\n搜索：\n/);
 
     const skillhubAggregate = readGeneratedSkill(
       tempRoot,

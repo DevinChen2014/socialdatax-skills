@@ -89,7 +89,18 @@ Common search phrases for this skill package:
 - Reserved future SocialDataX namespace names for existing platform listings without draft files yet: `com.socialdatax/kuaishou-insights`, `com.socialdatax/bilibili-insights`, `com.socialdatax/weibo-insights`, `com.socialdatax/wechat-channels-insights`, `com.socialdatax/zhihu-insights`, `com.socialdatax/instagram-insights`, `com.socialdatax/x-insights`, `com.socialdatax/youtube-insights`, and `com.socialdatax/tiktok-insights`.
 - Hosted endpoint without a repo-tracked standalone listing: Sensitive Words Check.
 - Unified MCP registry name: none; this package installs skills and calls explicit hosted MCP entries.
-- Current public capability version: `0.2.43`
+- Current public capability version: `0.2.45`
+
+## XHS 蒲公英 / Pugongying commercial note details
+
+Version `0.2.45` adds `xhs pgy-detail` and the matching `media-detail` Skill routing:
+
+```bash
+npx -y socialdatax-skills@latest xhs pgy-detail --note-id "<note_id>" --pretty
+npx -y socialdatax-skills@latest xhs pgy-detail --url "<note_url_or_share_text>" --pretty
+```
+
+Configure `SOCIALDATAX_API_KEY` before running these commands. Choose exactly one input: the complete note ID, or the original note URL, short link or share text. Each successful call costs **20 points**; failed calls are not charged. Use this route for requested 蒲公英 commercial details. Ordinary `xhs detail` stays on the public note-detail route and does not automatically switch to commercial data. Only notes from creators enrolled in 蒲公英 are eligible. When MCP structured code is `pgy_commercial_data_unavailable` (HTTP numeric code `1009`), the product treats this explicit no-commercial-data outcome as not enrolled: "该笔记所属博主未入驻蒲公英，无法查询蒲公英数据。本次查询失败，不扣费。" Use the structured code, not message text or internal reason_code, to identify this outcome. The CLI exits with status 1 and writes a JSON object containing only `code` and `message` to stderr for this outcome; stdout remains empty. Other errors retain their existing output format. Stop without retrying the other ID/URL route. Timeouts, service outages, authentication errors, insufficient balance, invalid inputs and unexplained empty responses retain their actual error or unresolved status; do not label them as not enrolled.
 
 ## Direct CLI
 
@@ -169,6 +180,7 @@ npx -y socialdatax-skills@latest weibo search --keyword "露营" --pretty
 npx -y socialdatax-skills@latest weibo detail --post-id "<post_id>" --pretty
 npx -y socialdatax-skills@latest weibo detail --post-url "<weibo_post_url_or_share_text>" --pretty
 npx -y socialdatax-skills@latest weibo comments --post-id "<post_id>" --pretty
+npx -y socialdatax-skills@latest weibo comments --post-id "<post_id>" --sort-type time_descending --pretty
 npx -y socialdatax-skills@latest weibo comments --post-id "<post_id>" --all --include-replies --pretty
 npx -y socialdatax-skills@latest weibo comments --post-url "<weibo_post_url_or_share_text>" --pretty
 npx -y socialdatax-skills@latest weibo replies --post-id "<post_id>" --comment-id "<comment_id>" --pretty
@@ -278,7 +290,7 @@ YouTube reply pagination starts from the returned first-level comment `reply_tok
 XHS comments accept optional `--sort-type` values: `default`,
 `time_descending`, and `like_count_descending`; omit it for the platform
 default comment order.
-Bilibili and YouTube comments accept optional `--sort-type` values: `hot` and
+Bilibili, Weibo, and YouTube comments accept optional `--sort-type` values: `hot` and
 `time_descending`; Zhihu comments accept `default` and `time_descending`.
 Omit comment sort values for the platform default order.
 
@@ -444,7 +456,7 @@ Available skills:
 
 - `socialdatax-content-research-assistant`: combine SocialDataX search, detail, comment, creator profile, and creator content workflows for cross-platform content research across XHS, Douyin, Kuaishou, Bilibili, Weibo, WeChat Channels, Zhihu, Instagram, X / Twitter, YouTube, and TikTok; also reads WeChat Official Account article link details.
 - `media-search`: search social media content by keyword; supports XHS notes, Douyin works, Kuaishou works, Bilibili videos/articles, Weibo posts, WeChat Channels videos, Zhihu content, Instagram posts, X / Twitter posts, YouTube videos, and TikTok posts.
-- `media-detail`: read WeChat Official Account article details and body text from article links. Read structured content details and metrics for XHS notes, Douyin works, Kuaishou works, Bilibili content, Weibo posts, WeChat Channels videos and image posts, Zhihu content, Instagram posts, X / Twitter posts, YouTube videos, and TikTok posts.
+- `media-detail`: supports requested XHS 蒲公英 / Pugongying commercial note details (20 points per successful call; failures are not charged). Read WeChat Official Account article details and body text from article links. Read structured content details and metrics for XHS notes, Douyin works, Kuaishou works, Bilibili content, Weibo posts, WeChat Channels videos and image posts, Zhihu content, Instagram posts, X / Twitter posts, YouTube videos, and TikTok posts.
 - `media-comments`: fetch and analyze comments/replies for XHS, Douyin, Kuaishou, Bilibili, Weibo, WeChat Channels, Zhihu, Instagram, X / Twitter, YouTube, and TikTok.
 - `media-transcript`: submit and check video 口播转文字 / speech-to-text transcript jobs; supports XHS, Douyin, Kuaishou, Weibo, and WeChat Channels through direct CLI commands or hosted MCP tools, plus Bilibili, Zhihu independent videos and video answers, Instagram regular video posts/Reels, X / Twitter video posts, TikTok, and YouTube through hosted MCP tools. Instagram photo and carousel posts and Zhihu plain answers without video are not processable.
 - `media-user-info`: retrieve creator profile information; supports XHS, Douyin, Kuaishou, Bilibili, Weibo, WeChat Channels, Zhihu, Instagram, X / Twitter, YouTube channels, and TikTok creators.
@@ -530,7 +542,7 @@ Current Weibo workflows include:
 - Fetch the current Weibo / 微博 hot-search list.
 - Search related Weibo posts by keyword.
 - Resolve a Weibo post URL, short link, share text, or post_id into structured post details.
-- Fetch paginated first-level comments for comment analysis.
+- Fetch paginated first-level comments for comment analysis, optionally sorted by `hot` or `time_descending`.
 - Fetch paginated replies under a first-level comment.
 - Continue Weibo list pagination only when `next_page_token` is non-empty; an empty string means there are no more results to request.
 - Read Weibo creator profile data from a user profile link or user_id.
@@ -618,6 +630,8 @@ Current Sensitive Words Check workflows include:
 | `xhs_search_notes` | Search Xiaohongshu / 小红书 notes by keyword with optional sort, note type, and publish-time filters. |
 | `xhs_get_note_detail_by_note_url` | Resolve a shared XHS link, short link, or share text into structured note details. |
 | `xhs_get_note_detail_by_note_id` | Fetch structured note details when the caller already has a note ID. |
+| `xhs_pgy_get_note_detail_by_note_id` | Read 蒲公英 commercial note details by full note ID; 20 points per successful call, failures are not charged. |
+| `xhs_pgy_get_note_detail_by_note_url` | Read 蒲公英 commercial note details from a note URL, short link or share text; 20 points per successful call, failures are not charged. |
 | `xhs_get_note_comments_by_note_id` | Fetch paginated first-level comments when the caller already has a note ID; accepts optional comment `sort_type`. |
 | `xhs_get_note_comments_by_note_url` | Fetch paginated first-level comments directly from a shared note URL, short link, or share text; accepts optional comment `sort_type`. |
 | `xhs_get_note_sub_comments_by_comment_id` | Fetch paginated replies under a first-level comment by note ID and comment ID. |
@@ -706,8 +720,8 @@ Current Sensitive Words Check workflows include:
 | `weibo_search_posts` | Search Weibo posts by keyword with optional `page_token` continuation; do not pass `page`. |
 | `weibo_get_post_detail_by_post_id` | Fetch structured Weibo post details when the caller already has a post_id. |
 | `weibo_get_post_detail_by_post_url` | Resolve a Weibo post URL, short link, or share text into structured post details. |
-| `weibo_get_post_comments_by_post_id` | Fetch paginated first-level comments when the caller already has a post_id. |
-| `weibo_get_post_comments_by_post_url` | Fetch paginated first-level comments directly from a Weibo post URL, short link, or share text. |
+| `weibo_get_post_comments_by_post_id` | Fetch paginated first-level comments by post_id with optional `sort_type` (`hot` or `time_descending`). |
+| `weibo_get_post_comments_by_post_url` | Fetch paginated first-level comments from a Weibo post URL, short link, or share text with optional `sort_type` (`hot` or `time_descending`). |
 | `weibo_get_post_comment_replies_by_comment_id` | Fetch paginated replies under a first-level comment by post_id and comment_id. |
 | `weibo_get_post_liker_list_by_post_id` | Fetch paginated users who liked a Weibo post by post_id. |
 | `weibo_get_post_liker_list_by_post_url` | Fetch paginated users who liked a Weibo post from a post page link, short link, or share text. |

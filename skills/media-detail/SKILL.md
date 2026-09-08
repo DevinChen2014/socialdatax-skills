@@ -1,6 +1,6 @@
 ---
 name: "media-detail"
-description: "Read structured social media content details and metrics from content IDs, URLs, short links, or share text for supported platforms including Xiaohongshu / XHS / RedNote, Douyin, Kuaishou, Bilibili, Zhihu, Instagram, X / Twitter, YouTube, TikTok, Weibo, and WeChat Channels. For WeChat Official Account articles, read article details and body text from article links."
+description: "Read structured social media content details and metrics from content IDs, URLs, short links, or share text for supported platforms including Xiaohongshu / XHS / RedNote, Douyin, Kuaishou, Bilibili, Zhihu, Instagram, X / Twitter, YouTube, TikTok, Weibo, and WeChat Channels. For WeChat Official Account articles, read article details and body text from article links. Supports XHS 蒲公英 / Pugongying commercial note details when requested."
 source_client: "socialdatax-skills"
 source_platform: "github"
 source_skill: "media-detail"
@@ -24,7 +24,7 @@ metadata:
 
 # Media Detail
 
-Use this skill when the user provides an mp.weixin.qq.com article link and wants WeChat Official Account article body text. For other supported content links, short links, share text, or content IDs, use it for structured details or interaction metrics where supported.
+Use this skill when the user provides an mp.weixin.qq.com article link and wants WeChat Official Account article body text. For other supported content links, short links, share text, or content IDs, use it for structured details or interaction metrics where supported. For explicit XHS 蒲公英 / Pugongying commercial note requests, choose the commercial detail route (20 points per successful call; failures are not charged).
 
 Current platform support:
 
@@ -40,6 +40,7 @@ Current platform support:
 - Weibo / 微博 posts through the `weibo_get_post_detail_by_*` tools.
 - WeChat Channels / 视频号 video and image-post details through the `wechat_get_video_detail_by_*` tools.
 - WeChat Official Account / 微信公众号 articles through `wechat_get_mp_article_detail_by_url`.
+- Xiaohongshu / XHS 蒲公英 / Pugongying single-note commercial details through `xhs_pgy_get_note_detail_by_note_id` or `xhs_pgy_get_note_detail_by_note_url`.
 
 ## API Key
 
@@ -137,6 +138,14 @@ npx -y socialdatax-skills@latest wechat detail \
 npx -y socialdatax-skills@latest wechat article \
   --url "<mp_article_url_or_share_text>" --pretty --source-client socialdatax-skills \
   --source-platform github --source-skill media-detail
+
+npx -y socialdatax-skills@latest xhs pgy-detail \
+  --note-id "<note_id>" --pretty --source-client socialdatax-skills \
+  --source-platform github --source-skill media-detail
+
+npx -y socialdatax-skills@latest xhs pgy-detail \
+  --url "<note_url_or_share_text>" --pretty --source-client socialdatax-skills \
+  --source-platform github --source-skill media-detail
 ```
 
 Optional arguments:
@@ -167,6 +176,11 @@ Optional arguments:
 Use either the ID option or the URL option for detail commands, not both.
 
 The command prints JSON with `platform`, `tool`, `arguments`, and `data`.
+For XHS 蒲公英 / Pugongying commercial note data, use `xhs pgy-detail`. Each successful call costs 20 points; failed calls are not charged.
+XHS 蒲公英 queries apply only to notes from creators enrolled in 蒲公英 / Pugongying.
+Use this route when the user asks for 蒲公英 / Pugongying commercial details. Ordinary note-detail requests continue to use `xhs detail`; do not automatically upgrade an ordinary request or retry it through the paid commercial route.
+Choose exactly one input: the complete `--note-id`, or `--url` with the original note link, short link or share text. Do not call both routes for the same note.
+If the user asks only for exposure, reads or pricing without establishing the 蒲公英 commercial scope, clarify that scope and the 20-point successful-call cost before calling. Do not ask again when the conversation has already established this scope.
 
 ## Safety Boundary
 
@@ -176,26 +190,17 @@ Platform detail access is read-only. It uses `SOCIALDATAX_API_KEY` from the user
 
 MCP tools matching the direct CLI commands above:
 
-- `xhs_get_note_detail_by_note_id`
-- `xhs_get_note_detail_by_note_url`
-- `douyin_get_video_detail_by_aweme_id`
-- `douyin_get_video_detail_by_url`
-- `kuaishou_get_video_detail_by_photo_id`
-- `kuaishou_get_video_detail_by_url`
-- `bilibili_get_content_detail_by_id`
-- `bilibili_get_content_detail_by_url`
-- `zhihu_get_content_detail_by_url`
-- `instagram_get_post_detail_by_post_id`
-- `instagram_get_post_detail_by_post_url`
-- `x_get_post_detail_by_post_id`
-- `x_get_post_detail_by_post_url`
-- `youtube_get_video_detail_by_url`
-- `tiktok_get_post_detail_by_url`
-- `weibo_get_post_detail_by_post_id`
-- `weibo_get_post_detail_by_post_url`
-- `wechat_get_video_detail_by_encrypted_object_id`
-- `wechat_get_video_detail_by_url`
-- `wechat_get_mp_article_detail_by_url`
+- XHS: `xhs_get_note_detail_by_note_id`, `xhs_get_note_detail_by_note_url`, `xhs_pgy_get_note_detail_by_note_id`, `xhs_pgy_get_note_detail_by_note_url`
+- DOUYIN: `douyin_get_video_detail_by_aweme_id`, `douyin_get_video_detail_by_url`
+- KUAISHOU: `kuaishou_get_video_detail_by_photo_id`, `kuaishou_get_video_detail_by_url`
+- BILIBILI: `bilibili_get_content_detail_by_id`, `bilibili_get_content_detail_by_url`
+- ZHIHU: `zhihu_get_content_detail_by_url`
+- INSTAGRAM: `instagram_get_post_detail_by_post_id`, `instagram_get_post_detail_by_post_url`
+- X: `x_get_post_detail_by_post_id`, `x_get_post_detail_by_post_url`
+- YOUTUBE: `youtube_get_video_detail_by_url`
+- TIKTOK: `tiktok_get_post_detail_by_url`
+- WEIBO: `weibo_get_post_detail_by_post_id`, `weibo_get_post_detail_by_post_url`
+- WECHAT: `wechat_get_video_detail_by_encrypted_object_id`, `wechat_get_video_detail_by_url`, `wechat_get_mp_article_detail_by_url`
 
 If MCP tools are already available in the current agent, use one of these tools:
 - `xhs_get_note_detail_by_note_id`: use when the full `note_id` is already known; do not pass only a prefix.
@@ -218,6 +223,9 @@ If MCP tools are already available in the current agent, use one of these tools:
 - `wechat_get_video_detail_by_encrypted_object_id`: use when encrypted_object_id from search is already known.
 - `wechat_get_video_detail_by_url`: use for a WeChat Channels / 视频号 video or image-post link or share text.
 - `wechat_get_mp_article_detail_by_url`: use for WeChat Official Account / 微信公众号 article links or share text.
+- `xhs_pgy_get_note_detail_by_note_id`: for 蒲公英 / Pugongying commercial details when the full note_id is known.
+- `xhs_pgy_get_note_detail_by_note_url`: for 蒲公英 / Pugongying commercial details from a note URL, short link or share text.
+Both XHS 蒲公英 tools cost 20 points per successful call; failures are not charged. They are distinct from ordinary `xhs_get_note_detail_by_*` tools.
 
 ## Output Guidance
 
@@ -239,10 +247,15 @@ When the user wants to save Weibo media after detail, pass each returned `image_
 For WeChat Channels / 视频号 detail, preserve `object_id` and `object_nonce_id` because comments and replies need both values.
 When the user wants to save a WeChat Channels / 视频号 video after detail, pass the returned `video.video_url` to `npx -y socialdatax-skills@latest wechat decrypt-media --media-url "<video.video_url>" --output <file>`; this local save command decrypts when needed and does not require `SOCIALDATAX_API_KEY`.
 For WeChat Official Account / 微信公众号 article detail, include article title, account, publish time, body text, image URLs, linked articles, and embedded video cards when present.
+Label XHS 蒲公英 / Pugongying results as commercial note data, distinct from ordinary public note metrics; do not present ordinary note details as a successful commercial result.
+When MCP returns structured code `pgy_commercial_data_unavailable` (or HTTP returns numeric code `1009`), treat the creator as not enrolled and show the returned message: "该笔记所属博主未入驻蒲公英，无法查询蒲公英数据。本次查询失败，不扣费。" These identifiers retain the explicit no-commercial-data outcome; do not classify errors by matching message text or internal reason_code.
+After this no-data outcome, stop: do not retry through the other ID/URL route or automatically substitute ordinary details. If the user still wants ordinary details, use the ordinary detail route for that request.
+Do not classify timeouts, service outages, authentication failures, insufficient balance, invalid inputs, or an unexplained empty response as 未入驻蒲公英. Report the actual request error or unresolved outcome instead.
+For CLI calls, this no-commercial-data error exits with status 1 and writes a JSON object containing `code` and `message` to stderr; read that code instead of matching text. A text-only or unknown error is unresolved, not evidence of non-enrollment. Do not persist this single-note outcome as a permanent creator enrollment status.
 
 ## Troubleshooting
 
 - If an SDK/dependency, npm network, Node.js/npm/npx availability, permission, or missing runtime error appears, treat it as a local runtime, dependency installation, network, or agent authorization issue, not a SocialDataX API key or business data error. If the current environment has permission, install or restore automatically. When network or execution authorization is needed, ask the user to approve or finish authorization, then continue the same command; do not use public web search as a substitute for SocialDataX data.
-- For non-balance network or API errors, preserve the error message, check `SOCIALDATAX_API_KEY`, parameters, and link or ID format, then retry once when appropriate.
+- For non-balance network or API errors, preserve the error message, check `SOCIALDATAX_API_KEY`, parameters, and link or ID format, then retry once when appropriate. This retry advice excludes `pgy_commercial_data_unavailable` / HTTP `1009`: stop without retrying the same or alternate input route.
 - If the response returns `insufficient_balance` or says the balance/credits are insufficient, do not retry repeatedly. Show the recharge URL from the error exactly as returned, then continue the same command after the user recharges.
 - If the user has recharged but still sees insufficient balance, confirm `SOCIALDATAX_API_KEY` belongs to the same account that was recharged; if needed, copy a fresh API Key from the official dashboard.
