@@ -677,7 +677,7 @@ test("skill generator emits valid host-specific skill files", async () => {
       source.hosts.hosts
     );
 
-    assert.doesNotMatch(xhsComments, /Douyin|抖音|video\.play_url|aweme-id/);
+    assert.doesNotMatch(xhsComments, /Douyin|抖音|Toutiao|今日头条|video\.play_url|aweme-id/);
     assert.doesNotMatch(douyinComments, /XHS|Xiaohongshu|小红书|note-id/);
 
     const xhsDetail = readGeneratedSkill(
@@ -713,23 +713,23 @@ test("skill generator emits valid host-specific skill files", async () => {
 
     assert.doesNotMatch(
       xhsDetail,
-      /Douyin|抖音|video\.play_url|aweme-id|Bilibili|哔哩哔哩|B站|Zhihu|知乎|Instagram|X \/ Twitter|YouTube|TikTok|Weibo|微博|WeChat Channels|视频号|post-id|encrypted-object-id/
+      /Douyin|抖音|video\.play_url|aweme-id|Bilibili|哔哩哔哩|B站|Zhihu|知乎|Instagram|X \/ Twitter|YouTube|TikTok|Weibo|微博|Toutiao|今日头条|WeChat Channels|视频号|post-id|encrypted-object-id/
     );
     assert.doesNotMatch(
       xhsCreatorNotes,
-      /Douyin|抖音|short-drama|video playback URL|sec-user-id|Bilibili|哔哩哔哩|B站|Zhihu|知乎|Instagram|X \/ Twitter|YouTube|TikTok|Weibo|微博|WeChat Channels|视频号|post-id|finder-user-id/
+      /Douyin|抖音|short-drama|video playback URL|sec-user-id|Bilibili|哔哩哔哩|B站|Zhihu|知乎|Instagram|X \/ Twitter|YouTube|TikTok|Weibo|微博|Toutiao|今日头条|WeChat Channels|视频号|post-id|finder-user-id/
     );
     assert.doesNotMatch(
       douyinSearch,
-      /XHS|Xiaohongshu|小红书|RedNote|note type|Kuaishou|快手|photo-id|Bilibili|哔哩哔哩|B站|Zhihu|知乎|Instagram|X \/ Twitter|YouTube|TikTok|Weibo|微博|WeChat Channels|视频号|post-id|encrypted-object-id|\bnext_page\b/
+      /XHS|Xiaohongshu|小红书|RedNote|note type|Kuaishou|快手|photo-id|Bilibili|哔哩哔哩|B站|Zhihu|知乎|Instagram|X \/ Twitter|YouTube|TikTok|Weibo|微博|Toutiao|今日头条|WeChat Channels|视频号|post-id|encrypted-object-id|\bnext_page\b/
     );
     assert.doesNotMatch(
       kuaishouSearch,
-      /XHS|Xiaohongshu|小红书|RedNote|Douyin|抖音|note type|aweme-id|sec-user-id|short-drama|Bilibili|哔哩哔哩|B站|Zhihu|知乎|Instagram|X \/ Twitter|YouTube|TikTok|Weibo|微博|WeChat Channels|视频号|post-id|encrypted-object-id/
+      /XHS|Xiaohongshu|小红书|RedNote|Douyin|抖音|note type|aweme-id|sec-user-id|short-drama|Bilibili|哔哩哔哩|B站|Zhihu|知乎|Instagram|X \/ Twitter|YouTube|TikTok|Weibo|微博|Toutiao|今日头条|WeChat Channels|视频号|post-id|encrypted-object-id/
     );
     assert.doesNotMatch(
       kuaishouComments,
-      /XHS|Xiaohongshu|小红书|RedNote|Douyin|抖音|note-id|aweme-id|video\.play_url|Bilibili|哔哩哔哩|B站|Zhihu|知乎|Instagram|X \/ Twitter|YouTube|TikTok|Weibo|微博|WeChat Channels|视频号|post-id|object-id/
+      /XHS|Xiaohongshu|小红书|RedNote|Douyin|抖音|note-id|aweme-id|video\.play_url|Bilibili|哔哩哔哩|B站|Zhihu|知乎|Instagram|X \/ Twitter|YouTube|TikTok|Weibo|微博|Toutiao|今日头条|WeChat Channels|视频号|post-id|object-id/
     );
     assert.match(
       douyinSearch,
@@ -2268,6 +2268,89 @@ test("generated aggregate scenario skills keep guidance concise", async () => {
   }
 });
 
+test("aggregate research routes public supplementary search, product, and topic tools", async () => {
+  const tempRoot = mkdtempSync(join(tmpdir(), "socialdatax-skills-"));
+
+  try {
+    const source = await loadSkillSource({ repoRoot: projectRoot });
+    await generateSkills({
+      repoRoot: projectRoot,
+      outRoot: tempRoot,
+      quiet: true,
+    });
+
+    for (const [host, slug] of [
+      ["npm", "socialdatax-content-research-assistant"],
+      ["skillhub", "socialdatax-content-research-assistant"],
+    ]) {
+      const skill = readGeneratedSkill(tempRoot, host, slug, source.hosts.hosts);
+      for (const tool of [
+        "xhs_search_suggestions",
+        "xhs_search_users",
+        "xhs_search_products",
+        "xhs_get_product_detail_by_sku_id",
+        "xhs_get_product_detail_by_url",
+        "xhs_get_product_reviews",
+        "xhs_get_product_review_replies",
+        "xhs_get_topic_notes_by_topic_url",
+        "xhs_get_topic_notes_by_page_id",
+        "douyin_search_products",
+        "douyin_get_product_detail_by_product_id",
+        "douyin_get_product_detail_by_url",
+        "douyin_get_video_share_link_by_aweme_id",
+        "douyin_get_video_share_link_by_url",
+      ]) {
+        assert.match(skill, new RegExp(`\\\`${escapeRegExp(tool)}\\\``));
+      }
+    }
+
+    const npmSkill = readGeneratedSkill(
+      tempRoot,
+      "npm",
+      "socialdatax-content-research-assistant",
+      source.hosts.hosts
+    );
+    const skillhubSkill = readGeneratedSkill(
+      tempRoot,
+      "skillhub",
+      "socialdatax-content-research-assistant",
+      source.hosts.hosts
+    );
+    assert.match(npmSkill, /known sku_id/);
+    assert.match(npmSkill, /known product_id/);
+    assert.match(npmSkill, /douyin share-link --aweme-id/);
+    assert.match(npmSkill, /douyin share-link --url/);
+    assert.match(npmSkill, /For XHS keyword completion, use `xhs_search_suggestions`/);
+    assert.match(skillhubSkill, /已知 sku_id/);
+    assert.match(skillhubSkill, /已知 product_id/);
+    assert.match(skillhubSkill, /douyin share-link --aweme-id/);
+    assert.match(skillhubSkill, /douyin share-link --url/);
+    assert.match(skillhubSkill, /补全小红书搜索词时使用 `xhs_search_suggestions`/);
+
+    const xhsHubSkill = readGeneratedSkill(
+      tempRoot,
+      "clawhub",
+      "socialdatax-xhs",
+      source.hosts.hosts
+    );
+    const douyinHubSkill = readGeneratedSkill(
+      tempRoot,
+      "clawhub",
+      "socialdatax-douyin",
+      source.hosts.hosts
+    );
+    assert.match(
+      xhsHubSkill,
+      /For XHS keyword completion, use `xhs_search_suggestions`; use `xhs search` or `xhs_search_notes` when the user needs note results instead of suggestions\./
+    );
+    assert.doesNotMatch(xhsHubSkill, /product search|xhs_search_products/);
+    assert.match(douyinHubSkill, /douyin share-link[\s\S]*--aweme-id/);
+    assert.match(douyinHubSkill, /douyin share-link[\s\S]*--url/);
+  } finally {
+    rmSync(tempRoot, { recursive: true, force: true });
+  }
+});
+
 test("skillhub generated skills include quick start result examples and troubleshooting guidance", async () => {
   const tempRoot = mkdtempSync(join(tmpdir(), "socialdatax-skills-"));
 
@@ -3222,7 +3305,7 @@ test("chinese-language parameter guidance labels routing notes as explanation", 
     );
     assert.match(
       aggregateArgSection,
-      /搜索：[\s\S]*- 说明：做关键词研究时，根据平台使用 `xhs search`、`douyin search`、`kuaishou search`、`bilibili search-videos` \/ `search-articles`、`zhihu search`、`instagram search`、`x search`、`youtube search`、`tiktok search`、`weibo search` 或 `wechat search`。/
+      /搜索：[\s\S]*- 说明：做关键词研究时，根据平台使用 `xhs search`、`douyin search`、`kuaishou search`、`bilibili search-videos` \/ `search-articles`、`zhihu search`、`instagram search`、`x search`、`youtube search`、`tiktok search`、`weibo search`、`toutiao search` 或 `wechat search`。/
     );
     assert.match(
       aggregateArgSection,
@@ -6541,6 +6624,7 @@ test("generator rejects listings whose commands resolve to empty arrays", async 
     const listingsPath = join(sourceDir, "listings.json");
     const listings = JSON.parse(readFileSync(listingsPath, "utf8"));
     listings.listings[0].commands = [];
+    listings.listings[0].mcpOnlyTools = [];
     writeFileSync(listingsPath, `${JSON.stringify(listings, null, 2)}\n`);
 
     await assert.rejects(

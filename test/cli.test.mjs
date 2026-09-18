@@ -73,6 +73,7 @@ function runCli(args) {
   delete env.SOCIAL_MEDIA_DOUYIN_MCP_UPSTREAM_URL;
   delete env.SOCIAL_MEDIA_KUAISHOU_MCP_UPSTREAM_URL;
   delete env.SOCIAL_MEDIA_BILIBILI_MCP_UPSTREAM_URL;
+  delete env.SOCIAL_MEDIA_TOUTIAO_MCP_UPSTREAM_URL;
   delete env.SOCIAL_MEDIA_ZHIHU_MCP_UPSTREAM_URL;
   delete env.SOCIAL_MEDIA_INSTAGRAM_MCP_UPSTREAM_URL;
   delete env.SOCIAL_MEDIA_X_MCP_UPSTREAM_URL;
@@ -84,6 +85,7 @@ function runCli(args) {
   delete env.DOUYIN_MCP_UPSTREAM_URL;
   delete env.KUAISHOU_MCP_UPSTREAM_URL;
   delete env.BILIBILI_MCP_UPSTREAM_URL;
+  delete env.TOUTIAO_MCP_UPSTREAM_URL;
   delete env.ZHIHU_MCP_UPSTREAM_URL;
   delete env.INSTAGRAM_MCP_UPSTREAM_URL;
   delete env.X_MCP_UPSTREAM_URL;
@@ -643,6 +645,7 @@ async function runCliWithMockMcp(
       SOCIAL_MEDIA_YOUTUBE_MCP_UPSTREAM_URL: `http://127.0.0.1:${address.port}/mcp`,
       SOCIAL_MEDIA_TIKTOK_MCP_UPSTREAM_URL: `http://127.0.0.1:${address.port}/mcp`,
       SOCIAL_MEDIA_WEIBO_MCP_UPSTREAM_URL: `http://127.0.0.1:${address.port}/mcp`,
+      SOCIAL_MEDIA_TOUTIAO_MCP_UPSTREAM_URL: `http://127.0.0.1:${address.port}/mcp`,
       SOCIAL_MEDIA_WECHAT_MCP_UPSTREAM_URL: `http://127.0.0.1:${address.port}/mcp`,
       SOCIALDATAX_SENSITIVE_CHECK_MCP_UPSTREAM_URL: `http://127.0.0.1:${address.port}/mcp`,
       ...extraEnv,
@@ -763,7 +766,7 @@ test("public package version metadata stays aligned", () => {
   const cli = readFileSync(cliPath, "utf8");
   const versionPattern = escapeRegExp(packageJson.version);
 
-  assert.equal(packageJson.version, "0.2.45");
+  assert.equal(packageJson.version, "0.2.46");
   assert.equal(packageLock.version, packageJson.version);
   assert.equal(packageLock.packages[""].version, packageJson.version);
   assert.match(
@@ -6008,7 +6011,7 @@ test("douyin openclaw plugin exposes supported user info tools", () => {
       "douyin-insights__douyin_get_user_posted_videos_by_profile_url",
     ]
   );
-  assert.equal(pluginManifest.contracts.tools.length, 15);
+  assert.equal(pluginManifest.contracts.tools.length, 17);
   assert.ok(
     pluginManifest.contracts.tools.includes(
       "douyin-insights__douyin_get_hot_search_list"
@@ -6169,7 +6172,7 @@ test("xhs openclaw search schema documents semantic sort enums", () => {
     pluginSource,
     /社媒数据助手 小红书 MCP \| Xiaohongshu XHS RedNote MCP/
   );
-  assert.equal(pluginManifest.contracts.tools.length, 18);
+  assert.equal(pluginManifest.contracts.tools.length, 19);
   assert.ok(
     pluginManifest.contracts.tools.includes(
       "xhs-insights__xhs_get_search_hot_list"
@@ -6182,8 +6185,17 @@ test("xhs openclaw search schema documents semantic sort enums", () => {
   );
   assert.ok(
     pluginManifest.contracts.tools.includes(
-      "xhs-insights__xhs_get_product_detail"
+      "xhs-insights__xhs_get_product_detail_by_sku_id"
     )
+  );
+  assert.ok(
+    pluginManifest.contracts.tools.includes(
+      "xhs-insights__xhs_get_product_detail_by_url"
+    )
+  );
+  assert.match(
+    pluginSource,
+    /name: "xhs-insights__xhs_get_product_detail_by_url",\n\s+remoteName: "xhs_get_product_detail_by_url"/
   );
   assert.ok(
     pluginManifest.contracts.tools.includes(
@@ -6217,7 +6229,7 @@ test("xhs openclaw search schema documents semantic sort enums", () => {
   assert.doesNotMatch(searchDefinition, /\n\s+page: \{/);
   assert.doesNotMatch(searchDefinition, /Search result page number/);
   const productSearchDefinition = pluginSource.match(
-    /name: "xhs-insights__xhs_search_products",[\s\S]*?name: "xhs-insights__xhs_get_product_detail"/
+    /name: "xhs-insights__xhs_search_products",[\s\S]*?name: "xhs-insights__xhs_get_product_detail_by_sku_id"/
   )?.[0];
   assert.ok(
     productSearchDefinition,
@@ -6271,6 +6283,24 @@ test("xhs openclaw metadata describes search and ID input boundaries", async () 
   });
 
   const toolsByName = Object.fromEntries(tools.map((tool) => [tool.name, tool]));
+  const productById = toolsByName["xhs-insights__xhs_get_product_detail_by_sku_id"];
+  const productByUrl = toolsByName["xhs-insights__xhs_get_product_detail_by_url"];
+  assert.ok(productById, "product SKU tool should be registered");
+  assert.ok(productByUrl, "product URL tool should be registered");
+  for (const [tool, inputName] of [[productById, "sku_id"], [productByUrl, "url"]]) {
+    assert.deepEqual(tool.parameters.required, [inputName]);
+    assert.deepEqual(Object.keys(tool.parameters.properties), [inputName]);
+    assert.equal(tool.parameters.additionalProperties, false);
+    for (const keyword of ["oneOf", "anyOf", "allOf"]) {
+      assert.equal(Object.hasOwn(tool.parameters, keyword), false);
+    }
+  }
+  assert.ok(productById.description.includes(productByUrl.name));
+  assert.ok(productByUrl.description.includes(productById.name));
+  const manifest = JSON.parse(
+    readFileSync(join(openclawDir, "openclaw.plugin.json"), "utf8")
+  );
+  assert.deepEqual(tools.map((tool) => tool.name), manifest.contracts.tools);
   const noteSearch = toolsByName["xhs-insights__xhs_search_notes"];
   const noteKeywordDescription =
     noteSearch.parameters.properties.keyword.description;
@@ -6304,7 +6334,7 @@ test("xhs openclaw metadata describes search and ID input boundaries", async () 
   assert.match(productSearch.description, /product detail or product review tool/);
   assert.doesNotMatch(
     productSearch.description,
-    /use xhs_get_product_detail or xhs_get_product_reviews/
+    /use xhs_get_product_detail_by_sku_id or xhs_get_product_reviews/
   );
 
   for (const [toolName, fieldName] of [
@@ -6456,15 +6486,41 @@ test("douyin comments with valid inputs reaches the missing API key error", () =
   );
 });
 
-test("douyin share-link is not a public direct CLI command", () => {
-  const result = runCli([
-    "douyin",
-    "share-link",
-    "--aweme-id",
-    "aweme-1",
-  ]);
+test("douyin openclaw registers the share-link input contract", async () => {
+  const { default: plugin } = await import("../../douyin-insights-openclaw/index.js");
+  const tools = new Map();
+  plugin.register({ registerTool: (factory, { name }) => tools.set(name, factory({})) });
+  const tool = tools.get("douyin-insights__douyin_get_video_share_link_by_aweme_id");
+  assert.deepEqual(tool.parameters.required, ["aweme_id"]);
+  assert.deepEqual(Object.keys(tool.parameters.properties), ["aweme_id"]);
+  const urlTool = tools.get("douyin-insights__douyin_get_video_share_link_by_url");
+  assert.deepEqual(urlTool.parameters.required, ["url"]);
+  assert.deepEqual(Object.keys(urlTool.parameters.properties), ["url"]);
+});
 
-  assertCliError(result, 'Unsupported Douyin command "share-link"\\. Use hot-search, search, detail, comments, replies, user-info, user-posts, user-series, transcript, download-media\\.');
+test("douyin share-link maps url to the link tool", async () => {
+  const url = "https://www.douyin.com/video/7631544838777969320";
+  const { result, toolCalls } = await runCliWithMockMcp([
+    "douyin", "share-link", "--url", url,
+  ]);
+  assert.equal(result.status, 0, result.stderr);
+  assert.equal(toolCalls[0].name, "douyin_get_video_share_link_by_url");
+  assert.deepEqual(toolCalls[0].arguments, { url });
+});
+
+test("douyin share-link rejects missing or conflicting inputs", () => {
+  assertCliError(runCli(["douyin", "share-link"]), "Missing input.*");
+  assertCliError(runCli(["douyin", "share-link", "--aweme-id", "7631544838777969320",
+    "--url", "https://www.douyin.com/video/7631544838777969320"]), "Use only one.*");
+});
+
+test("douyin share-link maps aweme-id to the public tool", async () => {
+  const { result, toolCalls } = await runCliWithMockMcp([
+    "douyin", "share-link", "--aweme-id", "7631544838777969320",
+  ]);
+  assert.equal(result.status, 0, result.stderr);
+  assert.equal(toolCalls[0].name, "douyin_get_video_share_link_by_aweme_id");
+  assert.deepEqual(toolCalls[0].arguments, { aweme_id: "7631544838777969320" });
 });
 
 test("douyin live-info is not a public direct CLI command", () => {
@@ -6475,7 +6531,7 @@ test("douyin live-info is not a public direct CLI command", () => {
     "https://live.douyin.com/test",
   ]);
 
-  assertCliError(result, 'Unsupported Douyin command "live-info"\\. Use hot-search, search, detail, comments, replies, user-info, user-posts, user-series, transcript, download-media\\.');
+  assertCliError(result, 'Unsupported Douyin command "live-info"\\. Use hot-search, search, detail, share-link, comments, replies, user-info, user-posts, user-series, transcript, download-media\\.');
 });
 
 test("douyin user-series direct command maps profile-url and page-token", async () => {
@@ -7239,6 +7295,85 @@ test("bilibili direct commands map public read operations", async () => {
   );
 });
 
+test("toutiao direct commands map public read operations", async () => {
+  await assertDirectToolCall(["toutiao", "hot-search"], {
+    name: "toutiao_get_hot_search_list",
+    arguments: {},
+  });
+  await assertDirectToolCall(
+    ["toutiao", "search", "--keyword", "露营", "--page-token", "next"],
+    {
+      name: "toutiao_search_posts",
+      arguments: {
+        keyword: "露营",
+        page_token: "next",
+      },
+    }
+  );
+  await assertDirectToolCall(["toutiao", "detail", "--post-id", "post-1"], {
+    name: "toutiao_get_post_detail_by_post_id",
+    arguments: {
+      post_id: "post-1",
+    },
+  });
+  await assertDirectToolCall(
+    ["toutiao", "comments", "--url", "https://www.toutiao.com/article/1", "--page-token", "next"],
+    {
+      name: "toutiao_get_post_comments_by_url",
+      arguments: {
+        url: "https://www.toutiao.com/article/1",
+        page_token: "next",
+      },
+    }
+  );
+  await assertDirectToolCall(["toutiao", "replies", "--comment-id", "comment-1"], {
+    name: "toutiao_get_post_comment_replies_by_comment_id",
+    arguments: {
+      comment_id: "comment-1",
+    },
+  });
+  await assertDirectToolCall(
+    ["toutiao", "user-info", "--profile-url", "https://www.toutiao.com/c/user"],
+    {
+      name: "toutiao_get_user_info_by_profile_url",
+      arguments: {
+        profile_url: "https://www.toutiao.com/c/user",
+      },
+    }
+  );
+  await assertDirectToolCall(
+    [
+      "toutiao",
+      "user-posts",
+      "--user-id",
+      "user-1",
+      "--content-type",
+      "video",
+      "--page-token",
+      "next",
+    ],
+    {
+      name: "toutiao_get_user_posts_by_user_id",
+      arguments: {
+        user_id: "user-1",
+        content_type: "video",
+        page_token: "next",
+      },
+    }
+  );
+  assertCliError(
+    runCli([
+      "toutiao",
+      "user-posts",
+      "--user-id",
+      "user-1",
+      "--content-type",
+      "image",
+    ]),
+    'Unsupported --content-type "image"\\. Use one of: all, article, video, micro_post\\.'
+  );
+});
+
 test("zhihu direct commands map public read operations", async () => {
   await assertDirectToolCall(["zhihu", "hot-list"], {
     name: "zhihu_get_hot_list",
@@ -7657,7 +7792,7 @@ test("wechat search accepts semantic sort values and rejects legacy sort names",
 });
 
 
-test("weibo and wechat validate direct command options before checking the API key", () => {
+test("weibo, toutiao, and wechat validate direct command options before checking the API key", () => {
   assertCliError(
     runCli(["weibo", "search", "--keyword", "foo", "--page", "2"]),
     "Unsupported option --page\\."
@@ -7692,6 +7827,22 @@ test("weibo and wechat validate direct command options before checking the API k
   );
   assertCliError(
     runCli(["weibo", "search", "--keyword", "foo"]),
+    "Missing API Key\\. Set SOCIALDATAX_API_KEY before running direct CLI calls\\."
+  );
+  assertCliError(
+    runCli(["toutiao", "search", "--keyword", "foo", "--since-days", "7"]),
+    "Unsupported option --since-days\\."
+  );
+  assertCliError(
+    runCli(["toutiao", "replies"]),
+    "Missing --comment-id for toutiao replies\\."
+  );
+  assertCliError(
+    runCli(["toutiao", "comments", "--post-id", "post-1", "--sort-type", "latest"]),
+    "Unsupported option --sort-type\\."
+  );
+  assertCliError(
+    runCli(["toutiao", "search", "--keyword", "foo"]),
     "Missing API Key\\. Set SOCIALDATAX_API_KEY before running direct CLI calls\\."
   );
   assertCliError(
@@ -9136,6 +9287,40 @@ test("comments include replies builds a nested comment tree", async () => {
   assert.equal(payload.data.items[1].replies_page_count, 0);
 });
 
+test("toutiao comments include replies use only the returned comment id", async () => {
+  const { result, toolCalls } = await runCliWithMockMcp(
+    [
+      "toutiao",
+      "comments",
+      "--post-id",
+      "post-1",
+      "--include-replies",
+    ],
+    {},
+    ({ name }) => {
+      if (name === "toutiao_get_post_comments_by_post_id") {
+        return {
+          items: [{ comment_id: "comment-1", has_replies: true }],
+          next_page_token: "",
+        };
+      }
+      assert.equal(name, "toutiao_get_post_comment_replies_by_comment_id");
+      return {
+        items: [{ comment_id: "reply-1" }],
+        next_page_token: "",
+      };
+    }
+  );
+
+  assert.equal(result.status, 0, result.stderr);
+  assert.deepEqual(toolCalls.map((call) => call.arguments), [
+    { post_id: "post-1" },
+    { comment_id: "comment-1" },
+  ]);
+  const payload = JSON.parse(result.stdout);
+  assert.deepEqual(payload.data.items[0].replies, [{ comment_id: "reply-1" }]);
+});
+
 test("comments include replies fetches replies once for duplicate top-level comments", async () => {
   let commentsCallCount = 0;
   const { result, toolCalls } = await runCliWithMockMcp(
@@ -9623,6 +9808,9 @@ test("doctor prints human-readable safety summary", () => {
   assert.match(result.stdout, /endpoint: https:\/\/mcp\.socialdatax\.com\/bilibili\/mcp/);
   assert.match(result.stdout, /Weibo \/ 微博/);
   assert.match(result.stdout, /endpoint: https:\/\/mcp\.socialdatax\.com\/weibo\/mcp/);
+  assert.match(result.stdout, /Toutiao \/ 今日头条/);
+  assert.match(result.stdout, /endpoint: https:\/\/mcp\.socialdatax\.com\/toutiao\/mcp/);
+  assert.match(result.stdout, /listing: hosted-only; no standalone Registry listing/);
   assert.match(result.stdout, /WeChat Content \/ 微信内容/);
   assert.match(result.stdout, /endpoint: https:\/\/mcp\.socialdatax\.com\/wechat\/mcp/);
   assert.match(result.stdout, /Zhihu \/ 知乎/);
@@ -9673,7 +9861,7 @@ test("doctor json prints parseable safety summary", () => {
   assert.equal(report.security.readsLocalBrowserData, false);
   assert.equal(report.security.readsBrowserCookies, undefined);
   assert.equal(report.security.readsLocalAccountSession, undefined);
-  assert.equal(report.platforms.length, 12);
+  assert.equal(report.platforms.length, 13);
   assert.equal(report.platform.endpointOverrideActive, false);
   assert.equal(report.platform.repoTrackedStandaloneListing, true);
   assert.equal(report.platform.registryName, "com.52choujiang/xhs-insights");
@@ -9696,7 +9884,7 @@ test("doctor json prints parseable safety summary", () => {
   assert.equal(douyinPlatform.futureRegistryName, "com.socialdatax/douyin-insights");
   assert.equal(douyinPlatform.legacyRegistryName, undefined);
   assert.equal(douyinPlatform.defaultEndpoint, "https://mcp.socialdatax.com/douyin/mcp");
-  assert.equal(douyinPlatform.tools.length, 16);
+  assert.equal(douyinPlatform.tools.length, 18);
   assert.ok(douyinPlatform.tools.includes("douyin_get_hot_search_list"));
   assert.ok(douyinPlatform.tools.includes("douyin_get_video_comment_replies_by_comment_id"));
   assert.ok(douyinPlatform.tools.includes("douyin_get_user_series_by_sec_user_id"));
@@ -9705,7 +9893,7 @@ test("doctor json prints parseable safety summary", () => {
   assert.ok(douyinPlatform.tools.includes("douyin_submit_video_speech_text_by_aweme_id"));
   assert.ok(douyinPlatform.tools.includes("douyin_get_video_speech_text_job"));
   assert.ok(!douyinPlatform.tools.includes("douyin_get_comment_replies_by_comment_id"));
-  assert.ok(!douyinPlatform.tools.includes("douyin_get_video_share_link_by_aweme_id"));
+  assert.ok(douyinPlatform.tools.includes("douyin_get_video_share_link_by_aweme_id"));
   assert.ok(!douyinPlatform.tools.includes("douyin_get_live_info_by_url"));
   const douyinSearchTool = douyinPlatform.toolDetails.find(
     (tool) => tool.name === "douyin_search_videos"
@@ -9797,6 +9985,20 @@ test("doctor json prints parseable safety summary", () => {
   assert.ok(weiboPlatform.tools.includes("weibo_submit_video_speech_text_by_post_url"));
   assert.ok(weiboPlatform.tools.includes("weibo_submit_video_speech_text_by_post_id"));
   assert.ok(weiboPlatform.tools.includes("weibo_get_video_speech_text_job"));
+  const toutiaoPlatform = report.platforms.find(
+    (platform) => platform.id === "toutiao"
+  );
+  assert.equal(toutiaoPlatform.displayName, "Toutiao / 今日头条");
+  assert.equal(toutiaoPlatform.repoTrackedStandaloneListing, false);
+  assert.equal(toutiaoPlatform.registryName, undefined);
+  assert.equal(toutiaoPlatform.futureRegistryName, undefined);
+  assert.equal(toutiaoPlatform.defaultEndpoint, "https://mcp.socialdatax.com/toutiao/mcp");
+  assert.equal(toutiaoPlatform.tools.length, 11);
+  assert.ok(toutiaoPlatform.tools.includes("toutiao_get_hot_search_list"));
+  assert.ok(toutiaoPlatform.tools.includes("toutiao_search_posts"));
+  assert.ok(toutiaoPlatform.tools.includes("toutiao_get_post_comment_replies_by_comment_id"));
+  assert.ok(toutiaoPlatform.tools.includes("toutiao_get_user_info_by_profile_url"));
+  assert.ok(toutiaoPlatform.tools.includes("toutiao_get_user_posts_by_profile_url"));
   const wechatPlatform = report.platforms.find(
     (platform) => platform.id === "wechat"
   );
@@ -10250,8 +10452,8 @@ test("direct CLI README examples include all public douyin actions", () => {
     assert.match(readme, new RegExp(escapeRegExp(example)));
   }
   assert.doesNotMatch(readme, /douyin_get_comment_replies_by_comment_id/);
-  assert.doesNotMatch(readme, /douyin share-link/);
-  assert.doesNotMatch(readme, /douyin_get_video_share_link_by_aweme_id/);
+  assert.match(readme, /douyin share-link/);
+  assert.match(readme, /douyin_get_video_share_link_by_aweme_id/);
   assert.doesNotMatch(readme, /douyin live-info/);
   assert.doesNotMatch(readme, /douyin_get_live_info_by_url/);
   assert.match(readme, /Douyin search filters use semantic values/);
@@ -10289,7 +10491,7 @@ test("direct CLI README examples include all public kuaishou actions", () => {
   assert.match(readme, /kuaishou_get_hot_search_list/);
   assert.match(
     readme,
-    /Search commands for XHS, Douyin, Kuaishou, Bilibili, Zhihu, Instagram, X \/ Twitter, YouTube, TikTok, Weibo, and WeChat Channels use `--keyword` and optional `--page-token`/
+    /Search commands for XHS, Douyin, Kuaishou, Bilibili, Zhihu, Instagram, X \/ Twitter, YouTube, TikTok, Weibo, Toutiao, and WeChat Channels use `--keyword` and optional `--page-token`/
   );
   assert.doesNotMatch(readme, /露营博主/);
   assert.match(readme, /Kuaishou search does not accept Douyin semantic filters/);
@@ -10411,6 +10613,8 @@ test("skills package submission checklist verifies newly supported platform keyw
     "youtube mcp",
     "TikTok",
     "tiktok mcp",
+    "Toutiao",
+    "toutiao mcp",
     "敏感词检测 skill",
   ]) {
     assert.match(checklist, new RegExp(escapeRegExp(keyword)));
@@ -10424,6 +10628,10 @@ test("skills package submission checklist verifies newly supported platform keyw
   );
   assert.match(
     checklist,
+    /Toutiao \/ 今日头条 remains hosted-only/
+  );
+  assert.match(
+    checklist,
     /do not submit it as a standalone platform MCP Registry listing without explicit approval/
   );
   assert.match(checklist, /`CATALOG\.md`/);
@@ -10433,7 +10641,7 @@ test("skills package submission checklist verifies newly supported platform keyw
   );
 });
 
-test("direct CLI README examples include public weibo and wechat actions", () => {
+test("direct CLI README examples include public weibo, toutiao, and wechat actions", () => {
   const readme = readFileSync(join(packageDir, "README.md"), "utf8");
 
   for (const example of [
@@ -10454,6 +10662,18 @@ test("direct CLI README examples include public weibo and wechat actions", () =>
     'weibo transcript --post-id "<post_id>"',
     'weibo transcript --job-id "<job_id>"',
     'weibo download-media --url "<weibo_media_url>" --output-dir ./downloads',
+    'toutiao hot-search',
+    'toutiao search --keyword "露营"',
+    'toutiao detail --post-id "<post_id>"',
+    'toutiao detail --url "<toutiao_content_url_or_share_text>"',
+    'toutiao comments --post-id "<post_id>"',
+    'toutiao comments --post-id "<post_id>" --all --include-replies',
+    'toutiao comments --url "<toutiao_content_url_or_share_text>"',
+    'toutiao replies --comment-id "<comment_id>"',
+    'toutiao user-info --user-id "<user_id>"',
+    'toutiao user-info --profile-url "<profile_url_or_share_text>"',
+    'toutiao user-posts --user-id "<user_id>" --content-type video',
+    'toutiao user-posts --profile-url "<profile_url_or_share_text>"',
     'wechat hot-search',
     'wechat search --keyword "露营"',
     'wechat detail --encrypted-object-id "<encrypted_object_id>"',
@@ -10475,7 +10695,7 @@ test("direct CLI README examples include public weibo and wechat actions", () =>
   }
   assert.match(
     readme,
-    /Search commands for XHS, Douyin, Kuaishou, Bilibili, Zhihu, Instagram, X \/ Twitter, YouTube, TikTok, Weibo, and WeChat Channels use `--keyword` and optional `--page-token`/
+    /Search commands for XHS, Douyin, Kuaishou, Bilibili, Zhihu, Instagram, X \/ Twitter, YouTube, TikTok, Weibo, Toutiao, and WeChat Channels use `--keyword` and optional `--page-token`/
   );
   assert.match(readme, /WeChat Channels search filters use semantic values/);
   assert.match(readme, /wechat_get_mp_article_detail_by_url/);
@@ -10517,6 +10737,9 @@ test("direct CLI docs keep search pagination platform-specific", () => {
   assert.match(help.stdout, /For search, omit it on the first request/);
   assert.match(help.stdout, /weibo hot-search --pretty/);
   assert.match(help.stdout, /weibo search --keyword/);
+  assert.match(help.stdout, /toutiao hot-search --pretty/);
+  assert.match(help.stdout, /toutiao search --keyword/);
+  assert.match(help.stdout, /toutiao replies --comment-id/);
   assert.match(help.stdout, /kuaishou hot-search --pretty/);
   assert.match(help.stdout, /bilibili search-videos --keyword/);
   assert.match(help.stdout, /bilibili search-articles --keyword/);
@@ -10849,7 +11072,7 @@ test("help and search skill document the five public sort meanings", () => {
     result.stdout,
     /douyin user-posts --profile-url "<profile_url_or_share_text>"/
   );
-  assert.doesNotMatch(result.stdout, /douyin share-link/);
+  assert.match(result.stdout, /douyin share-link/);
   assert.doesNotMatch(result.stdout, /douyin live-info/);
   assert.match(
     result.stdout,
@@ -11227,6 +11450,7 @@ test("print-config is no longer supported by the skills package", () => {
     "kuaishou",
     "bilibili",
     "weibo",
+    "toutiao",
     "wechat",
     "zhihu",
     "instagram",

@@ -22,7 +22,7 @@ import { decryptWechatMediaCommand } from "./lib/media/wechat-decrypt.mjs";
 export { decryptWechatMediaCommand };
 
 const PACKAGE_NAME = "socialdatax-skills";
-const PACKAGE_VERSION = "0.2.45";
+const PACKAGE_VERSION = "0.2.46";
 const PACKAGE_SPEC = `${PACKAGE_NAME}@latest`;
 const LOG_PREFIX = `[${PACKAGE_NAME}]`;
 const MIN_NODE_VERSION = "20.18.1";
@@ -59,25 +59,25 @@ const AVAILABLE_SKILLS = [
   {
     name: "socialdatax-content-research-assistant",
     summary:
-      "Coordinate cross-platform content research across XHS, Douyin, Kuaishou, Bilibili, Weibo, WeChat Channels, Zhihu, Instagram, X / Twitter, YouTube, and TikTok, plus WeChat Official Account article details.",
+      "Coordinate cross-platform content research across XHS, Douyin, Kuaishou, Bilibili, Weibo, Toutiao, WeChat Channels, Zhihu, Instagram, X / Twitter, YouTube, and TikTok, plus WeChat Official Account article details.",
     emoji: "🔎",
   },
   {
     name: "media-search",
     summary:
-      "Search XHS notes, Douyin and Kuaishou works, Bilibili videos/articles, Weibo posts, WeChat Channels videos, Zhihu content, Instagram posts, X / Twitter posts, YouTube videos, and TikTok posts by keyword.",
+      "Search XHS notes, Douyin and Kuaishou works, Bilibili videos/articles, Weibo and Toutiao posts, WeChat Channels videos, Zhihu content, Instagram posts, X / Twitter posts, YouTube videos, and TikTok posts by keyword.",
     emoji: "🔍",
   },
   {
     name: "media-detail",
     summary:
-      "Read WeChat Official Account article details and body text. Read structured content details and metrics for XHS, Douyin, Kuaishou, Bilibili, Weibo, WeChat Channels, Zhihu, Instagram, X / Twitter, YouTube, and TikTok. Supports requested XHS 蒲公英 / Pugongying commercial note details.",
+      "Read WeChat Official Account article details and body text. Read structured content details and metrics for XHS, Douyin, Kuaishou, Bilibili, Weibo, Toutiao, WeChat Channels, Zhihu, Instagram, X / Twitter, YouTube, and TikTok. Supports requested XHS 蒲公英 / Pugongying commercial note details.",
     emoji: "📄",
   },
   {
     name: "media-comments",
     summary:
-      "Fetch and analyze comments/replies for XHS, Douyin, Kuaishou, Bilibili, Weibo, WeChat Channels, Zhihu, Instagram, X / Twitter, YouTube, and TikTok.",
+      "Fetch and analyze comments/replies for XHS, Douyin, Kuaishou, Bilibili, Weibo, Toutiao, WeChat Channels, Zhihu, Instagram, X / Twitter, YouTube, and TikTok.",
     emoji: "💬",
   },
   {
@@ -89,13 +89,13 @@ const AVAILABLE_SKILLS = [
   {
     name: "media-user-info",
     summary:
-      "Retrieve creator profile information for XHS, Douyin, Kuaishou, Bilibili, Weibo, WeChat Channels, Zhihu, Instagram, X / Twitter, YouTube channels, and TikTok.",
+      "Retrieve creator profile information for XHS, Douyin, Kuaishou, Bilibili, Weibo, Toutiao, WeChat Channels, Zhihu, Instagram, X / Twitter, YouTube channels, and TikTok.",
     emoji: "👤",
   },
   {
     name: "media-user-posts",
     summary:
-      "Retrieve creator content lists for XHS, Douyin, Kuaishou, Bilibili, Weibo, WeChat Channels, Zhihu, Instagram, X / Twitter, YouTube channels, and TikTok, including Douyin creator short-drama series.",
+      "Retrieve creator content lists for XHS, Douyin, Kuaishou, Bilibili, Weibo, Toutiao, WeChat Channels, Zhihu, Instagram, X / Twitter, YouTube channels, and TikTok, including Douyin creator short-drama series.",
     emoji: "🗂️",
   },
   {
@@ -231,6 +231,7 @@ const DOUYIN_DIRECT_ACTION_OPTIONS = {
     "pretty",
   ],
   detail: ["awemeId", "url", "pretty"],
+  "share-link": ["awemeId", "url", "pretty"],
   comments: [
     "awemeId",
     "url",
@@ -755,6 +756,54 @@ const WEIBO_OPTION_DISPLAY_NAMES = {
   proxy: "--proxy",
 };
 const WEIBO_COMMENT_SORT_TYPES = ["hot", "time_descending"];
+const TOUTIAO_USER_POST_CONTENT_TYPES = [
+  "all",
+  "article",
+  "video",
+  "micro_post",
+];
+const TOUTIAO_DIRECT_ACTION_OPTIONS = {
+  "hot-search": ["pretty"],
+  search: ["keyword", "pageToken", "pages", "maxItems", "pretty"],
+  detail: ["postId", "url", "pretty"],
+  comments: [
+    "postId",
+    "url",
+    "pageToken",
+    "pages",
+    "all",
+    "maxItems",
+    "includeReplies",
+    "pretty",
+  ],
+  replies: ["commentId", "pageToken", "pages", "all", "maxItems", "pretty"],
+  "user-info": ["userId", "profileUrl", "pretty"],
+  "user-posts": [
+    "userId",
+    "profileUrl",
+    "contentType",
+    "pageToken",
+    "pages",
+    "all",
+    "maxItems",
+    "pretty",
+  ],
+};
+const TOUTIAO_DIRECT_ACTION_NAMES = Object.keys(TOUTIAO_DIRECT_ACTION_OPTIONS).join(", ");
+const TOUTIAO_OPTION_DISPLAY_NAMES = {
+  keyword: "--keyword",
+  pageToken: "--page-token",
+  pages: "--pages",
+  maxItems: "--max-items",
+  all: "--all",
+  includeReplies: "--include-replies",
+  postId: "--post-id",
+  url: "--url",
+  commentId: "--comment-id",
+  userId: "--user-id",
+  profileUrl: "--profile-url",
+  contentType: "--content-type",
+};
 const WECHAT_DIRECT_ACTION_OPTIONS = {
   "hot-search": ["pretty"],
   search: [
@@ -984,6 +1033,14 @@ const PLATFORMS = {
       {
         name: "douyin_get_video_detail_by_url",
         description: "Resolve a Douyin content page link, short link, or share text into structured details.",
+      },
+      {
+        name: "douyin_get_video_share_link_by_url",
+        description: "Generate a Douyin work share short link and copyable share text from a work page link, short link, or share text. Use the ID tool when aweme_id is known. To read work content, use a detail tool.",
+      },
+      {
+        name: "douyin_get_video_share_link_by_aweme_id",
+        description: "Generate a Douyin work share short link and copyable share text by aweme_id. Use a user-provided ID directly; no prior search or detail request is needed. To read work content, use a detail tool.",
       },
       {
         name: "douyin_get_video_comments_by_aweme_id",
@@ -1326,6 +1383,70 @@ const PLATFORMS = {
         description:
           "Continue checking a Weibo video speech-to-text transcript job using a valid job_id supplied by the user, or a job_id returned from a submit tool, without creating a new task. " +
           `${TRANSCRIPT_GET_JOB_WAIT_DESCRIPTION} ${TRANSCRIPT_JOB_DESCRIPTION_SUFFIX}`,
+      },
+    ],
+  },
+  toutiao: {
+    id: "toutiao",
+    displayName: "Toutiao / 今日头条",
+    status: "public",
+    endpoint: "https://mcp.socialdatax.com/toutiao/mcp",
+    apiKeyEnv: API_KEY_ENV_NAMES,
+    upstreamEnv: [
+      "SOCIAL_MEDIA_TOUTIAO_MCP_UPSTREAM_URL",
+      "SOCIAL_MEDIA_MCP_UPSTREAM_URL",
+      "TOUTIAO_MCP_UPSTREAM_URL",
+    ],
+    tools: [
+      {
+        name: "toutiao_get_hot_search_list",
+        description: "Fetch the current Toutiao / 今日头条 hot-search list.",
+      },
+      {
+        name: "toutiao_search_posts",
+        description:
+          "Search Toutiao posts by keyword with optional page_token continuation; do not pass page.",
+      },
+      {
+        name: "toutiao_get_post_detail_by_post_id",
+        description: "Fetch structured Toutiao post details when the caller already has a post_id.",
+      },
+      {
+        name: "toutiao_get_post_detail_by_url",
+        description:
+          "Resolve a Toutiao content URL, short link, or share text into structured post details.",
+      },
+      {
+        name: "toutiao_get_post_comments_by_post_id",
+        description: "Fetch paginated first-level comments by Toutiao post_id.",
+      },
+      {
+        name: "toutiao_get_post_comments_by_url",
+        description:
+          "Fetch paginated first-level comments from a Toutiao content URL, short link, or share text.",
+      },
+      {
+        name: "toutiao_get_post_comment_replies_by_comment_id",
+        description: "Fetch paginated replies under a first-level Toutiao comment by comment_id.",
+      },
+      {
+        name: "toutiao_get_user_info_by_user_id",
+        description: "Fetch Toutiao creator profile data when the caller already has a user_id.",
+      },
+      {
+        name: "toutiao_get_user_info_by_profile_url",
+        description:
+          "Resolve a Toutiao user profile URL, short link, or share text into creator profile data.",
+      },
+      {
+        name: "toutiao_get_user_posts_by_user_id",
+        description:
+          "Fetch a paginated list of posts published by a Toutiao creator when the caller already has a user_id; optional content_type is all, article, video, or micro_post.",
+      },
+      {
+        name: "toutiao_get_user_posts_by_profile_url",
+        description:
+          "Fetch Toutiao creator posts from a user profile URL, short link, or share text; optional content_type is all, article, video, or micro_post.",
       },
     ],
   },
@@ -1765,6 +1886,8 @@ async function main() {
       await runBilibiliDirectCommand(cliArgs.slice(1));
     } else if (command === "weibo") {
       await runWeiboDirectCommand(cliArgs.slice(1));
+    } else if (command === "toutiao") {
+      await runToutiaoDirectCommand(cliArgs.slice(1));
     } else if (command === "wechat") {
       await runWechatDirectCommand(cliArgs.slice(1));
     } else if (command === "zhihu") {
@@ -2106,6 +2229,16 @@ function validateWeiboDirectActionOptions(action, options) {
       requireOptionValue(options, key, WEIBO_OPTION_DISPLAY_NAMES[key]);
     }
   }
+}
+
+function validateToutiaoDirectActionOptions(action, options) {
+  validateMcpDirectActionOptions(
+    "toutiao",
+    action,
+    options,
+    TOUTIAO_DIRECT_ACTION_OPTIONS,
+    TOUTIAO_OPTION_DISPLAY_NAMES
+  );
 }
 
 function validateWechatDirectActionOptions(action, options) {
@@ -2907,6 +3040,10 @@ function printHelp() {
   console.log(`  npx -y ${PACKAGE_SPEC} douyin search --keyword "露营" --pretty`);
   console.log("      Call the Douyin work search tool directly and print JSON.");
   console.log("");
+  console.log(`  npx -y ${PACKAGE_SPEC} douyin share-link --aweme-id "<aweme_id>" --pretty`);
+  console.log(`  npx -y ${PACKAGE_SPEC} douyin share-link --url "<work_url_or_share_text>" --pretty`);
+  console.log("      Generate a share short link and copyable share text for a Douyin work.");
+  console.log("");
   console.log(`  npx -y ${PACKAGE_SPEC} douyin detail --aweme-id "<aweme_id>" --pretty`);
   console.log("      Call the Douyin work detail tool directly and print JSON.");
   console.log("");
@@ -3071,6 +3208,42 @@ function printHelp() {
   console.log("");
   console.log(`  npx -y ${PACKAGE_SPEC} weibo download-media --url "<weibo_media_url>" --output-dir ./downloads --pretty`);
   console.log("      Save one Weibo image or video media URL returned by detail to a local file.");
+  console.log("");
+  console.log(`  npx -y ${PACKAGE_SPEC} toutiao hot-search --pretty`);
+  console.log("      Call the Toutiao / 今日头条 hot-search list tool directly and print JSON.");
+  console.log("");
+  console.log(`  npx -y ${PACKAGE_SPEC} toutiao search --keyword "露营" --pretty`);
+  console.log("      Call the Toutiao post search tool directly and print JSON.");
+  console.log("");
+  console.log(`  npx -y ${PACKAGE_SPEC} toutiao detail --post-id "<post_id>" --pretty`);
+  console.log("      Call the Toutiao post detail tool directly and print JSON.");
+  console.log("");
+  console.log(`  npx -y ${PACKAGE_SPEC} toutiao detail --url "<toutiao_content_url_or_share_text>" --pretty`);
+  console.log("      Call the Toutiao post detail tool from a content link or share text.");
+  console.log("");
+  console.log(`  npx -y ${PACKAGE_SPEC} toutiao comments --post-id "<post_id>" --pretty`);
+  console.log("      Call the Toutiao post comments tool directly and print JSON.");
+  console.log("");
+  console.log(`  npx -y ${PACKAGE_SPEC} toutiao comments --post-id "<post_id>" --all --include-replies --pretty`);
+  console.log("      Fetch all Toutiao first-level comments and nested replies.");
+  console.log("");
+  console.log(`  npx -y ${PACKAGE_SPEC} toutiao comments --url "<toutiao_content_url_or_share_text>" --pretty`);
+  console.log("      Call the Toutiao post comments tool from a content link or share text.");
+  console.log("");
+  console.log(`  npx -y ${PACKAGE_SPEC} toutiao replies --comment-id "<comment_id>" --pretty`);
+  console.log("      Call the Toutiao comment replies tool directly and print JSON.");
+  console.log("");
+  console.log(`  npx -y ${PACKAGE_SPEC} toutiao user-info --user-id "<user_id>" --pretty`);
+  console.log("      Call the Toutiao creator profile tool directly and print JSON.");
+  console.log("");
+  console.log(`  npx -y ${PACKAGE_SPEC} toutiao user-info --profile-url "<profile_url_or_share_text>" --pretty`);
+  console.log("      Call the Toutiao creator profile tool from a profile link or share text.");
+  console.log("");
+  console.log(`  npx -y ${PACKAGE_SPEC} toutiao user-posts --user-id "<user_id>" --content-type video --pretty`);
+  console.log("      Call the Toutiao creator posts tool directly with an optional post-type filter.");
+  console.log("");
+  console.log(`  npx -y ${PACKAGE_SPEC} toutiao user-posts --profile-url "<profile_url_or_share_text>" --pretty`);
+  console.log("      Call the Toutiao creator posts tool from a profile link or share text.");
   console.log("");
   console.log(`  npx -y ${PACKAGE_SPEC} wechat hot-search --pretty`);
   console.log("      Call the WeChat Channels / 视频号 hot-search list tool directly and print JSON.");
@@ -3397,6 +3570,8 @@ function printHelp() {
   console.log("      YouTube search duration filter; omit for no duration filter.");
   console.log("  --content-type <all|video|image>");
   console.log("      TikTok search content type filter; omit for all content types.");
+  console.log("  --content-type <all|article|video|micro_post>");
+  console.log("      Toutiao creator post-list filter; omit for all creator posts.");
   console.log("  --page-token <token>");
   console.log("      Continue token-paginated commands with the complete returned next_page_token. For search, omit it on the first request.");
   console.log("  --source-client <slug>");
@@ -3457,6 +3632,7 @@ function printRemovedMcpConfigHelp(command) {
   console.error("  https://mcp.socialdatax.com/kuaishou/mcp");
   console.error("  https://mcp.socialdatax.com/bilibili/mcp");
   console.error("  https://mcp.socialdatax.com/weibo/mcp");
+  console.error("  https://mcp.socialdatax.com/toutiao/mcp");
   console.error("  https://mcp.socialdatax.com/wechat/mcp");
   console.error("  https://mcp.socialdatax.com/zhihu/mcp");
   console.error("  https://mcp.socialdatax.com/instagram/mcp");
@@ -3471,6 +3647,7 @@ function printRemovedMcpConfigHelp(command) {
   console.error(`  npx -y mcp-remote https://mcp.socialdatax.com/kuaishou/mcp --header "Authorization: Bearer <${PRIMARY_API_KEY_ENV}>"`);
   console.error(`  npx -y mcp-remote https://mcp.socialdatax.com/bilibili/mcp --header "Authorization: Bearer <${PRIMARY_API_KEY_ENV}>"`);
   console.error(`  npx -y mcp-remote https://mcp.socialdatax.com/weibo/mcp --header "Authorization: Bearer <${PRIMARY_API_KEY_ENV}>"`);
+  console.error(`  npx -y mcp-remote https://mcp.socialdatax.com/toutiao/mcp --header "Authorization: Bearer <${PRIMARY_API_KEY_ENV}>"`);
   console.error(`  npx -y mcp-remote https://mcp.socialdatax.com/wechat/mcp --header "Authorization: Bearer <${PRIMARY_API_KEY_ENV}>"`);
   console.error(`  npx -y mcp-remote https://mcp.socialdatax.com/zhihu/mcp --header "Authorization: Bearer <${PRIMARY_API_KEY_ENV}>"`);
   console.error(`  npx -y mcp-remote https://mcp.socialdatax.com/instagram/mcp --header "Authorization: Bearer <${PRIMARY_API_KEY_ENV}>"`);
@@ -3731,6 +3908,35 @@ async function runWeiboDirectCommand(args) {
   }
 
   const operation = attachDirectMetadata(buildWeiboOperation(action, options), options);
+  const data = await callDirectOperationWithOptions(operation, options);
+  const envelope = {
+    platform: operation.platform.id,
+    tool: operation.tool,
+    arguments: operation.arguments,
+    data,
+  };
+  process.stdout.write(JSON.stringify(envelope, null, options.pretty ? 2 : 0));
+  process.stdout.write("\n");
+}
+
+async function runToutiaoDirectCommand(args) {
+  const { options, positional } = parseCommandArgs(args);
+  if (shouldPrintDirectHelp(options, positional)) {
+    printHelp();
+    return;
+  }
+  const action = positional[0];
+  if (!action) {
+    throw new Error(
+      `Missing Toutiao command. Use ${TOUTIAO_DIRECT_ACTION_NAMES}.`
+    );
+  }
+  if (positional.length > 1) {
+    throw new Error(`Unexpected argument: ${positional[1]}`);
+  }
+  validateToutiaoDirectActionOptions(action, options);
+
+  const operation = attachDirectMetadata(buildToutiaoOperation(action, options), options);
   const data = await callDirectOperationWithOptions(operation, options);
   const envelope = {
     platform: operation.platform.id,
@@ -4048,6 +4254,21 @@ function buildDouyinOperation(action, options) {
           urlOption: "url",
           idTool: "douyin_get_video_detail_by_aweme_id",
           urlTool: "douyin_get_video_detail_by_url",
+          idArgument: "aweme_id",
+          urlArgument: "url",
+          idDisplay: "--aweme-id",
+          urlDisplay: "--url",
+        }),
+        PLATFORMS.douyin
+      );
+    case "share-link":
+      return buildDirectOperation(
+        "share-link",
+        buildOneOfCall(options, {
+          idOption: "awemeId",
+          urlOption: "url",
+          idTool: "douyin_get_video_share_link_by_aweme_id",
+          urlTool: "douyin_get_video_share_link_by_url",
           idArgument: "aweme_id",
           urlArgument: "url",
           idDisplay: "--aweme-id",
@@ -4519,6 +4740,99 @@ function buildWeiboOperation(action, options) {
     default:
       throw new Error(
         `Unsupported Weibo command "${action}". Use ${WEIBO_DIRECT_ACTION_NAMES}.`
+      );
+  }
+}
+
+function buildToutiaoOperation(action, options) {
+  switch (action) {
+    case "hot-search":
+      return buildDirectOperation(
+        "hot-search",
+        {
+          tool: "toutiao_get_hot_search_list",
+          toolArguments: {},
+        },
+        PLATFORMS.toutiao
+      );
+    case "search":
+      return buildDirectOperation(
+        "search",
+        buildToutiaoSearchCall(options),
+        PLATFORMS.toutiao
+      );
+    case "detail":
+      return buildDirectOperation(
+        "detail",
+        buildOneOfCall(options, {
+          idOption: "postId",
+          urlOption: "url",
+          idTool: "toutiao_get_post_detail_by_post_id",
+          urlTool: "toutiao_get_post_detail_by_url",
+          idArgument: "post_id",
+          urlArgument: "url",
+          idDisplay: "--post-id",
+          urlDisplay: "--url",
+        }),
+        PLATFORMS.toutiao
+      );
+    case "comments":
+      return buildDirectOperation(
+        "comments",
+        buildOneOfCall(options, {
+          idOption: "postId",
+          urlOption: "url",
+          idTool: "toutiao_get_post_comments_by_post_id",
+          urlTool: "toutiao_get_post_comments_by_url",
+          idArgument: "post_id",
+          urlArgument: "url",
+          idDisplay: "--post-id",
+          urlDisplay: "--url",
+          pageToken: options.pageToken,
+        }),
+        PLATFORMS.toutiao
+      );
+    case "replies":
+      return buildDirectOperation(
+        "replies",
+        buildToutiaoRepliesCall(options),
+        PLATFORMS.toutiao
+      );
+    case "user-info":
+      return buildDirectOperation(
+        "user-info",
+        buildOneOfCall(options, {
+          idOption: "userId",
+          urlOption: "profileUrl",
+          idTool: "toutiao_get_user_info_by_user_id",
+          urlTool: "toutiao_get_user_info_by_profile_url",
+          idArgument: "user_id",
+          urlArgument: "profile_url",
+          idDisplay: "--user-id",
+          urlDisplay: "--profile-url",
+        }),
+        PLATFORMS.toutiao
+      );
+    case "user-posts":
+      return buildDirectOperation(
+        "user-posts",
+        buildOneOfCall(options, {
+          idOption: "userId",
+          urlOption: "profileUrl",
+          idTool: "toutiao_get_user_posts_by_user_id",
+          urlTool: "toutiao_get_user_posts_by_profile_url",
+          idArgument: "user_id",
+          urlArgument: "profile_url",
+          idDisplay: "--user-id",
+          urlDisplay: "--profile-url",
+          pageToken: options.pageToken,
+          extraArguments: buildToutiaoUserPostsExtraArguments(options),
+        }),
+        PLATFORMS.toutiao
+      );
+    default:
+      throw new Error(
+        `Unsupported Toutiao command "${action}". Use ${TOUTIAO_DIRECT_ACTION_NAMES}.`
       );
   }
 }
@@ -5767,6 +6081,36 @@ function buildWeiboSearchCall(options) {
   };
 }
 
+function buildToutiaoSearchCall(options) {
+  if (!options.keyword) {
+    throw new Error("Missing --keyword for toutiao search.");
+  }
+  const toolArguments = {
+    keyword: options.keyword,
+  };
+  if (options.pageToken) {
+    toolArguments.page_token = options.pageToken;
+  }
+  return {
+    tool: "toutiao_search_posts",
+    toolArguments,
+  };
+}
+
+function buildToutiaoUserPostsExtraArguments(options) {
+  if (options.contentType === undefined) {
+    return {};
+  }
+  return {
+    content_type: parseAllowedStringOption(
+      options.contentType,
+      "--content-type",
+      TOUTIAO_USER_POST_CONTENT_TYPES,
+      TOUTIAO_USER_POST_CONTENT_TYPES.join(", ")
+    ),
+  };
+}
+
 function buildWechatSearchCall(options) {
   if (!options.keyword) {
     throw new Error("Missing --keyword for wechat search.");
@@ -5877,6 +6221,22 @@ function buildWeiboRepliesCall(options) {
   }
   return {
     tool: "weibo_get_post_comment_replies_by_comment_id",
+    toolArguments,
+  };
+}
+
+function buildToutiaoRepliesCall(options) {
+  if (!options.commentId) {
+    throw new Error("Missing --comment-id for toutiao replies.");
+  }
+  const toolArguments = {
+    comment_id: options.commentId,
+  };
+  if (options.pageToken) {
+    toolArguments.page_token = options.pageToken;
+  }
+  return {
+    tool: "toutiao_get_post_comment_replies_by_comment_id",
     toolArguments,
   };
 }
@@ -6385,6 +6745,8 @@ function contentItemId(operation, item) {
       );
     case "weibo":
       return itemStringField(item, "post_id");
+    case "toutiao":
+      return itemStringField(item, "post_id");
     case "wechat":
       return (
         itemStringField(item, "encrypted_object_id") ||
@@ -6705,6 +7067,17 @@ function buildRepliesOperationForComment(platform, comment, parentArguments, par
           platform
         );
       }
+    case "toutiao":
+      return buildDirectOperation(
+        "replies",
+        {
+          tool: "toutiao_get_post_comment_replies_by_comment_id",
+          toolArguments: {
+            comment_id: comment.comment_id,
+          },
+        },
+        platform
+      );
     case "wechat":
       {
         const objectId =

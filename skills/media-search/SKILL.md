@@ -1,6 +1,6 @@
 ---
 name: "media-search"
-description: "Search social media content by keyword for social research, competitor research, topic discovery, content planning, market observation, and trend scanning. This version is backed by hosted platform MCP services and supports Xiaohongshu / XHS / RedNote, Douyin, Kuaishou, Bilibili, Zhihu, Instagram, X / Twitter, YouTube, TikTok, Weibo, and WeChat Channels."
+description: "Search social media content by keyword for social research, competitor research, topic discovery, content planning, market observation, and trend scanning. This version is backed by hosted platform MCP services and supports Xiaohongshu / XHS / RedNote, Douyin, Kuaishou, Bilibili, Zhihu, Instagram, X / Twitter, YouTube, TikTok, Weibo, Toutiao, and WeChat Channels."
 source_client: "socialdatax-skills"
 source_platform: "github"
 source_skill: "media-search"
@@ -38,6 +38,7 @@ Current platform support:
 - YouTube videos through `youtube_search_videos`.
 - TikTok videos and image posts through `tiktok_search_posts`.
 - Weibo / 微博 posts through `weibo_search_posts`.
+- Toutiao / 今日头条 posts through `toutiao_search_posts`.
 - WeChat Channels / 视频号 videos through `wechat_search_videos`.
 
 ## API Key
@@ -130,6 +131,14 @@ npx -y socialdatax-skills@latest weibo search \
   --keyword "<keyword>" --pages 3 --pretty --source-client socialdatax-skills \
   --source-platform github --source-skill media-search
 
+npx -y socialdatax-skills@latest toutiao search \
+  --keyword "<keyword>" --pretty --source-client socialdatax-skills \
+  --source-platform github --source-skill media-search
+
+npx -y socialdatax-skills@latest toutiao search \
+  --keyword "<keyword>" --pages 3 --pretty --source-client socialdatax-skills \
+  --source-platform github --source-skill media-search
+
 npx -y socialdatax-skills@latest wechat search \
   --keyword "<keyword>" --pretty --source-client socialdatax-skills \
   --source-platform github --source-skill media-search
@@ -151,6 +160,7 @@ Required arguments:
 - YouTube `search --keyword <text>`: required only when using `youtube search`; use the user's actual intent, trim whitespace, and keep it focused.
 - TikTok `search --keyword <text>`: required only when using `tiktok search`; use the user's actual intent, trim whitespace, and keep it focused.
 - Weibo `search --keyword <text>`: required only when using `weibo search`; use the user's actual intent, trim whitespace, and keep it focused.
+- Toutiao `search --keyword <text>`: required only when using `toutiao search`; use the user's actual intent, trim whitespace, and keep it focused.
 - WeChat Channels / 视频号 `search --keyword <text>`: required only when using `wechat search`; use the user's actual intent, trim whitespace, and keep it focused.
 
 Optional arguments:
@@ -172,6 +182,7 @@ Optional arguments:
 - `--pretty`: output formatting only.
 - Kuaishou `--page-token <next_page_token>`: opaque pagination token; omit it on the first search request. Continue only with the complete returned `next_page_token` from the same search pagination chain. Do not modify, truncate, redact, mask, omit, normalize, rebuild, generate, or replace the middle with ellipses.
 - Weibo `--page-token <next_page_token>`: opaque pagination token; omit it on the first search request. Continue only with the complete returned `next_page_token` from the same search pagination chain. Do not modify, truncate, redact, mask, omit, normalize, rebuild, generate, or replace the middle with ellipses.
+- Toutiao `--page-token <next_page_token>`: opaque pagination token; omit it on the first search request. Continue only with the complete returned `next_page_token` from the same search pagination chain. Do not modify, truncate, redact, mask, omit, normalize, rebuild, generate, or replace the middle with ellipses.
 - WeChat Channels / 视频号 `--page-token <next_page_token>`: opaque pagination token; omit it on the first search request. Continue only with the complete returned `next_page_token` from the same search pagination chain. Do not modify, truncate, redact, mask, omit, normalize, rebuild, generate, or replace the middle with ellipses.
 - Bilibili `--page-token <next_page_token>`: opaque pagination token; omit it on the first search request. Continue only with the complete returned `next_page_token` from the same search pagination chain.
 - Bilibili video search `--sort-type <general|view_count_descending|time_descending|danmaku_count_descending|collect_count_descending>`: optional sort value; omit it for default sorting.
@@ -203,6 +214,7 @@ Optional arguments:
 - YouTube `--pages <n>`: fetch and merge N search pages from the current starting point; continue with returned `next_page_token`.
 - TikTok `--pages <n>`: fetch and merge N search pages from the current starting point; continue with returned `next_page_token`.
 - Weibo `--pages <n>`: fetch and merge N search pages from the current starting point; continue with returned `next_page_token`.
+- Toutiao `--pages <n>`: fetch and merge N search pages from the current starting point; continue with returned `next_page_token`.
 - WeChat Channels / 视频号 `--pages <n>`: fetch and merge N search pages from the current starting point; continue with returned `next_page_token`.
 - `--source-client socialdatax-skills --source-platform github --source-skill media-search`: usage attribution for this Agent Skill; keep these values unchanged when running examples from this Skill.
 
@@ -266,7 +278,7 @@ WeChat Channels / 视频号 duration filter values:
 - `between_5_and_20_min`: 5-20 minutes.
 - `over_20_min`: over 20 minutes.
 
-Weibo and WeChat Channels search pagination:
+Weibo, Toutiao, and WeChat Channels search pagination:
 - Continue only when `next_page_token` is not empty.
 - Pass the complete returned `next_page_token` back unchanged as `page_token` for the same search pagination chain. Do not modify, truncate, redact, mask, omit, normalize, rebuild, generate, or replace the middle with ellipses.
 
@@ -289,6 +301,7 @@ MCP tools matching the direct CLI commands above:
 - `youtube_search_videos`
 - `tiktok_search_posts`
 - `weibo_search_posts`
+- `toutiao_search_posts`
 - `wechat_search_videos`
 
 For XHS, call `xhs_search_notes` with:
@@ -329,6 +342,7 @@ For Weibo, call `weibo_search_posts` with:
 - `page_token`: optional opaque pagination token. Continue only with the complete returned `next_page_token` from the same search pagination chain. Do not modify, truncate, redact, mask, omit, normalize, rebuild, generate, or replace the middle with ellipses.
 Do not pass `page` to `weibo_search_posts`; omit `page_token` on the first request.
 Continue Weibo pagination only when `next_page_token` is not empty. Pass the complete returned `next_page_token` back unchanged as `page_token` for the same keyword chain.
+For Toutiao, call `toutiao_search_posts` with required `keyword` and optional `page_token`. Do not pass `page` to `toutiao_search_posts`; omit `page_token` on the first request. Continue only when `next_page_token` is not empty and pass it back unchanged for the same keyword chain.
 For WeChat Channels / 视频号, call `wechat_search_videos` with:
 - `keyword`: required search phrase or topic.
 - `page_token`: optional opaque pagination token. Continue only with the complete returned `next_page_token` from the same search pagination chain. Do not modify, truncate, redact, mask, omit, normalize, rebuild, generate, or replace the middle with ellipses.

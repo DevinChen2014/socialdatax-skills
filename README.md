@@ -2,7 +2,7 @@
 
 This public package provides the unified skill installer and direct CLI helper for SocialDataX services.
 
-The current public tools support 小红书 / Xiaohongshu / XHS / RedNote, 抖音 / Douyin, 快手 / Kuaishou / Kwai, Bilibili / 哔哩哔哩 / B站, 微博 / Weibo, 视频号 / WeChat Channels, 知乎 / Zhihu, Instagram, X / Twitter, YouTube, and TikTok content research and analysis workflows, plus WeChat Official Account / 微信公众号 article details, XHS / Douyin / Kuaishou / Weibo / X / Twitter local media download, WeChat Channels local media decrypt/save, Bilibili local video download, and 敏感词检测 / 违禁词检查 text checks. The public skill layer is intentionally named by capability so supported services can evolve without changing the installation model.
+The current public tools support 小红书 / Xiaohongshu / XHS / RedNote, 抖音 / Douyin, 快手 / Kuaishou / Kwai, Bilibili / 哔哩哔哩 / B站, 微博 / Weibo, 今日头条 / Toutiao, 视频号 / WeChat Channels, 知乎 / Zhihu, Instagram, X / Twitter, YouTube, and TikTok content research and analysis workflows, plus WeChat Official Account / 微信公众号 article details, XHS / Douyin / Kuaishou / Weibo / X / Twitter local media download, WeChat Channels local media decrypt/save, Bilibili local video download, and 敏感词检测 / 违禁词检查 text checks. The public skill layer is intentionally named by capability so supported services can evolve without changing the installation model.
 
 - direct `npx` JSON commands for agents that can run shell commands
 - AgentSkills-compatible installers split by capability for OpenClaw, Hermes Agent, Codex, Claude Code, and general agent skill directories
@@ -46,6 +46,8 @@ Common search phrases for this skill package:
 - `哔哩哔哩视频下载`
 - `Weibo skills`
 - `微博 skills`
+- `Toutiao skills`
+- `今日头条 skills`
 - `WeChat Channels skills`
 - `视频号 skills`
 - `WeChat Official Account skills`
@@ -74,6 +76,7 @@ Common search phrases for this skill package:
 - Kuaishou hosted MCP endpoint: `https://mcp.socialdatax.com/kuaishou/mcp`
 - Bilibili hosted MCP endpoint: `https://mcp.socialdatax.com/bilibili/mcp`
 - Weibo hosted MCP endpoint: `https://mcp.socialdatax.com/weibo/mcp`
+- Toutiao / 今日头条 hosted MCP endpoint: `https://mcp.socialdatax.com/toutiao/mcp`
 - WeChat Content / 微信内容 hosted MCP endpoint: `https://mcp.socialdatax.com/wechat/mcp`
 - Zhihu / 知乎 hosted MCP endpoint: `https://mcp.socialdatax.com/zhihu/mcp`
 - Instagram hosted MCP endpoint: `https://mcp.socialdatax.com/instagram/mcp`
@@ -87,9 +90,9 @@ Common search phrases for this skill package:
 - Repo-tracked platform MCP listings: `com.52choujiang/xhs-insights`, `com.52choujiang/douyin-insights`, `com.52choujiang/kuaishou-insights`, `com.52choujiang/bilibili-insights`, `com.52choujiang/weibo-insights`, `com.52choujiang/wechat-channels-insights`, `com.52choujiang/zhihu-insights`, `com.52choujiang/instagram-insights`, `com.52choujiang/x-insights`, `com.52choujiang/youtube-insights`, and `com.52choujiang/tiktok-insights`.
 - Repo-tracked future SocialDataX namespace draft files exist for XHS and Douyin: `com.socialdatax/xhs-insights` and `com.socialdatax/douyin-insights`.
 - Reserved future SocialDataX namespace names for existing platform listings without draft files yet: `com.socialdatax/kuaishou-insights`, `com.socialdatax/bilibili-insights`, `com.socialdatax/weibo-insights`, `com.socialdatax/wechat-channels-insights`, `com.socialdatax/zhihu-insights`, `com.socialdatax/instagram-insights`, `com.socialdatax/x-insights`, `com.socialdatax/youtube-insights`, and `com.socialdatax/tiktok-insights`.
-- Hosted endpoint without a repo-tracked standalone listing: Sensitive Words Check.
+- Hosted endpoints without a repo-tracked standalone listing: Toutiao / 今日头条 and Sensitive Words Check.
 - Unified MCP registry name: none; this package installs skills and calls explicit hosted MCP entries.
-- Current public capability version: `0.2.45`
+- Current public capability version: `0.2.46`
 
 ## XHS 蒲公英 / Pugongying commercial note details
 
@@ -127,6 +130,8 @@ npx -y socialdatax-skills@latest xhs download-media --url "<xhs_media_url>" --ou
 npx -y socialdatax-skills@latest douyin hot-search --pretty
 npx -y socialdatax-skills@latest douyin search --keyword "露营" --pretty
 npx -y socialdatax-skills@latest douyin detail --aweme-id "<aweme_id>" --pretty
+npx -y socialdatax-skills@latest douyin share-link --aweme-id "<aweme_id>" --pretty
+npx -y socialdatax-skills@latest douyin share-link --url "<work_url_or_share_text>" --pretty
 npx -y socialdatax-skills@latest douyin comments --aweme-id "<aweme_id>" --pretty
 npx -y socialdatax-skills@latest douyin comments --aweme-id "<aweme_id>" --all --include-replies --pretty
 npx -y socialdatax-skills@latest douyin replies --aweme-id "<aweme_id>" --comment-id "<comment_id>" --pretty
@@ -194,6 +199,18 @@ npx -y socialdatax-skills@latest weibo transcript --post-url "<weibo_post_url_or
 npx -y socialdatax-skills@latest weibo transcript --post-id "<post_id>" --pretty
 npx -y socialdatax-skills@latest weibo transcript --job-id "<job_id>" --pretty
 npx -y socialdatax-skills@latest weibo download-media --url "<weibo_media_url>" --output-dir ./downloads --pretty
+npx -y socialdatax-skills@latest toutiao hot-search --pretty
+npx -y socialdatax-skills@latest toutiao search --keyword "露营" --pretty
+npx -y socialdatax-skills@latest toutiao detail --post-id "<post_id>" --pretty
+npx -y socialdatax-skills@latest toutiao detail --url "<toutiao_content_url_or_share_text>" --pretty
+npx -y socialdatax-skills@latest toutiao comments --post-id "<post_id>" --pretty
+npx -y socialdatax-skills@latest toutiao comments --post-id "<post_id>" --all --include-replies --pretty
+npx -y socialdatax-skills@latest toutiao comments --url "<toutiao_content_url_or_share_text>" --pretty
+npx -y socialdatax-skills@latest toutiao replies --comment-id "<comment_id>" --pretty
+npx -y socialdatax-skills@latest toutiao user-info --user-id "<user_id>" --pretty
+npx -y socialdatax-skills@latest toutiao user-info --profile-url "<profile_url_or_share_text>" --pretty
+npx -y socialdatax-skills@latest toutiao user-posts --user-id "<user_id>" --content-type video --pretty
+npx -y socialdatax-skills@latest toutiao user-posts --profile-url "<profile_url_or_share_text>" --pretty
 npx -y socialdatax-skills@latest wechat hot-search --pretty
 npx -y socialdatax-skills@latest wechat search --keyword "露营" --pretty
 npx -y socialdatax-skills@latest wechat detail --encrypted-object-id "<encrypted_object_id>" --pretty
@@ -272,7 +289,7 @@ Use `--since-days <1-365>` only on XHS, Douyin, Kuaishou, Weibo, and WeChat Chan
 
 For comments, replies, creator content lists, and Douyin creator series, use `--all` to continue until the returned `next_page_token` is empty. `--all` has no default item or page cap; add `--max-items <n>` or use `--pages <n>` when you want a bounded run.
 
-For XHS, Douyin, Kuaishou, Weibo, and WeChat Channels first-level comments, add `--include-replies` to fetch the second-level replies under each returned first-level comment. Multi-page output keeps `data.items` as the merged first-level list; each item gets `replies`, `replies_page_count`, and `replies_next_page_token`.
+For XHS, Douyin, Kuaishou, Weibo, Toutiao, and WeChat Channels first-level comments, add `--include-replies` to fetch the second-level replies under each returned first-level comment. Multi-page output keeps `data.items` as the merged first-level list; each item gets `replies`, `replies_page_count`, and `replies_next_page_token`.
 
 For commands that accept `--page-token`, continue only with the complete returned `next_page_token` from the same pagination chain. Do not modify, truncate, redact, mask, omit, normalize, rebuild, generate, or replace the middle with ellipses.
 
@@ -282,7 +299,7 @@ Transcript commands submit a bounded video speech-to-text job or check an existi
 
 Generated Agent Skill examples include `--source-client socialdatax-skills --source-platform <marketplace> --source-skill <skill-slug>` so SocialDataX can attribute authenticated direct data CLI usage to the current marketplace Skill. Keep those values unchanged when running commands from a Skill; omit them for ad hoc CLI use. Authenticated direct data CLI commands also accept `SOCIALDATAX_SOURCE_CLIENT`, `SOCIALDATAX_SOURCE_PLATFORM`, and `SOCIALDATAX_SOURCE_SKILL` as environment-variable fallbacks.
 
-Search commands for XHS, Douyin, Kuaishou, Bilibili, Zhihu, Instagram, X / Twitter, YouTube, TikTok, Weibo, and WeChat Channels use `--keyword` and optional `--page-token`.
+Search commands for XHS, Douyin, Kuaishou, Bilibili, Zhihu, Instagram, X / Twitter, YouTube, TikTok, Weibo, Toutiao, and WeChat Channels use `--keyword` and optional `--page-token`.
 Kuaishou work search uses `kuaishou search --keyword` and optional `--page-token`; Kuaishou creator search uses `kuaishou user-search --keyword` and optional `--page-token`. Kuaishou search does not accept Douyin semantic filters, and `kuaishou user-search` does not support `--since-days`.
 Bilibili video search uses `bilibili search-videos --keyword`; Bilibili article search uses `bilibili search-articles --keyword`.
 YouTube reply pagination starts from the returned first-level comment `reply_token`; use `youtube replies --reply-token "<reply_token>"`, not `--comment-id`.
@@ -350,7 +367,7 @@ The public package declares no npm lifecycle scripts such as `preinstall`, `inst
 
 ## Platform Names
 
-This project is not affiliated with, endorsed by, or sponsored by Xiaohongshu, RedNote, Douyin, Kuaishou, Kwai, Bilibili, Weibo, WeChat, WeChat Channels, Zhihu, Instagram, X / Twitter, YouTube, TikTok, or their affiliates. Platform names are used only to describe supported data sources.
+This project is not affiliated with, endorsed by, or sponsored by Xiaohongshu, RedNote, Douyin, Kuaishou, Kwai, Bilibili, Weibo, Toutiao, WeChat, WeChat Channels, Zhihu, Instagram, X / Twitter, YouTube, TikTok, or their affiliates. Platform names are used only to describe supported data sources.
 
 ### Local Source Run
 
@@ -361,6 +378,7 @@ SOCIALDATAX_API_KEY="<SOCIALDATAX_API_KEY>" node cli.mjs douyin search --keyword
 SOCIALDATAX_API_KEY="<SOCIALDATAX_API_KEY>" node cli.mjs kuaishou search --keyword "露营" --pretty
 SOCIALDATAX_API_KEY="<SOCIALDATAX_API_KEY>" node cli.mjs bilibili search-videos --keyword "露营" --pretty
 SOCIALDATAX_API_KEY="<SOCIALDATAX_API_KEY>" node cli.mjs weibo search --keyword "露营" --pretty
+SOCIALDATAX_API_KEY="<SOCIALDATAX_API_KEY>" node cli.mjs toutiao search --keyword "露营" --pretty
 SOCIALDATAX_API_KEY="<SOCIALDATAX_API_KEY>" node cli.mjs wechat search --keyword "露营" --pretty
 SOCIALDATAX_API_KEY="<SOCIALDATAX_API_KEY>" node cli.mjs zhihu search --keyword "露营" --pretty
 SOCIALDATAX_API_KEY="<SOCIALDATAX_API_KEY>" node cli.mjs instagram search --keyword "camping" --pretty
@@ -379,6 +397,7 @@ docker run --rm -i -e SOCIALDATAX_API_KEY="<SOCIALDATAX_API_KEY>" socialdatax-sk
 docker run --rm -i -e SOCIALDATAX_API_KEY="<SOCIALDATAX_API_KEY>" socialdatax-skills kuaishou search --keyword "露营" --pretty
 docker run --rm -i -e SOCIALDATAX_API_KEY="<SOCIALDATAX_API_KEY>" socialdatax-skills bilibili search-videos --keyword "露营" --pretty
 docker run --rm -i -e SOCIALDATAX_API_KEY="<SOCIALDATAX_API_KEY>" socialdatax-skills weibo search --keyword "露营" --pretty
+docker run --rm -i -e SOCIALDATAX_API_KEY="<SOCIALDATAX_API_KEY>" socialdatax-skills toutiao search --keyword "露营" --pretty
 docker run --rm -i -e SOCIALDATAX_API_KEY="<SOCIALDATAX_API_KEY>" socialdatax-skills wechat search --keyword "露营" --pretty
 docker run --rm -i -e SOCIALDATAX_API_KEY="<SOCIALDATAX_API_KEY>" socialdatax-skills zhihu search --keyword "露营" --pretty
 docker run --rm -i -e SOCIALDATAX_API_KEY="<SOCIALDATAX_API_KEY>" socialdatax-skills instagram search --keyword "camping" --pretty
@@ -437,6 +456,12 @@ npx -y socialdatax-skills@latest weibo hot-search --pretty
 npx -y socialdatax-skills@latest weibo search --keyword "露营" --pretty
 npx -y socialdatax-skills@latest weibo transcript --post-id "<post_id>" --pretty
 npx -y socialdatax-skills@latest weibo download-media --url "<weibo_media_url>" --output-dir ./downloads --pretty
+npx -y socialdatax-skills@latest toutiao hot-search --pretty
+npx -y socialdatax-skills@latest toutiao search --keyword "露营" --pretty
+npx -y socialdatax-skills@latest toutiao detail --post-id "<post_id>" --pretty
+npx -y socialdatax-skills@latest toutiao comments --post-id "<post_id>" --all --include-replies --pretty
+npx -y socialdatax-skills@latest toutiao user-info --user-id "<user_id>" --pretty
+npx -y socialdatax-skills@latest toutiao user-posts --user-id "<user_id>" --content-type video --pretty
 npx -y socialdatax-skills@latest wechat hot-search --pretty
 npx -y socialdatax-skills@latest wechat search --keyword "露营" --pretty
 npx -y socialdatax-skills@latest wechat article --url "<mp_article_url_or_share_text>" --pretty
@@ -454,13 +479,13 @@ Use `--path` for clients that expect a direct Skills directory. When installing 
 
 Available skills:
 
-- `socialdatax-content-research-assistant`: combine SocialDataX search, detail, comment, creator profile, and creator content workflows for cross-platform content research across XHS, Douyin, Kuaishou, Bilibili, Weibo, WeChat Channels, Zhihu, Instagram, X / Twitter, YouTube, and TikTok; also reads WeChat Official Account article link details.
-- `media-search`: search social media content by keyword; supports XHS notes, Douyin works, Kuaishou works, Bilibili videos/articles, Weibo posts, WeChat Channels videos, Zhihu content, Instagram posts, X / Twitter posts, YouTube videos, and TikTok posts.
-- `media-detail`: supports requested XHS 蒲公英 / Pugongying commercial note details (20 points per successful call; failures are not charged). Read WeChat Official Account article details and body text from article links. Read structured content details and metrics for XHS notes, Douyin works, Kuaishou works, Bilibili content, Weibo posts, WeChat Channels videos and image posts, Zhihu content, Instagram posts, X / Twitter posts, YouTube videos, and TikTok posts.
-- `media-comments`: fetch and analyze comments/replies for XHS, Douyin, Kuaishou, Bilibili, Weibo, WeChat Channels, Zhihu, Instagram, X / Twitter, YouTube, and TikTok.
+- `socialdatax-content-research-assistant`: combine SocialDataX search, detail, comment, creator profile, and creator content workflows for cross-platform content research across XHS, Douyin, Kuaishou, Bilibili, Weibo, Toutiao, WeChat Channels, Zhihu, Instagram, X / Twitter, YouTube, and TikTok; also reads WeChat Official Account article link details.
+- `media-search`: search social media content by keyword; supports XHS notes, Douyin works, Kuaishou works, Bilibili videos/articles, Weibo and Toutiao posts, WeChat Channels videos, Zhihu content, Instagram posts, X / Twitter posts, YouTube videos, and TikTok posts.
+- `media-detail`: supports requested XHS 蒲公英 / Pugongying commercial note details (20 points per successful call; failures are not charged). Read WeChat Official Account article details and body text from article links. Read structured content details and metrics for XHS notes, Douyin works, Kuaishou works, Bilibili content, Weibo and Toutiao posts, WeChat Channels videos and image posts, Zhihu content, Instagram posts, X / Twitter posts, YouTube videos, and TikTok posts.
+- `media-comments`: fetch and analyze comments/replies for XHS, Douyin, Kuaishou, Bilibili, Weibo, Toutiao, WeChat Channels, Zhihu, Instagram, X / Twitter, YouTube, and TikTok.
 - `media-transcript`: submit and check video 口播转文字 / speech-to-text transcript jobs; supports XHS, Douyin, Kuaishou, Weibo, and WeChat Channels through direct CLI commands or hosted MCP tools, plus Bilibili, Zhihu independent videos and video answers, Instagram regular video posts/Reels, X / Twitter video posts, TikTok, and YouTube through hosted MCP tools. Instagram photo and carousel posts and Zhihu plain answers without video are not processable.
-- `media-user-info`: retrieve creator profile information; supports XHS, Douyin, Kuaishou, Bilibili, Weibo, WeChat Channels, Zhihu, Instagram, X / Twitter, YouTube channels, and TikTok creators.
-- `media-user-posts`: retrieve creator content lists; supports XHS notes, Douyin works, Kuaishou works, Bilibili videos/articles/dynamics, Weibo posts, WeChat Channels videos and image posts, Zhihu creator articles, Instagram posts, X / Twitter posts, YouTube channel videos/Shorts, TikTok posts, and Douyin creator short-drama series.
+- `media-user-info`: retrieve creator profile information; supports XHS, Douyin, Kuaishou, Bilibili, Weibo, Toutiao, WeChat Channels, Zhihu, Instagram, X / Twitter, YouTube channels, and TikTok creators.
+- `media-user-posts`: retrieve creator content lists; supports XHS notes, Douyin works, Kuaishou works, Bilibili videos/articles/dynamics, Weibo and Toutiao posts, WeChat Channels videos and image posts, Zhihu creator articles, Instagram posts, X / Twitter posts, YouTube channel videos/Shorts, TikTok posts, and Douyin creator short-drama series.
 - `sensitive-check`: run 敏感词检测 / 违禁词检查 text checks; supports `generic`, `xhs`, `douyin`, and `kuaishou` platform contexts.
 
 Default install locations:
@@ -549,6 +574,16 @@ Current Weibo workflows include:
 - Fetch paginated Weibo creator post lists from a user profile link or user_id.
 - Submit and check Weibo video 口播转文字 / speech-to-text transcript jobs; submit tools 提交后最多等待 240 秒，未完成时继续查询同一个 job_id 直到终态.
 - Save returned `image_urls[]` or `video.video_url` media links locally with `weibo download-media`.
+
+Current Toutiao / 今日头条 workflows include:
+
+- Fetch the current Toutiao / 今日头条 hot-search list.
+- Search related Toutiao posts by keyword.
+- Resolve a Toutiao content link, short link, share text, or post_id into structured post details.
+- Fetch paginated first-level comments and replies under a first-level comment.
+- Continue Toutiao list pagination only when `next_page_token` is non-empty; an empty string means there are no more results to request.
+- Read Toutiao creator profile data from a user profile link, short link, share text, or user_id.
+- Fetch paginated Toutiao creator post lists from a user profile link, short link, share text, or user_id, optionally filtered by `--content-type` (`all`, `article`, `video`, or `micro_post`). Keep the same filter while continuing with `next_page_token`.
 
 Current WeChat Content / 微信内容 workflows include:
 
@@ -652,6 +687,8 @@ Current Sensitive Words Check workflows include:
 | `douyin_search_users` | Search Douyin creators/accounts by keyword with optional `page_token` continuation and filters; do not pass `page`. |
 | `douyin_get_video_detail_by_aweme_id` | Fetch structured Douyin work details when the caller already has an aweme_id. |
 | `douyin_get_video_detail_by_url` | Resolve a Douyin content page link, short link, or share text into structured Douyin work details. |
+| `douyin_get_video_share_link_by_aweme_id` | Generate a work share short link and copyable share text by aweme_id. |
+| `douyin_get_video_share_link_by_url` | Generate a share short link and copyable share text from a work page link, short link, or share text. |
 | `douyin_get_video_comments_by_aweme_id` | Fetch paginated first-level comments when the caller already has an aweme_id. |
 | `douyin_get_video_comments_by_url` | Fetch paginated first-level comments directly from a Douyin content page URL, short link, or share text. |
 | `douyin_get_video_comment_replies_by_comment_id` | Fetch paginated replies under a first-level Douyin comment; pass both aweme_id and comment_id, and use page_token to continue pagination. |
@@ -734,6 +771,22 @@ Current Sensitive Words Check workflows include:
 | `weibo_submit_video_speech_text_by_post_url` | Submit a Weibo video speech-to-text transcript job from a post URL, short link, or share text; submit waits up to 240 seconds. If unfinished, continue checking the same job_id until is_terminal is true. |
 | `weibo_submit_video_speech_text_by_post_id` | Submit a Weibo video speech-to-text transcript job when the caller already has a post_id; submit waits up to 240 seconds. If unfinished, continue checking the same job_id until is_terminal is true. |
 | `weibo_get_video_speech_text_job` | Continue checking a Weibo speech-to-text transcript job using a valid job_id supplied by the user, or a job_id returned by a submit tool, without creating a new task. Each call waits up to 240 seconds for the same job. If unfinished, continue querying the same job_id until is_terminal is true. Returns transcript plus content context, not summary. |
+
+## Toutiao Tools
+
+| Tool | Public purpose |
+| --- | --- |
+| `toutiao_get_hot_search_list` | Fetch the current Toutiao / 今日头条 hot-search list. |
+| `toutiao_search_posts` | Search Toutiao posts by keyword with optional `page_token` continuation; do not pass `page`. |
+| `toutiao_get_post_detail_by_post_id` | Fetch structured Toutiao post details when the caller already has a post_id. |
+| `toutiao_get_post_detail_by_url` | Resolve a Toutiao content URL, short link, or share text into structured post details. |
+| `toutiao_get_post_comments_by_post_id` | Fetch paginated first-level comments by Toutiao post_id. |
+| `toutiao_get_post_comments_by_url` | Fetch paginated first-level comments from a Toutiao content URL, short link, or share text. |
+| `toutiao_get_post_comment_replies_by_comment_id` | Fetch paginated replies under a first-level Toutiao comment by comment_id. |
+| `toutiao_get_user_info_by_user_id` | Fetch Toutiao creator profile data when the caller already has a user_id. |
+| `toutiao_get_user_info_by_profile_url` | Resolve a Toutiao user profile URL, short link, or share text into creator profile data. |
+| `toutiao_get_user_posts_by_user_id` | Fetch a paginated list of posts published by a Toutiao creator when the caller already has a user_id; optional `content_type` accepts `all`, `article`, `video`, or `micro_post`. |
+| `toutiao_get_user_posts_by_profile_url` | Fetch Toutiao creator posts from a user profile URL, short link, or share text; optional `content_type` accepts `all`, `article`, `video`, or `micro_post`. |
 
 ## WeChat Tools
 
@@ -854,6 +907,7 @@ npx -y socialdatax-skills@latest douyin search --keyword "露营" --pretty
 npx -y socialdatax-skills@latest kuaishou search --keyword "露营" --pretty
 npx -y socialdatax-skills@latest bilibili search-videos --keyword "露营" --pretty
 npx -y socialdatax-skills@latest weibo search --keyword "露营" --pretty
+npx -y socialdatax-skills@latest toutiao search --keyword "露营" --pretty
 npx -y socialdatax-skills@latest wechat search --keyword "露营" --pretty
 npx -y socialdatax-skills@latest zhihu search --keyword "露营" --pretty
 npx -y socialdatax-skills@latest instagram search --keyword "camping" --pretty
@@ -863,7 +917,7 @@ npx -y socialdatax-skills@latest tiktok search --keyword "camping" --pretty
 npx -y socialdatax-skills@latest sensitive-check text --text "<content>" --platform xhs --pretty
 ```
 
-MCP client configuration belongs to repo-tracked platform MCP listings when those materials exist. Current repo-tracked standalone listings cover XHS, Douyin, Kuaishou, Bilibili, Weibo, WeChat Content / 微信内容 under the historical `wechat-channels-insights` Registry name, Zhihu, Instagram, X / Twitter, YouTube, and TikTok. WeChat Official Account article details are included in the WeChat endpoint and skills package, not a separate standalone listing. Sensitive Words Check remains hosted-only; use its hosted endpoint above or `mcp-remote`.
+MCP client configuration belongs to repo-tracked platform MCP listings when those materials exist. Current repo-tracked standalone listings cover XHS, Douyin, Kuaishou, Bilibili, Weibo, WeChat Content / 微信内容 under the historical `wechat-channels-insights` Registry name, Zhihu, Instagram, X / Twitter, YouTube, and TikTok. WeChat Official Account article details are included in the WeChat endpoint and skills package, not a separate standalone listing. Toutiao / 今日头条 and Sensitive Words Check remain hosted-only; use their hosted endpoints above or `mcp-remote`.
 
 Aily is treated as an OpenClaw / AgentSkills ecosystem channel for this package. Use the OpenClaw skill install flow for now; a dedicated `--target aily` will be added only after its official skill import or package format is confirmed.
 
@@ -879,7 +933,7 @@ Use the key as a Bearer token in the `Authorization` request header. Do not comm
 
 Public metadata files in this repository:
 
-- [skills](skills): AgentSkills-compatible skills split by capability and currently backed by XHS, Douyin, Kuaishou, Bilibili, Weibo, WeChat Content, Zhihu, Instagram, X / Twitter, YouTube, TikTok, and Sensitive Words Check tools.
+- [skills](skills): AgentSkills-compatible skills split by capability and currently backed by XHS, Douyin, Kuaishou, Bilibili, Weibo, Toutiao, WeChat Content, Zhihu, Instagram, X / Twitter, YouTube, TikTok, and Sensitive Words Check tools.
 
 ## License
 

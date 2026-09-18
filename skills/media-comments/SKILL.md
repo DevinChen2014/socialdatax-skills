@@ -1,6 +1,6 @@
 ---
 name: "media-comments"
-description: "Fetch and analyze comments/replies for supported SocialDataX public platforms. This version is backed by hosted platform MCP services and supports Xiaohongshu / XHS / RedNote, Douyin, Kuaishou, Bilibili, Zhihu, Instagram, X / Twitter, YouTube, TikTok, Weibo, and WeChat Channels."
+description: "Fetch and analyze comments/replies for supported SocialDataX public platforms. This version is backed by hosted platform MCP services and supports Xiaohongshu / XHS / RedNote, Douyin, Kuaishou, Bilibili, Zhihu, Instagram, X / Twitter, YouTube, TikTok, Weibo, Toutiao, and WeChat Channels."
 source_client: "socialdatax-skills"
 source_platform: "github"
 source_skill: "media-comments"
@@ -38,6 +38,7 @@ Current platform support:
 - YouTube comments through `youtube_get_video_comments_by_url` and `youtube_get_video_comment_replies`.
 - TikTok comments through the `tiktok_get_post_comments_by_*` and `tiktok_get_post_comment_replies` tools.
 - Weibo / 微博 posts through the `weibo_get_post_comments_by_*` and `weibo_get_post_comment_replies_by_comment_id` tools.
+- Toutiao / 今日头条 posts through the `toutiao_get_post_comments_by_*` and `toutiao_get_post_comment_replies_by_comment_id` tools.
 - WeChat Channels / 视频号 videos through the `wechat_get_video_comments_by_*` and `wechat_get_video_comment_replies_by_comment_id` tools.
 
 ## API Key
@@ -194,6 +195,24 @@ npx -y socialdatax-skills@latest weibo replies \
   --source-client socialdatax-skills --source-platform github \
   --source-skill media-comments
 
+npx -y socialdatax-skills@latest toutiao comments \
+  --post-id "<post_id>" --pretty --source-client socialdatax-skills \
+  --source-platform github --source-skill media-comments
+
+npx -y socialdatax-skills@latest toutiao comments \
+  --post-id "<post_id>" --all --include-replies --pretty \
+  --source-client socialdatax-skills --source-platform github \
+  --source-skill media-comments
+
+npx -y socialdatax-skills@latest toutiao comments \
+  --url "<toutiao_content_url_or_share_text>" --pretty \
+  --source-client socialdatax-skills --source-platform github \
+  --source-skill media-comments
+
+npx -y socialdatax-skills@latest toutiao replies \
+  --comment-id "<comment_id>" --pretty --source-client socialdatax-skills \
+  --source-platform github --source-skill media-comments
+
 npx -y socialdatax-skills@latest wechat comments \
   --object-id "<object_id>" --object-nonce-id "<object_nonce_id>" --pretty \
   --source-client socialdatax-skills --source-platform github \
@@ -226,7 +245,7 @@ Optional arguments:
 - `--pages <n>`: fetch and merge N pages of first-level comments or replies.
 - `--all`: continue first-level comments or replies until `next_page_token` is empty; there is no default item or page cap.
 - `--max-items <n>`: stop after collecting N primary comments or replies.
-- XHS, Douyin, Kuaishou, Weibo, and WeChat Channels / 视频号 `comments --include-replies`: for supported first-level comments commands, also fetch all second-level replies under each returned first-level comment.
+- XHS, Douyin, Kuaishou, Weibo, Toutiao, and WeChat Channels / 视频号 `comments --include-replies`: for supported first-level comments commands, also fetch all second-level replies under each returned first-level comment.
 - `--pretty`: output formatting only.
 - Kuaishou `--photo-id <photo_id>`: preferred when the Kuaishou work photo_id is already known and should anchor the comment thread.
 - Bilibili `--content-id <content_id>`: preferred for first-level comments when the Bilibili content ID is already known.
@@ -243,6 +262,8 @@ Optional arguments:
 - Weibo `--post-id <post_id>`: preferred when the Weibo post ID is already known and should anchor the comment thread.
 - Weibo `--post-url <weibo_post_url_or_share_text>`: use for a Weibo post URL, short link, or share text for first-level comments.
 - Weibo comments `--sort-type <hot|time_descending>`: optional first-level comment sort order; omit it for the default `hot` order, and keep it unchanged when continuing with `--page-token`.
+- Toutiao `--post-id <post_id>`: preferred when the post ID is already known and should anchor the comment thread.
+- Toutiao `--url <toutiao_content_url_or_share_text>`: use for a content URL, short link, or share text for first-level comments; replies require `--comment-id <comment_id>`.
 - WeChat Channels / 视频号 `--object-id <object_id>` and `--object-nonce-id <object_nonce_id>`: use together when both values are already known and should anchor the comment thread.
 - WeChat Channels / 视频号 `--url <wechat_video_url_or_share_text>`: use for a WeChat Channels video link or share text for first-level comments.
 - `--source-client socialdatax-skills --source-platform github --source-skill media-comments`: usage attribution for this Agent Skill; keep these values unchanged when running examples from this Skill.
@@ -269,6 +290,7 @@ MCP tools matching the direct CLI commands above:
 - YOUTUBE: `youtube_get_video_comments_by_url`, `youtube_get_video_comment_replies`
 - TIKTOK: `tiktok_get_post_comments_by_post_id`, `tiktok_get_post_comments_by_url`, `tiktok_get_post_comment_replies`
 - WEIBO: `weibo_get_post_comments_by_post_id`, `weibo_get_post_comments_by_post_url`, `weibo_get_post_comment_replies_by_comment_id`
+- TOUTIAO: `toutiao_get_post_comments_by_post_id`, `toutiao_get_post_comments_by_url`, `toutiao_get_post_comment_replies_by_comment_id`
 - WECHAT: `wechat_get_video_comments_by_object_id`, `wechat_get_video_comments_by_url`, `wechat_get_video_comment_replies_by_comment_id`
 
 If MCP tools are already available in the current agent, use one of these tools:
@@ -279,7 +301,7 @@ If MCP tools are already available in the current agent, use one of these tools:
 - `douyin_get_video_comments_by_url`: use for Douyin content page URLs, short links, or share text; do not pass playback URLs such as `video.play_url`.
 - `douyin_get_video_comment_replies_by_comment_id`: use when both aweme_id and first-level comment ID are known; use page_token to continue pagination.
 
-- Comment pagination uses opaque `page_token` values. Pass the complete returned `next_page_token` back unchanged for the same content item or comment chain. Do not modify, truncate, redact, mask, omit, normalize, rebuild, generate, or replace the middle with ellipses. Prefer CLI `--pages` and `--all` for multiple comment pages; use `--include-replies` only on XHS, Douyin, Kuaishou, Weibo, and WeChat Channels / 视频号 when the user asks for a full first-level plus second-level comment tree.
+- Comment pagination uses opaque `page_token` values. Pass the complete returned `next_page_token` back unchanged for the same content item or comment chain. Do not modify, truncate, redact, mask, omit, normalize, rebuild, generate, or replace the middle with ellipses. Prefer CLI `--pages` and `--all` for multiple comment pages; use `--include-replies` only on XHS, Douyin, Kuaishou, Weibo, Toutiao, and WeChat Channels / 视频号 when the user asks for a full first-level plus second-level comment tree.
 - For Douyin comments and replies, continue only when `next_page_token` is non-empty; an empty string means there are no more comments or replies to request.
 - XHS reply pagination also uses `page_token` and is bound to the current comment.
 - `kuaishou_get_video_comments_by_photo_id`: use when the photo_id is known.
@@ -305,6 +327,9 @@ If MCP tools are already available in the current agent, use one of these tools:
 - `weibo_get_post_comments_by_post_url`: use for Weibo post URLs, short links, or share text; optional `sort_type` accepts `hot` or `time_descending`.
 - `weibo_get_post_comment_replies_by_comment_id`: use when the post_id and first-level comment ID are known.
 - For Weibo comments and replies, continue only when `next_page_token` is non-empty; an empty string means there are no more comments or replies to request.
+- `toutiao_get_post_comments_by_post_id` and `toutiao_get_post_comments_by_url`: use for Toutiao first-level comments by post ID or content URL.
+- `toutiao_get_post_comment_replies_by_comment_id`: use for Toutiao replies with a first-level comment ID.
+- For Toutiao comments and replies, continue only when `next_page_token` is non-empty; an empty string means there are no more comments or replies to request.
 - `wechat_get_video_comments_by_object_id`: use when both object_id and object_nonce_id are known.
 - `wechat_get_video_comments_by_url`: use for WeChat Channels / 视频号 video links or share text.
 - `wechat_get_video_comment_replies_by_comment_id`: use when object_id, object_nonce_id, and first-level comment ID are known.
@@ -318,6 +343,7 @@ For Bilibili comments, preserve returned comment_object_id and comment_object_ty
 For YouTube comments, preserve returned reply_token values so reply commands can continue the correct thread.
 For Zhihu, Instagram, X / Twitter, and TikTok comments, preserve returned post or content IDs and first-level comment IDs for reply commands.
 For Weibo and WeChat Channels / 视频号 comments, preserve returned content IDs from first-level comments so reply commands can use the same content item and comment chain.
+For Toutiao comments, preserve the first-level `comment_id`; reply commands use that comment ID alone.
 
 ## Troubleshooting
 

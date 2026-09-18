@@ -1,6 +1,6 @@
 ---
 name: "media-detail"
-description: "Read structured social media content details and metrics from content IDs, URLs, short links, or share text for supported platforms including Xiaohongshu / XHS / RedNote, Douyin, Kuaishou, Bilibili, Zhihu, Instagram, X / Twitter, YouTube, TikTok, Weibo, and WeChat Channels. For WeChat Official Account articles, read article details and body text from article links. Supports XHS 蒲公英 / Pugongying commercial note details when requested."
+description: "Read structured social media content details and metrics from content IDs, URLs, short links, or share text for supported platforms including Xiaohongshu / XHS / RedNote, Douyin, Kuaishou, Bilibili, Zhihu, Instagram, X / Twitter, YouTube, TikTok, Weibo, Toutiao, and WeChat Channels. For WeChat Official Account articles, read article details and body text from article links. Supports XHS 蒲公英 / Pugongying commercial note details when requested."
 source_client: "socialdatax-skills"
 source_platform: "github"
 source_skill: "media-detail"
@@ -38,6 +38,7 @@ Current platform support:
 - YouTube videos through `youtube_get_video_detail_by_url`.
 - TikTok videos and image posts through `tiktok_get_post_detail_by_url`.
 - Weibo / 微博 posts through the `weibo_get_post_detail_by_*` tools.
+- Toutiao / 今日头条 posts through the `toutiao_get_post_detail_by_*` tools.
 - WeChat Channels / 视频号 video and image-post details through the `wechat_get_video_detail_by_*` tools.
 - WeChat Official Account / 微信公众号 articles through `wechat_get_mp_article_detail_by_url`.
 - Xiaohongshu / XHS 蒲公英 / Pugongying single-note commercial details through `xhs_pgy_get_note_detail_by_note_id` or `xhs_pgy_get_note_detail_by_note_url`.
@@ -126,6 +127,15 @@ npx -y socialdatax-skills@latest weibo detail \
   --source-client socialdatax-skills --source-platform github \
   --source-skill media-detail
 
+npx -y socialdatax-skills@latest toutiao detail \
+  --post-id "<post_id>" --pretty --source-client socialdatax-skills \
+  --source-platform github --source-skill media-detail
+
+npx -y socialdatax-skills@latest toutiao detail \
+  --url "<toutiao_content_url_or_share_text>" --pretty \
+  --source-client socialdatax-skills --source-platform github \
+  --source-skill media-detail
+
 npx -y socialdatax-skills@latest wechat detail \
   --encrypted-object-id "<encrypted_object_id>" --pretty \
   --source-client socialdatax-skills --source-platform github \
@@ -168,6 +178,8 @@ Optional arguments:
 - TikTok `--url <tiktok_post_url_or_share_text>`: use for a TikTok post URL or share text.
 - Weibo `--post-id <post_id>`: preferred when the Weibo post ID is already known.
 - Weibo `--post-url <weibo_post_url_or_share_text>`: use for a Weibo post URL, short link, or share text.
+- Toutiao `--post-id <post_id>`: preferred when the Toutiao post ID is already known.
+- Toutiao `--url <toutiao_content_url_or_share_text>`: use for a Toutiao content URL, short link, or share text.
 - WeChat Channels / 视频号 `--encrypted-object-id <encrypted_object_id>`: use when the encrypted_object_id from search is already known.
 - WeChat Channels / 视频号 `--url <wechat_work_url_or_share_text>`: use for a WeChat Channels video or image-post link or share text.
 - WeChat Official Account / 微信公众号 `article --url <mp_article_url_or_share_text>`: use for an mp.weixin.qq.com article link or share text.
@@ -200,6 +212,7 @@ MCP tools matching the direct CLI commands above:
 - YOUTUBE: `youtube_get_video_detail_by_url`
 - TIKTOK: `tiktok_get_post_detail_by_url`
 - WEIBO: `weibo_get_post_detail_by_post_id`, `weibo_get_post_detail_by_post_url`
+- TOUTIAO: `toutiao_get_post_detail_by_post_id`, `toutiao_get_post_detail_by_url`
 - WECHAT: `wechat_get_video_detail_by_encrypted_object_id`, `wechat_get_video_detail_by_url`, `wechat_get_mp_article_detail_by_url`
 
 If MCP tools are already available in the current agent, use one of these tools:
@@ -220,6 +233,8 @@ If MCP tools are already available in the current agent, use one of these tools:
 - `tiktok_get_post_detail_by_url`: use for TikTok post URLs or share text.
 - `weibo_get_post_detail_by_post_id`: use when a post_id is already known.
 - `weibo_get_post_detail_by_post_url`: use for Weibo post URLs, short links, or share text.
+- `toutiao_get_post_detail_by_post_id`: use when a Toutiao post_id is already known.
+- `toutiao_get_post_detail_by_url`: use for Toutiao content URLs, short links, or share text.
 - `wechat_get_video_detail_by_encrypted_object_id`: use when encrypted_object_id from search is already known.
 - `wechat_get_video_detail_by_url`: use for a WeChat Channels / 视频号 video or image-post link or share text.
 - `wechat_get_mp_article_detail_by_url`: use for WeChat Official Account / 微信公众号 article links or share text.
@@ -243,6 +258,7 @@ When the user wants to save X / Twitter media after search or detail, pass each 
 If an X / Twitter local media download times out, explain that X media is served from overseas CDN domains such as `pbs.twimg.com` and `video.twimg.com`; ask the user to make the download process use their proxy, for example by adding `--proxy "http://127.0.0.1:7890"` or setting `HTTP_PROXY` / `HTTPS_PROXY` / `ALL_PROXY`, then retry the same `x download-media` command.
 Detail access is read-only and does not provide account actions.
 For Weibo detail, include `post_id`, content, author, media, interaction counts, publish time, and post URL when available.
+For Toutiao detail, include `post_id`, content, author, media, interaction counts, publish time, and post URL when available.
 When the user wants to save Weibo media after detail, pass each returned `image_urls[]` or `video.video_url` to `npx -y socialdatax-skills@latest weibo download-media --url "<media_url>" --output-dir <directory> --pretty`; this local save command does not require `SOCIALDATAX_API_KEY`.
 For WeChat Channels / 视频号 detail, preserve `object_id` and `object_nonce_id` because comments and replies need both values.
 When the user wants to save a WeChat Channels / 视频号 video after detail, pass the returned `video.video_url` to `npx -y socialdatax-skills@latest wechat decrypt-media --media-url "<video.video_url>" --output <file>`; this local save command decrypts when needed and does not require `SOCIALDATAX_API_KEY`.
