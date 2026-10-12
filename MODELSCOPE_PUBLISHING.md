@@ -1,5 +1,15 @@
 # SocialDataX ModelScope Skills Publishing Record
 
+## 2026-10-12 CLI 0.2.48 capability refresh
+
+Updated only the two affected existing `socialhelper` entries through the documented
+upload and settings API. Both public ZIP archives were downloaded again; their
+`SKILL.md` SHA256 values match the generated source. Existing display names,
+source links, categories, and licenses were preserved.
+
+- `bilibili-comment-insights`: `ebe9faea7614014b76db7a517a5b9bf736569db3ebb65734a56750c348852566`.
+- `socialdatax-content-research-assistant`: `b430f51287cf07af4f2577016a620ea4037aff09907355a5f93aab14aa4fce6b`.
+
 This file records ModelScope Skills Center publishing and verification status for generated SocialDataX skill listings.
 
 ## Publishing Method
@@ -28,6 +38,18 @@ curl -X PATCH "$MODELSCOPE_ENDPOINT/openapi/v1/skills/socialhelper/<slug>/settin
   -H "Content-Type: application/json" \
   -d '{"display_name":"<中文展示名>","description":"<描述>","skill_file":"<upload.data.id>","source_url":"https://github.com/DevinChen2014/socialdatax-skills/tree/main/modelscope-skills/<slug>","category":"marketing-seo","license":"MIT License"}'
 ```
+
+## 2026-09-18 aggregate skill refresh
+
+Only `socialhelper/socialdatax-content-research-assistant` differed from the
+current generated ModelScope output for this release. It was refreshed through
+the authenticated upload plus settings PATCH flow while preserving its display
+name, source URL, category, and license. The public archive now has a
+49,839-byte `SKILL.md` with SHA256
+`2b8c09311c95eaa511129f841cdc735f96ee122bc97ce294f11ec65575578b0d`,
+matching `modelscope-skills/socialdatax-content-research-assistant/SKILL.md`.
+All other ModelScope entries were outside this release's generated-file diff and
+were not republished.
 
 ## 2026-08-25 focused content refresh
 
