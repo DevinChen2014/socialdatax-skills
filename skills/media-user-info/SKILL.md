@@ -1,6 +1,6 @@
 ---
 name: "media-user-info"
-description: "Retrieve social media creator profile information from platform-supported user IDs, usernames, channel URLs, profile URLs, short links, or share text. Supported input forms vary by platform. This version is backed by hosted platform MCP services and supports Xiaohongshu / XHS / RedNote, Douyin, Kuaishou, Bilibili, Zhihu, Instagram, X / Twitter, YouTube, TikTok, Weibo, Toutiao, and WeChat Channels creators."
+description: "Retrieve social media creator profile information from platform-supported user IDs, usernames, channel URLs, profile URLs, short links, or share text. Supported input forms vary by platform. This version is backed by hosted platform MCP services and supports Xiaohongshu / XHS / RedNote, Douyin, Kuaishou, Bilibili, Zhihu, Instagram, X / Twitter, YouTube, TikTok, Weibo, Toutiao, and WeChat Channels creators. Also use this skill for 百度贴吧 / Baidu Tieba user search and profiles, platform user/channel search, XHS 蒲公英 / Pugongying creator profile, fans and commercial analytics, XHS encrypted-user-ID resolution, Douyin profile lookup by douyin_id, and WeChat Official Account / 公众号 account profiles."
 source_client: "socialdatax-skills"
 source_platform: "github"
 source_skill: "media-user-info"
@@ -24,7 +24,7 @@ metadata:
 
 # Media User Info
 
-Use this skill when the user wants creator profile data, account basics, creator positioning, audience scale, or profile lookup for supported social media platforms.
+Use this skill when the user wants creator profile data, account basics, creator positioning, audience scale, or profile lookup for supported social media platforms. Also use this skill for 百度贴吧 / Baidu Tieba user search and profiles, platform user/channel search, XHS 蒲公英 / Pugongying creator profile, fans and commercial analytics, XHS encrypted-user-ID resolution, Douyin profile lookup by douyin_id, and WeChat Official Account / 公众号 account profiles.
 
 Current platform support:
 
@@ -41,6 +41,7 @@ Current platform support:
 - Weibo / 微博 creators through the `weibo_get_user_info_by_*` tools.
 - Toutiao / 今日头条 creators through the `toutiao_get_user_info_by_*` tools.
 - WeChat Channels / 视频号 creators through `wechat_get_user_info_by_url` for video or image-post links or share text, or `wechat_get_user_info_by_user_id` when a `v2_...@finder` user_id is already known.
+- Also use this skill for 百度贴吧 / Baidu Tieba user search and profiles, platform user/channel search, XHS 蒲公英 / Pugongying creator profile, fans and commercial analytics, XHS encrypted-user-ID resolution, Douyin profile lookup by douyin_id, and WeChat Official Account / 公众号 account profiles.
 
 ## API Key
 
@@ -156,6 +157,95 @@ npx -y socialdatax-skills@latest wechat user-info \
 npx -y socialdatax-skills@latest wechat user-info \
   --url "<wechat_work_url_or_share_text>" --pretty --source-client socialdatax-skills \
   --source-platform github --source-skill media-user-info
+
+npx -y socialdatax-skills@latest xhs user-search \
+  --keyword "<keyword>" --pretty --source-client socialdatax-skills \
+  --source-platform github --source-skill media-user-info
+
+npx -y socialdatax-skills@latest douyin user-search \
+  --keyword "<keyword>" --pretty --source-client socialdatax-skills \
+  --source-platform github --source-skill media-user-info
+
+npx -y socialdatax-skills@latest tiktok user-search \
+  --keyword "<keyword>" --pretty --source-client socialdatax-skills \
+  --source-platform github --source-skill media-user-info
+
+npx -y socialdatax-skills@latest weibo user-search \
+  --keyword "<keyword>" --pretty --source-client socialdatax-skills \
+  --source-platform github --source-skill media-user-info
+
+npx -y socialdatax-skills@latest zhihu user-search \
+  --keyword "<keyword>" --pretty --source-client socialdatax-skills \
+  --source-platform github --source-skill media-user-info
+
+npx -y socialdatax-skills@latest instagram user-search \
+  --keyword "<keyword>" --pretty --source-client socialdatax-skills \
+  --source-platform github --source-skill media-user-info
+
+npx -y socialdatax-skills@latest x user-search \
+  --keyword "<keyword>" --pretty --source-client socialdatax-skills \
+  --source-platform github --source-skill media-user-info
+
+npx -y socialdatax-skills@latest bilibili user-search \
+  --keyword "<keyword>" --pretty --source-client socialdatax-skills \
+  --source-platform github --source-skill media-user-info
+
+npx -y socialdatax-skills@latest toutiao user-search \
+  --keyword "<keyword>" --pretty --source-client socialdatax-skills \
+  --source-platform github --source-skill media-user-info
+
+npx -y socialdatax-skills@latest youtube channel-search \
+  --keyword "<keyword>" --pretty --source-client socialdatax-skills \
+  --source-platform github --source-skill media-user-info
+
+npx -y socialdatax-skills@latest wechat user-search \
+  --keyword "<keyword>" --pretty --source-client socialdatax-skills \
+  --source-platform github --source-skill media-user-info
+
+npx -y socialdatax-skills@latest xhs pgy-creator-profile \
+  --user-id "<user_id>" --pretty --source-client socialdatax-skills \
+  --source-platform github --source-skill media-user-info
+
+npx -y socialdatax-skills@latest xhs pgy-creator-fans-profile \
+  --user-id "<user_id>" --pretty --source-client socialdatax-skills \
+  --source-platform github --source-skill media-user-info
+
+npx -y socialdatax-skills@latest xhs pgy-creator-fans-summary \
+  --user-id "<user_id>" --pretty --source-client socialdatax-skills \
+  --source-platform github --source-skill media-user-info
+
+npx -y socialdatax-skills@latest xhs pgy-creator-metrics-trend \
+  --user-id "<user_id>" --pretty --source-client socialdatax-skills \
+  --source-platform github --source-skill media-user-info
+
+npx -y socialdatax-skills@latest xhs pgy-creator-commercial-overview \
+  --user-id "<user_id>" --pretty --source-client socialdatax-skills \
+  --source-platform github --source-skill media-user-info
+
+npx -y socialdatax-skills@latest xhs resolve-user-id \
+  --encrypted-user-id "<encrypted_user_id>" --pretty \
+  --source-client socialdatax-skills --source-platform github \
+  --source-skill media-user-info
+
+npx -y socialdatax-skills@latest douyin user-info \
+  --douyin-id "<douyin_id>" --pretty --source-client socialdatax-skills \
+  --source-platform github --source-skill media-user-info
+
+npx -y socialdatax-skills@latest wechat mp-account-info \
+  --account-id "<account_id>" --pretty --source-client socialdatax-skills \
+  --source-platform github --source-skill media-user-info
+
+npx -y socialdatax-skills@latest tieba user-search \
+  --keyword "<keyword>" --pretty --source-client socialdatax-skills \
+  --source-platform github --source-skill media-user-info
+
+npx -y socialdatax-skills@latest tieba user-info \
+  --user-id "<user_id>" --pretty --source-client socialdatax-skills \
+  --source-platform github --source-skill media-user-info
+
+npx -y socialdatax-skills@latest tieba user-info \
+  --profile-url "<profile_url>" --pretty --source-client socialdatax-skills \
+  --source-platform github --source-skill media-user-info
 ```
 
 Optional arguments:
@@ -188,6 +278,7 @@ Optional arguments:
 Use exactly one supported identifier or URL entrypoint for a single command; do not combine them.
 
 The command prints JSON with `platform`, `tool`, `arguments`, and `data`.
+Use `npx -y socialdatax-skills@latest <platform> <action> --help` for exact flags and values. Paginated commands require the complete returned `next_page_token`. Do not modify, truncate, redact, mask, omit, normalize, rebuild, generate, or replace the middle with ellipses. Commands without `--page-token`, including suggestions and first-page-only searches, do not support pagination.
 
 ## Safety Boundary
 
@@ -197,20 +288,19 @@ This skill is read-only. It uses `SOCIALDATAX_API_KEY` from the user's environme
 
 MCP tools matching the direct CLI commands above:
 
-- XHS: `xhs_get_user_info_by_user_id`, `xhs_get_user_info_by_profile_url`
-- DOUYIN: `douyin_get_user_info_by_sec_user_id`, `douyin_get_user_info_by_profile_url`
+- XHS: `xhs_get_user_info_by_user_id`, `xhs_get_user_info_by_profile_url`, `xhs_search_users`, `xhs_pgy_get_creator_profile`, `xhs_pgy_get_creator_fans_profile`, `xhs_pgy_get_creator_fans_summary`, `xhs_pgy_get_creator_metrics_trend`, `xhs_pgy_get_creator_commercial_overview`, `xhs_get_user_id_by_encrypted_user_id`
+- DOUYIN: `douyin_get_user_info_by_sec_user_id`, `douyin_get_user_info_by_profile_url`, `douyin_search_users`, `douyin_get_user_info_by_douyin_id`
 - KUAISHOU: `kuaishou_search_users`, `kuaishou_get_user_info_by_user_id`, `kuaishou_get_user_info_by_profile_url`
-- BILIBILI: `bilibili_get_user_info_by_user_id`, `bilibili_get_user_info_by_profile_url`
-- ZHIHU: `zhihu_get_user_info_by_profile_url`
-- INSTAGRAM: `instagram_get_user_info_by_username`, `instagram_get_user_info_by_profile_url`
-- X: `x_get_user_info_by_user_id`, `x_get_user_info_by_username`, `x_get_user_info_by_profile_url`
-- YOUTUBE: `youtube_get_channel_info_by_url`
-- TIKTOK: `tiktok_get_user_info_by_tiktok_id`, `tiktok_get_user_info_by_profile_url`
-- WEIBO: `weibo_get_user_info_by_user_id`, `weibo_get_user_info_by_profile_url`
-- TOUTIAO: `toutiao_get_user_info_by_user_id`, `toutiao_get_user_info_by_profile_url`
-- WECHAT: `wechat_get_user_info_by_user_id`, `wechat_get_user_info_by_url`
-
-MCP-only tools not available through the direct CLI: `douyin_get_user_info_by_douyin_id`
+- BILIBILI: `bilibili_get_user_info_by_user_id`, `bilibili_get_user_info_by_profile_url`, `bilibili_search_users`
+- ZHIHU: `zhihu_get_user_info_by_profile_url`, `zhihu_search_users`
+- INSTAGRAM: `instagram_get_user_info_by_username`, `instagram_get_user_info_by_profile_url`, `instagram_search_users`
+- X: `x_get_user_info_by_user_id`, `x_get_user_info_by_username`, `x_get_user_info_by_profile_url`, `x_search_users`
+- YOUTUBE: `youtube_get_channel_info_by_url`, `youtube_search_channels`
+- TIKTOK: `tiktok_get_user_info_by_tiktok_id`, `tiktok_get_user_info_by_profile_url`, `tiktok_search_users`
+- WEIBO: `weibo_get_user_info_by_user_id`, `weibo_get_user_info_by_profile_url`, `weibo_search_users`
+- TOUTIAO: `toutiao_get_user_info_by_user_id`, `toutiao_get_user_info_by_profile_url`, `toutiao_search_users`
+- WECHAT: `wechat_get_user_info_by_user_id`, `wechat_get_user_info_by_url`, `wechat_search_finder_user`, `wechat_get_mp_account_info_by_account_id`
+- BAIDU: `baidu_tieba_search_users`, `baidu_tieba_get_user_info_by_user_id`, `baidu_tieba_get_user_info_by_profile_url`
 
 If MCP tools are already available in the current agent, use one of these tools:
 - `xhs_get_user_info_by_user_id`: preferred when `user_id` is already known from search, detail, comments, or creator note lists.

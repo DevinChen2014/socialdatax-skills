@@ -40,8 +40,8 @@ npx -y socialdatax-skills@latest bilibili comments \
 
 npx -y socialdatax-skills@latest bilibili replies \
   --comment-object-id "<comment_object_id>" \
-  --comment-object-type "<comment_object_type>" --comment-id "<comment_id>" --pretty \
-  --source-client socialdatax-skills --source-platform modelscope \
+  --comment-object-type "<comment_object_type_integer>" --comment-id "<comment_id>" \
+  --pretty --source-client socialdatax-skills --source-platform modelscope \
   --source-skill bilibili-comment-insights
 ```
 

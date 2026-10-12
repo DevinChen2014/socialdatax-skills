@@ -2,7 +2,9 @@
 
 This public package provides the unified skill installer and direct CLI helper for SocialDataX services.
 
-The current public tools support 小红书 / Xiaohongshu / XHS / RedNote, 抖音 / Douyin, 快手 / Kuaishou / Kwai, Bilibili / 哔哩哔哩 / B站, 微博 / Weibo, 今日头条 / Toutiao, 视频号 / WeChat Channels, 知乎 / Zhihu, Instagram, X / Twitter, YouTube, and TikTok content research and analysis workflows, plus WeChat Official Account / 微信公众号 article details, XHS / Douyin / Kuaishou / Weibo / X / Twitter local media download, WeChat Channels local media decrypt/save, Bilibili local video download, and 敏感词检测 / 违禁词检查 text checks. The public skill layer is intentionally named by capability so supported services can evolve without changing the installation model.
+See [CLI_COMMANDS.md](./CLI_COMMANDS.md) for complete direct CLI usage for user search, search suggestions, product search and reviews, XHS 蒲公英 creator analytics, WeChat Official Account / 公众号 article and account workflows, 百度贴吧 / Baidu Tieba, `account balance`, `docs search`, `docs operation`, `docs openapi`, and Bilibili / Zhihu / Instagram / X / TikTok / YouTube transcripts. Each entry lists its input variants, accepted flags, filters, and pagination.
+
+The current public tools support 小红书 / Xiaohongshu / XHS / RedNote, 抖音 / Douyin, 快手 / Kuaishou / Kwai, Bilibili / 哔哩哔哩 / B站, 微博 / Weibo, 今日头条 / Toutiao, 百度贴吧 / Baidu Tieba, 视频号 / WeChat Channels, 知乎 / Zhihu, Instagram, X / Twitter, YouTube, and TikTok content research and analysis workflows, plus WeChat Official Account / 微信公众号 article search, account profiles, account article lists, article details, statistics, comments and replies, XHS / Douyin / Kuaishou / Weibo / X / Twitter local media download, WeChat Channels local media decrypt/save, Bilibili local video download, and 敏感词检测 / 违禁词检查 text checks. The public skill layer is intentionally named by capability so supported services can evolve without changing the installation model.
 
 - direct `npx` JSON commands for agents that can run shell commands
 - AgentSkills-compatible installers split by capability for OpenClaw, Hermes Agent, Codex, Claude Code, and general agent skill directories
@@ -92,7 +94,7 @@ Common search phrases for this skill package:
 - Reserved future SocialDataX namespace names for existing platform listings without draft files yet: `com.socialdatax/kuaishou-insights`, `com.socialdatax/bilibili-insights`, `com.socialdatax/weibo-insights`, `com.socialdatax/wechat-channels-insights`, `com.socialdatax/zhihu-insights`, `com.socialdatax/instagram-insights`, `com.socialdatax/x-insights`, `com.socialdatax/youtube-insights`, and `com.socialdatax/tiktok-insights`.
 - Hosted endpoints without a repo-tracked standalone listing: Toutiao / 今日头条 and Sensitive Words Check.
 - Unified MCP registry name: none; this package installs skills and calls explicit hosted MCP entries.
-- Current public capability version: `0.2.46`
+- Current public capability version: `0.2.48`
 
 ## XHS 蒲公英 / Pugongying commercial note details
 
@@ -217,6 +219,7 @@ npx -y socialdatax-skills@latest wechat detail --encrypted-object-id "<encrypted
 npx -y socialdatax-skills@latest wechat detail --url "<wechat_work_url_or_share_text>" --pretty
 npx -y socialdatax-skills@latest wechat decrypt-media --media-url "<video.video_url>" --output video.mp4
 npx -y socialdatax-skills@latest wechat article --url "<mp_article_url_or_share_text>" --pretty
+npx -y socialdatax-skills@latest wechat article-stats --url "<mp_article_url_or_share_text>" --pretty
 npx -y socialdatax-skills@latest wechat comments --object-id "<object_id>" --object-nonce-id "<object_nonce_id>" --pretty
 npx -y socialdatax-skills@latest wechat comments --object-id "<object_id>" --object-nonce-id "<object_nonce_id>" --all --include-replies --pretty
 npx -y socialdatax-skills@latest wechat comments --url "<wechat_video_url_or_share_text>" --pretty
@@ -277,13 +280,37 @@ npx -y socialdatax-skills@latest sensitive-check text --text "<content>" --platf
 
 Most direct CLI commands print a JSON envelope with `platform`, `tool`, `arguments`, and `data`. `sensitive-check` prints `platform`, `tool`, and `data` only; it does not echo the original text in CLI output. `wechat decrypt-media` is a local save command: pass the `video.video_url` returned by WeChat detail and an `--output` file path. It saves the media locally, decrypts when needed, and does not require `SOCIALDATAX_API_KEY`. `xhs/douyin/kuaishou/weibo download-media` is also local: pass one media URL returned by detail and either `--output <file>` or `--output-dir <directory>`. `x download-media` accepts one X media URL returned by search or detail. These local commands write through a `.part` file, resume partial downloads when the server supports range requests, skip an already existing output file, and infer common image/video/audio extensions in `--output-dir` mode. X / Twitter media URLs are served from overseas CDN domains such as `pbs.twimg.com` and `video.twimg.com`; if the local download times out, make the CLI process use a proxy with `--proxy "http://127.0.0.1:7890"` or `HTTP_PROXY` / `HTTPS_PROXY` / `ALL_PROXY`, then retry.
 
+
+The following six platforms also support direct CLI transcripts. Pass exactly one URL, content ID, or existing job ID:
+
+```bash
+npx -y socialdatax-skills@latest bilibili transcript --url "<video_url>" --pretty
+npx -y socialdatax-skills@latest bilibili transcript --bvid "<bvid>" --pretty
+npx -y socialdatax-skills@latest bilibili transcript --job-id "<job_id>" --pretty
+npx -y socialdatax-skills@latest zhihu transcript --url "<video_url>" --pretty
+npx -y socialdatax-skills@latest zhihu transcript --zvideo-id "<zvideo_id>" --pretty
+npx -y socialdatax-skills@latest zhihu transcript --job-id "<job_id>" --pretty
+npx -y socialdatax-skills@latest instagram transcript --url "<post_url>" --pretty
+npx -y socialdatax-skills@latest instagram transcript --post-id "<post_id>" --pretty
+npx -y socialdatax-skills@latest instagram transcript --job-id "<job_id>" --pretty
+npx -y socialdatax-skills@latest x transcript --url "<post_url>" --pretty
+npx -y socialdatax-skills@latest x transcript --post-id "<post_id>" --pretty
+npx -y socialdatax-skills@latest x transcript --job-id "<job_id>" --pretty
+npx -y socialdatax-skills@latest tiktok transcript --url "<video_url>" --pretty
+npx -y socialdatax-skills@latest tiktok transcript --aweme-id "<aweme_id>" --pretty
+npx -y socialdatax-skills@latest tiktok transcript --job-id "<job_id>" --pretty
+npx -y socialdatax-skills@latest youtube transcript --url "<video_url>" --pretty
+npx -y socialdatax-skills@latest youtube transcript --video-id "<video_id>" --pretty
+npx -y socialdatax-skills@latest youtube transcript --job-id "<job_id>" --pretty
+```
+
 For transcript commands, the direct CLI tries to deliver the final result in one run: submit may wait up to 240 seconds, and if `data.is_terminal` is not `true`, the CLI automatically continues matching get-job requests for up to 1200 seconds by default, with each get-job request waiting up to 240 seconds. Use positive `--max-wait-seconds <seconds>` to tune that follow-up window. Do not submit a duplicate transcript job just to poll status.
 
 `bilibili download` calls SocialDataX once to fetch short-lived download links, then downloads video and audio tracks on the local machine and merges them with local `ffmpeg`. Set `SOCIALDATAX_API_KEY`, install `ffmpeg`, and pass either `--output <file>` or `--output-dir <directory>`. The download-links request consumes 10 credits; the local track download and merge do not consume additional SocialDataX credits. Use `--ffmpeg-path <path>` when `ffmpeg` is not on `PATH`, and `--keep-tracks` to retain the separate track files after merge.
 
 For XHS outputs with a returned `note_url` field, when `note_url` is non-null, preserve it exactly as the full URL, including `xsec_token` query parameters, such as in final answers or display. Do not modify, truncate, redact, normalize, rebuild, or replace it with a link assembled from `note_id`. If `note_url` is null, do not synthesize a public link from `note_id`.
 
-For list-style commands, use `--pages <n>` to fetch N pages from the current starting point and `--max-items <n>` to cap the merged `data.items` output. Search commands support `--pages` but not `--all`, because search has no stable complete-result boundary.
+For list-style commands, use `--pages <n>` to fetch N pages from the current starting point and `--max-items <n>` to cap the merged `data.items` output. The original content-search commands support `--pages` but not `--all`, because search has no stable complete-result boundary. Additional commands in [CLI_COMMANDS.md](./CLI_COMMANDS.md) accept `--all` only when their parameter table lists `--page-token`, except `tieba search`, which also requires bounded `--pages`; this follows the available token chain rather than guaranteeing exhaustive results.
 
 Use `--since-days <1-365>` only on XHS, Douyin, Kuaishou, Weibo, and WeChat Channels search and creator content-list commands. For Bilibili video search, Zhihu search, and YouTube search, use the documented publish-time filters instead; Instagram, X / Twitter, TikTok, and Bilibili article search do not expose a recent-window CLI option.
 
@@ -465,6 +492,7 @@ npx -y socialdatax-skills@latest toutiao user-posts --user-id "<user_id>" --cont
 npx -y socialdatax-skills@latest wechat hot-search --pretty
 npx -y socialdatax-skills@latest wechat search --keyword "露营" --pretty
 npx -y socialdatax-skills@latest wechat article --url "<mp_article_url_or_share_text>" --pretty
+npx -y socialdatax-skills@latest wechat article-stats --url "<mp_article_url_or_share_text>" --pretty
 npx -y socialdatax-skills@latest wechat transcript --encrypted-object-id "<encrypted_object_id>" --pretty
 npx -y socialdatax-skills@latest zhihu search --keyword "露营" --pretty
 npx -y socialdatax-skills@latest instagram search --keyword "camping" --pretty
@@ -479,11 +507,11 @@ Use `--path` for clients that expect a direct Skills directory. When installing 
 
 Available skills:
 
-- `socialdatax-content-research-assistant`: combine SocialDataX search, detail, comment, creator profile, and creator content workflows for cross-platform content research across XHS, Douyin, Kuaishou, Bilibili, Weibo, Toutiao, WeChat Channels, Zhihu, Instagram, X / Twitter, YouTube, and TikTok; also reads WeChat Official Account article link details.
+- `socialdatax-content-research-assistant`: combine SocialDataX search, detail, comment, creator profile, and creator content workflows for cross-platform content research across XHS, Douyin, Kuaishou, Bilibili, Weibo, Toutiao, WeChat Channels, Zhihu, Instagram, X / Twitter, YouTube, and TikTok; also reads WeChat Official Account article link details and statistics.
 - `media-search`: search social media content by keyword; supports XHS notes, Douyin works, Kuaishou works, Bilibili videos/articles, Weibo and Toutiao posts, WeChat Channels videos, Zhihu content, Instagram posts, X / Twitter posts, YouTube videos, and TikTok posts.
-- `media-detail`: supports requested XHS 蒲公英 / Pugongying commercial note details (20 points per successful call; failures are not charged). Read WeChat Official Account article details and body text from article links. Read structured content details and metrics for XHS notes, Douyin works, Kuaishou works, Bilibili content, Weibo and Toutiao posts, WeChat Channels videos and image posts, Zhihu content, Instagram posts, X / Twitter posts, YouTube videos, and TikTok posts.
+- `media-detail`: supports requested XHS 蒲公英 / Pugongying commercial note details (20 points per successful call; failures are not charged). Read WeChat Official Account article details, body text, and statistics from article links. Read structured content details and metrics for XHS notes, Douyin works, Kuaishou works, Bilibili content, Weibo and Toutiao posts, WeChat Channels videos and image posts, Zhihu content, Instagram posts, X / Twitter posts, YouTube videos, and TikTok posts.
 - `media-comments`: fetch and analyze comments/replies for XHS, Douyin, Kuaishou, Bilibili, Weibo, Toutiao, WeChat Channels, Zhihu, Instagram, X / Twitter, YouTube, and TikTok.
-- `media-transcript`: submit and check video 口播转文字 / speech-to-text transcript jobs; supports XHS, Douyin, Kuaishou, Weibo, and WeChat Channels through direct CLI commands or hosted MCP tools, plus Bilibili, Zhihu independent videos and video answers, Instagram regular video posts/Reels, X / Twitter video posts, TikTok, and YouTube through hosted MCP tools. Instagram photo and carousel posts and Zhihu plain answers without video are not processable.
+- `media-transcript`: submit and check video 口播转文字 / speech-to-text transcript jobs; supports XHS, Douyin, Kuaishou, Weibo, and WeChat Channels through direct CLI commands or hosted MCP tools, plus Bilibili, Zhihu independent videos and video answers, Instagram regular video posts/Reels, X / Twitter video posts, TikTok, and YouTube through direct CLI commands or hosted MCP tools. Instagram photo and carousel posts and Zhihu plain answers without video are not processable.
 - `media-user-info`: retrieve creator profile information; supports XHS, Douyin, Kuaishou, Bilibili, Weibo, Toutiao, WeChat Channels, Zhihu, Instagram, X / Twitter, YouTube channels, and TikTok creators.
 - `media-user-posts`: retrieve creator content lists; supports XHS notes, Douyin works, Kuaishou works, Bilibili videos/articles/dynamics, Weibo and Toutiao posts, WeChat Channels videos and image posts, Zhihu creator articles, Instagram posts, X / Twitter posts, YouTube channel videos/Shorts, TikTok posts, and Douyin creator short-drama series.
 - `sensitive-check`: run 敏感词检测 / 违禁词检查 text checks; supports `generic`, `xhs`, `douyin`, and `kuaishou` platform contexts.
@@ -544,7 +572,7 @@ Current Bilibili workflows include:
 - Fetch paginated likes and reposts for Bilibili opus/dynamic content by post_id or opus/dynamic URL/share text. If starting from a `/read/cv...` article URL, call `bilibili detail` first and use the returned `post.post_id` or `post.share_url`.
 - Read creator profile data from a user_id, profile link, short link, or share text.
 - Fetch paginated creator videos, articles, and dynamics.
-- Submit and check Bilibili video 口播转文字 / speech-to-text transcript jobs through hosted MCP tools. Submit by video URL, short link, share text, or BV number; each job processes one video part. Submit tools 提交后最多等待 240 秒，未完成时继续查询同一个 job_id 直到终态.
+- Submit and check Bilibili video 口播转文字 / speech-to-text transcript jobs through `bilibili transcript` or hosted MCP tools. Submit by video URL, short link, share text, or BV number; each job processes one video part. Submit tools 提交后最多等待 240 秒，未完成时继续查询同一个 job_id 直到终态.
 - Resolve a Bilibili video page link or share text into short-lived DASH download links.
 - Download the selected video and audio tracks locally and merge them with `ffmpeg -c copy`.
 
@@ -592,6 +620,7 @@ Current WeChat Content / 微信内容 workflows include:
 - Resolve a WeChat Channels video or image-post link, share text, or encrypted_object_id into structured work details.
 - Save the `video.video_url` returned by WeChat Channels video detail locally and decrypt when needed.
 - Resolve a WeChat Official Account / 微信公众号 article link or share text into article detail and body text.
+- Read WeChat Official Account / 微信公众号 article reading and engagement statistics from an article link or share text.
 - Fetch paginated WeChat Channels / 视频号 first-level comments for comment analysis.
 - Fetch paginated WeChat Channels / 视频号 replies under a first-level comment; pass `object_id`, `object_nonce_id`, and `comment_id`.
 - Continue WeChat Channels list pagination only when `next_page_token` is non-empty; an empty string means there are no more results to request.
@@ -608,7 +637,7 @@ Current Zhihu / 知乎 workflows include:
 - Fetch paginated replies under a first-level comment by content URL and comment_id.
 - Read creator profile data from a profile URL.
 - Fetch paginated creator article lists from a profile URL.
-- Submit and check independent `/zvideo/{zvideo_id}` or video-answer `/question/{question_id}/answer/{answer_id}` 口播转文字 / speech-to-text transcript jobs through hosted MCP tools. Numeric `zvideo_id` remains independent-video only; submit tools 提交后最多等待 240 秒，未完成时继续查询同一个 job_id 直到终态.
+- Submit and check independent `/zvideo/{zvideo_id}` or video-answer `/question/{question_id}/answer/{answer_id}` 口播转文字 / speech-to-text transcript jobs through `zhihu transcript` or hosted MCP tools. Numeric `zvideo_id` remains independent-video only; submit tools 提交后最多等待 240 秒，未完成时继续查询同一个 job_id 直到终态.
 
 Current Instagram workflows include:
 
@@ -618,7 +647,7 @@ Current Instagram workflows include:
 - Fetch paginated replies under a first-level comment by post_id and comment_id.
 - Read creator profile data by username or profile URL/share text.
 - Fetch paginated public posts by creator username or profile URL/share text.
-- Submit and check speech-to-text transcript jobs for regular video posts and Reels through hosted MCP tools; photo and carousel posts are not supported.
+- Submit and check speech-to-text transcript jobs for regular video posts and Reels through `instagram transcript` or hosted MCP tools; photo and carousel posts are not supported.
 
 Current X / Twitter workflows include:
 
@@ -648,7 +677,7 @@ Current TikTok workflows include:
 - Fetch paginated replies under a first-level comment by post_id and comment_id.
 - Read creator profile data by tiktok_id or profile URL/share text.
 - Fetch paginated creator posts by tiktok_id or profile URL/share text.
-- Submit TikTok video speech-to-text transcript jobs through hosted MCP using a video URL or aweme_id, or query an existing valid job_id directly; reuse the same job_id until the task is terminal.
+- Submit TikTok video speech-to-text transcript jobs through `tiktok transcript` or hosted MCP using a video URL or aweme_id, or query an existing valid job_id directly; reuse the same job_id until the task is terminal.
 
 Current Sensitive Words Check workflows include:
 
@@ -797,6 +826,7 @@ Current Sensitive Words Check workflows include:
 | `wechat_get_video_detail_by_encrypted_object_id` | Fetch structured WeChat Channels video details when encrypted_object_id is already known. |
 | `wechat_get_video_detail_by_url` | Resolve a WeChat Channels / 视频号 video or image-post link or share text into structured work details. |
 | `wechat_get_mp_article_detail_by_url` | Fetch WeChat Official Account / 微信公众号 article detail and body text from an article link or share text. |
+| `wechat_get_mp_article_stats_by_url` | Fetch WeChat Official Account / 微信公众号 article reading and engagement statistics from an article link or share text. |
 | `wechat_get_video_comments_by_object_id` | Fetch paginated first-level comments when object_id and object_nonce_id are known. |
 | `wechat_get_video_comments_by_url` | Fetch paginated first-level comments directly from a WeChat Channels / 视频号 video link or share text. |
 | `wechat_get_video_comment_replies_by_comment_id` | Fetch paginated replies under a first-level comment by object_id, object_nonce_id, and comment_id. |
@@ -917,7 +947,7 @@ npx -y socialdatax-skills@latest tiktok search --keyword "camping" --pretty
 npx -y socialdatax-skills@latest sensitive-check text --text "<content>" --platform xhs --pretty
 ```
 
-MCP client configuration belongs to repo-tracked platform MCP listings when those materials exist. Current repo-tracked standalone listings cover XHS, Douyin, Kuaishou, Bilibili, Weibo, WeChat Content / 微信内容 under the historical `wechat-channels-insights` Registry name, Zhihu, Instagram, X / Twitter, YouTube, and TikTok. WeChat Official Account article details are included in the WeChat endpoint and skills package, not a separate standalone listing. Toutiao / 今日头条 and Sensitive Words Check remain hosted-only; use their hosted endpoints above or `mcp-remote`.
+MCP client configuration belongs to repo-tracked platform MCP listings when those materials exist. Current repo-tracked standalone listings cover XHS, Douyin, Kuaishou, Bilibili, Weibo, WeChat Content / 微信内容 under the historical `wechat-channels-insights` Registry name, Zhihu, Instagram, X / Twitter, YouTube, and TikTok. WeChat Official Account article details and statistics are included in the WeChat endpoint and skills package, not a separate standalone listing. Toutiao / 今日头条 and Sensitive Words Check remain hosted-only; use their hosted endpoints above or `mcp-remote`.
 
 Aily is treated as an OpenClaw / AgentSkills ecosystem channel for this package. Use the OpenClaw skill install flow for now; a dedicated `--target aily` will be added only after its official skill import or package format is confirmed.
 
@@ -938,3 +968,7 @@ Public metadata files in this repository:
 ## License
 
 The files in this public repository are released under the MIT License. The license covers the public CLI wrapper, documentation, and skill files in this repository only. It does not cover the managed service implementation, hosted infrastructure, or any private backend code outside this repository.
+
+## Source repository maintenance
+
+For maintainers working in the SocialDataX service source repository, check the 91 extended command handler contracts with `uv run --locked --env-file env.local python scripts/sync_socialdatax_cli_contracts.py`. The default mode checks for drift; append `--write` to regenerate the contract file after an intentional handler change. This maintenance script is in the service source repository and is not included in the npm package.

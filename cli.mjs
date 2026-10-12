@@ -18,11 +18,15 @@ import {
 } from "./lib/media/bilibili-download.mjs";
 import { downloadPlatformMediaFromUrl } from "./lib/media/platform-download.mjs";
 import { decryptWechatMediaCommand } from "./lib/media/wechat-decrypt.mjs";
+import {
+  EXTENDED_COMMANDS, TOOL_CONTRACTS, buildExtendedCall, extendedCommandOptions,
+  extendedHelp, findExtendedCommand,
+} from "./lib/commands/extended.mjs";
 
 export { decryptWechatMediaCommand };
 
 const PACKAGE_NAME = "socialdatax-skills";
-const PACKAGE_VERSION = "0.2.46";
+const PACKAGE_VERSION = "0.2.48";
 const PACKAGE_SPEC = `${PACKAGE_NAME}@latest`;
 const LOG_PREFIX = `[${PACKAGE_NAME}]`;
 const MIN_NODE_VERSION = "20.18.1";
@@ -59,43 +63,43 @@ const AVAILABLE_SKILLS = [
   {
     name: "socialdatax-content-research-assistant",
     summary:
-      "Coordinate cross-platform content research across XHS, Douyin, Kuaishou, Bilibili, Weibo, Toutiao, WeChat Channels, Zhihu, Instagram, X / Twitter, YouTube, and TikTok, plus WeChat Official Account article details.",
+      "Coordinate cross-platform content research across XHS, Douyin, Kuaishou, Bilibili, Weibo, Toutiao, Baidu Tieba, WeChat Channels, Zhihu, Instagram, X / Twitter, YouTube, and TikTok, plus WeChat Official Account article/account workflows, products, account balance and API docs.",
     emoji: "🔎",
   },
   {
     name: "media-search",
     summary:
-      "Search XHS notes, Douyin and Kuaishou works, Bilibili videos/articles, Weibo and Toutiao posts, WeChat Channels videos, Zhihu content, Instagram posts, X / Twitter posts, YouTube videos, and TikTok posts by keyword.",
+      "Search XHS notes, Douyin and Kuaishou works, Bilibili videos/articles, Weibo and Toutiao posts, WeChat Channels videos, Zhihu content, Instagram posts, X / Twitter posts, YouTube videos, and TikTok posts by keyword. Also supports Baidu Tieba, Official Account articles, products, users, channels, and search suggestions.",
     emoji: "🔍",
   },
   {
     name: "media-detail",
     summary:
-      "Read WeChat Official Account article details and body text. Read structured content details and metrics for XHS, Douyin, Kuaishou, Bilibili, Weibo, Toutiao, WeChat Channels, Zhihu, Instagram, X / Twitter, YouTube, and TikTok. Supports requested XHS 蒲公英 / Pugongying commercial note details.",
+      "Read WeChat Official Account article details, body text, and statistics. Read structured content details and metrics for XHS, Douyin, Kuaishou, Bilibili, Weibo, Toutiao, Baidu Tieba, WeChat Channels, Zhihu, Instagram, X / Twitter, YouTube, and TikTok. Supports requested XHS 蒲公英 / Pugongying commercial note details, XHS/Douyin products, and Tieba forums.",
     emoji: "📄",
   },
   {
     name: "media-comments",
     summary:
-      "Fetch and analyze comments/replies for XHS, Douyin, Kuaishou, Bilibili, Weibo, Toutiao, WeChat Channels, Zhihu, Instagram, X / Twitter, YouTube, and TikTok.",
+      "Fetch and analyze comments/replies for XHS, Douyin, Kuaishou, Bilibili, Weibo, Toutiao, Baidu Tieba, WeChat Channels, Zhihu, Instagram, X / Twitter, YouTube, and TikTok, plus Official Account comments and XHS product reviews.",
     emoji: "💬",
   },
   {
     name: "media-transcript",
     summary:
-      "Submit and check video speech-to-text transcript jobs for XHS, Douyin, Kuaishou, Weibo, and WeChat Channels, plus Bilibili, Zhihu, Instagram, X / Twitter, TikTok, and YouTube through hosted MCP tools.",
+      "Submit and check video speech-to-text transcript jobs for XHS, Douyin, Kuaishou, Weibo, and WeChat Channels, plus Bilibili, Zhihu, Instagram, X / Twitter, TikTok, and YouTube through direct CLI commands or hosted MCP tools.",
     emoji: "🎙️",
   },
   {
     name: "media-user-info",
     summary:
-      "Retrieve creator profile information for XHS, Douyin, Kuaishou, Bilibili, Weibo, Toutiao, WeChat Channels, Zhihu, Instagram, X / Twitter, YouTube channels, and TikTok.",
+      "Retrieve creator profile information for XHS, Douyin, Kuaishou, Bilibili, Weibo, Toutiao, Baidu Tieba, WeChat Channels, Zhihu, Instagram, X / Twitter, YouTube channels, and TikTok, plus Official Account accounts and XHS 蒲公英 creator analytics.",
     emoji: "👤",
   },
   {
     name: "media-user-posts",
     summary:
-      "Retrieve creator content lists for XHS, Douyin, Kuaishou, Bilibili, Weibo, Toutiao, WeChat Channels, Zhihu, Instagram, X / Twitter, YouTube channels, and TikTok, including Douyin creator short-drama series.",
+      "Retrieve creator content lists for XHS, Douyin, Kuaishou, Bilibili, Weibo, Toutiao, Baidu Tieba, WeChat Channels, Zhihu, Instagram, X / Twitter, YouTube channels, and TikTok, including Douyin creator short-drama series.",
     emoji: "🗂️",
   },
   {
@@ -819,6 +823,7 @@ const WECHAT_DIRECT_ACTION_OPTIONS = {
   ],
   detail: ["encryptedObjectId", "url", "pretty"],
   article: ["url", "pretty"],
+  "article-stats": ["url", "pretty"],
   comments: [
     "objectId",
     "objectNonceId",
@@ -1488,6 +1493,11 @@ const PLATFORMS = {
           "Fetch WeChat Official Account / 微信公众号 article detail and body text from an article link or share text.",
       },
       {
+        name: "wechat_get_mp_article_stats_by_url",
+        description:
+          "Fetch WeChat Official Account / 微信公众号 article reading and engagement statistics from an article link or share text.",
+      },
+      {
         name: "wechat_get_video_comments_by_object_id",
         description: "Fetch paginated first-level comments when object_id and object_nonce_id are known.",
       },
@@ -1848,6 +1858,22 @@ const PLATFORMS = {
     ],
   },
 };
+for (const [id, displayName, path, upstreamEnv] of [
+  ["tieba", "百度贴吧 / Baidu Tieba", "baidu-tieba", ["SOCIALDATAX_TIEBA_MCP_UPSTREAM_URL"]],
+  ["docs", "SocialDataX API documentation", "docs", ["SOCIALDATAX_DOCS_MCP_UPSTREAM_URL"]],
+  ["account", "SocialDataX account", "xhs", PLATFORMS.xhs.upstreamEnv],
+]) {
+  PLATFORMS[id] = { id, displayName, status: "public", endpoint: `https://mcp.socialdatax.com/${path}/mcp`,
+    apiKeyEnv: API_KEY_ENV_NAMES, upstreamEnv, tools: [] };
+}
+for (const definition of EXTENDED_COMMANDS) {
+  const platform = PLATFORMS[definition.platform];
+  for (const name of definition.tools) {
+    if (!platform.tools.some((tool) => tool.name === name)) {
+      platform.tools.push({ name, description: TOOL_CONTRACTS[name].description });
+    }
+  }
+}
 const currentDir = dirname(fileURLToPath(import.meta.url));
 let mcpSdkModules;
 
@@ -1870,6 +1896,16 @@ function isMainModule() {
 
 async function main() {
   try {
+    const extendedPlatform = command === "baidu-tieba" ? "tieba" : command;
+    const parsed = parseCommandArgs(cliArgs.slice(1));
+    const extended = findExtendedCommand(extendedPlatform, parsed.positional[0], parsed.options) ||
+      (shouldPrintDirectHelp(parsed.options, parsed.positional)
+        ? EXTENDED_COMMANDS.find((entry) => entry.platform === extendedPlatform && entry.action === parsed.positional[0])
+        : undefined);
+    if (extended || ["tieba", "account", "docs"].includes(extendedPlatform)) {
+      await runExtendedDirectCommand(extendedPlatform, parsed, extended);
+      return;
+    }
     if (command === "install") {
       await installSkills(cliArgs.slice(1));
     } else if (command === "list") {
@@ -1926,6 +1962,26 @@ async function main() {
     }
     process.exit(1);
   }
+}
+
+async function runExtendedDirectCommand(platformId, { options, positional }, definition) {
+  if (shouldPrintDirectHelp(options, positional)) {
+    if (definition?.whenOption) printHelp();
+    console.log(extendedHelp(platformId, positional[0] === "help" ? undefined : positional[0]));
+    return;
+  }
+  if (!definition) throw new Error(`Unsupported ${platformId} command. Use ${EXTENDED_COMMANDS.filter((entry) => entry.platform === platformId).map((entry) => entry.action).join(", ")}.`);
+  if (positional.length > 1) throw new Error(`Unexpected argument: ${positional[1]}`);
+  validateKnownOptions(options, extendedCommandOptions(definition));
+  validateDirectMetaOptions(options);
+  validateDirectPaginationOptions(platformId, definition.action, options);
+  validateDirectTranscriptOptions(definition.action, options);
+  const operation = attachDirectMetadata(buildDirectOperation(
+    definition.action, buildExtendedCall(definition, options), PLATFORMS[platformId]
+  ), options);
+  const data = await callDirectOperationWithOptions(operation, options);
+  console.log(JSON.stringify({ platform: operation.platform.id, tool: operation.tool,
+    arguments: operation.arguments, data }, null, options.pretty ? 2 : 0));
 }
 
 export function formatCliErrorMessage(error) {
@@ -1998,7 +2054,7 @@ function parseCommandArgs(args) {
       equalsIndex === -1 ? optionText : optionText.slice(0, equalsIndex);
     const inlineValue =
       equalsIndex === -1 ? undefined : optionText.slice(equalsIndex + 1);
-    const key = rawKey.replace(/-([a-z])/g, (_, char) => char.toUpperCase());
+    const key = rawKey.replace(/-([a-z0-9])/g, (_, char) => char.toUpperCase());
     if (BOOLEAN_OPTIONS.has(key)) {
       options[key] = inlineValue ?? true;
       continue;
@@ -2991,6 +3047,11 @@ function printDoctor(args) {
 function printHelp() {
   console.log(`${PACKAGE_NAME}`);
   console.log("");
+  console.log("Additional public capabilities (append --help for parameters and usage constraints):");
+  for (const platform of [...new Set(EXTENDED_COMMANDS.map((entry) => entry.platform))]) {
+    console.log(`  ${platform}: ${EXTENDED_COMMANDS.filter((entry) => entry.platform === platform).map((entry) => entry.action).join(", ")}`);
+  }
+  console.log("");
   console.log("Commands:");
   console.log(`  npx -y ${PACKAGE_SPEC} xhs search --keyword "露营" --pretty`);
   console.log("      Call the XHS search tool directly and print JSON.");
@@ -3262,6 +3323,9 @@ function printHelp() {
   console.log("");
   console.log(`  npx -y ${PACKAGE_SPEC} wechat article --url "<mp_article_url_or_share_text>" --pretty`);
   console.log("      Call the WeChat Official Account / 微信公众号 article detail tool from an article link or share text.");
+  console.log("");
+  console.log(`  npx -y ${PACKAGE_SPEC} wechat article-stats --url "<mp_article_url_or_share_text>" --pretty`);
+  console.log("      Call the WeChat Official Account / 微信公众号 article statistics tool from an article link or share text.");
   console.log("");
   console.log(`  npx -y ${PACKAGE_SPEC} wechat comments --object-id "<object_id>" --object-nonce-id "<object_nonce_id>" --pretty`);
   console.log("      Call the WeChat Channels / 视频号 video comments tool directly and print JSON.");
@@ -4875,6 +4939,12 @@ function buildWechatOperation(action, options) {
         buildWechatArticleCall(options),
         PLATFORMS.wechat
       );
+    case "article-stats":
+      return buildDirectOperation(
+        "article-stats",
+        buildWechatArticleStatsCall(options),
+        PLATFORMS.wechat
+      );
     case "comments":
       return buildDirectOperation(
         "comments",
@@ -6306,6 +6376,18 @@ function buildWechatArticleCall(options) {
   };
 }
 
+function buildWechatArticleStatsCall(options) {
+  if (!options.url) {
+    throw new Error("Missing --url for wechat article-stats.");
+  }
+  return {
+    tool: "wechat_get_mp_article_stats_by_url",
+    toolArguments: {
+      url: options.url,
+    },
+  };
+}
+
 function buildWechatRepliesCall(options) {
   if (!options.objectId) {
     throw new Error("Missing --object-id for wechat replies.");
@@ -6728,6 +6810,8 @@ function shouldDeduplicateContentItems(operation) {
 
 function contentItemId(operation, item) {
   switch (operation.platform.id) {
+    case "tieba":
+      return itemStringField(item, "thread_id");
     case "xhs":
       return itemStringField(item, "note_id");
     case "douyin":

@@ -648,6 +648,8 @@ async function runCliWithMockMcp(
       SOCIAL_MEDIA_TOUTIAO_MCP_UPSTREAM_URL: `http://127.0.0.1:${address.port}/mcp`,
       SOCIAL_MEDIA_WECHAT_MCP_UPSTREAM_URL: `http://127.0.0.1:${address.port}/mcp`,
       SOCIALDATAX_SENSITIVE_CHECK_MCP_UPSTREAM_URL: `http://127.0.0.1:${address.port}/mcp`,
+      SOCIALDATAX_TIEBA_MCP_UPSTREAM_URL: `http://127.0.0.1:${address.port}/mcp`,
+      SOCIALDATAX_DOCS_MCP_UPSTREAM_URL: `http://127.0.0.1:${address.port}/mcp`,
       ...extraEnv,
     });
     return {
@@ -676,6 +678,131 @@ async function assertDirectToolCall(args, expectedToolCall) {
   assert.equal(result.status, 0, result.stderr);
   assert.deepEqual(toolCalls[0], expectedToolCall);
 }
+
+test("extended capability commands route to their public MCP tools", async () => {
+  const cases = [
+    [["xhs", "user-search", "--keyword", "露营"], "xhs_search_users", { keyword: "露营" }],
+    [["douyin", "search-suggestions", "--keyword", "露营"], "douyin_search_suggestions", { keyword: "露营" }],
+    [["tieba", "forum-detail", "--forum-name", "摄影"], "baidu_tieba_get_forum_detail", { forum_name: "摄影" }],
+    [["account", "balance"], "socialdatax_get_points_balance", {}],
+    [["docs", "operation", "--operation-id", "xhs_search_notes"], "get_api_operation", { operation_id: "xhs_search_notes" }],
+    [["douyin", "user-info", "--douyin-id", "creator123"], "douyin_get_user_info_by_douyin_id", { douyin_id: "creator123" }],
+    [["weibo", "likers", "--url", "https://weibo.com/123/Abc"], "weibo_get_post_liker_list_by_post_url", { post_url: "https://weibo.com/123/Abc" }],
+  ];
+  for (const [args, name, toolArguments] of cases) {
+    await assertDirectToolCall(args, { name, arguments: toolArguments });
+  }
+});
+
+test("extended transcript commands query existing jobs on all six platforms", async () => {
+  for (const platform of ["bilibili", "zhihu", "instagram", "x", "tiktok", "youtube"]) {
+    const { result, toolCalls } = await runCliWithMockMcp([platform, "transcript", "--job-id", "existing-job"], {},
+      () => ({ job_id: "existing-job", status: "succeeded", is_terminal: true }));
+    assert.equal(result.status, 0, result.stderr);
+    assert.deepEqual(toolCalls, [{
+      name: `${platform}_get_video_speech_text_job`, arguments: { job_id: "existing-job" },
+    }]);
+  }
+});
+
+test("extended commands send typed filters and preserve attribution", async () => {
+  const { result, toolCalls, toolCallSourceClientHeaders, toolCallSourcePlatformHeaders, toolCallSourceSkillHeaders } = await runCliWithMockMcp([
+    "douyin", "product-search", "--keyword", "鞋", "--min-price", "1200", "--max-price", "null",
+    "--dispatch-within-24h", "true", "--only-live", "false", "--official-store",
+    "--source-client", "socialdatax-skills", "--source-platform", "npm", "--source-skill", "media-search",
+  ]);
+  assert.equal(result.status, 0, result.stderr);
+  assert.deepEqual(toolCalls, [{ name: "douyin_search_products", arguments: {
+    keyword: "鞋", min_price: 1200, max_price: null, dispatch_within_24h: true, only_live: false, official_store: true,
+  } }]);
+  assert.deepEqual(toolCallSourceClientHeaders, ["socialdatax-skills"]);
+  assert.deepEqual(toolCallSourcePlatformHeaders, ["npm"]);
+  assert.deepEqual(toolCallSourceSkillHeaders, ["media-search"]);
+});
+
+test("extended search pagination keeps tokens and distinct images from the same note", async () => {
+  const pageToken = "opaque+%2F==中文";
+  const { result, toolCalls } = await runCliWithMockMcp([
+    "xhs", "search-images", "--keyword", "露营", "--pages", "2",
+  ], {}, (_, index) => ({
+    items: [{ note_id: "same-note", image_url: `https://example.com/${index}.jpg` }],
+    has_more: index === 1, next_page_token: index === 1 ? pageToken : null,
+  }));
+  assert.equal(result.status, 0, result.stderr);
+  assert.deepEqual(toolCalls, [
+    { name: "xhs_search_images", arguments: { keyword: "露营" } },
+    { name: "xhs_search_images", arguments: { keyword: "露营", page_token: pageToken } },
+  ]);
+  assert.equal(JSON.parse(result.stdout).data.items.length, 2);
+});
+
+test("Tieba pagination counts distinct threads toward max-items", async () => {
+  for (const [action, input] of [["search", ["--keyword", "摄影"]], ["user-posts", ["--user-id", "123"]]]) {
+    const post = (thread_id) => ({
+      thread_id, title: "摄影", author: { user_id: "123", name: "作者", avatar_url: "", profile_url: "" },
+      summary: "帖子摘要", images: [], videos: [], post_url: `https://tieba.baidu.com/p/${thread_id}`,
+      forum_id: "1", forum_name: "摄影", publish_time: 1, update_time: 1,
+      like_count: 0, share_count: 0, ...(action === "user-posts" ? { reply_count: 0, view_count: 0 } : {}),
+    });
+    const { result, toolCalls } = await runCliWithMockMcp([
+      "tieba", action, ...input, "--pages", "3", "--max-items", "3",
+    ], {}, (_, index) => ({
+      items: index === 1 ? [post("101")] : index === 2 ? [post("101"), post("102")] : [post("103")],
+      next_page_token: index < 3 ? `token-${index}` : "",
+    }));
+    assert.equal(result.status, 0, result.stderr);
+    const data = JSON.parse(result.stdout).data;
+    assert.deepEqual(data.items.map((item) => item.thread_id), ["101", "102", "103"], action);
+    assert.equal(data.item_count, 3);
+    assert.equal(data.page_count, 3);
+    assert.equal(data.next_page_token, "");
+    assert.deepEqual(toolCalls.map((call) => call.arguments.page_token), [undefined, "token-1", "token-2"]);
+  }
+});
+
+test("extended transcript submits once and polls the same job", async () => {
+  const { result, toolCalls } = await runCliWithMockMcp([
+    "youtube", "transcript", "--video-id", "abcdefghijk", "--max-wait-seconds", "5",
+  ], {}, (_, index) => ({ job_id: "job-1", status: index === 1 ? "processing" : "succeeded",
+    is_terminal: index !== 1, next_poll_after_seconds: 0 }));
+  assert.equal(result.status, 0, result.stderr);
+  assert.deepEqual(toolCalls, [
+    { name: "youtube_submit_video_speech_text_by_video_id", arguments: { video_id: "abcdefghijk" } },
+    { name: "youtube_get_video_speech_text_job", arguments: { job_id: "job-1" } },
+  ]);
+  assert.equal(JSON.parse(result.stdout).data.is_terminal, true);
+});
+
+test("extended commands reject unsupported or ambiguous inputs before authentication", () => {
+  for (const [args, message] of [
+    [["tieba", "user-search", "--keyword", "摄影", "--pages", "2"], /Unsupported option --pages/],
+    [["xhs", "product-detail", "--sku-id", "sku", "--url", "https://example.com"], /exactly one/],
+    [["douyin", "product-search", "--keyword", "鞋", "--min-price", "0"], /allowed range/],
+    [["wechat", "article-search", "--keyword", "摄影", "--sort-type", "invalid"], /must be one of/],
+    [["docs", "search", "--limit", "51"], /allowed range/],
+    [["docs", "search", "--query", "x", "--source-client"], /Missing value for --source-client/],
+  ]) {
+    const result = runCli(args);
+    assert.equal(result.status, 1);
+    assert.match(result.stderr, message);
+    assert.doesNotMatch(result.stderr, /Missing API Key/);
+  }
+});
+
+test("extended inputs on existing commands are discoverable through command help", () => {
+  for (const [args, flags] of [
+    [["douyin", "user-info", "--help"], ["--douyin-id", "--sec-user-id", "--profile-url"]],
+    [["weibo", "likers", "--help"], ["--url", "weibo_get_post_liker_list_by_post_url", "--post-id"]],
+    [["weibo", "reposts", "--help"], ["--url", "weibo_get_post_repost_list_by_post_url", "--post-id"]],
+  ]) {
+    const result = runCli(args);
+    assert.equal(result.status, 0, result.stderr);
+    for (const flag of flags) assert.ok(result.stdout.includes(flag), flag);
+  }
+  const tieba = runCli(["tieba", "search", "--help"]);
+  assert.equal(tieba.status, 0, tieba.stderr);
+  assert.doesNotMatch(tieba.stdout, /--all/);
+});
 
 function escapeRegExp(text) {
   return text.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
@@ -766,7 +893,7 @@ test("public package version metadata stays aligned", () => {
   const cli = readFileSync(cliPath, "utf8");
   const versionPattern = escapeRegExp(packageJson.version);
 
-  assert.equal(packageJson.version, "0.2.46");
+  assert.equal(packageJson.version, "0.2.48");
   assert.equal(packageLock.version, packageJson.version);
   assert.equal(packageLock.packages[""].version, packageJson.version);
   assert.match(
@@ -915,7 +1042,7 @@ test("public docs and doctor report only advertise the SocialDataX API key", () 
   assert.equal(report.security.platformApiKeyEnv, undefined);
 });
 
-test("public docs keep Official Account articles limited to detail workflows", () => {
+test("public docs distinguish Official Account workflows from Channels and standalone listings", () => {
   const readme = readFileSync(join(packageDir, "README.md"), "utf8");
   const cliSource = readFileSync(cliPath, "utf8");
   const checklist = readFileSync(
@@ -931,7 +1058,7 @@ test("public docs keep Official Account articles limited to detail workflows", (
     "utf8"
   );
 
-  assert.match(readme, /WeChat Official Account \/ 微信公众号 article details/);
+  assert.match(readme, /WeChat Official Account \/ 微信公众号 article search, account profiles, account article lists, article details, statistics, comments and replies/);
   assert.match(
     readme,
     /Fetch paginated WeChat Channels \/ 视频号 first-level comments/
@@ -954,7 +1081,7 @@ test("public docs keep Official Account articles limited to detail workflows", (
   );
   assert.match(
     readme,
-    /WeChat Official Account article details are included in the WeChat endpoint and skills package, not a separate standalone listing/
+    /WeChat Official Account article details and statistics are included in the WeChat endpoint and skills package, not a separate standalone listing/
   );
   assert.doesNotMatch(
     readme,
@@ -972,7 +1099,7 @@ test("public docs keep Official Account articles limited to detail workflows", (
   }
   assert.match(
     checklist,
-    /Also read WeChat Official Account article details from article links\./
+    /Also read WeChat Official Account article details and statistics from article links\./
   );
   assert.doesNotMatch(
     checklist,
@@ -3303,10 +3430,13 @@ test("npm pack only includes public skill package files", () => {
 
   assert.deepEqual(paths, [
     "CATALOG.md",
+    "CLI_COMMANDS.md",
     "LICENSE",
     "README.md",
     "assets/logo.png",
     "cli.mjs",
+    "lib/commands/extended.mjs",
+    "lib/commands/tool-contracts.json",
     "lib/media/bilibili-download.mjs",
     "lib/media/common.mjs",
     "lib/media/platform-download.mjs",
@@ -6000,6 +6130,7 @@ test("douyin openclaw plugin exposes supported user info tools", () => {
       "douyin-insights__douyin_get_user_info_by_profile_url",
     ]
   );
+  assert.equal(pluginManifest.contracts.tools.length, 17);
   assert.match(pluginSource, /remoteName: "douyin_get_user_info_by_douyin_id"/);
   assert.match(pluginSource, /required: \["douyin_id"\]/);
   assert.deepEqual(
@@ -6011,7 +6142,6 @@ test("douyin openclaw plugin exposes supported user info tools", () => {
       "douyin-insights__douyin_get_user_posted_videos_by_profile_url",
     ]
   );
-  assert.equal(pluginManifest.contracts.tools.length, 17);
   assert.ok(
     pluginManifest.contracts.tools.includes(
       "douyin-insights__douyin_get_hot_search_list"
@@ -6134,10 +6264,10 @@ test("xhs openclaw search schema documents semantic sort enums", () => {
   );
   const readme = readFileSync(join(openclawDir, "README.md"), "utf8");
 
-  assert.equal(packageJson.version, "0.1.23");
-  assert.equal(pluginManifest.version, "0.1.23");
-  assert.match(pluginSource, /const PLUGIN_VERSION = "0\.1\.23";/);
-  assert.match(readme, /Version: `0\.1\.23`/);
+  assert.equal(packageJson.version, "0.1.24");
+  assert.equal(pluginManifest.version, "0.1.24");
+  assert.match(pluginSource, /const PLUGIN_VERSION = "0\.1\.24";/);
+  assert.match(readme, /Version: `0\.1\.24`/);
 
   assert.deepEqual(pluginManifest.providerAuthChoices[0], {
     provider: "xhs-insights",
@@ -6172,7 +6302,7 @@ test("xhs openclaw search schema documents semantic sort enums", () => {
     pluginSource,
     /社媒数据助手 小红书 MCP \| Xiaohongshu XHS RedNote MCP/
   );
-  assert.equal(pluginManifest.contracts.tools.length, 19);
+  assert.equal(pluginManifest.contracts.tools.length, 20);
   assert.ok(
     pluginManifest.contracts.tools.includes(
       "xhs-insights__xhs_get_search_hot_list"
@@ -6207,15 +6337,22 @@ test("xhs openclaw search schema documents semantic sort enums", () => {
       "xhs-insights__xhs_get_product_review_replies"
     )
   );
+  assert.ok(
+    pluginManifest.contracts.tools.includes(
+      "xhs-insights__xhs_get_product_review_reply_replies"
+    )
+  );
   assert.match(pluginSource, /Get XHS Search Hot List/);
   assert.match(pluginSource, /xhs_search_products/);
   assert.match(pluginSource, /Get XHS Product Detail/);
   assert.match(pluginSource, /Get XHS Product Reviews/);
   assert.match(pluginSource, /Get XHS Product Review Replies/);
+  assert.match(pluginSource, /Get XHS Product Review Reply Replies/);
   assert.match(readme, /search hot list/);
   assert.match(readme, /product search/);
   assert.match(readme, /product reviews/);
   assert.match(readme, /first-level product review/);
+  assert.match(readme, /nested replies under a product review reply/);
 
   assert.match(
     pluginSource,
@@ -7177,6 +7314,23 @@ test("wechat article command maps official account article url", async () => {
   });
 });
 
+test("wechat article-stats command maps official account article url", async () => {
+  const articleStats = await runCliWithMockMcp([
+    "wechat",
+    "article-stats",
+    "--url",
+    "https://mp.weixin.qq.com/s/cyog0u9QpLFvdBsh9JR3_g",
+  ]);
+
+  assert.equal(articleStats.result.status, 0, articleStats.result.stderr);
+  assert.deepEqual(articleStats.toolCalls[0], {
+    name: "wechat_get_mp_article_stats_by_url",
+    arguments: {
+      url: "https://mp.weixin.qq.com/s/cyog0u9QpLFvdBsh9JR3_g",
+    },
+  });
+});
+
 test("bilibili direct commands map public read operations", async () => {
   await assertDirectToolCall(
     [
@@ -7816,6 +7970,10 @@ test("weibo, toutiao, and wechat validate direct command options before checking
   assertCliError(
     runCli(["wechat", "article"]),
     "Missing --url for wechat article\\."
+  );
+  assertCliError(
+    runCli(["wechat", "article-stats"]),
+    "Missing --url for wechat article-stats\\."
   );
   assertCliError(
     runCli(["wechat"]),
@@ -9861,14 +10019,22 @@ test("doctor json prints parseable safety summary", () => {
   assert.equal(report.security.readsLocalBrowserData, false);
   assert.equal(report.security.readsBrowserCookies, undefined);
   assert.equal(report.security.readsLocalAccountSession, undefined);
-  assert.equal(report.platforms.length, 13);
+  for (const id of ["tieba", "docs", "account"]) {
+    assert.ok(report.platforms.some((platform) => platform.id === id), `Missing ${id}`);
+  }
+  for (const id of ["xhs", "douyin", "kuaishou", "bilibili", "weibo", "wechat", "zhihu", "instagram", "x", "youtube", "tiktok"]) {
+    const directory = id === "wechat" ? "wechat-channels-insights" : `${id}-insights`;
+    const card = JSON.parse(readFileSync(join(dirname(packageDir), directory, "server-card.json"), "utf8"));
+    const expected = card.tools.map((tool) => tool.name).filter((name) => name !== "socialdatax_get_points_balance");
+    const actual = report.platforms.find((platform) => platform.id === id).tools;
+    assert.deepEqual([...actual].sort(), expected.sort(), id);
+  }
   assert.equal(report.platform.endpointOverrideActive, false);
   assert.equal(report.platform.repoTrackedStandaloneListing, true);
   assert.equal(report.platform.registryName, "com.52choujiang/xhs-insights");
   assert.equal(report.platform.futureRegistryName, "com.socialdatax/xhs-insights");
   assert.equal(report.platform.legacyRegistryName, undefined);
   assert.equal(report.platform.defaultEndpoint, "https://mcp.socialdatax.com/xhs/mcp");
-  assert.equal(report.platform.tools.length, 16);
   assert.ok(report.platform.tools.includes("xhs_pgy_get_note_detail_by_note_id"));
   assert.ok(report.platform.tools.includes("xhs_pgy_get_note_detail_by_note_url"));
   assert.ok(report.platform.tools.includes("xhs_get_search_hot_list"));
@@ -9884,7 +10050,6 @@ test("doctor json prints parseable safety summary", () => {
   assert.equal(douyinPlatform.futureRegistryName, "com.socialdatax/douyin-insights");
   assert.equal(douyinPlatform.legacyRegistryName, undefined);
   assert.equal(douyinPlatform.defaultEndpoint, "https://mcp.socialdatax.com/douyin/mcp");
-  assert.equal(douyinPlatform.tools.length, 18);
   assert.ok(douyinPlatform.tools.includes("douyin_get_hot_search_list"));
   assert.ok(douyinPlatform.tools.includes("douyin_get_video_comment_replies_by_comment_id"));
   assert.ok(douyinPlatform.tools.includes("douyin_get_user_series_by_sec_user_id"));
@@ -9916,7 +10081,6 @@ test("doctor json prints parseable safety summary", () => {
   assert.equal(kuaishouPlatform.registryName, "com.52choujiang/kuaishou-insights");
   assert.equal(kuaishouPlatform.futureRegistryName, "com.socialdatax/kuaishou-insights");
   assert.equal(kuaishouPlatform.defaultEndpoint, "https://mcp.socialdatax.com/kuaishou/mcp");
-  assert.equal(kuaishouPlatform.tools.length, 15);
   assert.ok(kuaishouPlatform.tools.includes("kuaishou_get_hot_search_list"));
   assert.ok(kuaishouPlatform.tools.includes("kuaishou_search_videos"));
   assert.ok(kuaishouPlatform.tools.includes("kuaishou_search_users"));
@@ -9947,7 +10111,6 @@ test("doctor json prints parseable safety summary", () => {
   assert.equal(bilibiliPlatform.registryName, "com.52choujiang/bilibili-insights");
   assert.equal(bilibiliPlatform.futureRegistryName, "com.socialdatax/bilibili-insights");
   assert.equal(bilibiliPlatform.defaultEndpoint, "https://mcp.socialdatax.com/bilibili/mcp");
-  assert.equal(bilibiliPlatform.tools.length, 18);
   assert.ok(bilibiliPlatform.tools.includes("bilibili_search_videos"));
   assert.ok(bilibiliPlatform.tools.includes("bilibili_search_articles"));
   assert.ok(bilibiliPlatform.tools.includes("bilibili_get_content_detail_by_id"));
@@ -9973,7 +10136,6 @@ test("doctor json prints parseable safety summary", () => {
   assert.equal(weiboPlatform.registryName, "com.52choujiang/weibo-insights");
   assert.equal(weiboPlatform.futureRegistryName, "com.socialdatax/weibo-insights");
   assert.equal(weiboPlatform.defaultEndpoint, "https://mcp.socialdatax.com/weibo/mcp");
-  assert.equal(weiboPlatform.tools.length, 18);
   assert.ok(weiboPlatform.tools.includes("weibo_get_hot_search_list"));
   assert.ok(weiboPlatform.tools.includes("weibo_search_posts"));
   assert.ok(weiboPlatform.tools.includes("weibo_get_post_comment_replies_by_comment_id"));
@@ -9993,7 +10155,6 @@ test("doctor json prints parseable safety summary", () => {
   assert.equal(toutiaoPlatform.registryName, undefined);
   assert.equal(toutiaoPlatform.futureRegistryName, undefined);
   assert.equal(toutiaoPlatform.defaultEndpoint, "https://mcp.socialdatax.com/toutiao/mcp");
-  assert.equal(toutiaoPlatform.tools.length, 11);
   assert.ok(toutiaoPlatform.tools.includes("toutiao_get_hot_search_list"));
   assert.ok(toutiaoPlatform.tools.includes("toutiao_search_posts"));
   assert.ok(toutiaoPlatform.tools.includes("toutiao_get_post_comment_replies_by_comment_id"));
@@ -10007,10 +10168,10 @@ test("doctor json prints parseable safety summary", () => {
   assert.equal(wechatPlatform.registryName, "com.52choujiang/wechat-channels-insights");
   assert.equal(wechatPlatform.futureRegistryName, "com.socialdatax/wechat-channels-insights");
   assert.equal(wechatPlatform.defaultEndpoint, "https://mcp.socialdatax.com/wechat/mcp");
-  assert.equal(wechatPlatform.tools.length, 15);
   assert.ok(wechatPlatform.tools.includes("wechat_get_hot_search_list"));
   assert.ok(wechatPlatform.tools.includes("wechat_search_videos"));
   assert.ok(wechatPlatform.tools.includes("wechat_get_mp_article_detail_by_url"));
+  assert.ok(wechatPlatform.tools.includes("wechat_get_mp_article_stats_by_url"));
   assert.ok(wechatPlatform.tools.includes("wechat_get_video_comment_replies_by_comment_id"));
   assert.ok(wechatPlatform.tools.includes("wechat_get_user_info_by_url"));
   assert.ok(wechatPlatform.tools.includes("wechat_get_user_posted_videos_by_url"));
@@ -10025,7 +10186,6 @@ test("doctor json prints parseable safety summary", () => {
   assert.equal(zhihuPlatform.registryName, "com.52choujiang/zhihu-insights");
   assert.equal(zhihuPlatform.futureRegistryName, "com.socialdatax/zhihu-insights");
   assert.equal(zhihuPlatform.defaultEndpoint, "https://mcp.socialdatax.com/zhihu/mcp");
-  assert.equal(zhihuPlatform.tools.length, 7);
   assert.ok(zhihuPlatform.tools.includes("zhihu_get_hot_list"));
   assert.ok(zhihuPlatform.tools.includes("zhihu_search_content"));
   assert.ok(zhihuPlatform.tools.includes("zhihu_get_content_detail_by_url"));
@@ -10041,7 +10201,6 @@ test("doctor json prints parseable safety summary", () => {
   assert.equal(instagramPlatform.registryName, "com.52choujiang/instagram-insights");
   assert.equal(instagramPlatform.futureRegistryName, "com.socialdatax/instagram-insights");
   assert.equal(instagramPlatform.defaultEndpoint, "https://mcp.socialdatax.com/instagram/mcp");
-  assert.equal(instagramPlatform.tools.length, 9);
   assert.ok(instagramPlatform.tools.includes("instagram_search_posts"));
   assert.ok(instagramPlatform.tools.includes("instagram_get_post_detail_by_post_id"));
   assert.ok(instagramPlatform.tools.includes("instagram_get_post_detail_by_post_url"));
@@ -10059,7 +10218,6 @@ test("doctor json prints parseable safety summary", () => {
   assert.equal(xPlatform.registryName, "com.52choujiang/x-insights");
   assert.equal(xPlatform.futureRegistryName, "com.socialdatax/x-insights");
   assert.equal(xPlatform.defaultEndpoint, "https://mcp.socialdatax.com/x/mcp");
-  assert.equal(xPlatform.tools.length, 12);
   assert.ok(xPlatform.tools.includes("x_search_posts"));
   assert.ok(xPlatform.tools.includes("x_get_post_detail_by_post_id"));
   assert.ok(xPlatform.tools.includes("x_get_post_detail_by_post_url"));
@@ -10080,7 +10238,6 @@ test("doctor json prints parseable safety summary", () => {
   assert.equal(youtubePlatform.registryName, "com.52choujiang/youtube-insights");
   assert.equal(youtubePlatform.futureRegistryName, "com.socialdatax/youtube-insights");
   assert.equal(youtubePlatform.defaultEndpoint, "https://mcp.socialdatax.com/youtube/mcp");
-  assert.equal(youtubePlatform.tools.length, 6);
   assert.ok(youtubePlatform.tools.includes("youtube_search_videos"));
   assert.ok(youtubePlatform.tools.includes("youtube_get_video_detail_by_url"));
   assert.ok(youtubePlatform.tools.includes("youtube_get_channel_info_by_url"));
@@ -10099,7 +10256,6 @@ test("doctor json prints parseable safety summary", () => {
   assert.equal(tiktokPlatform.registryName, "com.52choujiang/tiktok-insights");
   assert.equal(tiktokPlatform.futureRegistryName, "com.socialdatax/tiktok-insights");
   assert.equal(tiktokPlatform.defaultEndpoint, "https://mcp.socialdatax.com/tiktok/mcp");
-  assert.equal(tiktokPlatform.tools.length, 12);
   assert.ok(tiktokPlatform.tools.includes("tiktok_search_posts"));
   assert.ok(tiktokPlatform.tools.includes("tiktok_get_post_detail_by_url"));
   assert.ok(tiktokPlatform.tools.includes("tiktok_get_post_comments_by_post_id"));
@@ -10119,7 +10275,6 @@ test("doctor json prints parseable safety summary", () => {
   assert.equal(sensitiveCheckPlatform.registryName, undefined);
   assert.equal(sensitiveCheckPlatform.futureRegistryName, undefined);
   assert.equal(sensitiveCheckPlatform.defaultEndpoint, "https://mcp.socialdatax.com/sensitive-check/mcp");
-  assert.equal(sensitiveCheckPlatform.tools.length, 1);
   assert.ok(sensitiveCheckPlatform.tools.includes("check_sensitive_text"));
   const sensitiveTextTool = sensitiveCheckPlatform.toolDetails.find(
     (tool) => tool.name === "check_sensitive_text"
@@ -10207,7 +10362,7 @@ test("doctor json prints parseable safety summary", () => {
 test("README documents transcript job output as transcript plus content context", () => {
   const readme = readFileSync(join(packageDir, "README.md"), "utf8");
 
-  assert.match(readme, /Submit TikTok video speech-to-text transcript jobs through hosted MCP/);
+  assert.match(readme, /Submit TikTok video speech-to-text transcript jobs through `tiktok transcript` or hosted MCP/);
   assert.match(readme, /query an existing valid job_id directly/);
   assert.match(readme, /`tiktok_submit_video_speech_text_by_url`/);
   assert.match(readme, /`tiktok_submit_video_speech_text_by_aweme_id`/);
@@ -10680,6 +10835,7 @@ test("direct CLI README examples include public weibo, toutiao, and wechat actio
     'wechat detail --url "<wechat_work_url_or_share_text>"',
     'wechat decrypt-media --media-url "<video.video_url>" --output video.mp4',
     'wechat article --url "<mp_article_url_or_share_text>"',
+    'wechat article-stats --url "<mp_article_url_or_share_text>"',
     'wechat comments --object-id "<object_id>" --object-nonce-id "<object_nonce_id>"',
     'wechat comments --url "<wechat_video_url_or_share_text>"',
     'wechat replies --object-id "<object_id>" --object-nonce-id "<object_nonce_id>" --comment-id "<comment_id>"',
@@ -10699,6 +10855,7 @@ test("direct CLI README examples include public weibo, toutiao, and wechat actio
   );
   assert.match(readme, /WeChat Channels search filters use semantic values/);
   assert.match(readme, /wechat_get_mp_article_detail_by_url/);
+  assert.match(readme, /wechat_get_mp_article_stats_by_url/);
   assert.match(readme, /WeChat Content \/ 微信内容 hosted MCP endpoint/);
   assert.match(readme, /WeChat Official Account skills/);
   assert.match(readme, /微信公众号 skills/);
@@ -10707,7 +10864,7 @@ test("direct CLI README examples include public weibo, toutiao, and wechat actio
     readme,
     /WeChat Official Account \/ 微信公众号 article link or share text/
   );
-  assert.match(readme, /also reads WeChat Official Account article link details/);
+  assert.match(readme, /also reads WeChat Official Account article link details and statistics/);
   assert.doesNotMatch(
     readme,
     /creator content workflows for cross-platform content research across [^\n]*WeChat Official Account articles/,
@@ -10950,6 +11107,10 @@ test("direct platform subcommand help exits successfully", () => {
     flagHelp.stdout,
     /wechat article --url "<mp_article_url_or_share_text>"/
   );
+  assert.match(
+    flagHelp.stdout,
+    /wechat article-stats --url "<mp_article_url_or_share_text>"/
+  );
 
   const positionalHelp = runCli(["wechat", "article", "help"]);
 
@@ -10958,6 +11119,10 @@ test("direct platform subcommand help exits successfully", () => {
   assert.match(
     positionalHelp.stdout,
     /wechat article --url "<mp_article_url_or_share_text>"/
+  );
+  assert.match(
+    positionalHelp.stdout,
+    /wechat article-stats --url "<mp_article_url_or_share_text>"/
   );
 });
 
@@ -11021,24 +11186,9 @@ test("content research skill lists the WeChat video-link profile MCP entry", () 
     skill,
     /MCP-only tools not available through the direct CLI:[^\n]*`wechat_get_user_info_by_url`/
   );
-  assert.equal(
-    skill.match(/MCP-only tools not available through the direct CLI:/g)?.length,
-    1
-  );
-  const mcpOnlyOffset = skill.indexOf("MCP-only tools not available through the direct CLI:");
-  const sourceOfTruthOffset = skill.indexOf(
-    "Use the automatically listed MCP tools above as the source of truth"
-  );
-  assert.notEqual(mcpOnlyOffset, -1);
-  assert.notEqual(sourceOfTruthOffset, -1);
-  assert.ok(
-    mcpOnlyOffset < sourceOfTruthOffset,
-    "MCP-only tool names should be listed before the source-of-truth guidance"
-  );
-  assert.match(
-    skill,
-    /MCP-only tools not available through the direct CLI:[^\n]+\n\nUse the automatically listed MCP tools above/
-  );
+  assert.doesNotMatch(skill, /MCP-only tools not available through the direct CLI:/);
+  assert.match(skill, /wechat_get_user_info_by_url/);
+  assert.match(skill, /wechat user-info[\s\\]+--url/);
   assert.match(
     skill,
     /Prefer the direct CLI; hosted MCP tools are optional/

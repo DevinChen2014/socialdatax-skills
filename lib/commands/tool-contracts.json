@@ -1,0 +1,1341 @@
+{
+  "xhs_search_videos": {
+    "description": "按搜索词搜索小红书视频标签结果；已有笔记链接或 note_id，且需要读取该篇笔记详情时，使用对应详情工具。每项为视频笔记，note_type 固定为 video，支持 page_token 翻页；结果按平台相关性排序，不承诺每条内容包含原词，不承诺完整召回；需要排序或发布时间筛选时使用 xhs_search_notes(note_type=\"video\")；本工具不接受这些筛选参数；需要图片时使用 xhs_search_images。",
+    "parameters": {
+      "keyword": {
+        "type": "string",
+        "required": true
+      },
+      "page_token": {
+        "default": "",
+        "type": "string",
+        "required": false
+      }
+    }
+  },
+  "xhs_search_images": {
+    "description": "按搜索词搜索小红书图片；已有笔记链接或 note_id，且需要读取该篇笔记详情时，使用对应详情工具。每项为一张图片及关联笔记，同一笔记可返回多张图片；page_token 可用于尝试下一页，不保证下一页有结果；结果按平台相关性排序，不承诺每条内容包含原词，不承诺完整召回；需要图文笔记而非单张图片时使用 xhs_search_notes(note_type=\"image\")；需要视频时使用 xhs_search_videos。",
+    "parameters": {
+      "keyword": {
+        "type": "string",
+        "required": true
+      },
+      "page_token": {
+        "default": "",
+        "type": "string",
+        "required": false
+      }
+    }
+  },
+  "xhs_search_suggestions": {
+    "description": "根据搜索词获取小红书候选搜索建议，用于补全搜索词；需要实际搜索笔记或商品时，分别使用 xhs_search_notes 或 xhs_search_products。",
+    "parameters": {
+      "keyword": {
+        "type": "string",
+        "required": true
+      }
+    }
+  },
+  "xhs_search_users": {
+    "description": "按搜索词搜索小红书用户、账号或博主，支持分页；已有用户 ID 或主页链接时，使用用户资料工具。",
+    "parameters": {
+      "keyword": {
+        "minLength": 1,
+        "type": "string",
+        "required": true
+      },
+      "page_token": {
+        "default": "",
+        "type": "string",
+        "required": false
+      }
+    }
+  },
+  "xhs_search_products": {
+    "description": "搜索小红书商品。用户需要按搜索词查找商品时使用；已有完整 sku_id（包括用户直接提供）时使用商品详情或商品评价工具，已有商品链接或分享文案时使用 xhs_get_product_detail_by_url；支持 page_token 翻页。继续翻页时必须将返回的完整 next_page_token 原样作为 page_token 传回，不得截断、缩写、掩码或用省略号替换中间内容。",
+    "parameters": {
+      "keyword": {
+        "type": "string",
+        "required": true
+      },
+      "page_token": {
+        "default": "",
+        "type": "string",
+        "required": false
+      }
+    }
+  },
+  "xhs_get_product_detail_by_sku_id": {
+    "description": "根据小红书商品 sku_id 获取商品详情；已有该 ID 时直接使用，否则可从 xhs_search_products 获取。只有商品链接、短链接或分享文案时使用 xhs_get_product_detail_by_url；本工具不支持商品链接、spu_id 或搜索词。",
+    "parameters": {
+      "sku_id": {
+        "type": "string",
+        "required": true
+      }
+    }
+  },
+  "xhs_get_product_detail_by_url": {
+    "description": "根据小红书商品链接、短链接或分享文案获取商品详情，无需先搜索。已有完整 sku_id 时使用 xhs_get_product_detail_by_sku_id；返回的 sku_id 可继续用于商品评价工具。",
+    "parameters": {
+      "url": {
+        "type": "string",
+        "required": true
+      }
+    }
+  },
+  "xhs_get_product_reviews": {
+    "description": "根据小红书商品 sku_id 获取商品评价；已有该 ID 时直接使用，否则可从 xhs_search_products 获取；支持 sort_type、has_image 和 page_token 翻页。继续翻页时必须将返回的完整 next_page_token 原样作为 page_token 传回，不得截断、缩写、掩码或用省略号替换中间内容；不支持商品链接、spu_id 或搜索词。",
+    "parameters": {
+      "sku_id": {
+        "type": "string",
+        "required": true
+      },
+      "page_token": {
+        "default": "",
+        "type": "string",
+        "required": false
+      },
+      "sort_type": {
+        "default": "general",
+        "enum": [
+          "general",
+          "time_descending"
+        ],
+        "type": "string",
+        "required": false
+      },
+      "has_image": {
+        "default": false,
+        "type": "boolean",
+        "required": false
+      }
+    }
+  },
+  "xhs_get_product_review_replies": {
+    "description": "根据一级商品评价 review_id 获取其下回复；已有该 ID 时直接使用，否则可从 xhs_get_product_reviews 获取；支持 page_token 翻页。继续翻页时必须将返回的完整 next_page_token 原样作为 page_token 传回，不得截断、缩写、掩码或用省略号替换中间内容；不接受 root_review_id。",
+    "parameters": {
+      "review_id": {
+        "type": "string",
+        "required": true
+      },
+      "page_token": {
+        "default": "",
+        "type": "string",
+        "required": false
+      }
+    }
+  },
+  "xhs_get_product_review_reply_replies": {
+    "description": "根据商品评价回复 review_id 获取其下的嵌套回复；已有该 ID 时直接使用，否则可从 xhs_get_product_review_replies 获取；支持 page_token 翻页。继续翻页时必须将返回的完整 next_page_token 原样作为 page_token 传回，不得截断、缩写、掩码或用省略号替换中间内容；不接受 root_review_id。",
+    "parameters": {
+      "review_id": {
+        "type": "string",
+        "required": true
+      },
+      "page_token": {
+        "default": "",
+        "type": "string",
+        "required": false
+      }
+    }
+  },
+  "xhs_pgy_get_creator_profile": {
+    "description": "根据完整 user_id 获取小红书蒲公英创作者档案、粉丝和商业笔记规模、合作行业、笔记阅读与互动中位数、内容分类、特征标签和创作者图文/视频合作报价。\n查询蒲公英创作者资料和报价时使用；普通账号资料使用用户信息工具。\n笔记表现使用创作者笔记表现工具；粉丝画像使用创作者粉丝画像工具；指标随日期变化使用创作者指标趋势工具。图文和视频报价单位为人民币元；零值不表示免费合作。\n成功返回档案字段和 points；成功调用扣减 20 积分，失败不扣费。",
+    "parameters": {
+      "user_id": {
+        "pattern": "^[0-9a-f]{24}$",
+        "type": "string",
+        "required": true
+      }
+    }
+  },
+  "xhs_pgy_get_creator_notes_performance": {
+    "description": "根据完整 user_id 获取小红书蒲公英创作者笔记表现，包括笔记数量、曝光/阅读/互动中位数、互动率、视频完播率、图文 3 秒阅读率、内容标签和笔记明细。\n查询日常或合作笔记表现及最近明细时使用；商业汇总与成本参考使用商业概览工具，资料和报价使用创作者档案工具。\n视频完播相关字段仅在 video_note_count 大于 0 时用于表现判断；图文 3 秒阅读率仅在统计范围内有图文笔记时用于表现判断；其他情况下 0 值不表示对应表现为 0%。\n固定近30日、图文＋视频、全流量，不支持自选日期或笔记类型；明细最多 15 篇，不是全量列表。仅 notes[] 内的 *_benchmark_rate 是相较于平台中位数的相对差异，允许负数和超过 1，不能当作排名比例；汇总层同名字段仍是平台返回的 0 到 1 对比值，计算方式未公开，不能混用。\n成功返回表现字段和 points；成功调用扣减 20 积分，失败不扣费。",
+    "parameters": {
+      "user_id": {
+        "pattern": "^[0-9a-f]{24}$",
+        "type": "string",
+        "required": true
+      },
+      "note_scope": {
+        "default": "daily",
+        "enum": [
+          "daily",
+          "cooperation"
+        ],
+        "type": "string",
+        "required": false
+      }
+    }
+  },
+  "xhs_pgy_get_creator_fans_profile": {
+    "description": "根据完整 user_id 获取小红书蒲公英创作者粉丝画像，包括年龄、性别、地域、城市、兴趣和设备品牌分布及数据日期。\n查询粉丝构成时使用；粉丝规模、增长、活跃、阅读和互动情况使用创作者粉丝汇总工具；创作者资料和报价使用创作者档案工具。\n使用平台默认统计范围，不支持指定日期；分布不保证完整，不能据此推算粉丝人数或补齐其他类别。\n成功返回画像字段和 points；成功调用扣减 20 积分，失败不扣费。",
+    "parameters": {
+      "user_id": {
+        "pattern": "^[0-9a-f]{24}$",
+        "type": "string",
+        "required": true
+      }
+    }
+  },
+  "xhs_pgy_get_creator_fans_summary": {
+    "description": "根据完整 user_id 获取小红书蒲公英创作者粉丝总数、平台增长指标、活跃、阅读和互动粉丝人数及占比。\n查询粉丝规模和活跃情况时使用；年龄、性别、地域和兴趣等构成使用创作者粉丝画像工具。\n不支持指定日期或统计周期；增长周期及各统计窗口截止日期未提供，不能按查询日期推算，不承诺指定期间增长数据。\n成功直接返回汇总字段和 points；成功调用扣减 20 积分，失败不扣费。",
+    "parameters": {
+      "user_id": {
+        "pattern": "^[0-9a-f]{24}$",
+        "type": "string",
+        "required": true
+      }
+    }
+  },
+  "xhs_pgy_get_creator_metrics_trend": {
+    "description": "根据完整 user_id 获取小红书蒲公英创作者曝光、阅读、互动中位数及预估成本的日期趋势和概览。\n观察指标随时间变化时使用；中位数按 note_scope 选择日常或合作笔记，固定图文＋视频、近30日、全流量，不支持自选日期。合作口径包含进店指标，日常口径的进店字段为 null；输出回显口径，不能混用。\n返回指标不是每日新增量或累计总量，不可跨日期求和；可能缺少日期，不补零。\n成本估算口径见字段说明，不代表实际成交成本；按图文/视频拆分的成本及商业汇总使用商业概览工具，逐篇表现使用笔记表现工具。\n成功直接返回业务字段和 points；成功调用扣减 20 积分，失败不扣费。",
+    "parameters": {
+      "user_id": {
+        "pattern": "^[0-9a-f]{24}$",
+        "type": "string",
+        "required": true
+      },
+      "note_scope": {
+        "default": "daily",
+        "enum": [
+          "daily",
+          "cooperation"
+        ],
+        "type": "string",
+        "required": false
+      }
+    }
+  },
+  "xhs_pgy_get_creator_commercial_overview": {
+    "description": "根据完整 user_id 获取小红书蒲公英创作者商业概览：笔记规模和中位数、服务表现、平台标签、增长、预估成本及对比值。\n查询指定日常/合作口径的商业汇总与成本参考时使用，不返回逐篇明细。逐篇表现使用创作者笔记表现工具，也可选择日常或合作口径。资料与报价使用创作者档案工具，粉丝构成使用粉丝画像工具。\n查看日常内容表现选 daily（默认，不是按天汇总）；查看商单、品牌合作笔记或外溢进店的汇总表现选 cooperation。输出回显口径，不能混用；不是对全部字段统一筛选，note_count 不能解释为所选口径的笔记数。两种口径的成本估计依据不同，均不代表实际成交成本或ROI。\n不支持指定日期，统计截止日期未提供；进店不等于订单或成交，不据此推断调用方自己的投放成绩。\n成功直接返回业务字段和 points；成功调用扣减 20 积分，失败不扣费。",
+    "parameters": {
+      "user_id": {
+        "pattern": "^[0-9a-f]{24}$",
+        "type": "string",
+        "required": true
+      },
+      "note_scope": {
+        "default": "daily",
+        "enum": [
+          "daily",
+          "cooperation"
+        ],
+        "type": "string",
+        "required": false
+      }
+    }
+  },
+  "xhs_get_topic_notes_by_page_id": {
+    "description": "根据 page_id 获取标签页笔记列表，支持 sort_type 排序和 page_token 翻页。",
+    "parameters": {
+      "page_id": {
+        "type": "string",
+        "required": true
+      },
+      "page_token": {
+        "default": "",
+        "type": "string",
+        "required": false
+      },
+      "sort_type": {
+        "default": "hot",
+        "enum": [
+          "hot",
+          "time_descending"
+        ],
+        "type": "string",
+        "required": false
+      }
+    }
+  },
+  "xhs_get_topic_notes_by_topic_url": {
+    "description": "根据话题页链接、短链接或分享文案获取标签页笔记列表，支持 sort_type 排序和 page_token 翻页。",
+    "parameters": {
+      "topic_url": {
+        "type": "string",
+        "required": true
+      },
+      "page_token": {
+        "default": "",
+        "type": "string",
+        "required": false
+      },
+      "sort_type": {
+        "default": "hot",
+        "enum": [
+          "hot",
+          "time_descending"
+        ],
+        "type": "string",
+        "required": false
+      }
+    }
+  },
+  "xhs_get_user_id_by_encrypted_user_id": {
+    "description": "根据完整加密用户 ID 获取稳定 user_id。",
+    "parameters": {
+      "encrypted_user_id": {
+        "type": "string",
+        "required": true
+      }
+    }
+  },
+  "douyin_get_user_info_by_douyin_id": {
+    "description": "根据用户主页展示的抖音号 douyin_id 获取用户资料。",
+    "parameters": {
+      "douyin_id": {
+        "type": "string",
+        "required": true
+      }
+    }
+  },
+  "douyin_search_suggestions": {
+    "description": "获取抖音普通搜索输入框联想词；不用于搜索作品、用户或商品，也不要传 page_token。",
+    "parameters": {
+      "keyword": {
+        "type": "string",
+        "required": true
+      }
+    }
+  },
+  "douyin_search_users": {
+    "description": "搜索抖音用户、账号、博主、创作者或达人，支持 page_token 翻页。用户需要按搜索词查找用户时使用；已有 sec_user_id 或用户主页链接时使用相应用户资料或列表工具；不用于搜索作品。",
+    "parameters": {
+      "keyword": {
+        "type": "string",
+        "required": true
+      },
+      "page_token": {
+        "default": "",
+        "type": "string",
+        "required": false
+      },
+      "follower_count_range": {
+        "default": "all",
+        "enum": [
+          "all",
+          "under_1k",
+          "1k_to_10k",
+          "10k_to_100k",
+          "100k_to_1m",
+          "over_1m"
+        ],
+        "type": "string",
+        "required": false
+      },
+      "user_type": {
+        "default": "all",
+        "enum": [
+          "all",
+          "regular_user",
+          "enterprise_verified",
+          "individual_verified"
+        ],
+        "type": "string",
+        "required": false
+      }
+    }
+  },
+  "douyin_search_products": {
+    "description": "用户需要按关键词查找抖音全局搜索中的商品时使用；支持排序、价格、服务和卖点筛选，返回归一化商品列表与不透明分页令牌。当前服务提供详情工具时：已有 product_id 时直接使用 douyin_get_product_detail_by_product_id；已有商品链接或分享文案时使用 douyin_get_product_detail_by_url。不用于搜索作品或用户，也不表示商城频道内完整搜索链路。",
+    "parameters": {
+      "keyword": {
+        "type": "string",
+        "required": true
+      },
+      "page_token": {
+        "default": "",
+        "type": "string",
+        "required": false
+      },
+      "sort_type": {
+        "default": "general",
+        "enum": [
+          "general",
+          "sales_descending",
+          "price_ascending",
+          "price_descending"
+        ],
+        "type": "string",
+        "required": false
+      },
+      "min_price": {
+        "anyOf": [
+          {
+            "exclusiveMinimum": 0,
+            "type": "integer"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "required": false,
+        "type": [
+          "integer",
+          "null"
+        ]
+      },
+      "max_price": {
+        "anyOf": [
+          {
+            "exclusiveMinimum": 0,
+            "type": "integer"
+          },
+          {
+            "type": "null"
+          }
+        ],
+        "default": null,
+        "required": false,
+        "type": [
+          "integer",
+          "null"
+        ]
+      },
+      "only_live": {
+        "default": false,
+        "type": "boolean",
+        "required": false
+      },
+      "dispatch_within_24h": {
+        "default": false,
+        "type": "boolean",
+        "required": false
+      },
+      "shipping_insurance": {
+        "default": false,
+        "type": "boolean",
+        "required": false
+      },
+      "seven_day_return": {
+        "default": false,
+        "type": "boolean",
+        "required": false
+      },
+      "selling_point": {
+        "default": "all",
+        "enum": [
+          "all",
+          "high_sales",
+          "high_rating"
+        ],
+        "type": "string",
+        "required": false
+      },
+      "official_store": {
+        "default": false,
+        "type": "boolean",
+        "required": false
+      }
+    }
+  },
+  "douyin_get_product_detail_by_product_id": {
+    "description": "根据 product_id 读取抖音商品详情；已有完整商品 ID（包括用户直接提供）时直接使用，无需先搜索；否则可从 douyin_search_products 获取。只有商品链接或分享文案时使用 douyin_get_product_detail_by_url。",
+    "parameters": {
+      "product_id": {
+        "type": "string",
+        "required": true
+      }
+    }
+  },
+  "douyin_get_product_detail_by_url": {
+    "description": "根据抖音商品链接或分享文案读取商品详情；只有链接类输入时使用此入口。",
+    "parameters": {
+      "url": {
+        "type": "string",
+        "required": true
+      }
+    }
+  },
+  "tiktok_search_suggestions": {
+    "description": "获取 TikTok 搜索框联想词，不返回作品或用户详情，不支持分页；可将 text 用于作品搜索，已有明确搜索词时可直接搜索作品；已有作品或用户主页链接时使用对应详情工具。",
+    "parameters": {
+      "keyword": {
+        "minLength": 1,
+        "pattern": ".*\\S.*",
+        "type": "string",
+        "required": true
+      }
+    }
+  },
+  "tiktok_search_users": {
+    "description": "搜索 TikTok 用户。用户需要按搜索词查找用户时使用；\n已知准确账号且只需其资料或作品时使用相应用户工具，无需先搜索；支持 page_token 翻页。",
+    "parameters": {
+      "keyword": {
+        "minLength": 1,
+        "pattern": ".*\\S.*",
+        "type": "string",
+        "required": true
+      },
+      "page_token": {
+        "default": "",
+        "type": "string",
+        "required": false
+      }
+    }
+  },
+  "weibo_search_users": {
+    "description": "按关键词搜索微博用户，返回用户标识、名称、头像、主页、粉丝数和认证说明。查找帖子使用帖子搜索；已有 user_id 或主页链接时使用用户详情工具。支持 page_token 翻页，各页结果可能重复；是否结束以 next_page_token 为空为准。",
+    "parameters": {
+      "keyword": {
+        "minLength": 1,
+        "type": "string",
+        "required": true
+      },
+      "page_token": {
+        "default": "",
+        "type": "string",
+        "required": false
+      }
+    }
+  },
+  "weibo_search_suggestions": {
+    "description": "获取微博搜索框联想词，不返回帖子或用户详情，不支持分页；可将 text 用于帖子搜索，已有明确搜索词时可直接搜索帖子；已有帖子或用户主页链接时使用对应详情工具。",
+    "parameters": {
+      "keyword": {
+        "minLength": 1,
+        "type": "string",
+        "required": true
+      }
+    }
+  },
+  "wechat_search_finder_user": {
+    "description": "按关键词或视频号 ID 查找微信视频号用户，支持 page_token 分页；返回的 user_id 可用于查询用户资料和发布作品。已有 user_id 或作品链接时直接使用用户资料工具；不搜索微信联系人或公众号。",
+    "parameters": {
+      "keyword": {
+        "minLength": 1,
+        "type": "string",
+        "required": true
+      },
+      "page_token": {
+        "default": "",
+        "type": "string",
+        "required": false
+      }
+    }
+  },
+  "wechat_search_mp_articles": {
+    "description": "按搜索词查找微信公众号文章，支持排序、发布时间筛选和分页；不要传文章链接或公众号账号 ID。\n\n读取全文时，将结果的 article_url 作为 url 传给 wechat_get_mp_article_detail_by_url；\n查看指定公众号发布的文章请用 wechat_get_mp_account_articles_by_account_id。",
+    "parameters": {
+      "keyword": {
+        "maxLength": 100,
+        "minLength": 1,
+        "type": "string",
+        "required": true
+      },
+      "page_token": {
+        "default": "",
+        "type": "string",
+        "required": false
+      },
+      "sort_type": {
+        "default": "general",
+        "enum": [
+          "general",
+          "time_descending",
+          "hot"
+        ],
+        "type": "string",
+        "required": false
+      },
+      "publish_time_range": {
+        "default": "all",
+        "enum": [
+          "all",
+          "day",
+          "week",
+          "half_year"
+        ],
+        "type": "string",
+        "required": false
+      }
+    }
+  },
+  "wechat_get_mp_account_info_by_account_id": {
+    "description": "根据公众号账号 ID 获取账号资料。",
+    "parameters": {
+      "account_id": {
+        "type": "string",
+        "required": true
+      }
+    }
+  },
+  "wechat_get_mp_account_articles_by_account_id": {
+    "description": "根据公众号账号 ID 获取文章列表。",
+    "parameters": {
+      "account_id": {
+        "type": "string",
+        "required": true
+      },
+      "page_token": {
+        "default": "",
+        "type": "string",
+        "required": false
+      }
+    }
+  },
+  "wechat_get_mp_article_comments_by_url": {
+    "description": "根据微信公众号文章链接或包含链接的分享文案获取评论列表；继续翻页时复用返回的 next_page_token。",
+    "parameters": {
+      "url": {
+        "type": "string",
+        "required": true
+      },
+      "page_token": {
+        "default": "",
+        "type": "string",
+        "required": false
+      }
+    }
+  },
+  "wechat_get_mp_article_comment_replies_by_url": {
+    "description": "根据微信公众号文章链接（或包含链接的分享文案）获取评论回复；可传一级评论 ID 指定评论，省略时自动选择有回复的评论。",
+    "parameters": {
+      "url": {
+        "type": "string",
+        "required": true
+      },
+      "comment_id": {
+        "default": "",
+        "type": "string",
+        "required": false
+      },
+      "page_token": {
+        "default": "",
+        "type": "string",
+        "required": false
+      }
+    }
+  },
+  "wechat_get_video_share_url_by_object_id": {
+    "description": "根据微信视频号作品 object_id 获取分享链接；只接受数值 object_id。",
+    "parameters": {
+      "object_id": {
+        "type": "string",
+        "required": true
+      }
+    }
+  },
+  "zhihu_search_users": {
+    "description": "按关键词搜索知乎用户；已有用户主页链接时直接调用用户资料接口。支持 page_token 翻页。",
+    "parameters": {
+      "keyword": {
+        "type": "string",
+        "required": true
+      },
+      "page_token": {
+        "default": "",
+        "type": "string",
+        "required": false
+      }
+    }
+  },
+  "zhihu_search_suggestions": {
+    "description": "根据关键词获取知乎搜索输入框联想词；不用于搜索用户或内容。",
+    "parameters": {
+      "keyword": {
+        "type": "string",
+        "required": true
+      }
+    }
+  },
+  "instagram_search_tags": {
+    "description": "按关键词搜索 Instagram 标签，返回标签 ID、名称及帖子数。用于发现标签，不返回标签下的帖子；当前仅支持首屏，不支持翻页。",
+    "parameters": {
+      "keyword": {
+        "maxLength": 256,
+        "minLength": 1,
+        "type": "string",
+        "required": true
+      }
+    }
+  },
+  "instagram_search_users": {
+    "description": "按关键词搜索 Instagram 用户，返回公开账号资料及分页令牌。用于按名称发现账号；已知 username 或主页链接时，使用用户详情工具。未知昵称返回空字符串，未知头像或认证、私密状态返回 null。",
+    "parameters": {
+      "keyword": {
+        "maxLength": 256,
+        "minLength": 1,
+        "type": "string",
+        "required": true
+      },
+      "page_token": {
+        "default": "",
+        "type": "string",
+        "required": false
+      }
+    }
+  },
+  "x_search_users": {
+    "description": "按关键词搜索 X / Twitter 用户，返回用户资料和分页令牌，支持 page_token 翻页。用于按名称发现账号；已知 user_id、username 或主页链接时，使用对应用户详情工具。",
+    "parameters": {
+      "keyword": {
+        "minLength": 1,
+        "type": "string",
+        "required": true
+      },
+      "page_token": {
+        "default": "",
+        "type": "string",
+        "required": false
+      }
+    }
+  },
+  "x_search_suggestions": {
+    "description": "获取 X / Twitter 搜索框的关键词联想，不返回帖子或推荐用户，不支持分页。可将返回的 text 用于帖子搜索；已有明确搜索词时可直接搜索帖子。",
+    "parameters": {
+      "keyword": {
+        "minLength": 1,
+        "type": "string",
+        "required": true
+      }
+    }
+  },
+  "bilibili_search_users": {
+    "description": "按关键词搜索 Bilibili 用户；已有 user_id 或用户主页链接时使用对应用户资料工具。支持 page_token 翻页。",
+    "parameters": {
+      "keyword": {
+        "type": "string",
+        "required": true
+      },
+      "page_token": {
+        "default": "",
+        "type": "string",
+        "required": false
+      }
+    }
+  },
+  "bilibili_search_suggestions": {
+    "description": "根据关键词获取Bilibili搜索输入框联想词；不用于搜索用户或内容。",
+    "parameters": {
+      "keyword": {
+        "type": "string",
+        "required": true
+      }
+    }
+  },
+  "kuaishou_search_suggestions": {
+    "description": "根据关键词获取快手普通搜索输入框中的搜索建议；不用于搜索作品或用户。",
+    "parameters": {
+      "keyword": {
+        "type": "string",
+        "required": true
+      }
+    }
+  },
+  "youtube_search_channels": {
+    "description": "按关键词搜索 YouTube 频道或创作者，返回频道摘要，支持 page_token 翻页；已有频道主页链接时读取频道资料，搜索视频时使用视频搜索。",
+    "parameters": {
+      "keyword": {
+        "minLength": 1,
+        "type": "string",
+        "required": true
+      },
+      "page_token": {
+        "default": "",
+        "type": "string",
+        "required": false
+      }
+    }
+  },
+  "youtube_search_suggestions": {
+    "description": "获取 YouTube 搜索框联想词，不返回视频或频道详情，不支持分页；可将 text 用于视频搜索，已有明确搜索词时可直接搜索视频；已有视频或频道链接时使用对应详情工具。",
+    "parameters": {
+      "keyword": {
+        "minLength": 1,
+        "type": "string",
+        "required": true
+      }
+    }
+  },
+  "toutiao_search_users": {
+    "description": "按关键词查找今日头条用户，返回用户 ID、名称、简介、粉丝数和认证说明，支持分页；已有用户 ID 或主页链接时直接查询用户资料。",
+    "parameters": {
+      "keyword": {
+        "minLength": 1,
+        "type": "string",
+        "required": true
+      },
+      "page_token": {
+        "default": "",
+        "type": "string",
+        "required": false
+      }
+    }
+  },
+  "toutiao_search_suggestions": {
+    "description": "获取今日头条搜索输入框的联想词；不返回用户或内容详情，不支持分页。",
+    "parameters": {
+      "keyword": {
+        "minLength": 1,
+        "type": "string",
+        "required": true
+      }
+    }
+  },
+  "baidu_tieba_get_forum_posts": {
+    "description": "按准确吧名浏览普通帖和置顶帖，无需关键词，支持分页，支持排序或仅查看精华帖。\n\n精华帖仅支持默认顺序，不提供分类选项。按关键词查找吧内帖子使用 baidu_tieba_search_posts_in_forum；\n只查询贴吧简介和统计使用 baidu_tieba_get_forum_detail。摘要和媒体可能不完整。",
+    "parameters": {
+      "forum_name": {
+        "minLength": 1,
+        "type": "string",
+        "required": true
+      },
+      "page_token": {
+        "default": "",
+        "type": "string",
+        "required": false
+      },
+      "sort_type": {
+        "default": "default",
+        "enum": [
+          "default",
+          "newest",
+          "latest_reply",
+          "hot"
+        ],
+        "type": "string",
+        "required": false
+      },
+      "featured_only": {
+        "default": false,
+        "type": "boolean",
+        "required": false
+      }
+    }
+  },
+  "baidu_tieba_get_forum_detail": {
+    "description": "按准确吧名获取贴吧简介、标语、建吧日期、关注人数、帖子统计和友情链接贴吧。\n\n不知道准确吧名时，先用 baidu_tieba_search_suggestions 获取 forum_name；\n按关键词查找吧内帖子时，使用 baidu_tieba_search_posts_in_forum；无需关键词浏览时使用 baidu_tieba_get_forum_posts。",
+    "parameters": {
+      "forum_name": {
+        "minLength": 1,
+        "type": "string",
+        "required": true
+      }
+    }
+  },
+  "baidu_tieba_search_suggestions": {
+    "description": "获取贴吧搜索框的吧名联想词和相关贴吧信息，不搜索帖子或用户，不支持分页。\n\nitems 与 forums 为两组独立结果，不保证一一对应；可将 forums 中的 forum_name 传给 baidu_tieba_get_forum_detail 查询贴吧详情，或传给 baidu_tieba_search_posts_in_forum 按关键词搜索吧内帖子。",
+    "parameters": {
+      "keyword": {
+        "minLength": 1,
+        "type": "string",
+        "required": true
+      }
+    }
+  },
+  "baidu_tieba_search_users": {
+    "description": "按关键词查找百度贴吧用户，返回精确匹配和相关用户的单页结果，不支持分页。\n\n结果中的 profile_url 可用于读取用户资料或用户发帖；已有用户主页链接时，直接使用相应的用户资料或发帖工具。",
+    "parameters": {
+      "keyword": {
+        "minLength": 1,
+        "type": "string",
+        "required": true
+      }
+    }
+  },
+  "baidu_tieba_search_general": {
+    "description": "按关键词获取百度贴吧综合搜索中的帖子，保留帖子顺序，支持分页。\n\n不返回吧、用户、话题或搜索建议。需要最新、最早、相关排序时使用帖子搜索；\n指定帖子链接或 ID 使用详情工具。当前页没有帖子时，仍以 next_page_token 判断能否续页。\n图片、视频仅来自搜索结果，可能不完整，无法据此判断媒体总数。",
+    "parameters": {
+      "keyword": {
+        "minLength": 1,
+        "type": "string",
+        "required": true
+      },
+      "page_token": {
+        "default": "",
+        "type": "string",
+        "required": false
+      }
+    }
+  },
+  "baidu_tieba_search_posts": {
+    "description": "按搜索词搜索百度贴吧公开帖子，支持分页令牌和排序；需要综合搜索中的帖子顺序时使用综合搜索，指定帖子链接使用详情工具；需要限定贴吧时使用 baidu_tieba_search_posts_in_forum。图片、视频仅来自搜索结果，可能不完整。",
+    "parameters": {
+      "keyword": {
+        "minLength": 1,
+        "type": "string",
+        "required": true
+      },
+      "page_token": {
+        "default": "",
+        "type": "string",
+        "required": false
+      },
+      "sort_type": {
+        "default": "newest",
+        "enum": [
+          "newest",
+          "oldest",
+          "relevance"
+        ],
+        "type": "string",
+        "required": false
+      }
+    }
+  },
+  "baidu_tieba_get_post_detail_by_thread_id": {
+    "description": "按主题帖数字 ID 读取百度贴吧详情；不包含完整回复列表。",
+    "parameters": {
+      "thread_id": {
+        "pattern": "^[0-9]+$",
+        "type": "string",
+        "required": true
+      }
+    }
+  },
+  "baidu_tieba_get_post_detail_by_url": {
+    "description": "按百度贴吧主题帖链接读取详情；不包含完整回复列表。",
+    "parameters": {
+      "url": {
+        "pattern": "https?://",
+        "type": "string",
+        "required": true
+      }
+    }
+  },
+  "baidu_tieba_get_post_comments_by_thread_id": {
+    "description": "按主题帖数字 ID 读取百度贴吧一级评论，支持排序和分页，不包含楼中楼回复。",
+    "parameters": {
+      "thread_id": {
+        "pattern": "^[0-9]+$",
+        "type": "string",
+        "required": true
+      },
+      "page_token": {
+        "default": "",
+        "type": "string",
+        "required": false
+      },
+      "sort_type": {
+        "default": "hot",
+        "enum": [
+          "newest",
+          "oldest",
+          "hot"
+        ],
+        "type": "string",
+        "required": false
+      }
+    }
+  },
+  "baidu_tieba_get_post_comments_by_url": {
+    "description": "按百度贴吧主题帖链接读取一级评论，支持排序和分页，不包含楼中楼回复。",
+    "parameters": {
+      "url": {
+        "pattern": "https?://",
+        "type": "string",
+        "required": true
+      },
+      "page_token": {
+        "default": "",
+        "type": "string",
+        "required": false
+      },
+      "sort_type": {
+        "default": "hot",
+        "enum": [
+          "newest",
+          "oldest",
+          "hot"
+        ],
+        "type": "string",
+        "required": false
+      }
+    }
+  },
+  "baidu_tieba_get_post_comment_replies": {
+    "description": "按主题帖 ID 和一级评论 ID 读取楼中楼回复，支持分页，不提供排序。\n\ncomment_id 取一级评论列表的 comment_id；读取帖子一级评论使用评论列表工具。",
+    "parameters": {
+      "thread_id": {
+        "pattern": "^[1-9][0-9]*$",
+        "type": "string",
+        "required": true
+      },
+      "comment_id": {
+        "pattern": "^[1-9][0-9]*$",
+        "type": "string",
+        "required": true
+      },
+      "page_token": {
+        "default": "",
+        "type": "string",
+        "required": false
+      }
+    }
+  },
+  "baidu_tieba_search_posts_in_forum": {
+    "description": "按准确贴吧名称和关键词搜索该吧主题帖，支持最新或相关排序及分页，不搜索评论。\n\n不限定贴吧时使用全站帖子搜索；返回摘要及可能不完整的图片和视频。",
+    "parameters": {
+      "forum_name": {
+        "minLength": 1,
+        "type": "string",
+        "required": true
+      },
+      "keyword": {
+        "minLength": 1,
+        "type": "string",
+        "required": true
+      },
+      "sort_type": {
+        "default": "newest",
+        "enum": [
+          "newest",
+          "relevance",
+          "relevant"
+        ],
+        "type": "string",
+        "required": false
+      },
+      "page_token": {
+        "default": "",
+        "type": "string",
+        "required": false
+      }
+    }
+  },
+  "baidu_tieba_get_user_info_by_user_id": {
+    "description": "仅有百度贴吧数字用户 ID 时读取用户资料及主页统计；已有 profile_url 时优先使用 baidu_tieba_get_user_info_by_profile_url。",
+    "parameters": {
+      "user_id": {
+        "pattern": "^[1-9][0-9]{0,18}$",
+        "type": "string",
+        "required": true
+      }
+    }
+  },
+  "baidu_tieba_get_user_info_by_profile_url": {
+    "description": "通过百度贴吧用户主页链接读取资料、签名、粉丝数、关注数、累计获赞、吧龄和 IP 属地。\n\n已有 profile_url 时优先使用本工具；链接可取搜索、帖子详情或评论作者的同名字段。\n仅有数字用户 ID 时使用 baidu_tieba_get_user_info_by_user_id；不返回发帖或回复列表。",
+    "parameters": {
+      "profile_url": {
+        "minLength": 1,
+        "type": "string",
+        "required": true
+      }
+    }
+  },
+  "baidu_tieba_get_user_posts_by_user_id": {
+    "description": "按数字用户 ID 读取该用户发布的主题帖，支持分页，不包含回复活动，不提供排序。\n\n已有主页链接时优先使用 baidu_tieba_get_user_posts_by_profile_url；列表及媒体不保证完整，空令牌表示本次可读取列表结束。",
+    "parameters": {
+      "user_id": {
+        "pattern": "^[1-9][0-9]{0,18}$",
+        "type": "string",
+        "required": true
+      },
+      "page_token": {
+        "default": "",
+        "type": "string",
+        "required": false
+      }
+    }
+  },
+  "baidu_tieba_get_user_posts_by_profile_url": {
+    "description": "按主页链接读取该用户发布的主题帖，支持分页，不包含回复活动，不提供排序。\n\n已有 profile_url 时优先使用本工具；仅有数字用户 ID 时使用 baidu_tieba_get_user_posts_by_user_id。\n列表及媒体不保证完整，空令牌表示本次可读取列表结束。",
+    "parameters": {
+      "profile_url": {
+        "minLength": 1,
+        "type": "string",
+        "required": true
+      },
+      "page_token": {
+        "default": "",
+        "type": "string",
+        "required": false
+      }
+    }
+  },
+  "baidu_tieba_get_user_followed_forums_by_user_id": {
+    "description": "按数字用户 ID 读取用户公开可读取的关注贴吧列表，支持分页，返回贴吧 ID、名称、头像、链接和用户在吧内的等级。\n\n已有 profile_url 时优先使用 baidu_tieba_get_user_followed_forums_by_profile_url；不查询关注的用户或用户发帖，未提供列表时返回错误。",
+    "parameters": {
+      "user_id": {
+        "pattern": "^[1-9][0-9]{0,18}$",
+        "type": "string",
+        "required": true
+      },
+      "page_token": {
+        "default": "",
+        "type": "string",
+        "required": false
+      }
+    }
+  },
+  "baidu_tieba_get_user_followed_forums_by_profile_url": {
+    "description": "按主页链接读取用户公开可读取的关注贴吧列表，支持分页，返回贴吧 ID、名称、头像、链接和用户在吧内的等级。\n\n已有 profile_url 时优先使用本工具；仅有数字用户 ID 时使用 baidu_tieba_get_user_followed_forums_by_user_id。\n不查询关注的用户或用户发帖，未提供列表时返回错误。",
+    "parameters": {
+      "profile_url": {
+        "minLength": 1,
+        "type": "string",
+        "required": true
+      },
+      "page_token": {
+        "default": "",
+        "type": "string",
+        "required": false
+      }
+    }
+  },
+  "search_api_docs": {
+    "description": "搜索公开 SocialDataX API 目录中的具体操作；需要单个接口的完整文档时，将返回的 operation_id 传给 get_api_operation；仅在用户明确请求完整 OpenAPI 3.1 规范时使用 get_openapi_spec。",
+    "parameters": {
+      "query": {
+        "default": "",
+        "type": "string",
+        "required": false
+      },
+      "platform_id": {
+        "default": "",
+        "enum": [
+          "",
+          "account",
+          "xhs",
+          "douyin",
+          "tiktok",
+          "kuaishou",
+          "bilibili",
+          "baidu-tieba",
+          "weibo",
+          "wechat",
+          "zhihu",
+          "instagram",
+          "x",
+          "youtube",
+          "toutiao",
+          "media_transcript"
+        ],
+        "type": "string",
+        "required": false
+      },
+      "surface": {
+        "default": "",
+        "enum": [
+          "",
+          "http"
+        ],
+        "type": "string",
+        "required": false
+      },
+      "limit": {
+        "default": 20,
+        "maximum": 50,
+        "minimum": 1,
+        "type": "integer",
+        "required": false
+      },
+      "offset": {
+        "default": 0,
+        "minimum": 0,
+        "type": "integer",
+        "required": false
+      }
+    }
+  },
+  "get_api_operation": {
+    "description": "根据目录中的 operation_id 返回单个公开 API 操作文档，包括方法与路径、认证与计费、请求/响应 schema 和示例，以及 related_mcp_tools 对应关系。",
+    "parameters": {
+      "operation_id": {
+        "type": "string",
+        "required": true
+      }
+    }
+  },
+  "get_openapi_spec": {
+    "description": "返回公开 SocialDataX OpenAPI 3.1 规范；单个接口文档使用 get_api_operation，仅在用户明确请求所有接口的全量 schema 或完整 OpenAPI 3.1 规范时使用。",
+    "parameters": {}
+  },
+  "socialdatax_get_points_balance": {
+    "description": "查询当前 API Key 账户的 SocialDataX 积分余额、剩余积分或点数 / remaining points balance。需要充值时请访问 https://socialdatax.com/dashboard/billing。",
+    "parameters": {}
+  },
+  "tiktok_submit_video_speech_text_by_url": {
+    "description": "提交 TikTok 视频口播转文字任务；提交后最多等待 240 秒，未完成时返回 job_id 和下一步查询动作。",
+    "parameters": {
+      "video_url": {
+        "type": "string",
+        "required": true
+      }
+    }
+  },
+  "tiktok_submit_video_speech_text_by_aweme_id": {
+    "description": "根据 TikTok 视频 aweme_id 提交口播转文字任务；可直接使用视频 post_id，提交后最多等待 240 秒，未完成时返回 job_id 和下一步查询动作。",
+    "parameters": {
+      "aweme_id": {
+        "type": "string",
+        "required": true
+      }
+    }
+  },
+  "tiktok_get_video_speech_text_job": {
+    "description": "根据用户提供的有效 job_id，或 submit 工具返回的 job_id 查询 TikTok 视频口播转文字任务状态；用于继续未完成任务，每次最多等待 240 秒，不触发重处理，也不要重复提交任务。",
+    "parameters": {
+      "job_id": {
+        "type": "string",
+        "required": true
+      }
+    }
+  },
+  "weibo_get_post_liker_list_by_post_url": {
+    "description": "根据帖子链接、短链接或分享文案获取微博点赞用户列表，支持 page_token 翻页。",
+    "parameters": {
+      "post_url": {
+        "type": "string",
+        "required": true
+      },
+      "page_token": {
+        "default": "",
+        "type": "string",
+        "required": false
+      }
+    }
+  },
+  "weibo_get_post_repost_list_by_post_url": {
+    "description": "根据帖子链接、短链接或分享文案获取微博转发列表，支持 page_token 翻页。",
+    "parameters": {
+      "post_url": {
+        "type": "string",
+        "required": true
+      },
+      "page_token": {
+        "default": "",
+        "type": "string",
+        "required": false
+      }
+    }
+  },
+  "zhihu_submit_video_speech_text_by_video_url": {
+    "description": "根据知乎独立视频页或带视频回答页链接提交口播转文字任务；提交后最多等待 240 秒，未完成时返回 job_id 和下一步查询动作。",
+    "parameters": {
+      "video_url": {
+        "type": "string",
+        "required": true
+      }
+    }
+  },
+  "zhihu_submit_video_speech_text_by_zvideo_id": {
+    "description": "根据知乎独立视频的数字 zvideo_id 提交口播转文字任务；提交后最多等待 240 秒，未完成时返回 job_id 和下一步查询动作。",
+    "parameters": {
+      "zvideo_id": {
+        "type": "string",
+        "required": true
+      }
+    }
+  },
+  "zhihu_get_video_speech_text_job": {
+    "description": "根据用户提供的有效 job_id，或 submit 工具返回的 job_id 查询知乎视频口播转文字任务；每次最多等待 240 秒，不触发重处理，也不要重复提交任务。",
+    "parameters": {
+      "job_id": {
+        "type": "string",
+        "required": true
+      }
+    }
+  },
+  "instagram_submit_video_speech_text_by_post_url": {
+    "description": "根据 Instagram 普通视频帖子或 Reels 链接提交口播转文字任务；图片帖和轮播帖不支持，提交后最多等待 240 秒，未完成时返回 job_id 和下一步查询动作。",
+    "parameters": {
+      "post_url": {
+        "type": "string",
+        "required": true
+      }
+    }
+  },
+  "instagram_submit_video_speech_text_by_post_id": {
+    "description": "根据 Instagram 普通视频帖子或 Reels 的 post_id 提交口播转文字任务；图片帖和轮播帖不支持，提交后最多等待 240 秒，未完成时返回 job_id 和下一步查询动作。",
+    "parameters": {
+      "post_id": {
+        "type": "string",
+        "required": true
+      }
+    }
+  },
+  "instagram_get_video_speech_text_job": {
+    "description": "根据有效 job_id 查询 Instagram 口播转文字任务；用户已提供时直接使用，否则使用 submit 工具返回的 job_id；每次最多等待 240 秒，不触发重处理，也不要重复提交任务。",
+    "parameters": {
+      "job_id": {
+        "type": "string",
+        "required": true
+      }
+    }
+  },
+  "x_submit_video_speech_text_by_post_url": {
+    "description": "根据 X / Twitter 视频帖子链接提交口播转文字任务；只处理当前帖子自身首个可用 MP4 视频，提交后最多等待 240 秒，未完成时返回 job_id 和下一步查询动作。",
+    "parameters": {
+      "post_url": {
+        "type": "string",
+        "required": true
+      }
+    }
+  },
+  "x_submit_video_speech_text_by_post_id": {
+    "description": "根据 X / Twitter 视频帖子的 post_id 提交口播转文字任务；只处理当前帖子自身首个可用 MP4 视频，提交后最多等待 240 秒，未完成时返回 job_id 和下一步查询动作。",
+    "parameters": {
+      "post_id": {
+        "type": "string",
+        "required": true
+      }
+    }
+  },
+  "x_get_video_speech_text_job": {
+    "description": "根据用户提供的有效 job_id，或 submit 工具返回的 job_id 查询 X / Twitter 口播转文字任务；每次最多等待 240 秒，不触发重处理，也不要重复提交任务。",
+    "parameters": {
+      "job_id": {
+        "type": "string",
+        "required": true
+      }
+    }
+  },
+  "bilibili_submit_video_speech_text_by_video_url": {
+    "description": "根据 Bilibili 视频链接、短链接或分享文案提交口播转文字任务；每次处理一个分 P，提交后最多等待 240 秒，未完成时返回 job_id 和下一步查询动作。",
+    "parameters": {
+      "video_url": {
+        "type": "string",
+        "required": true
+      }
+    }
+  },
+  "bilibili_submit_video_speech_text_by_bvid": {
+    "description": "根据 Bilibili BV 号提交 P1 口播转文字任务；提交后最多等待 240 秒，未完成时返回 job_id 和下一步查询动作。",
+    "parameters": {
+      "bvid": {
+        "type": "string",
+        "required": true
+      }
+    }
+  },
+  "bilibili_get_video_speech_text_job": {
+    "description": "根据用户提供的有效 job_id，或 submit 工具返回的 job_id 查询 Bilibili 口播转文字任务状态；每次最多等待 240 秒，不触发重处理，也不要重复提交任务。",
+    "parameters": {
+      "job_id": {
+        "type": "string",
+        "required": true
+      }
+    }
+  },
+  "youtube_submit_video_speech_text_by_url": {
+    "description": "提交 YouTube 视频口播转文字任务；提交后最多等待 240 秒，未完成时返回 job_id 和下一步查询动作。",
+    "parameters": {
+      "video_url": {
+        "type": "string",
+        "required": true
+      }
+    }
+  },
+  "youtube_submit_video_speech_text_by_video_id": {
+    "description": "根据 YouTube video_id 提交口播转文字任务；提交后最多等待 240 秒，未完成时返回 job_id 和下一步查询动作。",
+    "parameters": {
+      "video_id": {
+        "type": "string",
+        "required": true
+      }
+    }
+  },
+  "youtube_get_video_speech_text_job": {
+    "description": "根据用户提供的有效 job_id，或 submit 工具返回的 job_id 查询 YouTube 视频口播转文字任务状态；每次最多等待 240 秒，不触发重处理，也不要重复提交任务。",
+    "parameters": {
+      "job_id": {
+        "type": "string",
+        "required": true
+      }
+    }
+  }
+}

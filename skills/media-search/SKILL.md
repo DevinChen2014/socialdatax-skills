@@ -1,6 +1,6 @@
 ---
 name: "media-search"
-description: "Search social media content by keyword for social research, competitor research, topic discovery, content planning, market observation, and trend scanning. This version is backed by hosted platform MCP services and supports Xiaohongshu / XHS / RedNote, Douyin, Kuaishou, Bilibili, Zhihu, Instagram, X / Twitter, YouTube, TikTok, Weibo, Toutiao, and WeChat Channels."
+description: "Search social media content by keyword for social research, competitor research, topic discovery, content planning, market observation, and trend scanning. This version is backed by hosted platform MCP services and supports Xiaohongshu / XHS / RedNote, Douyin, Kuaishou, Bilibili, Zhihu, Instagram, X / Twitter, YouTube, TikTok, Weibo, Toutiao, and WeChat Channels. Additional discovery includes 百度贴吧 / Baidu Tieba post, forum and general search, forum browsing, user/channel and tag discovery, search suggestions, XHS video/image/topic search, XHS and Douyin product search, and WeChat Official Account / 公众号 article search. Use `user-search` in media-user-info for account discovery."
 source_client: "socialdatax-skills"
 source_platform: "github"
 source_skill: "media-search"
@@ -24,7 +24,7 @@ metadata:
 
 # Media Search
 
-Use this skill when the user wants to discover social media content from a keyword, brand, product, campaign, creator niche, or research topic.
+Use this skill when the user wants to discover social media content from a keyword, brand, product, campaign, creator niche, or research topic. Additional discovery includes 百度贴吧 / Baidu Tieba post, forum and general search, forum browsing, user/channel and tag discovery, search suggestions, XHS video/image/topic search, XHS and Douyin product search, and WeChat Official Account / 公众号 article search. Use `user-search` in media-user-info for account discovery.
 
 Current platform support:
 
@@ -40,6 +40,7 @@ Current platform support:
 - Weibo / 微博 posts through `weibo_search_posts`.
 - Toutiao / 今日头条 posts through `toutiao_search_posts`.
 - WeChat Channels / 视频号 videos through `wechat_search_videos`.
+- Additional discovery includes 百度贴吧 / Baidu Tieba post, forum and general search, forum browsing, user/channel and tag discovery, search suggestions, XHS video/image/topic search, XHS and Douyin product search, and WeChat Official Account / 公众号 article search. Use `user-search` in media-user-info for account discovery.
 
 ## API Key
 
@@ -145,6 +146,103 @@ npx -y socialdatax-skills@latest wechat search \
 
 npx -y socialdatax-skills@latest wechat search \
   --keyword "<keyword>" --pages 3 --pretty --source-client socialdatax-skills \
+  --source-platform github --source-skill media-search
+
+npx -y socialdatax-skills@latest xhs search-suggestions \
+  --keyword "<keyword>" --pretty --source-client socialdatax-skills \
+  --source-platform github --source-skill media-search
+
+npx -y socialdatax-skills@latest douyin search-suggestions \
+  --keyword "<keyword>" --pretty --source-client socialdatax-skills \
+  --source-platform github --source-skill media-search
+
+npx -y socialdatax-skills@latest tiktok search-suggestions \
+  --keyword "<keyword>" --pretty --source-client socialdatax-skills \
+  --source-platform github --source-skill media-search
+
+npx -y socialdatax-skills@latest weibo search-suggestions \
+  --keyword "<keyword>" --pretty --source-client socialdatax-skills \
+  --source-platform github --source-skill media-search
+
+npx -y socialdatax-skills@latest zhihu search-suggestions \
+  --keyword "<keyword>" --pretty --source-client socialdatax-skills \
+  --source-platform github --source-skill media-search
+
+npx -y socialdatax-skills@latest x search-suggestions \
+  --keyword "<keyword>" --pretty --source-client socialdatax-skills \
+  --source-platform github --source-skill media-search
+
+npx -y socialdatax-skills@latest bilibili search-suggestions \
+  --keyword "<keyword>" --pretty --source-client socialdatax-skills \
+  --source-platform github --source-skill media-search
+
+npx -y socialdatax-skills@latest kuaishou search-suggestions \
+  --keyword "<keyword>" --pretty --source-client socialdatax-skills \
+  --source-platform github --source-skill media-search
+
+npx -y socialdatax-skills@latest youtube search-suggestions \
+  --keyword "<keyword>" --pretty --source-client socialdatax-skills \
+  --source-platform github --source-skill media-search
+
+npx -y socialdatax-skills@latest toutiao search-suggestions \
+  --keyword "<keyword>" --pretty --source-client socialdatax-skills \
+  --source-platform github --source-skill media-search
+
+npx -y socialdatax-skills@latest instagram tag-search \
+  --keyword "<keyword>" --pretty --source-client socialdatax-skills \
+  --source-platform github --source-skill media-search
+
+npx -y socialdatax-skills@latest xhs search-videos \
+  --keyword "<keyword>" --pretty --source-client socialdatax-skills \
+  --source-platform github --source-skill media-search
+
+npx -y socialdatax-skills@latest xhs search-images \
+  --keyword "<keyword>" --pretty --source-client socialdatax-skills \
+  --source-platform github --source-skill media-search
+
+npx -y socialdatax-skills@latest xhs product-search \
+  --keyword "<keyword>" --pretty --source-client socialdatax-skills \
+  --source-platform github --source-skill media-search
+
+npx -y socialdatax-skills@latest douyin product-search \
+  --keyword "<keyword>" --pretty --source-client socialdatax-skills \
+  --source-platform github --source-skill media-search
+
+npx -y socialdatax-skills@latest xhs topic-notes \
+  --page-id "<page_id>" --pretty --source-client socialdatax-skills \
+  --source-platform github --source-skill media-search
+
+npx -y socialdatax-skills@latest xhs topic-notes \
+  --url "<topic_url>" --pretty --source-client socialdatax-skills \
+  --source-platform github --source-skill media-search
+
+npx -y socialdatax-skills@latest wechat article-search \
+  --keyword "<keyword>" --pretty --source-client socialdatax-skills \
+  --source-platform github --source-skill media-search
+
+npx -y socialdatax-skills@latest tieba forum-posts \
+  --forum-name "<forum_name>" --pretty --source-client socialdatax-skills \
+  --source-platform github --source-skill media-search
+
+npx -y socialdatax-skills@latest tieba search-suggestions \
+  --keyword "<keyword>" --pretty --source-client socialdatax-skills \
+  --source-platform github --source-skill media-search
+
+npx -y socialdatax-skills@latest tieba search-general \
+  --keyword "<keyword>" --pretty --source-client socialdatax-skills \
+  --source-platform github --source-skill media-search
+
+npx -y socialdatax-skills@latest tieba search \
+  --keyword "<keyword>" --pretty --source-client socialdatax-skills \
+  --source-platform github --source-skill media-search
+
+npx -y socialdatax-skills@latest tieba forum-search \
+  --forum-name "<forum_name>" --keyword "<keyword>" --pretty \
+  --source-client socialdatax-skills --source-platform github \
+  --source-skill media-search
+
+npx -y socialdatax-skills@latest youtube channel-search \
+  --keyword "<keyword>" --pretty --source-client socialdatax-skills \
   --source-platform github --source-skill media-search
 ```
 
@@ -281,6 +379,7 @@ WeChat Channels / 视频号 duration filter values:
 Weibo, Toutiao, and WeChat Channels search pagination:
 - Continue only when `next_page_token` is not empty.
 - Pass the complete returned `next_page_token` back unchanged as `page_token` for the same search pagination chain. Do not modify, truncate, redact, mask, omit, normalize, rebuild, generate, or replace the middle with ellipses.
+Use `npx -y socialdatax-skills@latest <platform> <action> --help` for exact flags and values. Paginated commands require the complete returned `next_page_token`. Do not modify, truncate, redact, mask, omit, normalize, rebuild, generate, or replace the middle with ellipses. Commands without `--page-token`, including suggestions and first-page-only searches, do not support pagination.
 
 ## Safety Boundary
 
@@ -290,19 +389,19 @@ Search access is read-only. It uses `SOCIALDATAX_API_KEY` from the user's enviro
 
 MCP tools matching the direct CLI commands above:
 
-- `xhs_search_notes`
-- `douyin_search_videos`
-- `kuaishou_search_videos`
-- `bilibili_search_videos`
-- `bilibili_search_articles`
-- `zhihu_search_content`
-- `instagram_search_posts`
-- `x_search_posts`
-- `youtube_search_videos`
-- `tiktok_search_posts`
-- `weibo_search_posts`
-- `toutiao_search_posts`
-- `wechat_search_videos`
+- XHS: `xhs_search_notes`, `xhs_search_suggestions`, `xhs_search_videos`, `xhs_search_images`, `xhs_search_products`, `xhs_get_topic_notes_by_page_id`, `xhs_get_topic_notes_by_topic_url`
+- DOUYIN: `douyin_search_videos`, `douyin_search_suggestions`, `douyin_search_products`
+- KUAISHOU: `kuaishou_search_videos`, `kuaishou_search_suggestions`
+- BILIBILI: `bilibili_search_videos`, `bilibili_search_articles`, `bilibili_search_suggestions`
+- ZHIHU: `zhihu_search_content`, `zhihu_search_suggestions`
+- INSTAGRAM: `instagram_search_posts`, `instagram_search_tags`
+- X: `x_search_posts`, `x_search_suggestions`
+- YOUTUBE: `youtube_search_videos`, `youtube_search_suggestions`, `youtube_search_channels`
+- TIKTOK: `tiktok_search_posts`, `tiktok_search_suggestions`
+- WEIBO: `weibo_search_posts`, `weibo_search_suggestions`
+- TOUTIAO: `toutiao_search_posts`, `toutiao_search_suggestions`
+- WECHAT: `wechat_search_videos`, `wechat_search_mp_articles`
+- BAIDU: `baidu_tieba_get_forum_posts`, `baidu_tieba_search_suggestions`, `baidu_tieba_search_general`, `baidu_tieba_search_posts`, `baidu_tieba_search_posts_in_forum`
 
 For XHS, call `xhs_search_notes` with:
 - `keyword`: required search phrase or topic; use the user's actual intent and trim whitespace.

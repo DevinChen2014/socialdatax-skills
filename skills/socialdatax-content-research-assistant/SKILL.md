@@ -1,6 +1,6 @@
 ---
 name: "socialdatax-content-research-assistant"
-description: "Use when doing cross-platform content research, topic planning, competitor research, trend insight, comment insight, or creator research across SocialDataX public platforms including 小红书 / XHS, Douyin, Kuaishou, Bilibili, Zhihu, Instagram, X / Twitter, YouTube, TikTok, Weibo, Toutiao, and WeChat Channels, plus WeChat Official Account article link details."
+description: "Use when doing cross-platform content research, topic planning, competitor research, trend insight, comment insight, or creator research across SocialDataX public platforms including 小红书 / XHS, Douyin, Kuaishou, Bilibili, Zhihu, Instagram, X / Twitter, YouTube, TikTok, Weibo, Toutiao, and WeChat Channels, plus WeChat Official Account article link details and statistics. For 百度贴吧 / Baidu Tieba research, choose media-search, media-detail, media-comments, media-user-info, or media-user-posts. User discovery, search suggestions, product research, 蒲公英 / Pugongying creator analytics and 公众号 article/account research use those same capability skills. For account points use `account balance`; for API documentation use `docs search`, `docs operation`, or `docs openapi`."
 source_client: "socialdatax-skills"
 source_platform: "github"
 source_skill: "socialdatax-content-research-assistant"
@@ -24,7 +24,7 @@ metadata:
 
 # SocialDataX Cross-Platform Content Research
 
-Use this skill to combine SocialDataX content research commands for supported public platforms: Xiaohongshu / XHS / RedNote, Douyin, Kuaishou, Bilibili, Zhihu, Instagram, X / Twitter, YouTube, TikTok, Weibo, Toutiao, WeChat Channels, plus WeChat Official Account article link details.
+Use this skill to combine SocialDataX content research commands for supported public platforms: Xiaohongshu / XHS / RedNote, Douyin, Kuaishou, Bilibili, Zhihu, Instagram, X / Twitter, YouTube, TikTok, Weibo, Toutiao, WeChat Channels, plus WeChat Official Account article link details and statistics. For 百度贴吧 / Baidu Tieba research, choose media-search, media-detail, media-comments, media-user-info, or media-user-posts. User discovery, search suggestions, product research, 蒲公英 / Pugongying creator analytics and 公众号 article/account research use those same capability skills. For account points use `account balance`; for API documentation use `docs search`, `docs operation`, or `docs openapi`.
 
 Current platform support:
 
@@ -59,7 +59,7 @@ Current platform support:
 - Weibo / 微博 posts through the `weibo_get_post_detail_by_*` tools.
 - Toutiao / 今日头条 posts through the `toutiao_get_post_detail_by_*` tools.
 - WeChat Channels / 视频号 video and image-post details through the `wechat_get_video_detail_by_*` tools.
-- WeChat Official Account / 微信公众号 articles through `wechat_get_mp_article_detail_by_url`.
+- WeChat Official Account / 微信公众号 articles through `wechat_get_mp_article_detail_by_url` and `wechat_get_mp_article_stats_by_url`.
 - Xiaohongshu / XHS / RedNote notes through the `xhs_get_note_comments_by_*` and `xhs_get_note_sub_comments_by_comment_id` tools.
 - Douyin / 抖音 works, including video and image/text posts, through the `douyin_get_video_comments_by_*` and `douyin_get_video_comment_replies_by_comment_id` tools.
 - Kuaishou / 快手 works through the `kuaishou_get_video_comments_by_*` and `kuaishou_get_video_comment_replies_by_comment_id` tools.
@@ -98,6 +98,7 @@ Current platform support:
 - Weibo / 微博 creator posts through the `weibo_get_user_posts_by_*` tools.
 - Toutiao / 今日头条 creator posts through the `toutiao_get_user_posts_by_*` tools, optionally filtered by `content_type` (`all`, `article`, `video`, or `micro_post`).
 - WeChat Channels / 视频号 creator videos and image posts through the `wechat_get_user_posted_videos_by_*` tools; the user_id entrypoint requires a `v2_...@finder` user_id.
+- For 百度贴吧 / Baidu Tieba research, choose media-search, media-detail, media-comments, media-user-info, or media-user-posts. User discovery, search suggestions, product research, 蒲公英 / Pugongying creator analytics and 公众号 article/account research use those same capability skills. For account points use `account balance`; for API documentation use `docs search`, `docs operation`, or `docs openapi`.
 
 ## API Key
 
@@ -208,11 +209,6 @@ npx -y socialdatax-skills@latest wechat comments --object-id "<object_id>" --obj
 npx -y socialdatax-skills@latest wechat user-info --user-id "<v2_finder_user_id>" --pretty --source-client socialdatax-skills --source-platform github --source-skill socialdatax-content-research-assistant
 npx -y socialdatax-skills@latest wechat user-posts --user-id "<v2_finder_user_id>" --pretty --source-client socialdatax-skills --source-platform github --source-skill socialdatax-content-research-assistant
 npx -y socialdatax-skills@latest wechat user-posts --user-id "<v2_finder_user_id>" --all --pretty --source-client socialdatax-skills --source-platform github --source-skill socialdatax-content-research-assistant
-```
-
-Additional direct CLI entrypoints:
-
-```bash
 npx -y socialdatax-skills@latest xhs detail --url "<note_url_or_share_text>" --pretty --source-client socialdatax-skills --source-platform github --source-skill socialdatax-content-research-assistant
 npx -y socialdatax-skills@latest xhs comments --url "<note_url_or_share_text>" --pretty --source-client socialdatax-skills --source-platform github --source-skill socialdatax-content-research-assistant
 npx -y socialdatax-skills@latest xhs user-info --profile-url "<profile_url_or_share_text>" --pretty --source-client socialdatax-skills --source-platform github --source-skill socialdatax-content-research-assistant
@@ -236,7 +232,7 @@ npx -y socialdatax-skills@latest kuaishou user-posts --profile-url "<profile_url
 npx -y socialdatax-skills@latest kuaishou replies --photo-id "<photo_id>" --comment-id "<comment_id>" --pretty --source-client socialdatax-skills --source-platform github --source-skill socialdatax-content-research-assistant
 npx -y socialdatax-skills@latest bilibili detail --url "<bilibili_content_url_or_share_text>" --pretty --source-client socialdatax-skills --source-platform github --source-skill socialdatax-content-research-assistant
 npx -y socialdatax-skills@latest bilibili comments --url "<bilibili_content_url_or_share_text>" --pretty --source-client socialdatax-skills --source-platform github --source-skill socialdatax-content-research-assistant
-npx -y socialdatax-skills@latest bilibili replies --comment-object-id "<comment_object_id>" --comment-object-type "<comment_object_type>" --comment-id "<comment_id>" --pretty --source-client socialdatax-skills --source-platform github --source-skill socialdatax-content-research-assistant
+npx -y socialdatax-skills@latest bilibili replies --comment-object-id "<comment_object_id>" --comment-object-type "<comment_object_type_integer>" --comment-id "<comment_id>" --pretty --source-client socialdatax-skills --source-platform github --source-skill socialdatax-content-research-assistant
 npx -y socialdatax-skills@latest bilibili reactions --post-id "<post_id>" --pretty --source-client socialdatax-skills --source-platform github --source-skill socialdatax-content-research-assistant
 npx -y socialdatax-skills@latest bilibili reactions --url "<bilibili_opus_or_dynamic_url_or_share_text>" --pretty --source-client socialdatax-skills --source-platform github --source-skill socialdatax-content-research-assistant
 npx -y socialdatax-skills@latest bilibili user-info --profile-url "<profile_url_or_share_text>" --pretty --source-client socialdatax-skills --source-platform github --source-skill socialdatax-content-research-assistant
@@ -275,6 +271,7 @@ npx -y socialdatax-skills@latest toutiao user-posts --profile-url "<profile_url_
 npx -y socialdatax-skills@latest toutiao replies --comment-id "<comment_id>" --pretty --source-client socialdatax-skills --source-platform github --source-skill socialdatax-content-research-assistant
 npx -y socialdatax-skills@latest wechat detail --url "<wechat_work_url_or_share_text>" --pretty --source-client socialdatax-skills --source-platform github --source-skill socialdatax-content-research-assistant
 npx -y socialdatax-skills@latest wechat article --url "<mp_article_url_or_share_text>" --pretty --source-client socialdatax-skills --source-platform github --source-skill socialdatax-content-research-assistant
+npx -y socialdatax-skills@latest wechat article-stats --url "<mp_article_url_or_share_text>" --pretty --source-client socialdatax-skills --source-platform github --source-skill socialdatax-content-research-assistant
 npx -y socialdatax-skills@latest wechat comments --url "<wechat_video_url_or_share_text>" --pretty --source-client socialdatax-skills --source-platform github --source-skill socialdatax-content-research-assistant
 npx -y socialdatax-skills@latest wechat user-info --url "<wechat_work_url_or_share_text>" --pretty --source-client socialdatax-skills --source-platform github --source-skill socialdatax-content-research-assistant
 npx -y socialdatax-skills@latest wechat user-posts --url "<wechat_work_url_or_share_text>" --pretty --source-client socialdatax-skills --source-platform github --source-skill socialdatax-content-research-assistant
@@ -289,6 +286,28 @@ npx -y socialdatax-skills@latest douyin user-posts --sec-user-id "<sec_user_id>"
 npx -y socialdatax-skills@latest kuaishou user-posts --user-id "<user_id>" --since-days 30 --pretty --source-client socialdatax-skills --source-platform github --source-skill socialdatax-content-research-assistant
 npx -y socialdatax-skills@latest weibo user-posts --user-id "<user_id>" --since-days 30 --pretty --source-client socialdatax-skills --source-platform github --source-skill socialdatax-content-research-assistant
 npx -y socialdatax-skills@latest wechat user-posts --user-id "<v2_finder_user_id>" --since-days 30 --pretty --source-client socialdatax-skills --source-platform github --source-skill socialdatax-content-research-assistant
+npx -y socialdatax-skills@latest account balance --pretty --source-client socialdatax-skills --source-platform github --source-skill socialdatax-content-research-assistant
+npx -y socialdatax-skills@latest docs search --query "<query>" --pretty --source-client socialdatax-skills --source-platform github --source-skill socialdatax-content-research-assistant
+npx -y socialdatax-skills@latest docs operation --operation-id "<operation_id>" --pretty --source-client socialdatax-skills --source-platform github --source-skill socialdatax-content-research-assistant
+npx -y socialdatax-skills@latest docs openapi --pretty --source-client socialdatax-skills --source-platform github --source-skill socialdatax-content-research-assistant
+npx -y socialdatax-skills@latest douyin user-search --keyword "<keyword>" --pretty --source-client socialdatax-skills --source-platform github --source-skill socialdatax-content-research-assistant
+npx -y socialdatax-skills@latest douyin user-info --douyin-id "<douyin_id>" --pretty --source-client socialdatax-skills --source-platform github --source-skill socialdatax-content-research-assistant
+npx -y socialdatax-skills@latest weibo likers --url "<post_url>" --pretty --source-client socialdatax-skills --source-platform github --source-skill socialdatax-content-research-assistant
+npx -y socialdatax-skills@latest weibo reposts --url "<post_url>" --pretty --source-client socialdatax-skills --source-platform github --source-skill socialdatax-content-research-assistant
+npx -y socialdatax-skills@latest xhs search-suggestions --keyword "<keyword>" --pretty --source-client socialdatax-skills --source-platform github --source-skill socialdatax-content-research-assistant
+npx -y socialdatax-skills@latest xhs user-search --keyword "<keyword>" --pretty --source-client socialdatax-skills --source-platform github --source-skill socialdatax-content-research-assistant
+npx -y socialdatax-skills@latest xhs product-search --keyword "<keyword>" --pretty --source-client socialdatax-skills --source-platform github --source-skill socialdatax-content-research-assistant
+npx -y socialdatax-skills@latest xhs product-detail --sku-id "<sku_id>" --pretty --source-client socialdatax-skills --source-platform github --source-skill socialdatax-content-research-assistant
+npx -y socialdatax-skills@latest xhs product-detail --url "<url>" --pretty --source-client socialdatax-skills --source-platform github --source-skill socialdatax-content-research-assistant
+npx -y socialdatax-skills@latest xhs product-reviews --sku-id "<sku_id>" --pretty --source-client socialdatax-skills --source-platform github --source-skill socialdatax-content-research-assistant
+npx -y socialdatax-skills@latest xhs product-review-replies --review-id "<review_id>" --pretty --source-client socialdatax-skills --source-platform github --source-skill socialdatax-content-research-assistant
+npx -y socialdatax-skills@latest xhs product-review-reply-replies --review-id "<review_id>" --pretty --source-client socialdatax-skills --source-platform github --source-skill socialdatax-content-research-assistant
+npx -y socialdatax-skills@latest xhs topic-notes --url "<topic_url>" --pretty --source-client socialdatax-skills --source-platform github --source-skill socialdatax-content-research-assistant
+npx -y socialdatax-skills@latest xhs topic-notes --page-id "<page_id>" --pretty --source-client socialdatax-skills --source-platform github --source-skill socialdatax-content-research-assistant
+npx -y socialdatax-skills@latest douyin product-search --keyword "<keyword>" --pretty --source-client socialdatax-skills --source-platform github --source-skill socialdatax-content-research-assistant
+npx -y socialdatax-skills@latest douyin product-detail --product-id "<product_id>" --pretty --source-client socialdatax-skills --source-platform github --source-skill socialdatax-content-research-assistant
+npx -y socialdatax-skills@latest douyin product-detail --url "<url>" --pretty --source-client socialdatax-skills --source-platform github --source-skill socialdatax-content-research-assistant
+npx -y socialdatax-skills@latest wechat share-link --object-id "<object_id>" --pretty --source-client socialdatax-skills --source-platform github --source-skill socialdatax-content-research-assistant
 ```
 
 For hot topics, content URLs, profile URLs, comment review, Bilibili reaction review, Weibo liker/repost review, creator facts, creator content lists, or short-drama series, call the matching `socialdatax-skills` platform subcommand instead of forcing every request through keyword research.
@@ -343,6 +362,7 @@ Optional arguments:
 ## Choose The Narrowest Entry
 Use the most specific direct CLI command for the user's task instead of forcing every request through keyword research. The command prints JSON with `platform`, `tool`, `arguments`, and `data`.
 When the selected command exposes `--since-days`, pass it with bounded `--pages` for recent content; otherwise use documented publish-time filters where available, or fetch bounded pages and filter returned `publish_time` values in the analysis.
+Use `npx -y socialdatax-skills@latest <platform> <action> --help` for exact flags and values. Paginated commands require the complete returned `next_page_token`. Do not modify, truncate, redact, mask, omit, normalize, rebuild, generate, or replace the middle with ellipses. Commands without `--page-token`, including suggestions and first-page-only searches, do not support pagination.
 
 ## Safety Boundary
 
@@ -352,8 +372,8 @@ This skill is read-only. It uses `SOCIALDATAX_API_KEY` from the user's environme
 
 MCP tools matching the direct CLI commands above:
 
-- XHS: `xhs_get_search_hot_list`, `xhs_search_notes`, `xhs_get_note_detail_by_note_id`, `xhs_get_note_comments_by_note_id`, `xhs_get_user_info_by_user_id`, `xhs_get_user_posted_notes_by_user_id`, `xhs_get_note_detail_by_note_url`, `xhs_get_note_comments_by_note_url`, `xhs_get_user_info_by_profile_url`, `xhs_get_user_posted_notes_by_profile_url`, `xhs_get_note_sub_comments_by_comment_id`
-- DOUYIN: `douyin_get_hot_search_list`, `douyin_search_videos`, `douyin_get_video_detail_by_aweme_id`, `douyin_get_video_comments_by_aweme_id`, `douyin_get_user_info_by_sec_user_id`, `douyin_get_user_posted_videos_by_sec_user_id`, `douyin_get_video_detail_by_url`, `douyin_get_video_share_link_by_aweme_id`, `douyin_get_video_share_link_by_url`, `douyin_get_video_comments_by_url`, `douyin_get_user_info_by_profile_url`, `douyin_get_user_posted_videos_by_profile_url`, `douyin_get_user_series_by_sec_user_id`, `douyin_get_user_series_by_profile_url`, `douyin_get_video_comment_replies_by_comment_id`
+- XHS: `xhs_get_search_hot_list`, `xhs_search_notes`, `xhs_get_note_detail_by_note_id`, `xhs_get_note_comments_by_note_id`, `xhs_get_user_info_by_user_id`, `xhs_get_user_posted_notes_by_user_id`, `xhs_get_note_detail_by_note_url`, `xhs_get_note_comments_by_note_url`, `xhs_get_user_info_by_profile_url`, `xhs_get_user_posted_notes_by_profile_url`, `xhs_get_note_sub_comments_by_comment_id`, `xhs_search_suggestions`, `xhs_search_users`, `xhs_search_products`, `xhs_get_product_detail_by_sku_id`, `xhs_get_product_detail_by_url`, `xhs_get_product_reviews`, `xhs_get_product_review_replies`, `xhs_get_product_review_reply_replies`, `xhs_get_topic_notes_by_topic_url`, `xhs_get_topic_notes_by_page_id`
+- DOUYIN: `douyin_get_hot_search_list`, `douyin_search_videos`, `douyin_get_video_detail_by_aweme_id`, `douyin_get_video_comments_by_aweme_id`, `douyin_get_user_info_by_sec_user_id`, `douyin_get_user_posted_videos_by_sec_user_id`, `douyin_get_video_detail_by_url`, `douyin_get_video_share_link_by_aweme_id`, `douyin_get_video_share_link_by_url`, `douyin_get_video_comments_by_url`, `douyin_get_user_info_by_profile_url`, `douyin_get_user_posted_videos_by_profile_url`, `douyin_get_user_series_by_sec_user_id`, `douyin_get_user_series_by_profile_url`, `douyin_get_video_comment_replies_by_comment_id`, `douyin_search_users`, `douyin_get_user_info_by_douyin_id`, `douyin_search_products`, `douyin_get_product_detail_by_product_id`, `douyin_get_product_detail_by_url`
 - KUAISHOU: `kuaishou_get_hot_search_list`, `kuaishou_search_videos`, `kuaishou_search_users`, `kuaishou_get_video_detail_by_photo_id`, `kuaishou_get_video_comments_by_photo_id`, `kuaishou_get_user_info_by_user_id`, `kuaishou_get_user_posted_videos_by_user_id`, `kuaishou_get_video_detail_by_url`, `kuaishou_get_video_comments_by_url`, `kuaishou_get_user_info_by_profile_url`, `kuaishou_get_user_posted_videos_by_profile_url`, `kuaishou_get_video_comment_replies_by_comment_id`
 - BILIBILI: `bilibili_search_videos`, `bilibili_search_articles`, `bilibili_get_content_detail_by_id`, `bilibili_get_content_comments_by_id`, `bilibili_get_user_info_by_user_id`, `bilibili_get_user_posted_videos_by_user_id`, `bilibili_get_user_posted_articles_by_user_id`, `bilibili_get_user_posted_dynamics_by_user_id`, `bilibili_get_content_detail_by_url`, `bilibili_get_content_comments_by_url`, `bilibili_get_content_comment_replies_by_comment_id`, `bilibili_get_content_likes_and_reposts_by_post_id`, `bilibili_get_content_likes_and_reposts_by_url`, `bilibili_get_user_info_by_profile_url`, `bilibili_get_user_posted_videos_by_profile_url`, `bilibili_get_user_posted_articles_by_profile_url`, `bilibili_get_user_posted_dynamics_by_profile_url`, `bilibili_get_video_download_links`
 - ZHIHU: `zhihu_get_hot_list`, `zhihu_search_content`, `zhihu_get_content_detail_by_url`, `zhihu_get_content_comments_by_url`, `zhihu_get_user_info_by_profile_url`, `zhihu_get_user_posted_articles_by_profile_url`, `zhihu_get_comment_replies_by_url`
@@ -361,15 +381,16 @@ MCP tools matching the direct CLI commands above:
 - X: `x_search_posts`, `x_get_post_detail_by_post_id`, `x_get_post_comments_by_post_id`, `x_get_user_info_by_username`, `x_get_user_posts_by_username`, `x_get_post_detail_by_post_url`, `x_get_post_comments_by_post_url`, `x_get_post_comment_replies_by_comment_id`, `x_get_user_info_by_user_id`, `x_get_user_info_by_profile_url`, `x_get_user_posts_by_user_id`, `x_get_user_posts_by_profile_url`
 - YOUTUBE: `youtube_search_videos`, `youtube_get_video_detail_by_url`, `youtube_get_video_comments_by_url`, `youtube_get_channel_info_by_url`, `youtube_get_user_posted_videos_by_channel_url`, `youtube_get_video_comment_replies`
 - TIKTOK: `tiktok_search_posts`, `tiktok_get_post_detail_by_url`, `tiktok_get_post_comments_by_post_id`, `tiktok_get_user_info_by_tiktok_id`, `tiktok_get_user_posts_by_tiktok_id`, `tiktok_get_post_comments_by_url`, `tiktok_get_post_comment_replies`, `tiktok_get_user_info_by_profile_url`, `tiktok_get_user_posts_by_profile_url`
-- WEIBO: `weibo_get_hot_search_list`, `weibo_search_posts`, `weibo_get_post_detail_by_post_id`, `weibo_get_post_comments_by_post_id`, `weibo_get_user_info_by_user_id`, `weibo_get_user_posts_by_user_id`, `weibo_get_post_detail_by_post_url`, `weibo_get_post_comments_by_post_url`, `weibo_get_post_liker_list_by_post_id`, `weibo_get_post_repost_list_by_post_id`, `weibo_get_user_info_by_profile_url`, `weibo_get_user_posts_by_profile_url`, `weibo_get_post_comment_replies_by_comment_id`
+- WEIBO: `weibo_get_hot_search_list`, `weibo_search_posts`, `weibo_get_post_detail_by_post_id`, `weibo_get_post_comments_by_post_id`, `weibo_get_user_info_by_user_id`, `weibo_get_user_posts_by_user_id`, `weibo_get_post_detail_by_post_url`, `weibo_get_post_comments_by_post_url`, `weibo_get_post_liker_list_by_post_id`, `weibo_get_post_repost_list_by_post_id`, `weibo_get_user_info_by_profile_url`, `weibo_get_user_posts_by_profile_url`, `weibo_get_post_comment_replies_by_comment_id`, `weibo_get_post_liker_list_by_post_url`, `weibo_get_post_repost_list_by_post_url`
 - TOUTIAO: `toutiao_get_hot_search_list`, `toutiao_search_posts`, `toutiao_get_post_detail_by_post_id`, `toutiao_get_post_comments_by_post_id`, `toutiao_get_user_info_by_user_id`, `toutiao_get_user_posts_by_user_id`, `toutiao_get_post_detail_by_url`, `toutiao_get_post_comments_by_url`, `toutiao_get_user_info_by_profile_url`, `toutiao_get_user_posts_by_profile_url`, `toutiao_get_post_comment_replies_by_comment_id`
-- WECHAT: `wechat_get_hot_search_list`, `wechat_search_videos`, `wechat_get_video_detail_by_encrypted_object_id`, `wechat_get_video_comments_by_object_id`, `wechat_get_user_info_by_user_id`, `wechat_get_user_posted_videos_by_user_id`, `wechat_get_video_detail_by_url`, `wechat_get_mp_article_detail_by_url`, `wechat_get_video_comments_by_url`, `wechat_get_user_info_by_url`, `wechat_get_user_posted_videos_by_url`, `wechat_get_video_comment_replies_by_comment_id`
-
-MCP-only tools not available through the direct CLI: `douyin_search_users`, `douyin_get_user_info_by_douyin_id`, `weibo_get_post_liker_list_by_post_url`, `weibo_get_post_repost_list_by_post_url`, `xhs_search_suggestions`, `xhs_search_users`, `xhs_search_products`, `xhs_get_product_detail_by_sku_id`, `xhs_get_product_detail_by_url`, `xhs_get_product_reviews`, `xhs_get_product_review_replies`, `xhs_get_topic_notes_by_topic_url`, `xhs_get_topic_notes_by_page_id`, `douyin_search_products`, `douyin_get_product_detail_by_product_id`, `douyin_get_product_detail_by_url`
+- WECHAT: `wechat_get_hot_search_list`, `wechat_search_videos`, `wechat_get_video_detail_by_encrypted_object_id`, `wechat_get_video_comments_by_object_id`, `wechat_get_user_info_by_user_id`, `wechat_get_user_posted_videos_by_user_id`, `wechat_get_video_detail_by_url`, `wechat_get_mp_article_detail_by_url`, `wechat_get_mp_article_stats_by_url`, `wechat_get_video_comments_by_url`, `wechat_get_user_info_by_url`, `wechat_get_user_posted_videos_by_url`, `wechat_get_video_comment_replies_by_comment_id`, `wechat_get_video_share_url_by_object_id`
+- SOCIALDATAX: `socialdatax_get_points_balance`
+- SEARCH: `search_api_docs`
+- GET: `get_api_operation`, `get_openapi_spec`
 
 Use the automatically listed MCP tools above as the source of truth for tool names. Pick the narrowest tool for the user's platform and task. For search pagination, omit `page_token` on the first request and pass only the complete returned `next_page_token` when continuing the same chain.
 For XHS keyword completion, use `xhs_search_suggestions`; use `xhs_search_notes` or `xhs_search_products` when the user needs note or product results.
-For XHS creator discovery, products, or topic pages, use `xhs_search_users`, `xhs_search_products`, or `xhs_get_topic_notes_by_topic_url` / `xhs_get_topic_notes_by_page_id`; use `xhs_get_product_detail_by_sku_id` for a known sku_id and `xhs_get_product_detail_by_url` for a product URL, then use `xhs_get_product_reviews` and `xhs_get_product_review_replies` for review threads.
+For XHS creator discovery, products, or topic pages, use `xhs_search_users`, `xhs_search_products`, or `xhs_get_topic_notes_by_topic_url` / `xhs_get_topic_notes_by_page_id`; use `xhs_get_product_detail_by_sku_id` for a known sku_id and `xhs_get_product_detail_by_url` for a product URL, then use `xhs_get_product_reviews`, `xhs_get_product_review_replies`, and `xhs_get_product_review_reply_replies` for review threads.
 For Douyin products, use `douyin_search_products` by keyword; use `douyin_get_product_detail_by_product_id` for a known product_id or `douyin_get_product_detail_by_url` for a product URL.
 
 XHS search parameter naming reminder: direct CLI uses `--sort-type`, `--publish-time-range`, and `--note-type`; the `xhs_search_notes` MCP tool uses `sort_type`, `publish_time_range`, and `note_type`. Do not pass `sortType`, `publishTimeRange`, or `noteType`.

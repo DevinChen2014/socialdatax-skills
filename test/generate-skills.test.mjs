@@ -1055,7 +1055,7 @@ test("douyin creator skills keep sec-user-id argument guidance", async () => {
   }
 });
 
-test("douyin search skill documents MCP-only creator search", async () => {
+test("douyin search skill documents direct CLI creator search", async () => {
   const tempRoot = mkdtempSync(join(tmpdir(), "socialdatax-skills-"));
 
   try {
@@ -1073,10 +1073,8 @@ test("douyin search skill documents MCP-only creator search", async () => {
       source.hosts.hosts
     );
 
-    assert.match(
-      douyinSearch,
-      /MCP-only tools not available through the direct CLI:[^\n]*`douyin_search_users`/
-    );
+    assertDirectCliExample(douyinSearch, 'douyin user-search --keyword "<keyword>"');
+    assert.doesNotMatch(douyinSearch, /MCP-only tools not available through the direct CLI/);
     assert.match(
       douyinSearch,
       /`douyin_search_users`: use when the user wants to discover Douyin creator or account candidates/
@@ -1485,7 +1483,7 @@ test("generated media transcript skill documents direct CLI and MCP transcript j
     assert.doesNotMatch(skill, /This skill is read-only\./);
     assert.match(
       skill,
-      /Bilibili \/ 哔哩哔哩 \/ B站 single-part video speech-to-text transcript jobs through hosted/
+      /Bilibili \/ 哔哩哔哩 \/ B站 single-part video speech-to-text transcript jobs through direct CLI commands or hosted/
     );
     assert.match(
       skill,
@@ -1494,7 +1492,7 @@ test("generated media transcript skill documents direct CLI and MCP transcript j
     assert.match(skill, /photo and carousel posts are not supported/);
     assert.match(
       skill,
-      /TikTok video speech-to-text transcript jobs (?:through|are available through) hosted TikTok MCP tools/
+      /TikTok video speech-to-text transcript jobs (?:through|are available through) direct CLI commands or hosted TikTok MCP tools/
     );
     assert.match(
       skill,
@@ -1502,12 +1500,12 @@ test("generated media transcript skill documents direct CLI and MCP transcript j
     );
     assert.match(
       skill,
-      /YouTube video speech-to-text transcript jobs through hosted YouTube MCP tools/
+      /YouTube video speech-to-text transcript jobs through direct CLI commands or hosted YouTube MCP tools/
     );
     assert.doesNotMatch(skill, /YouTube 当前没有口播转文字入口/);
     assert.match(
       skill,
-      /X \/ Twitter video post speech-to-text transcript jobs through hosted X MCP tools/
+      /X \/ Twitter video post speech-to-text transcript jobs through direct CLI commands or hosted X MCP tools/
     );
     assert.doesNotMatch(skill, /X \/ Twitter 当前没有口播转文字入口/);
     assert.match(
@@ -1517,14 +1515,14 @@ test("generated media transcript skill documents direct CLI and MCP transcript j
     assert.doesNotMatch(skill, /Pass only the returned `job_id`/);
     assert.match(
       skill,
-      /Zhihu \/ 知乎 independent-video and video-answer speech-to-text transcript jobs through hosted Zhihu MCP tools/
+      /Zhihu \/ 知乎 independent-video and video-answer speech-to-text transcript jobs through direct CLI commands or hosted Zhihu MCP tools/
     );
     assert.match(skill, /\/question\/\{question_id\}\/answer\/\{answer_id\}/);
     assert.doesNotMatch(skill, /知乎当前没有口播转文字入口/);
     const packageReadme = readFileSync(join(packageDir, "README.md"), "utf8");
     assert.match(
       packageReadme,
-      /`media-transcript`:.*Zhihu independent videos and video answers, Instagram regular video posts\/Reels, X \/ Twitter video posts, TikTok, and YouTube through hosted MCP tools/
+      /`media-transcript`:.*Zhihu independent videos and video answers, Instagram regular video posts\/Reels, X \/ Twitter video posts, TikTok, and YouTube through direct CLI commands or hosted MCP tools/
     );
     assert.doesNotMatch(packageReadme, /Zhihu video answers are not supported/);
     assert.doesNotMatch(packageReadme, /X \/ Twitter transcript jobs, are not supported/);
@@ -1548,7 +1546,7 @@ test("generated media transcript skill documents direct CLI and MCP transcript j
     ]) {
       assert.match(skill, new RegExp(`\\\`${escapeRegExp(tool)}\\\``));
     }
-    assert.match(skill, /MCP-only tools not available through the direct CLI/);
+    assert.doesNotMatch(skill, /MCP-only tools not available through the direct CLI/);
 
     const directCliExamples = extractDirectCliExamples(skill);
     for (const command of [
@@ -1579,12 +1577,12 @@ test("generated media transcript skill documents direct CLI and MCP transcript j
     assert.match(skill, /--source-platform npm/);
     assert.match(skill, /--source-skill media-transcript/);
     assert.ok(
-      directCliExamples.every((example) => !example.includes("bilibili transcript")),
-      "media-transcript must not advertise a Bilibili direct CLI command"
+      directCliExamples.some((example) => example.includes("bilibili transcript")),
+      "media-transcript must advertise a Bilibili direct CLI command"
     );
     assert.ok(
-      directCliExamples.every((example) => !example.includes("instagram transcript")),
-      "media-transcript must not advertise an Instagram direct CLI command"
+      directCliExamples.some((example) => example.includes("instagram transcript")),
+      "media-transcript must advertise an Instagram direct CLI command"
     );
 
     for (const tool of [
@@ -4185,12 +4183,27 @@ test("generated media skills document weibo and wechat channel support", async (
     assert.match(mediaDetail, /weibo_get_post_detail_by_post_id/);
     assert.match(mediaDetail, /wechat_get_video_detail_by_encrypted_object_id/);
     assert.match(mediaDetail, /wechat_get_mp_article_detail_by_url/);
+    assert.match(mediaDetail, /wechat_get_mp_article_stats_by_url/);
     assert.match(mediaDetail, /video or image-post link/);
     assertDirectCliExample(
       mediaDetail,
       'wechat article --url "<mp_article_url_or_share_text>"'
     );
+    assertDirectCliExample(
+      mediaDetail,
+      'wechat article-stats --url "<mp_article_url_or_share_text>"'
+    );
     assert.match(aggregateResearch, /WeChat Official Account article link details/);
+    assert.match(
+      aggregateResearch,
+      /wechat_get_video_share_url_by_object_id/,
+      "npm aggregate should list the WeChat share URL tool"
+    );
+    assert.match(
+      skillhubAggregateResearch,
+      /wechat_get_video_share_url_by_object_id/,
+      "skillhub aggregate should list the WeChat share URL tool"
+    );
     assert.doesNotMatch(
       aggregateResearch,
       /WeChat Official Account articles across search, details, comments, and creators/,
@@ -4739,11 +4752,15 @@ test("active SkillHub public skill titles avoid Tencent ecosystem discovery word
       "skillhub aggregate should include Bilibili reaction commands when it advertises Bilibili engagement review"
     );
     assertDirectCliExample(aggregate, 'youtube replies --reply-token "<reply_token>"');
-    assert.match(
-      aggregate,
-      /仅 hosted MCP 可用、direct CLI 不包含的工具：[\s\S]*`douyin_search_users`[\s\S]*`douyin_get_user_info_by_douyin_id`[\s\S]*`weibo_get_post_liker_list_by_post_url`[\s\S]*`weibo_get_post_repost_list_by_post_url`/,
-      "skillhub aggregate should document MCP-only tools that have no matching direct CLI entrypoint"
-    );
+    for (const command of [
+      'douyin user-search --keyword "<keyword>"',
+      'douyin user-info --douyin-id "<douyin_id>"',
+      'weibo likers --url "<post_url>"',
+      'weibo reposts --url "<post_url>"',
+      'wechat share-link --object-id "<object_id>"',
+    ]) {
+      assertDirectCliExample(aggregate, command);
+    }
     assert.doesNotMatch(
       aggregate,
       /仅 hosted MCP 可用、direct CLI 不包含的工具：[^\n]*`wechat_get_user_info_by_url`/
@@ -8079,5 +8096,50 @@ test("generator rejects malformed listing entries in source configuration", asyn
   } finally {
     rmSync(tempRoot, { recursive: true, force: true });
     rmSync(badRoot, { recursive: true, force: true });
+  }
+});
+
+test("generated npm capability skills expose extended discovery and transcript commands", async () => {
+  const tempRoot = mkdtempSync(join(tmpdir(), "socialdatax-skills-"));
+  try {
+    const source = await loadSkillSource({ repoRoot: projectRoot });
+    await generateSkills({ repoRoot: projectRoot, outRoot: tempRoot, quiet: true });
+    const cases = {
+      "media-search": ["tieba search", "tieba forum-search", "xhs product-search", "wechat article-search", "youtube channel-search", "instagram tag-search", "douyin search-suggestions"],
+      "media-detail": ["tieba detail", "tieba forum-detail", "douyin product-detail", "wechat share-link"],
+      "media-comments": ["tieba comments", "tieba replies", "xhs product-reviews", "wechat article-comments", "wechat article-replies"],
+      "media-user-info": ["tieba user-info", "tieba user-search", "wechat mp-account-info", "xhs pgy-creator-profile", "douyin user-info --douyin-id"],
+      "media-user-posts": ["tieba user-posts", "tieba user-forums", "wechat mp-account-articles", "xhs pgy-creator-notes-performance"],
+      "socialdatax-content-research-assistant": ["account balance", "docs search", "docs operation", "docs openapi"],
+      "media-transcript": ["bilibili transcript", "zhihu transcript", "instagram transcript", "x transcript", "tiktok transcript", "youtube transcript"],
+    };
+    for (const [slug, commands] of Object.entries(cases)) {
+      const skill = readGeneratedSkill(tempRoot, "npm", slug, source.hosts.hosts);
+      for (const command of commands) assert.ok(extractDirectCliExamples(skill).some((example) => example.includes(`npx -y socialdatax-skills@latest ${command}`)), `${slug}: ${command}`);
+      assert.ok(skill.includes(`--source-client socialdatax-skills --source-platform npm --source-skill ${slug}`));
+    }
+    const transcript = readGeneratedSkill(tempRoot, "npm", "media-transcript", source.hosts.hosts);
+    assert.doesNotMatch(transcript, /direct CLI 入口仅覆盖/);
+    for (const platform of ["bilibili", "zhihu", "instagram", "x", "tiktok", "youtube"]) {
+      assert.ok(extractDirectCliExamples(transcript).some((example) => example.includes(`${platform} transcript --url`)));
+      assert.ok(extractDirectCliExamples(transcript).some((example) => example.includes(`${platform} transcript --job-id`)));
+    }
+  } finally {
+    rmSync(tempRoot, { recursive: true, force: true });
+  }
+});
+
+test("skill source does not mark mapped direct CLI tools as MCP-only", async () => {
+  const { catalog, listings } = await loadSkillSource({ repoRoot: projectRoot });
+  const mappedTools = new Set(Object.values(catalog.platforms).flatMap((platform) => Object.values(platform.tools)));
+  const entries = [
+    ...Object.entries(catalog.platforms).map(([name, entry]) => [`platform:${name}`, entry]),
+    ...Object.entries(catalog.capabilities).map(([name, entry]) => [`capability:${name}`, entry]),
+    ...listings.listings.map((entry) => [`listing:${entry.host}:${entry.slug}`, entry]),
+  ];
+  for (const [name, entry] of entries) {
+    for (const tool of entry.mcpOnlyTools ?? []) {
+      assert.equal(mappedTools.has(tool), false, `${name}: ${tool} already has a direct CLI mapping`);
+    }
   }
 });

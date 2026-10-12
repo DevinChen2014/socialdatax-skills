@@ -1,6 +1,6 @@
 ---
 name: "media-detail"
-description: "Read structured social media content details and metrics from content IDs, URLs, short links, or share text for supported platforms including Xiaohongshu / XHS / RedNote, Douyin, Kuaishou, Bilibili, Zhihu, Instagram, X / Twitter, YouTube, TikTok, Weibo, Toutiao, and WeChat Channels. For WeChat Official Account articles, read article details and body text from article links. Supports XHS 蒲公英 / Pugongying commercial note details when requested."
+description: "Read structured social media content details and metrics from content IDs, URLs, short links, or share text for supported platforms including Xiaohongshu / XHS / RedNote, Douyin, Kuaishou, Bilibili, Zhihu, Instagram, X / Twitter, YouTube, TikTok, Weibo, Toutiao, and WeChat Channels. For WeChat Official Account articles, read article details, body text, and statistics from article links. Supports XHS 蒲公英 / Pugongying commercial note details when requested. Also use this skill for 百度贴吧 / Baidu Tieba thread and forum details, XHS and Douyin product details, and WeChat Channels share links from object IDs."
 source_client: "socialdatax-skills"
 source_platform: "github"
 source_skill: "media-detail"
@@ -24,7 +24,7 @@ metadata:
 
 # Media Detail
 
-Use this skill when the user provides an mp.weixin.qq.com article link and wants WeChat Official Account article body text. For other supported content links, short links, share text, or content IDs, use it for structured details or interaction metrics where supported. For explicit XHS 蒲公英 / Pugongying commercial note requests, choose the commercial detail route (20 points per successful call; failures are not charged).
+Use this skill when the user provides an mp.weixin.qq.com article link and wants WeChat Official Account article body text or reading/engagement statistics. For other supported content links, short links, share text, or content IDs, use it for structured details or interaction metrics where supported. For explicit XHS 蒲公英 / Pugongying commercial note requests, choose the commercial detail route (20 points per successful call; failures are not charged). Also use this skill for 百度贴吧 / Baidu Tieba thread and forum details, XHS and Douyin product details, and WeChat Channels share links from object IDs.
 
 Current platform support:
 
@@ -40,8 +40,9 @@ Current platform support:
 - Weibo / 微博 posts through the `weibo_get_post_detail_by_*` tools.
 - Toutiao / 今日头条 posts through the `toutiao_get_post_detail_by_*` tools.
 - WeChat Channels / 视频号 video and image-post details through the `wechat_get_video_detail_by_*` tools.
-- WeChat Official Account / 微信公众号 articles through `wechat_get_mp_article_detail_by_url`.
+- WeChat Official Account / 微信公众号 articles through `wechat_get_mp_article_detail_by_url` and `wechat_get_mp_article_stats_by_url`.
 - Xiaohongshu / XHS 蒲公英 / Pugongying single-note commercial details through `xhs_pgy_get_note_detail_by_note_id` or `xhs_pgy_get_note_detail_by_note_url`.
+- Also use this skill for 百度贴吧 / Baidu Tieba thread and forum details, XHS and Douyin product details, and WeChat Channels share links from object IDs.
 
 ## API Key
 
@@ -149,6 +150,10 @@ npx -y socialdatax-skills@latest wechat article \
   --url "<mp_article_url_or_share_text>" --pretty --source-client socialdatax-skills \
   --source-platform github --source-skill media-detail
 
+npx -y socialdatax-skills@latest wechat article-stats \
+  --url "<mp_article_url_or_share_text>" --pretty --source-client socialdatax-skills \
+  --source-platform github --source-skill media-detail
+
 npx -y socialdatax-skills@latest xhs pgy-detail \
   --note-id "<note_id>" --pretty --source-client socialdatax-skills \
   --source-platform github --source-skill media-detail
@@ -156,6 +161,38 @@ npx -y socialdatax-skills@latest xhs pgy-detail \
 npx -y socialdatax-skills@latest xhs pgy-detail \
   --url "<note_url_or_share_text>" --pretty --source-client socialdatax-skills \
   --source-platform github --source-skill media-detail
+
+npx -y socialdatax-skills@latest xhs product-detail \
+  --sku-id "<sku_id>" --pretty --source-client socialdatax-skills \
+  --source-platform github --source-skill media-detail
+
+npx -y socialdatax-skills@latest xhs product-detail \
+  --url "<url>" --pretty --source-client socialdatax-skills --source-platform github \
+  --source-skill media-detail
+
+npx -y socialdatax-skills@latest douyin product-detail \
+  --product-id "<product_id>" --pretty --source-client socialdatax-skills \
+  --source-platform github --source-skill media-detail
+
+npx -y socialdatax-skills@latest douyin product-detail \
+  --url "<url>" --pretty --source-client socialdatax-skills --source-platform github \
+  --source-skill media-detail
+
+npx -y socialdatax-skills@latest wechat share-link \
+  --object-id "<object_id>" --pretty --source-client socialdatax-skills \
+  --source-platform github --source-skill media-detail
+
+npx -y socialdatax-skills@latest tieba forum-detail \
+  --forum-name "<forum_name>" --pretty --source-client socialdatax-skills \
+  --source-platform github --source-skill media-detail
+
+npx -y socialdatax-skills@latest tieba detail \
+  --thread-id "<thread_id>" --pretty --source-client socialdatax-skills \
+  --source-platform github --source-skill media-detail
+
+npx -y socialdatax-skills@latest tieba detail \
+  --url "<url>" --pretty --source-client socialdatax-skills --source-platform github \
+  --source-skill media-detail
 ```
 
 Optional arguments:
@@ -182,7 +219,8 @@ Optional arguments:
 - Toutiao `--url <toutiao_content_url_or_share_text>`: use for a Toutiao content URL, short link, or share text.
 - WeChat Channels / 视频号 `--encrypted-object-id <encrypted_object_id>`: use when the encrypted_object_id from search is already known.
 - WeChat Channels / 视频号 `--url <wechat_work_url_or_share_text>`: use for a WeChat Channels video or image-post link or share text.
-- WeChat Official Account / 微信公众号 `article --url <mp_article_url_or_share_text>`: use for an mp.weixin.qq.com article link or share text.
+- WeChat Official Account / 微信公众号 `article --url <mp_article_url_or_share_text>`: use for article details and body text.
+- WeChat Official Account / 微信公众号 `article-stats --url <mp_article_url_or_share_text>`: use for article reading and engagement statistics.
 - `--source-client socialdatax-skills --source-platform github --source-skill media-detail`: usage attribution for this Agent Skill; keep these values unchanged when running examples from this Skill.
 
 Use either the ID option or the URL option for detail commands, not both.
@@ -193,6 +231,7 @@ XHS 蒲公英 queries apply only to notes from creators enrolled in 蒲公英 / 
 Use this route when the user asks for 蒲公英 / Pugongying commercial details. Ordinary note-detail requests continue to use `xhs detail`; do not automatically upgrade an ordinary request or retry it through the paid commercial route.
 Choose exactly one input: the complete `--note-id`, or `--url` with the original note link, short link or share text. Do not call both routes for the same note.
 If the user asks only for exposure, reads or pricing without establishing the 蒲公英 commercial scope, clarify that scope and the 20-point successful-call cost before calling. Do not ask again when the conversation has already established this scope.
+Use `npx -y socialdatax-skills@latest <platform> <action> --help` for exact flags and values. Paginated commands require the complete returned `next_page_token`. Do not modify, truncate, redact, mask, omit, normalize, rebuild, generate, or replace the middle with ellipses. Commands without `--page-token`, including suggestions and first-page-only searches, do not support pagination.
 
 ## Safety Boundary
 
@@ -202,8 +241,8 @@ Platform detail access is read-only. It uses `SOCIALDATAX_API_KEY` from the user
 
 MCP tools matching the direct CLI commands above:
 
-- XHS: `xhs_get_note_detail_by_note_id`, `xhs_get_note_detail_by_note_url`, `xhs_pgy_get_note_detail_by_note_id`, `xhs_pgy_get_note_detail_by_note_url`
-- DOUYIN: `douyin_get_video_detail_by_aweme_id`, `douyin_get_video_detail_by_url`
+- XHS: `xhs_get_note_detail_by_note_id`, `xhs_get_note_detail_by_note_url`, `xhs_pgy_get_note_detail_by_note_id`, `xhs_pgy_get_note_detail_by_note_url`, `xhs_get_product_detail_by_sku_id`, `xhs_get_product_detail_by_url`
+- DOUYIN: `douyin_get_video_detail_by_aweme_id`, `douyin_get_video_detail_by_url`, `douyin_get_product_detail_by_product_id`, `douyin_get_product_detail_by_url`
 - KUAISHOU: `kuaishou_get_video_detail_by_photo_id`, `kuaishou_get_video_detail_by_url`
 - BILIBILI: `bilibili_get_content_detail_by_id`, `bilibili_get_content_detail_by_url`
 - ZHIHU: `zhihu_get_content_detail_by_url`
@@ -213,7 +252,8 @@ MCP tools matching the direct CLI commands above:
 - TIKTOK: `tiktok_get_post_detail_by_url`
 - WEIBO: `weibo_get_post_detail_by_post_id`, `weibo_get_post_detail_by_post_url`
 - TOUTIAO: `toutiao_get_post_detail_by_post_id`, `toutiao_get_post_detail_by_url`
-- WECHAT: `wechat_get_video_detail_by_encrypted_object_id`, `wechat_get_video_detail_by_url`, `wechat_get_mp_article_detail_by_url`
+- WECHAT: `wechat_get_video_detail_by_encrypted_object_id`, `wechat_get_video_detail_by_url`, `wechat_get_mp_article_detail_by_url`, `wechat_get_mp_article_stats_by_url`, `wechat_get_video_share_url_by_object_id`
+- BAIDU: `baidu_tieba_get_forum_detail`, `baidu_tieba_get_post_detail_by_thread_id`, `baidu_tieba_get_post_detail_by_url`
 
 If MCP tools are already available in the current agent, use one of these tools:
 - `xhs_get_note_detail_by_note_id`: use when the full `note_id` is already known; do not pass only a prefix.
@@ -237,7 +277,8 @@ If MCP tools are already available in the current agent, use one of these tools:
 - `toutiao_get_post_detail_by_url`: use for Toutiao content URLs, short links, or share text.
 - `wechat_get_video_detail_by_encrypted_object_id`: use when encrypted_object_id from search is already known.
 - `wechat_get_video_detail_by_url`: use for a WeChat Channels / 视频号 video or image-post link or share text.
-- `wechat_get_mp_article_detail_by_url`: use for WeChat Official Account / 微信公众号 article links or share text.
+- `wechat_get_mp_article_detail_by_url`: use for WeChat Official Account / 微信公众号 article links or share text when article body/details are needed.
+- `wechat_get_mp_article_stats_by_url`: use for WeChat Official Account / 微信公众号 article links or share text when reading and engagement statistics are needed.
 - `xhs_pgy_get_note_detail_by_note_id`: for 蒲公英 / Pugongying commercial details when the full note_id is known.
 - `xhs_pgy_get_note_detail_by_note_url`: for 蒲公英 / Pugongying commercial details from a note URL, short link or share text.
 Both XHS 蒲公英 tools cost 20 points per successful call; failures are not charged. They are distinct from ordinary `xhs_get_note_detail_by_*` tools.
@@ -263,6 +304,7 @@ When the user wants to save Weibo media after detail, pass each returned `image_
 For WeChat Channels / 视频号 detail, preserve `object_id` and `object_nonce_id` because comments and replies need both values.
 When the user wants to save a WeChat Channels / 视频号 video after detail, pass the returned `video.video_url` to `npx -y socialdatax-skills@latest wechat decrypt-media --media-url "<video.video_url>" --output <file>`; this local save command decrypts when needed and does not require `SOCIALDATAX_API_KEY`.
 For WeChat Official Account / 微信公众号 article detail, include article title, account, publish time, body text, image URLs, linked articles, and embedded video cards when present.
+For WeChat Official Account / 微信公众号 article statistics, include only returned reading, likes, shares, collections, comments, and wow counts; preserve null values and do not infer missing metrics.
 Label XHS 蒲公英 / Pugongying results as commercial note data, distinct from ordinary public note metrics; do not present ordinary note details as a successful commercial result.
 When MCP returns structured code `pgy_commercial_data_unavailable` (or HTTP returns numeric code `1009`), treat the creator as not enrolled and show the returned message: "该笔记所属博主未入驻蒲公英，无法查询蒲公英数据。本次查询失败，不扣费。" These identifiers retain the explicit no-commercial-data outcome; do not classify errors by matching message text or internal reason_code.
 After this no-data outcome, stop: do not retry through the other ID/URL route or automatically substitute ordinary details. If the user still wants ordinary details, use the ordinary detail route for that request.

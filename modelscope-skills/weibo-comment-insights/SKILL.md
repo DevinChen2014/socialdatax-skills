@@ -54,6 +54,7 @@ npx -y socialdatax-skills@latest weibo replies \
 - 可选：`--max-items <n>`：收集到 N 条一级评论或回复后停止。
 - 说明：Weibo `--post-id <post_id>`：当微博帖子 ID 已知且要作为评论链路目标时优先使用。
 - 说明：Weibo `--post-url <weibo_post_url_or_share_text>`：用于一级评论入口的微博帖子 URL、短链或分享文本。
+- 说明：微博评论 `--sort-type <hot|time_descending>`：可选一级评论排序；不传时默认使用 `hot`，使用 `--page-token` 续页时必须保持不变。
 
 通用：
 - 可选：`--pretty`：只影响输出格式，不改变实际请求结果。
@@ -83,8 +84,8 @@ npx -y socialdatax-skills@latest weibo replies \
 
 如果当前 Agent 已可直接调用 MCP 工具，可按入口选择以下工具：
 
-- `weibo_get_post_comments_by_post_id`：当 `post_id` 已经明确时使用。
-- `weibo_get_post_comments_by_post_url`：用于微博帖子 URL、短链或分享文本。
+- `weibo_get_post_comments_by_post_id`：已知微博 `post_id` 时使用；可选 `sort_type` 支持 `hot` 或 `time_descending`。
+- `weibo_get_post_comments_by_post_url`：用于微博帖子 URL、短链或分享文本；可选 `sort_type` 支持 `hot` 或 `time_descending`。
 - `weibo_get_post_comment_replies_by_comment_id`：当 `post_id` 和一级评论 ID 都已明确时使用。
 - 微博评论和回复只有在 `next_page_token` 非空时才继续翻页；空字符串表示没有更多评论或回复可请求。
 

@@ -6,7 +6,8 @@ WORKDIR /app
 COPY package.json package-lock.json ./
 RUN npm ci --omit=dev
 
-COPY cli.mjs README.md LICENSE ./
+COPY cli.mjs README.md CLI_COMMANDS.md CATALOG.md LICENSE ./
+COPY lib ./lib
 COPY skills ./skills
 COPY assets ./assets
 
