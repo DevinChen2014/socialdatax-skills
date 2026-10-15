@@ -94,7 +94,7 @@ Common search phrases for this skill package:
 - Reserved future SocialDataX namespace names for existing platform listings without draft files yet: `com.socialdatax/kuaishou-insights`, `com.socialdatax/bilibili-insights`, `com.socialdatax/weibo-insights`, `com.socialdatax/wechat-channels-insights`, `com.socialdatax/zhihu-insights`, `com.socialdatax/instagram-insights`, `com.socialdatax/x-insights`, `com.socialdatax/youtube-insights`, and `com.socialdatax/tiktok-insights`.
 - Hosted endpoints without a repo-tracked standalone listing: Toutiao / 今日头条 and Sensitive Words Check.
 - Unified MCP registry name: none; this package installs skills and calls explicit hosted MCP entries.
-- Current public capability version: `0.2.48`
+- Current public capability version: `0.2.49` (npm latest; verified 2026-10-14)
 
 ## XHS 蒲公英 / Pugongying commercial note details
 

@@ -1002,17 +1002,22 @@ test("active xhs search skills distinguish CLI flags from MCP snake_case argumen
         listing.slug,
         source.hosts.hosts
       );
+      assert.doesNotMatch(skill, /xhs search-videos/);
       const mcpTools = extractMarkdownSection(
         skill,
         isChineseRenderedListing(listing) ? "MCP 工具" : "MCP Tools"
       );
 
       if (isChineseRenderedListing(listing)) {
+        assert.match(mcpTools, /`xhs_search_notes`/);
+        assert.doesNotMatch(mcpTools, /`xhs_search_videos`/);
         assert.match(mcpTools, /小红书搜索参数命名提醒/);
         assert.match(mcpTools, /direct CLI 使用 `--sort-type`、`--publish-time-range`、`--note-type`/);
         assert.match(mcpTools, /MCP 工具 `xhs_search_notes` 使用 `sort_type`、`publish_time_range`、`note_type`/);
         assert.match(mcpTools, /不要传 `sortType`、`publishTimeRange` 或 `noteType`/);
       } else {
+        assert.match(mcpTools, /`xhs_search_notes`/);
+        assert.doesNotMatch(mcpTools, /`xhs_search_videos`/);
         assert.match(mcpTools, /XHS search parameter naming reminder/);
         assert.match(mcpTools, /direct CLI uses `--sort-type`, `--publish-time-range`, and `--note-type`/);
         assert.match(mcpTools, /the `xhs_search_notes` MCP tool uses `sort_type`, `publish_time_range`, and `note_type`/);

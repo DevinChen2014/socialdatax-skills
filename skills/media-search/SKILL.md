@@ -192,10 +192,6 @@ npx -y socialdatax-skills@latest instagram tag-search \
   --keyword "<keyword>" --pretty --source-client socialdatax-skills \
   --source-platform github --source-skill media-search
 
-npx -y socialdatax-skills@latest xhs search-videos \
-  --keyword "<keyword>" --pretty --source-client socialdatax-skills \
-  --source-platform github --source-skill media-search
-
 npx -y socialdatax-skills@latest xhs search-images \
   --keyword "<keyword>" --pretty --source-client socialdatax-skills \
   --source-platform github --source-skill media-search
@@ -389,7 +385,7 @@ Search access is read-only. It uses `SOCIALDATAX_API_KEY` from the user's enviro
 
 MCP tools matching the direct CLI commands above:
 
-- XHS: `xhs_search_notes`, `xhs_search_suggestions`, `xhs_search_videos`, `xhs_search_images`, `xhs_search_products`, `xhs_get_topic_notes_by_page_id`, `xhs_get_topic_notes_by_topic_url`
+- XHS: `xhs_search_notes`, `xhs_search_suggestions`, `xhs_search_images`, `xhs_search_products`, `xhs_get_topic_notes_by_page_id`, `xhs_get_topic_notes_by_topic_url`
 - DOUYIN: `douyin_search_videos`, `douyin_search_suggestions`, `douyin_search_products`
 - KUAISHOU: `kuaishou_search_videos`, `kuaishou_search_suggestions`
 - BILIBILI: `bilibili_search_videos`, `bilibili_search_articles`, `bilibili_search_suggestions`

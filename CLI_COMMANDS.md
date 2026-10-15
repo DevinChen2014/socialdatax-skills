@@ -27,7 +27,7 @@ Set `SOCIALDATAX_API_KEY` in the environment for hosted requests. Obtain or mana
 
 ## Platform boundaries
 
-XHS `search-images` returns individual images with associated notes; `search-videos` returns video notes. Use the existing `xhs search --note-type image|video` when you need its sort or publish-time filters. `topic-notes` accepts a page ID or topic URL. Product reviews require a full SKU ID; reply commands use review IDs returned by the preceding review/reply list.
+XHS `search-images` returns individual images with associated notes. Search video notes with `xhs search --note-type video`; this search command also supports sort and publish-time filters. `topic-notes` accepts a page ID or topic URL. Product reviews require a full SKU ID; reply commands use review IDs returned by the preceding review/reply list.
 
 For XHS Pugongying creator commands, use the 24-character lowercase hexadecimal creator user ID. `--note-scope daily|cooperation` selects daily or cooperation notes on the commands that expose it. These commands provide commercial analytics; the existing `pgy-detail` command reads commercial note details.
 
@@ -61,17 +61,6 @@ npx -y socialdatax-skills@latest xhs search-suggestions --keyword "<keyword>" --
 | Flag | Required | Type / accepted values | Default / constraints |
 | --- | --- | --- | --- |
 | `--keyword` | yes | string | — |
-
-#### `xhs search-videos`
-
-```sh
-npx -y socialdatax-skills@latest xhs search-videos --keyword "<keyword>" --pretty
-```
-
-| Flag | Required | Type / accepted values | Default / constraints |
-| --- | --- | --- | --- |
-| `--keyword` | yes | string | — |
-| `--page-token` | no | string | default: "" |
 
 #### `xhs search-images`
 

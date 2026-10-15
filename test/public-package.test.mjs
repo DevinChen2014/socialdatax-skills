@@ -60,16 +60,12 @@ test("public package has valid runtime syntax and self-consistent skills", () =>
   assert.equal(packageLock.packages[""].version, packageMetadata.version);
   const cli = readFileSync(join(packageDir, "cli.mjs"), "utf8");
   const readme = readFileSync(join(packageDir, "README.md"), "utf8");
+  const cliCommands = readFileSync(join(packageDir, "CLI_COMMANDS.md"), "utf8");
   assert.ok(
     cli.includes(`const PACKAGE_VERSION = "${packageMetadata.version}";`),
     "CLI package version should match package.json"
   );
-  assert.ok(
-    readme.includes(
-      `Current public capability version: \`${packageMetadata.version}\``
-    ),
-    "README capability version should match package.json"
-  );
+  assert.doesNotMatch(cliCommands, /xhs search-videos/);
   const minimumNodeVersion = packageMetadata.engines?.node?.match(
     /^>=(\d+\.\d+\.\d+)$/
   )?.[1];

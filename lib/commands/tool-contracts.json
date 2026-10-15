@@ -1,6 +1,6 @@
 {
-  "xhs_search_videos": {
-    "description": "按搜索词搜索小红书视频标签结果；已有笔记链接或 note_id，且需要读取该篇笔记详情时，使用对应详情工具。每项为视频笔记，note_type 固定为 video，支持 page_token 翻页；结果按平台相关性排序，不承诺每条内容包含原词，不承诺完整召回；需要排序或发布时间筛选时使用 xhs_search_notes(note_type=\"video\")；本工具不接受这些筛选参数；需要图片时使用 xhs_search_images。",
+  "xhs_search_images": {
+    "description": "按搜索词搜索小红书图片；已有笔记链接或 note_id，且需要读取该篇笔记详情时，使用对应详情工具。每项为一张图片及关联笔记，同一笔记可返回多张图片；page_token 可用于尝试下一页，不保证下一页有结果；结果按平台相关性排序，不承诺每条内容包含原词，不承诺完整召回；需要图文笔记而非单张图片时使用 xhs_search_notes(note_type=\"image\")；需要视频笔记时使用 xhs_search_notes(note_type=\"video\")。",
     "parameters": {
       "keyword": {
         "type": "string",
@@ -13,8 +13,8 @@
       }
     }
   },
-  "xhs_search_images": {
-    "description": "按搜索词搜索小红书图片；已有笔记链接或 note_id，且需要读取该篇笔记详情时，使用对应详情工具。每项为一张图片及关联笔记，同一笔记可返回多张图片；page_token 可用于尝试下一页，不保证下一页有结果；结果按平台相关性排序，不承诺每条内容包含原词，不承诺完整召回；需要图文笔记而非单张图片时使用 xhs_search_notes(note_type=\"image\")；需要视频时使用 xhs_search_videos。",
+  "xhs_search_notes": {
+    "description": "搜索小红书 / Xiaohongshu / XHS / RedNote 笔记，包含普通、图文和视频笔记；note_type 默认 \"all\"。查找图文笔记可设 note_type=\"image\"，查找视频笔记可设 note_type=\"video\"。发布时间筛选参数名为 publish_time_range（不是 publish_time）；本工具不接受 max_items。查找单张图片用 xhs_search_images；已有笔记链接或 note_id 且需要单篇笔记详情时使用对应的详情工具；需要评论、回复或口播转文字时使用相应的 URL/ID 工具；支持 page_token 翻页。继续翻页时必须将返回的完整 next_page_token 原样作为 page_token 传回，不得截断、缩写、掩码或用省略号替换中间内容。\n返回的 note_url 在任何使用场景都必须原样保留完整 URL，包括 xsec_token 等 query 参数；例如最终回答、展示、引用、存储、输出或传递；不得用 note_id 重新拼接链接。",
     "parameters": {
       "keyword": {
         "type": "string",
@@ -22,6 +22,39 @@
       },
       "page_token": {
         "default": "",
+        "type": "string",
+        "required": false
+      },
+      "sort_type": {
+        "default": "general",
+        "enum": [
+          "general",
+          "time_descending",
+          "like_count_descending",
+          "comment_count_descending",
+          "collect_count_descending"
+        ],
+        "type": "string",
+        "required": false
+      },
+      "note_type": {
+        "default": "all",
+        "enum": [
+          "all",
+          "image",
+          "video"
+        ],
+        "type": "string",
+        "required": false
+      },
+      "publish_time_range": {
+        "default": "all",
+        "enum": [
+          "all",
+          "day",
+          "week",
+          "half_year"
+        ],
         "type": "string",
         "required": false
       }

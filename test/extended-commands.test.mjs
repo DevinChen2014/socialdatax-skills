@@ -132,7 +132,10 @@ test("docs numeric bounds and required values are validated before connecting", 
 });
 
 test("every packaged extended tool has a reachable command and every option is documented", () => {
-  assert.deepEqual(new Set(EXTENDED_COMMANDS.flatMap((command) => command.tools)), new Set(Object.keys(TOOL_CONTRACTS)));
+  const reachableTools = new Set(EXTENDED_COMMANDS.flatMap((command) => command.tools));
+  const contractTools = new Set(Object.keys(TOOL_CONTRACTS));
+  contractTools.delete("xhs_search_notes");
+  assert.deepEqual(reachableTools, contractTools);
   for (const definition of EXTENDED_COMMANDS) {
     const help = extendedHelp(definition.platform, definition.action);
     for (const name of definition.tools) {

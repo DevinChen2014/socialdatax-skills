@@ -694,6 +694,21 @@ test("extended capability commands route to their public MCP tools", async () =>
   }
 });
 
+test("XHS video search has no separate public CLI command", async () => {
+  const { result, toolCalls } = await runCliWithMockMcp([
+    "xhs",
+    "search-videos",
+    "--keyword",
+    "露营",
+  ]);
+
+  assertCliError(
+    result,
+    'Unsupported XHS command "search-videos". Use hot-search, search, detail, pgy-detail, comments, sub-comments, user-info, user-posts, transcript, download-media\\.'
+  );
+  assert.deepEqual(toolCalls, []);
+});
+
 test("extended transcript commands query existing jobs on all six platforms", async () => {
   for (const platform of ["bilibili", "zhihu", "instagram", "x", "tiktok", "youtube"]) {
     const { result, toolCalls } = await runCliWithMockMcp([platform, "transcript", "--job-id", "existing-job"], {},
@@ -893,17 +908,14 @@ test("public package version metadata stays aligned", () => {
   const cli = readFileSync(cliPath, "utf8");
   const versionPattern = escapeRegExp(packageJson.version);
 
-  assert.equal(packageJson.version, "0.2.48");
+  assert.equal(packageJson.version, "0.2.49");
   assert.equal(packageLock.version, packageJson.version);
   assert.equal(packageLock.packages[""].version, packageJson.version);
   assert.match(
     cli,
     new RegExp(`const PACKAGE_VERSION = "${versionPattern}";`)
   );
-  assert.match(
-    readme,
-    new RegExp(`Current public capability version: \`${versionPattern}\``)
-  );
+  assert.match(readme, /Current public capability version: `0\.2\.49` \(npm latest; verified 2026-10-14\)/);
 });
 
 test("publish script reads npm auth token from user npmrc", async () => {
@@ -5607,6 +5619,22 @@ test("xhs search accepts public note type and publish time filters before checki
       "Missing API Key\\. Set SOCIALDATAX_API_KEY before running direct CLI calls\\."
     );
   }
+});
+
+test("xhs video notes remain reachable through unified note search", async () => {
+  const { result, toolCalls } = await runCliWithMockMcp(
+    ["xhs", "search", "--keyword", "foo", "--note-type", "video"],
+    {},
+    ({ name }) => {
+      assert.equal(name, "xhs_search_notes");
+      return { items: [], next_page_token: "" };
+    }
+  );
+
+  assert.equal(result.status, 0, result.stderr);
+  assert.deepEqual(toolCalls.map((call) => call.arguments), [
+    { keyword: "foo", note_type: "video" },
+  ]);
 });
 
 test("xhs search rejects non-contract sort aliases before checking the API key", () => {

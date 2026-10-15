@@ -2,6 +2,8 @@
 
 Use this checklist before syncing this listing to the public `socialdatax-skills` repository or publishing the unified npm skill installer package. Do not submit this package as a unified MCP registry entry unless a real aggregate MCP endpoint exists.
 
+- npm latest: `socialdatax-skills@0.2.49`, published and verified on `2026-10-14`.
+
 ## Public Repository
 
 - Repository name: `socialdatax-skills`
@@ -127,6 +129,7 @@ Use this checklist before syncing this listing to the public `socialdatax-skills
 - `npm pack --dry-run --json` does not include `server-card.json`; platform listings own MCP registry server cards.
 - The package does not include `node_modules`, private backend code, real API keys, production configuration, or internal samples.
 - From the private source repository, `node scripts/publish_socialdatax_skills.mjs --dry-run` succeeds with an npm granular access token that has publish permission and two-factor bypass enabled.
+- `--dry-run` skips the legacy wrapper's registry dependency check and lock refresh. Candidate lock integrity must match the current local primary package; after the primary package is published, the real publish script refreshes the wrapper lock from npm. Review and retain that lock update after publishing.
 - From the private source repository, `node scripts/publish_socialdatax_skills.mjs` publishes `socialdatax-skills` first, then the legacy `social-media-insights-skills` wrapper, with a temporary npm config outside the repository that is removed after publishing.
 - `node cli.mjs list` lists each available capability skill.
 - `node cli.mjs doctor` prints package source, runtime, endpoint, and account-action safety summary.
@@ -191,7 +194,7 @@ Use this checklist before syncing this listing to the public `socialdatax-skills
 - No `public-listings/socialdatax-skills/server-card.json` is published.
 - Hosted streamable HTTP clients can connect directly to `https://mcp.socialdatax.com/xhs/mcp`, `https://mcp.socialdatax.com/douyin/mcp`, `https://mcp.socialdatax.com/kuaishou/mcp`, `https://mcp.socialdatax.com/bilibili/mcp`, `https://mcp.socialdatax.com/weibo/mcp`, `https://mcp.socialdatax.com/toutiao/mcp`, `https://mcp.socialdatax.com/wechat/mcp`, `https://mcp.socialdatax.com/zhihu/mcp`, `https://mcp.socialdatax.com/instagram/mcp`, `https://mcp.socialdatax.com/x/mcp`, `https://mcp.socialdatax.com/youtube/mcp`, `https://mcp.socialdatax.com/tiktok/mcp`, and `https://mcp.socialdatax.com/sensitive-check/mcp` with `Authorization: Bearer <SOCIALDATAX_API_KEY>`.
 - With a valid key, hosted MCP `initialize` succeeds.
-- After deployment, verify XHS hosted MCP `tools/list` returns the current 36 public XHS tools with a valid key, including `xhs_get_product_detail_by_url`, `xhs_get_product_review_reply_replies`, `xhs_get_user_id_by_encrypted_user_id`, `xhs_pgy_get_creator_profile`, `xhs_pgy_get_creator_notes_performance`, and `xhs_pgy_get_creator_fans_profile`; compare exact tool names and schemas, not only counts.
+- After deployment, verify XHS hosted MCP `tools/list` returns the current 35 public XHS tools with a valid key, including `xhs_get_product_detail_by_url`, `xhs_get_product_review_reply_replies`, `xhs_get_user_id_by_encrypted_user_id`, `xhs_pgy_get_creator_profile`, `xhs_pgy_get_creator_notes_performance`, and `xhs_pgy_get_creator_fans_profile`; compare exact tool names and schemas, not only counts.
 - With a valid key, XHS hosted MCP `tools/list` includes `xhs_pgy_get_note_detail_by_note_id` and `xhs_pgy_get_note_detail_by_note_url`, excludes the old MCP tool name, and both descriptions state the 20-point successful-call cost and that failures are not charged.
 - With a valid key, XHS hosted MCP `tools/list` includes `xhs_get_product_reviews`.
 - With a valid key, XHS hosted MCP `tools/list` includes `xhs_get_product_review_replies`, whose `review_id` is copied from product review items.
