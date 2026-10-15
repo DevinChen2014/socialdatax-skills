@@ -524,6 +524,16 @@
       }
     }
   },
+  "weibo_search_user_suggestions": {
+    "description": "获取微博搜索框按关键词联想的少量用户候选，返回用户标识、名称、头像、主页、简介、粉丝数、认证信息、地区和是否正在直播。不支持分页，也不保证包含指定账号；需要翻页搜索用户时使用用户搜索，已有 user_id 或主页链接时使用用户详情。",
+    "parameters": {
+      "keyword": {
+        "minLength": 1,
+        "type": "string",
+        "required": true
+      }
+    }
+  },
   "weibo_search_suggestions": {
     "description": "获取微博搜索框联想词，不返回帖子或用户详情，不支持分页；可将 text 用于帖子搜索，已有明确搜索词时可直接搜索帖子；已有帖子或用户主页链接时使用对应详情工具。",
     "parameters": {

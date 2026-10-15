@@ -397,6 +397,18 @@ npx -y socialdatax-skills@latest weibo search-suggestions --keyword "<keyword>" 
 | --- | --- | --- | --- |
 | `--keyword` | yes | string | minLength: 1 |
 
+#### `weibo user-suggestions`
+
+Get a few search-box user suggestions with profile details and live status. No pagination; use `weibo user-search` for paginated account search. Available in CLI `0.2.50` with the deployed Weibo `0.1.5` service:
+
+```sh
+npx -y socialdatax-skills@latest weibo user-suggestions --keyword "<keyword>" --pretty
+```
+
+| Flag | Required | Type / accepted values | Default / constraints |
+| --- | --- | --- | --- |
+| `--keyword` | yes | string | minLength: 1 |
+
 #### `weibo likers`
 
 This entry is selected when `--url` is supplied.

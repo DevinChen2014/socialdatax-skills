@@ -2,7 +2,7 @@
 
 Use this checklist before syncing this listing to the public `socialdatax-skills` repository or publishing the unified npm skill installer package. Do not submit this package as a unified MCP registry entry unless a real aggregate MCP endpoint exists.
 
-- npm latest: `socialdatax-skills@0.2.49`, published and verified on `2026-10-14`.
+- npm latest: `socialdatax-skills@0.2.50`, published and verified on `2026-10-15`.
 
 ## Public Repository
 
@@ -220,16 +220,16 @@ Use this checklist before syncing this listing to the public `socialdatax-skills
 - Zhihu hosted MCP `tools/list` must match the public tool allowlist in `public-listings/zhihu-insights/server-card.json`. Use that platform listing’s `Recorded release status` section for dated channel observations.
 - With a valid key, Zhihu hosted MCP `tools/list` includes `socialdatax_get_points_balance`.
 - With a valid key, Zhihu hosted MCP `tools/list` includes `zhihu_submit_video_speech_text_by_video_url`, `zhihu_submit_video_speech_text_by_zvideo_id`, and `zhihu_get_video_speech_text_job`.
-- Instagram hosted MCP `0.1.6` returns 14 public tools; deployment and user-search calls verified on 2026-10-08.
-- Instagram local candidate `0.1.7` contains 15 public tools, including first-page tag search; deployment and Registry publication are pending.
+- Historical verification on 2026-10-08: Instagram hosted MCP `0.1.6` returned 14 public tools and user-search calls passed; superseded by the `0.1.7` release below.
+- Instagram hosted MCP `0.1.7` returns 15 public tools, including first-page tag search; deployment and Registry publication were verified on 2026-10-11.
 - With a valid key, Instagram hosted MCP `tools/list` includes `socialdatax_get_points_balance`.
-- X / Twitter local candidate has 18 public X / Twitter tools; verify hosted `tools/list` after deployment.
+- X / Twitter hosted MCP `0.1.3` returns 18 public tools; hosted deployment, authenticated `tools/list`, user search, and Registry publication were verified on 2026-10-08.
 - With a valid key, X / Twitter hosted MCP `tools/list` includes `socialdatax_get_points_balance`.
 - With a valid key, X / Twitter hosted MCP `tools/list` includes `x_submit_video_speech_text_by_post_url`, `x_submit_video_speech_text_by_post_id`, and `x_get_video_speech_text_job`.
 - YouTube hosted MCP `tools/list` must match the public tool allowlist in `public-listings/youtube-insights/server-card.json`. Use that platform listing’s `Recorded release status` section for dated channel observations.
 - With a valid key, YouTube hosted MCP `tools/list` includes `socialdatax_get_points_balance`.
 - With a valid key, YouTube hosted MCP `tools/list` includes `youtube_submit_video_speech_text_by_url`, `youtube_submit_video_speech_text_by_video_id`, and `youtube_get_video_speech_text_job`.
-- TikTok local candidate `0.1.6` has 15 public tools, including `tiktok_search_users` and `tiktok_search_suggestions`; deployment and Registry publication remain pending.
+- TikTok hosted MCP `0.1.7` returns 15 public tools, including `tiktok_search_users` and `tiktok_search_suggestions`; hosted deployment and Registry publication were verified on 2026-10-08.
 - With a valid key, TikTok hosted MCP `tools/list` includes `socialdatax_get_points_balance`.
 - With a valid key, TikTok hosted MCP `tools/list` includes `tiktok_submit_video_speech_text_by_url`, `tiktok_submit_video_speech_text_by_aweme_id`, and `tiktok_get_video_speech_text_job`.
 - With a valid key, Sensitive Words Check hosted MCP `tools/list` returns the current 2 public tools: `check_sensitive_text` and `socialdatax_get_points_balance`.

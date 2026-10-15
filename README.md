@@ -94,7 +94,7 @@ Common search phrases for this skill package:
 - Reserved future SocialDataX namespace names for existing platform listings without draft files yet: `com.socialdatax/kuaishou-insights`, `com.socialdatax/bilibili-insights`, `com.socialdatax/weibo-insights`, `com.socialdatax/wechat-channels-insights`, `com.socialdatax/zhihu-insights`, `com.socialdatax/instagram-insights`, `com.socialdatax/x-insights`, `com.socialdatax/youtube-insights`, and `com.socialdatax/tiktok-insights`.
 - Hosted endpoints without a repo-tracked standalone listing: Toutiao / 今日头条 and Sensitive Words Check.
 - Unified MCP registry name: none; this package installs skills and calls explicit hosted MCP entries.
-- Current public capability version: `0.2.49` (npm latest; verified 2026-10-14)
+- Package capability version: `0.2.50`
 
 ## XHS 蒲公英 / Pugongying commercial note details
 
@@ -326,7 +326,7 @@ Transcript commands submit a bounded video speech-to-text job or check an existi
 
 Generated Agent Skill examples include `--source-client socialdatax-skills --source-platform <marketplace> --source-skill <skill-slug>` so SocialDataX can attribute authenticated direct data CLI usage to the current marketplace Skill. Keep those values unchanged when running commands from a Skill; omit them for ad hoc CLI use. Authenticated direct data CLI commands also accept `SOCIALDATAX_SOURCE_CLIENT`, `SOCIALDATAX_SOURCE_PLATFORM`, and `SOCIALDATAX_SOURCE_SKILL` as environment-variable fallbacks.
 
-Search commands for XHS, Douyin, Kuaishou, Bilibili, Zhihu, Instagram, X / Twitter, YouTube, TikTok, Weibo, Toutiao, and WeChat Channels use `--keyword` and optional `--page-token`.
+Paginated content-search commands for XHS, Douyin, Kuaishou, Bilibili, Zhihu, Instagram, X / Twitter, YouTube, TikTok, Weibo, Toutiao, and WeChat Channels use `--keyword` and optional `--page-token`; Instagram `tag-search` is a separate first-page-only command without pagination.
 Kuaishou work search uses `kuaishou search --keyword` and optional `--page-token`; Kuaishou creator search uses `kuaishou user-search --keyword` and optional `--page-token`. Kuaishou search does not accept Douyin semantic filters, and `kuaishou user-search` does not support `--since-days`.
 Bilibili video search uses `bilibili search-videos --keyword`; Bilibili article search uses `bilibili search-articles --keyword`.
 YouTube reply pagination starts from the returned first-level comment `reply_token`; use `youtube replies --reply-token "<reply_token>"`, not `--comment-id`.
@@ -780,10 +780,13 @@ Current Sensitive Words Check workflows include:
 
 ## Weibo Tools
 
+Version `0.2.50` adds `weibo user-suggestions --keyword "摄影"` for a few search-box account candidates, without pagination. The Weibo `0.1.5` service capability was verified in production on 2026-10-15.
+
 | Tool | Public purpose |
 | --- | --- |
 | `weibo_get_hot_search_list` | Fetch the current Weibo / 微博 hot-search list. |
 | `weibo_search_posts` | Search Weibo posts by keyword with optional `page_token` continuation; do not pass `page`. |
+| `weibo_search_user_suggestions` | Get a few search-box user candidates with profile details and live status; no pagination. Use user search for paginated account results. |
 | `weibo_get_post_detail_by_post_id` | Fetch structured Weibo post details when the caller already has a post_id. |
 | `weibo_get_post_detail_by_post_url` | Resolve a Weibo post URL, short link, or share text into structured post details. |
 | `weibo_get_post_comments_by_post_id` | Fetch paginated first-level comments by post_id with optional `sort_type` (`hot` or `time_descending`). |
@@ -858,6 +861,7 @@ Current Sensitive Words Check workflows include:
 | Tool | Public purpose |
 | --- | --- |
 | `instagram_search_posts` | Search Instagram public posts by keyword with optional `page_token` continuation. |
+| `instagram_search_tags` | Search Instagram tag names and post counts by keyword; first page only, without tag-post results or pagination. |
 | `instagram_get_post_detail_by_post_id` | Fetch structured Instagram post details by post_id. |
 | `instagram_get_post_detail_by_post_url` | Fetch structured Instagram post details from a post URL. |
 | `instagram_get_post_comments_by_post_url` | Fetch paginated first-level comments from an Instagram post URL. |

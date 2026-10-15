@@ -694,6 +694,51 @@ test("extended capability commands route to their public MCP tools", async () =>
   }
 });
 
+test("weibo user-suggestions routes once and preserves candidate data and attribution", async () => {
+  const payload = { items: [{
+    user_id: "123", name: "摄影", avatar_url: null,
+    profile_url: "https://weibo.com/u/123", is_live: false,
+    bio: "", follower_count: null, verified: false,
+    verification_label: null, location: null,
+  }] };
+  for (const response of [payload, { items: [] }]) {
+    const { result, toolCalls, toolCallAuthorizationHeaders, toolCallSourceSkillHeaders } =
+      await runCliWithMockMcp([
+        "weibo", "user-suggestions", "--keyword", "摄影 + 旅行",
+        "--source-skill", "media-search",
+      ], {}, () => response);
+    assert.equal(result.status, 0, result.stderr);
+    assert.deepEqual(toolCalls, [{
+      name: "weibo_search_user_suggestions", arguments: { keyword: "摄影 + 旅行" },
+    }]);
+    assert.deepEqual(JSON.parse(result.stdout), {
+      platform: "weibo", tool: "weibo_search_user_suggestions",
+      arguments: { keyword: "摄影 + 旅行" }, data: response,
+    });
+    assert.deepEqual(toolCallAuthorizationHeaders, ["Bearer test-key"]);
+    assert.deepEqual(toolCallSourceSkillHeaders, ["media-search"]);
+  }
+});
+
+test("weibo user-suggestions rejects missing keywords and pagination before authentication", () => {
+  for (const [args, expected] of [
+    [[], /Missing --keyword/],
+    [["--keyword", " "], /non-empty value/],
+    ...[["--page-token", "opaque"], ["--pages", "2"], ["--all"], ["--max-items", "2"]]
+      .map((flags) => [["--keyword", "摄影", ...flags], /Unsupported option/]),
+  ]) {
+    const result = runCli(["weibo", "user-suggestions", ...args]);
+    assert.equal(result.status, 1);
+    assert.match(result.stderr, expected);
+    assert.doesNotMatch(result.stderr, /Missing API Key/);
+  }
+  const help = runCli(["weibo", "user-suggestions", "--help"]);
+  assert.equal(help.status, 0, help.stderr);
+  assert.match(help.stdout, /weibo_search_user_suggestions/);
+  assert.match(help.stdout, /--keyword/);
+  assert.doesNotMatch(help.stdout, /--page-token|--pages|--all/);
+});
+
 test("XHS video search has no separate public CLI command", async () => {
   const { result, toolCalls } = await runCliWithMockMcp([
     "xhs",
@@ -908,14 +953,14 @@ test("public package version metadata stays aligned", () => {
   const cli = readFileSync(cliPath, "utf8");
   const versionPattern = escapeRegExp(packageJson.version);
 
-  assert.equal(packageJson.version, "0.2.49");
+  assert.equal(packageJson.version, "0.2.50");
   assert.equal(packageLock.version, packageJson.version);
   assert.equal(packageLock.packages[""].version, packageJson.version);
   assert.match(
     cli,
     new RegExp(`const PACKAGE_VERSION = "${versionPattern}";`)
   );
-  assert.match(readme, /Current public capability version: `0\.2\.49` \(npm latest; verified 2026-10-14\)/);
+  assert.match(readme, /Package capability version: `0\.2\.50`/);
 });
 
 test("publish script reads npm auth token from user npmrc", async () => {
@@ -10674,7 +10719,7 @@ test("direct CLI README examples include all public kuaishou actions", () => {
   assert.match(readme, /kuaishou_get_hot_search_list/);
   assert.match(
     readme,
-    /Search commands for XHS, Douyin, Kuaishou, Bilibili, Zhihu, Instagram, X \/ Twitter, YouTube, TikTok, Weibo, Toutiao, and WeChat Channels use `--keyword` and optional `--page-token`/
+    /Paginated content-search commands for XHS, Douyin, Kuaishou, Bilibili, Zhihu, Instagram, X \/ Twitter, YouTube, TikTok, Weibo, Toutiao, and WeChat Channels use `--keyword` and optional `--page-token`; Instagram `tag-search` is a separate first-page-only command without pagination\./
   );
   assert.doesNotMatch(readme, /露营博主/);
   assert.match(readme, /Kuaishou search does not accept Douyin semantic filters/);
@@ -10879,7 +10924,7 @@ test("direct CLI README examples include public weibo, toutiao, and wechat actio
   }
   assert.match(
     readme,
-    /Search commands for XHS, Douyin, Kuaishou, Bilibili, Zhihu, Instagram, X \/ Twitter, YouTube, TikTok, Weibo, Toutiao, and WeChat Channels use `--keyword` and optional `--page-token`/
+    /Paginated content-search commands for XHS, Douyin, Kuaishou, Bilibili, Zhihu, Instagram, X \/ Twitter, YouTube, TikTok, Weibo, Toutiao, and WeChat Channels use `--keyword` and optional `--page-token`; Instagram `tag-search` is a separate first-page-only command without pagination\./
   );
   assert.match(readme, /WeChat Channels search filters use semantic values/);
   assert.match(readme, /wechat_get_mp_article_detail_by_url/);
