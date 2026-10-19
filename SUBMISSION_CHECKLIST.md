@@ -2,8 +2,15 @@
 
 Use this checklist before syncing this listing to the public `socialdatax-skills` repository or publishing the unified npm skill installer package. Do not submit this package as a unified MCP registry entry unless a real aggregate MCP endpoint exists.
 
-- npm latest: `socialdatax-skills@0.2.52`, published and verified on `2026-10-19`.
-- Legacy npm wrapper: `social-media-insights-skills@0.2.52`, published and verified on `2026-10-19`; its registry dependency and installed `doctor --json` both resolve to `socialdatax-skills@0.2.52`.
+- npm latest: `socialdatax-skills@0.2.53`, published and verified on `2026-10-19`.
+- Legacy npm wrapper: `social-media-insights-skills@0.2.53`, published and verified on `2026-10-19`; its registry dependency and installed `doctor --json` both resolve to `socialdatax-skills@0.2.53`.
+
+## 2026-10-19 pagination partial-result release
+
+- Published both npm packages at `0.2.53`. Later-page and nested-reply failures retain completed results with `partial: true`, while keeping exit status 1 and existing stderr errors. First-request failures and successful response shapes remain unchanged. Repeated continuation tokens are cleared.
+- Commands: `node scripts/publish_socialdatax_skills.mjs`, then `node scripts/publish_social_media_insights_skills.mjs` after the primary version propagated beyond the paired script wait. Preflight passed 433 primary-package tests and 7 wrapper tests; no checks skipped.
+- Fresh registry install of both versions succeeded. All 29 installed primary-package files match local release files byte for byte. Both direct and legacy-wrapper `doctor --json` report 0.2.53; wrapper lock resolves the exact registry dependency. CLI SHA256: `df57ff7833dc16163b396cf889ba8cb3c643608de8db386708b887dbf1cf9e04`.
+- Public GitHub source commit: `e843b64`. No paid business calls were made for this release.
 
 ## 2026-10-19 skill documentation release
 

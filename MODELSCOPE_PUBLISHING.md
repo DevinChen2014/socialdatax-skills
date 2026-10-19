@@ -1,5 +1,10 @@
 # SocialDataX ModelScope Skills Publishing Record
 
+## 2026-10-19 选品快速开始条件补齐
+
+- 官方 upload/settings PATCH 更新 socialhelper/ecommerce-product-research，HTTP 200、success=true。保留名称、描述、分类、来源和许可；公共 GitHub 来源提交 `e843b64`。
+- 公开 archive 中 SKILL.md 与本地逐字节一致，SHA256 `1bcbfa80af58c8041fe6a7dc9191fd6946e523586ba5e5e8e59f32d2d521806f`。仅补齐资料/在线条件；商品对比内容无新增变化，不重复发布。
+
 ## 2026-10-19 通用选品与对比在线步骤条件澄清
 
 - 官方upload/settings PATCH更新socialhelper下两项技能，响应success=true，公开详情可读。公共GitHub来源提交`08ca2b0`。
