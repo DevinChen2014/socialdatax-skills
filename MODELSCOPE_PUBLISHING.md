@@ -1,5 +1,17 @@
 # SocialDataX ModelScope Skills Publishing Record
 
+## 2026-10-19 电商文案三入口发布
+
+- 用户批准接口增强版商品详情页文案、商品主图卖点文案、带货短视频脚本，支持链接读取和用户资料直接写作；仅用户要求时参考少量同类商品。沿用 CLI 0.2.52。
+- 三项通过官方 upload/create API 创建，owner=socialhelper，private=false；公开详情与 archive 均可读，远端 SKILL.md 与本地逐字节一致，初始下载均为 0。公共 GitHub 来源提交 `19cdcb4`。
+- 场景复核通过；131 项生成器测试、894 项上架检查通过。新三项 apiOptional 元数据不强制 Key/Node/npm，在线调用仍按正文配置依赖与来源归因。
+
+| Slug | SKILL.md SHA256 |
+| --- | --- |
+| ecommerce-detail-copywriter | `dab95a21e4994a7137358ef8f7c9123b27f70c0ceab693da997ede46d11cb1ff` |
+| ecommerce-main-image-copywriter | `94eacf4248723e3c8e921d8208825c282016206cd92078bc8726090de5fdfeaf` |
+| ecommerce-video-script | `478e02085e5b8e1512fa8038c30bc9045412521cc9a13433e52ec4a787fde406` |
+
 ## 2026-10-19 电商四入口发布验收
 
 - 四项使用现有 CLI 0.2.52 商品能力，公开来源 GitHub 提交 `401246f`。通过官方 upload + create API 发布，owner=socialhelper，private=false。第三项上传曾限流，等待后成功；没有重复创建。四项公开详情可读，下载 archive 中 SKILL.md 与本地逐字节一致，初始下载均为 0。
