@@ -2,7 +2,7 @@
 name: "media-comments"
 description: "Fetch and analyze comments/replies for supported SocialDataX public platforms. This version is backed by hosted platform MCP services and supports Xiaohongshu / XHS / RedNote, Douyin, Kuaishou, Bilibili, Zhihu, Instagram, X / Twitter, YouTube, TikTok, Weibo, Toutiao, and WeChat Channels. Also use this skill for 百度贴吧 / Baidu Tieba comments and replies, XHS product reviews and nested review replies, WeChat Official Account / 公众号 article comments and replies, and Weibo liker/repost lists by post URL. Also supports Haokan / 好看视频."
 source_client: "socialdatax-skills"
-source_platform: "npm"
+source_platform: "github"
 source_skill: "media-comments"
 metadata:
   openclaw:
@@ -18,7 +18,7 @@ metadata:
         package: "socialdatax-skills"
         bins: []
     emoji: "💬"
-    homepage: "https://socialdatax.com/ai?from=npm"
+    homepage: "https://socialdatax.com/ai?from=github"
 ---
 <!-- AUTO-GENERATED from socialdatax-skill-source. Do not edit directly; run `node scripts/generate_socialdatax_skills.mjs`. -->
 
@@ -45,8 +45,8 @@ Current platform support:
 
 ## API Key
 
-Use `SOCIALDATAX_API_KEY` for SocialDataX requests. The only official website for requesting or managing API access is <https://socialdatax.com/ai?from=npm>. If a user asks where to get a key, provide only this URL; do not infer alternate domains.
-获取或管理 API Key：访问 <https://socialdatax.com/ai?from=npm>，按官网的 API Key 申请/管理入口操作。环境变量名固定使用 `SOCIALDATAX_API_KEY`；不要引导用户使用其他域名。
+Use `SOCIALDATAX_API_KEY` for SocialDataX requests. The only official website for requesting or managing API access is <https://socialdatax.com/ai?from=github>. If a user asks where to get a key, provide only this URL; do not infer alternate domains.
+获取或管理 API Key：访问 <https://socialdatax.com/ai?from=github>，按官网的 API Key 申请/管理入口操作。环境变量名固定使用 `SOCIALDATAX_API_KEY`；不要引导用户使用其他域名。
 
 ## Preferred Direct CLI
 
@@ -55,242 +55,242 @@ Prefer the direct CLI when the agent can run shell commands. It does not require
 ```bash
 npx -y socialdatax-skills@latest xhs comments \
   --note-id "<note_id>" --pretty --source-client socialdatax-skills \
-  --source-platform npm --source-skill media-comments
+  --source-platform github --source-skill media-comments
 
 npx -y socialdatax-skills@latest xhs comments \
   --note-id "<note_id>" --all --include-replies --pretty \
-  --source-client socialdatax-skills --source-platform npm \
+  --source-client socialdatax-skills --source-platform github \
   --source-skill media-comments
 
 npx -y socialdatax-skills@latest xhs comments \
   --url "<note_url_or_share_text>" --pretty --source-client socialdatax-skills \
-  --source-platform npm --source-skill media-comments
+  --source-platform github --source-skill media-comments
 
 npx -y socialdatax-skills@latest xhs sub-comments \
   --note-id "<note_id>" --comment-id "<comment_id>" --pretty \
-  --source-client socialdatax-skills --source-platform npm \
+  --source-client socialdatax-skills --source-platform github \
   --source-skill media-comments
 
 npx -y socialdatax-skills@latest douyin comments \
   --aweme-id "<aweme_id>" --pretty --source-client socialdatax-skills \
-  --source-platform npm --source-skill media-comments
+  --source-platform github --source-skill media-comments
 
 npx -y socialdatax-skills@latest douyin comments \
   --aweme-id "<aweme_id>" --all --include-replies --pretty \
-  --source-client socialdatax-skills --source-platform npm \
+  --source-client socialdatax-skills --source-platform github \
   --source-skill media-comments
 
 npx -y socialdatax-skills@latest douyin comments \
   --url "<douyin_content_url_or_share_text>" --pretty \
-  --source-client socialdatax-skills --source-platform npm \
+  --source-client socialdatax-skills --source-platform github \
   --source-skill media-comments
 
 npx -y socialdatax-skills@latest douyin replies \
   --aweme-id "<aweme_id>" --comment-id "<comment_id>" --pretty \
-  --source-client socialdatax-skills --source-platform npm \
+  --source-client socialdatax-skills --source-platform github \
   --source-skill media-comments
 
 npx -y socialdatax-skills@latest kuaishou comments \
   --photo-id "<photo_id>" --pretty --source-client socialdatax-skills \
-  --source-platform npm --source-skill media-comments
+  --source-platform github --source-skill media-comments
 
 npx -y socialdatax-skills@latest kuaishou comments \
   --photo-id "<photo_id>" --all --include-replies --pretty \
-  --source-client socialdatax-skills --source-platform npm \
+  --source-client socialdatax-skills --source-platform github \
   --source-skill media-comments
 
 npx -y socialdatax-skills@latest kuaishou comments \
   --url "<kuaishou_content_url_or_share_text>" --pretty \
-  --source-client socialdatax-skills --source-platform npm \
+  --source-client socialdatax-skills --source-platform github \
   --source-skill media-comments
 
 npx -y socialdatax-skills@latest kuaishou replies \
   --photo-id "<photo_id>" --comment-id "<comment_id>" --pretty \
-  --source-client socialdatax-skills --source-platform npm \
+  --source-client socialdatax-skills --source-platform github \
   --source-skill media-comments
 
 npx -y socialdatax-skills@latest bilibili comments \
   --content-id "<content_id>" --pretty --source-client socialdatax-skills \
-  --source-platform npm --source-skill media-comments
+  --source-platform github --source-skill media-comments
 
 npx -y socialdatax-skills@latest bilibili comments \
   --url "<bilibili_content_url_or_share_text>" --pretty \
-  --source-client socialdatax-skills --source-platform npm \
+  --source-client socialdatax-skills --source-platform github \
   --source-skill media-comments
 
 npx -y socialdatax-skills@latest bilibili replies \
   --comment-object-id "<comment_object_id>" \
   --comment-object-type "<comment_object_type_integer>" --comment-id "<comment_id>" \
-  --pretty --source-client socialdatax-skills --source-platform npm \
+  --pretty --source-client socialdatax-skills --source-platform github \
   --source-skill media-comments
 
 npx -y socialdatax-skills@latest zhihu comments \
   --content-url "<zhihu_content_url_or_share_text>" --pretty \
-  --source-client socialdatax-skills --source-platform npm \
+  --source-client socialdatax-skills --source-platform github \
   --source-skill media-comments
 
 npx -y socialdatax-skills@latest zhihu replies \
   --content-url "<zhihu_content_url_or_share_text>" --comment-id "<comment_id>" \
-  --pretty --source-client socialdatax-skills --source-platform npm \
+  --pretty --source-client socialdatax-skills --source-platform github \
   --source-skill media-comments
 
 npx -y socialdatax-skills@latest instagram comments \
   --post-url "<instagram_post_url_or_share_text>" --pretty \
-  --source-client socialdatax-skills --source-platform npm \
+  --source-client socialdatax-skills --source-platform github \
   --source-skill media-comments
 
 npx -y socialdatax-skills@latest instagram replies \
   --post-id "<post_id>" --comment-id "<comment_id>" --pretty \
-  --source-client socialdatax-skills --source-platform npm \
+  --source-client socialdatax-skills --source-platform github \
   --source-skill media-comments
 
 npx -y socialdatax-skills@latest x comments \
   --post-id "<post_id>" --pretty --source-client socialdatax-skills \
-  --source-platform npm --source-skill media-comments
+  --source-platform github --source-skill media-comments
 
 npx -y socialdatax-skills@latest x comments \
   --post-url "<x_post_url_or_share_text>" --pretty --source-client socialdatax-skills \
-  --source-platform npm --source-skill media-comments
+  --source-platform github --source-skill media-comments
 
 npx -y socialdatax-skills@latest x replies \
   --post-id "<post_id>" --comment-id "<comment_id>" --pretty \
-  --source-client socialdatax-skills --source-platform npm \
+  --source-client socialdatax-skills --source-platform github \
   --source-skill media-comments
 
 npx -y socialdatax-skills@latest youtube comments \
   --url "<youtube_video_url>" --pretty --source-client socialdatax-skills \
-  --source-platform npm --source-skill media-comments
+  --source-platform github --source-skill media-comments
 
 npx -y socialdatax-skills@latest youtube replies \
   --reply-token "<reply_token>" --pretty --source-client socialdatax-skills \
-  --source-platform npm --source-skill media-comments
+  --source-platform github --source-skill media-comments
 
 npx -y socialdatax-skills@latest tiktok comments \
   --post-id "<post_id>" --pretty --source-client socialdatax-skills \
-  --source-platform npm --source-skill media-comments
+  --source-platform github --source-skill media-comments
 
 npx -y socialdatax-skills@latest tiktok comments \
   --url "<tiktok_post_url_or_share_text>" --pretty --source-client socialdatax-skills \
-  --source-platform npm --source-skill media-comments
+  --source-platform github --source-skill media-comments
 
 npx -y socialdatax-skills@latest tiktok replies \
   --post-id "<post_id>" --comment-id "<comment_id>" --pretty \
-  --source-client socialdatax-skills --source-platform npm \
+  --source-client socialdatax-skills --source-platform github \
   --source-skill media-comments
 
 npx -y socialdatax-skills@latest weibo comments \
   --post-id "<post_id>" --pretty --source-client socialdatax-skills \
-  --source-platform npm --source-skill media-comments
+  --source-platform github --source-skill media-comments
 
 npx -y socialdatax-skills@latest weibo comments \
   --post-id "<post_id>" --all --include-replies --pretty \
-  --source-client socialdatax-skills --source-platform npm \
+  --source-client socialdatax-skills --source-platform github \
   --source-skill media-comments
 
 npx -y socialdatax-skills@latest weibo comments \
   --post-url "<weibo_post_url_or_share_text>" --pretty \
-  --source-client socialdatax-skills --source-platform npm \
+  --source-client socialdatax-skills --source-platform github \
   --source-skill media-comments
 
 npx -y socialdatax-skills@latest weibo replies \
   --post-id "<post_id>" --comment-id "<comment_id>" --pretty \
-  --source-client socialdatax-skills --source-platform npm \
+  --source-client socialdatax-skills --source-platform github \
   --source-skill media-comments
 
 npx -y socialdatax-skills@latest toutiao comments \
   --post-id "<post_id>" --pretty --source-client socialdatax-skills \
-  --source-platform npm --source-skill media-comments
+  --source-platform github --source-skill media-comments
 
 npx -y socialdatax-skills@latest toutiao comments \
   --post-id "<post_id>" --all --include-replies --pretty \
-  --source-client socialdatax-skills --source-platform npm \
+  --source-client socialdatax-skills --source-platform github \
   --source-skill media-comments
 
 npx -y socialdatax-skills@latest toutiao comments \
   --url "<toutiao_content_url_or_share_text>" --pretty \
-  --source-client socialdatax-skills --source-platform npm \
+  --source-client socialdatax-skills --source-platform github \
   --source-skill media-comments
 
 npx -y socialdatax-skills@latest toutiao replies \
   --comment-id "<comment_id>" --pretty --source-client socialdatax-skills \
-  --source-platform npm --source-skill media-comments
+  --source-platform github --source-skill media-comments
 
 npx -y socialdatax-skills@latest wechat comments \
   --object-id "<object_id>" --object-nonce-id "<object_nonce_id>" --pretty \
-  --source-client socialdatax-skills --source-platform npm \
+  --source-client socialdatax-skills --source-platform github \
   --source-skill media-comments
 
 npx -y socialdatax-skills@latest wechat comments \
   --object-id "<object_id>" --object-nonce-id "<object_nonce_id>" --all \
-  --include-replies --pretty --source-client socialdatax-skills --source-platform npm \
-  --source-skill media-comments
+  --include-replies --pretty --source-client socialdatax-skills \
+  --source-platform github --source-skill media-comments
 
 npx -y socialdatax-skills@latest wechat comments \
   --url "<wechat_video_url_or_share_text>" --pretty --source-client socialdatax-skills \
-  --source-platform npm --source-skill media-comments
+  --source-platform github --source-skill media-comments
 
 npx -y socialdatax-skills@latest wechat replies \
   --object-id "<object_id>" --object-nonce-id "<object_nonce_id>" \
   --comment-id "<comment_id>" --pretty --source-client socialdatax-skills \
-  --source-platform npm --source-skill media-comments
+  --source-platform github --source-skill media-comments
 
 npx -y socialdatax-skills@latest xhs product-reviews \
   --sku-id "<sku_id>" --pretty --source-client socialdatax-skills \
-  --source-platform npm --source-skill media-comments
+  --source-platform github --source-skill media-comments
 
 npx -y socialdatax-skills@latest xhs product-review-replies \
   --review-id "<review_id>" --pretty --source-client socialdatax-skills \
-  --source-platform npm --source-skill media-comments
+  --source-platform github --source-skill media-comments
 
 npx -y socialdatax-skills@latest xhs product-review-reply-replies \
   --review-id "<review_id>" --pretty --source-client socialdatax-skills \
-  --source-platform npm --source-skill media-comments
+  --source-platform github --source-skill media-comments
 
 npx -y socialdatax-skills@latest wechat article-comments \
-  --url "<url>" --pretty --source-client socialdatax-skills --source-platform npm \
+  --url "<url>" --pretty --source-client socialdatax-skills --source-platform github \
   --source-skill media-comments
 
 npx -y socialdatax-skills@latest wechat article-replies \
-  --url "<url>" --pretty --source-client socialdatax-skills --source-platform npm \
+  --url "<url>" --pretty --source-client socialdatax-skills --source-platform github \
   --source-skill media-comments
 
 npx -y socialdatax-skills@latest weibo likers \
-  --url "<post_url>" --pretty --source-client socialdatax-skills --source-platform npm \
-  --source-skill media-comments
+  --url "<post_url>" --pretty --source-client socialdatax-skills \
+  --source-platform github --source-skill media-comments
 
 npx -y socialdatax-skills@latest weibo reposts \
-  --url "<post_url>" --pretty --source-client socialdatax-skills --source-platform npm \
-  --source-skill media-comments
+  --url "<post_url>" --pretty --source-client socialdatax-skills \
+  --source-platform github --source-skill media-comments
 
 npx -y socialdatax-skills@latest tieba replies \
   --thread-id "<thread_id>" --comment-id "<comment_id>" --pretty \
-  --source-client socialdatax-skills --source-platform npm \
+  --source-client socialdatax-skills --source-platform github \
   --source-skill media-comments
 
 npx -y socialdatax-skills@latest tieba comments \
   --thread-id "<thread_id>" --pretty --source-client socialdatax-skills \
-  --source-platform npm --source-skill media-comments
+  --source-platform github --source-skill media-comments
 
 npx -y socialdatax-skills@latest tieba comments \
-  --url "<url>" --pretty --source-client socialdatax-skills --source-platform npm \
+  --url "<url>" --pretty --source-client socialdatax-skills --source-platform github \
   --source-skill media-comments
 
 npx -y socialdatax-skills@latest haokan comments \
   --video-id "<video_id>" --pretty --source-client socialdatax-skills \
-  --source-platform npm --source-skill media-comments
+  --source-platform github --source-skill media-comments
 
 npx -y socialdatax-skills@latest haokan comments \
   --url "<video_url>" --pretty --source-client socialdatax-skills \
-  --source-platform npm --source-skill media-comments
+  --source-platform github --source-skill media-comments
 
 npx -y socialdatax-skills@latest haokan replies \
   --video-id "<video_id>" --comment-id "<comment_id>" --pretty \
-  --source-client socialdatax-skills --source-platform npm \
+  --source-client socialdatax-skills --source-platform github \
   --source-skill media-comments
 
 npx -y socialdatax-skills@latest haokan replies \
   --url "<video_url>" --comment-id "<comment_id>" --pretty \
-  --source-client socialdatax-skills --source-platform npm \
+  --source-client socialdatax-skills --source-platform github \
   --source-skill media-comments
 ```
 
@@ -327,7 +327,7 @@ Optional arguments:
 - Toutiao `--url <toutiao_content_url_or_share_text>`: use for a content URL, short link, or share text for first-level comments; replies require `--comment-id <comment_id>`.
 - WeChat Channels / 视频号 `--object-id <object_id>` and `--object-nonce-id <object_nonce_id>`: use together when both values are already known and should anchor the comment thread.
 - WeChat Channels / 视频号 `--url <wechat_video_url_or_share_text>`: use for a WeChat Channels video link or share text for first-level comments.
-- `--source-client socialdatax-skills --source-platform npm --source-skill media-comments`: usage attribution for this Agent Skill; keep these values unchanged when running examples from this Skill.
+- `--source-client socialdatax-skills --source-platform github --source-skill media-comments`: usage attribution for this Agent Skill; keep these values unchanged when running examples from this Skill.
 
 Use one first-level comment entrypoint shown in the CLI example at a time; do not mix multiple content identifiers in one command. For reply commands, use the platform-specific reply identifiers shown in the CLI example.
 
@@ -338,7 +338,7 @@ For replies authored by an X creator rather than comments under a post, use `med
 
 ## Safety Boundary
 
-This skill is read-only. It uses `SOCIALDATAX_API_KEY` from the user's environment at runtime. Generated Skill files do not contain API keys. It does not read local browser data or perform login, posting, liking, commenting, or account changes. Prefer the direct CLI; hosted MCP tools are optional when the current agent already supports authenticated streamable HTTP MCP.
+This skill is read-only. It uses `SOCIALDATAX_API_KEY` from the user's environment at runtime. Generated Skill files do not contain API keys. It does not read local browser data or perform login, posting, liking, commenting, or account changes.
 
 ## MCP Tools
 

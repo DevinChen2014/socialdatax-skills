@@ -2,7 +2,7 @@
 name: "media-detail"
 description: "Read structured social media content details and metrics from content IDs, URLs, short links, or share text for supported platforms including Xiaohongshu / XHS / RedNote, Douyin, Kuaishou, Bilibili, Zhihu, Instagram, X / Twitter, YouTube, TikTok, Weibo, Toutiao, and WeChat Channels. For WeChat Official Account articles, read article details, body text, and statistics from article links. Supports XHS 蒲公英 / Pugongying commercial note details when requested. Also use this skill for 百度贴吧 / Baidu Tieba thread and forum details, XHS and Douyin product details, and WeChat Channels share links from object IDs. Also supports Haokan / 好看视频."
 source_client: "socialdatax-skills"
-source_platform: "npm"
+source_platform: "github"
 source_skill: "media-detail"
 metadata:
   openclaw:
@@ -18,7 +18,7 @@ metadata:
         package: "socialdatax-skills"
         bins: []
     emoji: "📄"
-    homepage: "https://socialdatax.com/ai?from=npm"
+    homepage: "https://socialdatax.com/ai?from=github"
 ---
 <!-- AUTO-GENERATED from socialdatax-skill-source. Do not edit directly; run `node scripts/generate_socialdatax_skills.mjs`. -->
 
@@ -47,8 +47,8 @@ Current platform support:
 
 ## API Key
 
-Use `SOCIALDATAX_API_KEY` for SocialDataX requests. The only official website for requesting or managing API access is <https://socialdatax.com/ai?from=npm>. If a user asks where to get a key, provide only this URL; do not infer alternate domains.
-获取或管理 API Key：访问 <https://socialdatax.com/ai?from=npm>，按官网的 API Key 申请/管理入口操作。环境变量名固定使用 `SOCIALDATAX_API_KEY`；不要引导用户使用其他域名。
+Use `SOCIALDATAX_API_KEY` for SocialDataX requests. The only official website for requesting or managing API access is <https://socialdatax.com/ai?from=github>. If a user asks where to get a key, provide only this URL; do not infer alternate domains.
+获取或管理 API Key：访问 <https://socialdatax.com/ai?from=github>，按官网的 API Key 申请/管理入口操作。环境变量名固定使用 `SOCIALDATAX_API_KEY`；不要引导用户使用其他域名。
 
 ## Preferred Direct CLI
 
@@ -57,143 +57,151 @@ Prefer the direct CLI when the agent can run shell commands. It does not require
 ```bash
 npx -y socialdatax-skills@latest xhs detail \
   --note-id "<note_id>" --pretty --source-client socialdatax-skills \
-  --source-platform npm --source-skill media-detail
+  --source-platform github --source-skill media-detail
 
 npx -y socialdatax-skills@latest xhs detail \
   --url "<note_url_or_share_text>" --pretty --source-client socialdatax-skills \
-  --source-platform npm --source-skill media-detail
+  --source-platform github --source-skill media-detail
 
 npx -y socialdatax-skills@latest douyin detail \
   --aweme-id "<aweme_id>" --pretty --source-client socialdatax-skills \
-  --source-platform npm --source-skill media-detail
+  --source-platform github --source-skill media-detail
 
 npx -y socialdatax-skills@latest douyin detail \
   --url "<douyin_content_url_or_share_text>" --pretty \
-  --source-client socialdatax-skills --source-platform npm --source-skill media-detail
+  --source-client socialdatax-skills --source-platform github \
+  --source-skill media-detail
 
 npx -y socialdatax-skills@latest kuaishou detail \
   --photo-id "<photo_id>" --pretty --source-client socialdatax-skills \
-  --source-platform npm --source-skill media-detail
+  --source-platform github --source-skill media-detail
 
 npx -y socialdatax-skills@latest kuaishou detail \
   --url "<kuaishou_content_url_or_share_text>" --pretty \
-  --source-client socialdatax-skills --source-platform npm --source-skill media-detail
+  --source-client socialdatax-skills --source-platform github \
+  --source-skill media-detail
 
 npx -y socialdatax-skills@latest bilibili detail \
   --content-id "<content_id>" --pretty --source-client socialdatax-skills \
-  --source-platform npm --source-skill media-detail
+  --source-platform github --source-skill media-detail
 
 npx -y socialdatax-skills@latest bilibili detail \
   --url "<bilibili_content_url_or_share_text>" --pretty \
-  --source-client socialdatax-skills --source-platform npm --source-skill media-detail
+  --source-client socialdatax-skills --source-platform github \
+  --source-skill media-detail
 
 npx -y socialdatax-skills@latest zhihu detail \
   --content-url "<zhihu_content_url_or_share_text>" --pretty \
-  --source-client socialdatax-skills --source-platform npm --source-skill media-detail
+  --source-client socialdatax-skills --source-platform github \
+  --source-skill media-detail
 
 npx -y socialdatax-skills@latest instagram detail \
   --post-id "<post_id>" --pretty --source-client socialdatax-skills \
-  --source-platform npm --source-skill media-detail
+  --source-platform github --source-skill media-detail
 
 npx -y socialdatax-skills@latest instagram detail \
   --post-url "<instagram_post_url_or_share_text>" --pretty \
-  --source-client socialdatax-skills --source-platform npm --source-skill media-detail
+  --source-client socialdatax-skills --source-platform github \
+  --source-skill media-detail
 
 npx -y socialdatax-skills@latest x detail \
   --post-id "<post_id>" --pretty --source-client socialdatax-skills \
-  --source-platform npm --source-skill media-detail
+  --source-platform github --source-skill media-detail
 
 npx -y socialdatax-skills@latest x detail \
   --post-url "<x_post_url_or_share_text>" --pretty --source-client socialdatax-skills \
-  --source-platform npm --source-skill media-detail
+  --source-platform github --source-skill media-detail
 
 npx -y socialdatax-skills@latest youtube detail \
   --url "<youtube_video_url>" --pretty --source-client socialdatax-skills \
-  --source-platform npm --source-skill media-detail
+  --source-platform github --source-skill media-detail
 
 npx -y socialdatax-skills@latest tiktok detail \
   --url "<tiktok_post_url_or_share_text>" --pretty --source-client socialdatax-skills \
-  --source-platform npm --source-skill media-detail
+  --source-platform github --source-skill media-detail
 
 npx -y socialdatax-skills@latest weibo detail \
   --post-id "<post_id>" --pretty --source-client socialdatax-skills \
-  --source-platform npm --source-skill media-detail
+  --source-platform github --source-skill media-detail
 
 npx -y socialdatax-skills@latest weibo detail \
   --post-url "<weibo_post_url_or_share_text>" --pretty \
-  --source-client socialdatax-skills --source-platform npm --source-skill media-detail
+  --source-client socialdatax-skills --source-platform github \
+  --source-skill media-detail
 
 npx -y socialdatax-skills@latest toutiao detail \
   --post-id "<post_id>" --pretty --source-client socialdatax-skills \
-  --source-platform npm --source-skill media-detail
+  --source-platform github --source-skill media-detail
 
 npx -y socialdatax-skills@latest toutiao detail \
   --url "<toutiao_content_url_or_share_text>" --pretty \
-  --source-client socialdatax-skills --source-platform npm --source-skill media-detail
+  --source-client socialdatax-skills --source-platform github \
+  --source-skill media-detail
 
 npx -y socialdatax-skills@latest wechat detail \
   --encrypted-object-id "<encrypted_object_id>" --pretty \
-  --source-client socialdatax-skills --source-platform npm --source-skill media-detail
+  --source-client socialdatax-skills --source-platform github \
+  --source-skill media-detail
 
 npx -y socialdatax-skills@latest wechat detail \
   --url "<wechat_work_url_or_share_text>" --pretty --source-client socialdatax-skills \
-  --source-platform npm --source-skill media-detail
+  --source-platform github --source-skill media-detail
 
 npx -y socialdatax-skills@latest wechat article \
   --url "<mp_article_url_or_share_text>" --pretty --source-client socialdatax-skills \
-  --source-platform npm --source-skill media-detail
+  --source-platform github --source-skill media-detail
 
 npx -y socialdatax-skills@latest wechat article-stats \
   --url "<mp_article_url_or_share_text>" --pretty --source-client socialdatax-skills \
-  --source-platform npm --source-skill media-detail
+  --source-platform github --source-skill media-detail
 
 npx -y socialdatax-skills@latest xhs pgy-detail \
   --note-id "<note_id>" --pretty --source-client socialdatax-skills \
-  --source-platform npm --source-skill media-detail
+  --source-platform github --source-skill media-detail
 
 npx -y socialdatax-skills@latest xhs pgy-detail \
   --url "<note_url_or_share_text>" --pretty --source-client socialdatax-skills \
-  --source-platform npm --source-skill media-detail
+  --source-platform github --source-skill media-detail
 
 npx -y socialdatax-skills@latest xhs product-detail \
   --sku-id "<sku_id>" --pretty --source-client socialdatax-skills \
-  --source-platform npm --source-skill media-detail
+  --source-platform github --source-skill media-detail
 
 npx -y socialdatax-skills@latest xhs product-detail \
-  --url "<url>" --pretty --source-client socialdatax-skills --source-platform npm \
+  --url "<url>" --pretty --source-client socialdatax-skills --source-platform github \
   --source-skill media-detail
 
 npx -y socialdatax-skills@latest douyin product-detail \
   --product-id "<product_id>" --pretty --source-client socialdatax-skills \
-  --source-platform npm --source-skill media-detail
+  --source-platform github --source-skill media-detail
 
 npx -y socialdatax-skills@latest douyin product-detail \
-  --url "<url>" --pretty --source-client socialdatax-skills --source-platform npm \
+  --url "<url>" --pretty --source-client socialdatax-skills --source-platform github \
   --source-skill media-detail
 
 npx -y socialdatax-skills@latest wechat share-link \
   --object-id "<object_id>" --pretty --source-client socialdatax-skills \
-  --source-platform npm --source-skill media-detail
+  --source-platform github --source-skill media-detail
 
 npx -y socialdatax-skills@latest tieba forum-detail \
   --forum-name "<forum_name>" --pretty --source-client socialdatax-skills \
-  --source-platform npm --source-skill media-detail
+  --source-platform github --source-skill media-detail
 
 npx -y socialdatax-skills@latest tieba detail \
   --thread-id "<thread_id>" --pretty --source-client socialdatax-skills \
-  --source-platform npm --source-skill media-detail
+  --source-platform github --source-skill media-detail
 
 npx -y socialdatax-skills@latest tieba detail \
-  --url "<url>" --pretty --source-client socialdatax-skills --source-platform npm \
+  --url "<url>" --pretty --source-client socialdatax-skills --source-platform github \
   --source-skill media-detail
 
 npx -y socialdatax-skills@latest haokan detail \
   --video-id "<video_id>" --pretty --source-client socialdatax-skills \
-  --source-platform npm --source-skill media-detail
+  --source-platform github --source-skill media-detail
 
 npx -y socialdatax-skills@latest haokan detail \
   --url "<video_url>" --pretty --source-client socialdatax-skills \
-  --source-platform npm --source-skill media-detail
+  --source-platform github --source-skill media-detail
 ```
 
 Optional arguments:
@@ -222,7 +230,7 @@ Optional arguments:
 - WeChat Channels / 视频号 `--url <wechat_work_url_or_share_text>`: use for a WeChat Channels video or image-post link or share text.
 - WeChat Official Account / 微信公众号 `article --url <mp_article_url_or_share_text>`: use for article details and body text.
 - WeChat Official Account / 微信公众号 `article-stats --url <mp_article_url_or_share_text>`: use for article reading and engagement statistics.
-- `--source-client socialdatax-skills --source-platform npm --source-skill media-detail`: usage attribution for this Agent Skill; keep these values unchanged when running examples from this Skill.
+- `--source-client socialdatax-skills --source-platform github --source-skill media-detail`: usage attribution for this Agent Skill; keep these values unchanged when running examples from this Skill.
 
 Use either the ID option or the URL option for detail commands, not both.
 
@@ -237,7 +245,7 @@ Haokan / 好看视频: choose either `--video-id` or `--url` (video page URL); d
 
 ## Safety Boundary
 
-Platform detail access is read-only. It uses `SOCIALDATAX_API_KEY` from the user's environment at runtime for SocialDataX detail requests. Generated Skill files do not contain API keys. It does not read local browser data or perform login, posting, liking, commenting, or account changes. The optional XHS, Douyin, Kuaishou, Weibo, and X / Twitter local save commands write only to the requested local `--output` path or `--output-dir` directory and do not require `SOCIALDATAX_API_KEY`. The optional WeChat Channels / 视频号 local save command writes only to the user-provided `--output` file, decrypts when needed, and does not require `SOCIALDATAX_API_KEY`. Prefer the direct CLI; hosted MCP tools are optional when the current agent already supports authenticated streamable HTTP MCP.
+Platform detail access is read-only. It uses `SOCIALDATAX_API_KEY` from the user's environment at runtime for SocialDataX detail requests. Generated Skill files do not contain API keys. It does not read local browser data or perform login, posting, liking, commenting, or account changes. The optional XHS, Douyin, Kuaishou, Weibo, and X / Twitter local save commands write only to the requested local `--output` path or `--output-dir` directory and do not require `SOCIALDATAX_API_KEY`. The optional WeChat Channels / 视频号 local save command writes only to the user-provided `--output` file, decrypts when needed, and does not require `SOCIALDATAX_API_KEY`.
 
 ## MCP Tools
 

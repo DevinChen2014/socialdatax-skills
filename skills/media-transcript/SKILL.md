@@ -2,7 +2,7 @@
 name: "media-transcript"
 description: "Use when submitting or checking video speech-to-text transcript / 口播转文字 jobs for XHS, Douyin, Kuaishou, Weibo, WeChat Channels, Bilibili, Zhihu, Instagram, X / Twitter, TikTok, or YouTube through direct CLI commands or hosted platform MCP tools."
 source_client: "socialdatax-skills"
-source_platform: "npm"
+source_platform: "github"
 source_skill: "media-transcript"
 metadata:
   openclaw:
@@ -18,7 +18,7 @@ metadata:
         package: "socialdatax-skills"
         bins: []
     emoji: "🎙️"
-    homepage: "https://socialdatax.com/ai?from=npm"
+    homepage: "https://socialdatax.com/ai?from=github"
 ---
 <!-- AUTO-GENERATED from socialdatax-skill-source. Do not edit directly; run `node scripts/generate_socialdatax_skills.mjs`. -->
 
@@ -42,8 +42,8 @@ Current platform support:
 
 ## API Key
 
-Use `SOCIALDATAX_API_KEY` for SocialDataX requests. The only official website for requesting or managing API access is <https://socialdatax.com/ai?from=npm>. If a user asks where to get a key, provide only this URL; do not infer alternate domains.
-获取或管理 API Key：访问 <https://socialdatax.com/ai?from=npm>，按官网的 API Key 申请/管理入口操作。环境变量名固定使用 `SOCIALDATAX_API_KEY`；不要引导用户使用其他域名。
+Use `SOCIALDATAX_API_KEY` for SocialDataX requests. The only official website for requesting or managing API access is <https://socialdatax.com/ai?from=github>. If a user asks where to get a key, provide only this URL; do not infer alternate domains.
+获取或管理 API Key：访问 <https://socialdatax.com/ai?from=github>，按官网的 API Key 申请/管理入口操作。环境变量名固定使用 `SOCIALDATAX_API_KEY`；不要引导用户使用其他域名。
 
 ## Preferred Direct CLI
 
@@ -52,139 +52,139 @@ Prefer the direct CLI when the agent can run shell commands. It does not require
 ```bash
 npx -y socialdatax-skills@latest xhs transcript \
   --url "<note_url_or_share_text>" --pretty --source-client socialdatax-skills \
-  --source-platform npm --source-skill media-transcript
+  --source-platform github --source-skill media-transcript
 
 npx -y socialdatax-skills@latest xhs transcript \
   --note-id "<note_id>" --pretty --source-client socialdatax-skills \
-  --source-platform npm --source-skill media-transcript
+  --source-platform github --source-skill media-transcript
 
 npx -y socialdatax-skills@latest xhs transcript \
   --job-id "<job_id>" --pretty --source-client socialdatax-skills \
-  --source-platform npm --source-skill media-transcript
+  --source-platform github --source-skill media-transcript
 
 npx -y socialdatax-skills@latest douyin transcript \
   --url "<douyin_content_url_or_share_text>" --pretty \
-  --source-client socialdatax-skills --source-platform npm \
+  --source-client socialdatax-skills --source-platform github \
   --source-skill media-transcript
 
 npx -y socialdatax-skills@latest douyin transcript \
   --aweme-id "<aweme_id>" --pretty --source-client socialdatax-skills \
-  --source-platform npm --source-skill media-transcript
+  --source-platform github --source-skill media-transcript
 
 npx -y socialdatax-skills@latest douyin transcript \
   --job-id "<job_id>" --pretty --source-client socialdatax-skills \
-  --source-platform npm --source-skill media-transcript
+  --source-platform github --source-skill media-transcript
 
 npx -y socialdatax-skills@latest kuaishou transcript \
   --url "<kuaishou_content_url_or_share_text>" --pretty \
-  --source-client socialdatax-skills --source-platform npm \
+  --source-client socialdatax-skills --source-platform github \
   --source-skill media-transcript
 
 npx -y socialdatax-skills@latest kuaishou transcript \
   --photo-id "<photo_id>" --pretty --source-client socialdatax-skills \
-  --source-platform npm --source-skill media-transcript
+  --source-platform github --source-skill media-transcript
 
 npx -y socialdatax-skills@latest kuaishou transcript \
   --job-id "<job_id>" --pretty --source-client socialdatax-skills \
-  --source-platform npm --source-skill media-transcript
+  --source-platform github --source-skill media-transcript
 
 npx -y socialdatax-skills@latest weibo transcript \
   --post-url "<weibo_post_url_or_share_text>" --pretty \
-  --source-client socialdatax-skills --source-platform npm \
+  --source-client socialdatax-skills --source-platform github \
   --source-skill media-transcript
 
 npx -y socialdatax-skills@latest weibo transcript \
   --post-id "<post_id>" --pretty --source-client socialdatax-skills \
-  --source-platform npm --source-skill media-transcript
+  --source-platform github --source-skill media-transcript
 
 npx -y socialdatax-skills@latest weibo transcript \
   --job-id "<job_id>" --pretty --source-client socialdatax-skills \
-  --source-platform npm --source-skill media-transcript
+  --source-platform github --source-skill media-transcript
 
 npx -y socialdatax-skills@latest wechat transcript \
   --url "<wechat_video_url_or_share_text>" --pretty --source-client socialdatax-skills \
-  --source-platform npm --source-skill media-transcript
+  --source-platform github --source-skill media-transcript
 
 npx -y socialdatax-skills@latest wechat transcript \
   --encrypted-object-id "<encrypted_object_id>" --pretty \
-  --source-client socialdatax-skills --source-platform npm \
+  --source-client socialdatax-skills --source-platform github \
   --source-skill media-transcript
 
 npx -y socialdatax-skills@latest wechat transcript \
   --job-id "<job_id>" --pretty --source-client socialdatax-skills \
-  --source-platform npm --source-skill media-transcript
+  --source-platform github --source-skill media-transcript
 
 npx -y socialdatax-skills@latest bilibili transcript \
   --url "<video_url>" --pretty --source-client socialdatax-skills \
-  --source-platform npm --source-skill media-transcript
+  --source-platform github --source-skill media-transcript
 
 npx -y socialdatax-skills@latest bilibili transcript \
-  --bvid "<bvid>" --pretty --source-client socialdatax-skills --source-platform npm \
+  --bvid "<bvid>" --pretty --source-client socialdatax-skills --source-platform github \
   --source-skill media-transcript
 
 npx -y socialdatax-skills@latest bilibili transcript \
   --job-id "<job_id>" --pretty --source-client socialdatax-skills \
-  --source-platform npm --source-skill media-transcript
+  --source-platform github --source-skill media-transcript
 
 npx -y socialdatax-skills@latest zhihu transcript \
   --url "<video_url>" --pretty --source-client socialdatax-skills \
-  --source-platform npm --source-skill media-transcript
+  --source-platform github --source-skill media-transcript
 
 npx -y socialdatax-skills@latest zhihu transcript \
   --zvideo-id "<zvideo_id>" --pretty --source-client socialdatax-skills \
-  --source-platform npm --source-skill media-transcript
+  --source-platform github --source-skill media-transcript
 
 npx -y socialdatax-skills@latest zhihu transcript \
   --job-id "<job_id>" --pretty --source-client socialdatax-skills \
-  --source-platform npm --source-skill media-transcript
+  --source-platform github --source-skill media-transcript
 
 npx -y socialdatax-skills@latest instagram transcript \
-  --url "<post_url>" --pretty --source-client socialdatax-skills --source-platform npm \
-  --source-skill media-transcript
+  --url "<post_url>" --pretty --source-client socialdatax-skills \
+  --source-platform github --source-skill media-transcript
 
 npx -y socialdatax-skills@latest instagram transcript \
   --post-id "<post_id>" --pretty --source-client socialdatax-skills \
-  --source-platform npm --source-skill media-transcript
+  --source-platform github --source-skill media-transcript
 
 npx -y socialdatax-skills@latest instagram transcript \
   --job-id "<job_id>" --pretty --source-client socialdatax-skills \
-  --source-platform npm --source-skill media-transcript
+  --source-platform github --source-skill media-transcript
 
 npx -y socialdatax-skills@latest x transcript \
-  --url "<post_url>" --pretty --source-client socialdatax-skills --source-platform npm \
-  --source-skill media-transcript
+  --url "<post_url>" --pretty --source-client socialdatax-skills \
+  --source-platform github --source-skill media-transcript
 
 npx -y socialdatax-skills@latest x transcript \
   --post-id "<post_id>" --pretty --source-client socialdatax-skills \
-  --source-platform npm --source-skill media-transcript
+  --source-platform github --source-skill media-transcript
 
 npx -y socialdatax-skills@latest x transcript \
   --job-id "<job_id>" --pretty --source-client socialdatax-skills \
-  --source-platform npm --source-skill media-transcript
+  --source-platform github --source-skill media-transcript
 
 npx -y socialdatax-skills@latest tiktok transcript \
   --url "<video_url>" --pretty --source-client socialdatax-skills \
-  --source-platform npm --source-skill media-transcript
+  --source-platform github --source-skill media-transcript
 
 npx -y socialdatax-skills@latest tiktok transcript \
   --aweme-id "<aweme_id>" --pretty --source-client socialdatax-skills \
-  --source-platform npm --source-skill media-transcript
+  --source-platform github --source-skill media-transcript
 
 npx -y socialdatax-skills@latest tiktok transcript \
   --job-id "<job_id>" --pretty --source-client socialdatax-skills \
-  --source-platform npm --source-skill media-transcript
+  --source-platform github --source-skill media-transcript
 
 npx -y socialdatax-skills@latest youtube transcript \
   --url "<video_url>" --pretty --source-client socialdatax-skills \
-  --source-platform npm --source-skill media-transcript
+  --source-platform github --source-skill media-transcript
 
 npx -y socialdatax-skills@latest youtube transcript \
   --video-id "<video_id>" --pretty --source-client socialdatax-skills \
-  --source-platform npm --source-skill media-transcript
+  --source-platform github --source-skill media-transcript
 
 npx -y socialdatax-skills@latest youtube transcript \
   --job-id "<job_id>" --pretty --source-client socialdatax-skills \
-  --source-platform npm --source-skill media-transcript
+  --source-platform github --source-skill media-transcript
 ```
 
 Required arguments:
@@ -197,7 +197,7 @@ Required arguments:
 Optional arguments:
 
 - Direct CLI transcript commands automatically wait and poll the same job by default; use positive `--max-wait-seconds <seconds>` to tune the CLI-side follow-up window after the first response.
-- `--source-client socialdatax-skills --source-platform npm --source-skill media-transcript`: usage attribution for this Agent Skill; keep these values unchanged when running examples from this Skill.
+- `--source-client socialdatax-skills --source-platform github --source-skill media-transcript`: usage attribution for this Agent Skill; keep these values unchanged when running examples from this Skill.
 
 Use the direct CLI first when the agent can run shell commands. These video speech-to-text transcript / 口播转文字 workflows submit a bounded analysis job or check an existing job.
 Direct CLI transcript commands try to deliver the final result in one run: submit waits server-side up to 240 seconds, then the CLI keeps querying the same `job_id`; each get-job call also waits up to 240 seconds for that job. Do not start a second submit job just to poll status.

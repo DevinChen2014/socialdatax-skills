@@ -2,7 +2,7 @@
 name: "media-user-info"
 description: "Retrieve social media creator profile information from platform-supported user IDs, usernames, channel URLs, profile URLs, short links, or share text. Supported input forms vary by platform. This version is backed by hosted platform MCP services and supports Xiaohongshu / XHS / RedNote, Douyin, Kuaishou, Bilibili, Zhihu, Instagram, X / Twitter, YouTube, TikTok, Weibo, Toutiao, and WeChat Channels creators. Also use this skill for 百度贴吧 / Baidu Tieba user search and profiles, platform user/channel search, XHS 蒲公英 / Pugongying creator profile, fans and commercial analytics, XHS encrypted-user-ID resolution, Douyin profile lookup by douyin_id, and WeChat Official Account / 公众号 account profiles. Also supports Haokan / 好看视频."
 source_client: "socialdatax-skills"
-source_platform: "npm"
+source_platform: "github"
 source_skill: "media-user-info"
 metadata:
   openclaw:
@@ -18,7 +18,7 @@ metadata:
         package: "socialdatax-skills"
         bins: []
     emoji: "👤"
-    homepage: "https://socialdatax.com/ai?from=npm"
+    homepage: "https://socialdatax.com/ai?from=github"
 ---
 <!-- AUTO-GENERATED from socialdatax-skill-source. Do not edit directly; run `node scripts/generate_socialdatax_skills.mjs`. -->
 
@@ -46,8 +46,8 @@ Current platform support:
 
 ## API Key
 
-Use `SOCIALDATAX_API_KEY` for SocialDataX requests. The only official website for requesting or managing API access is <https://socialdatax.com/ai?from=npm>. If a user asks where to get a key, provide only this URL; do not infer alternate domains.
-获取或管理 API Key：访问 <https://socialdatax.com/ai?from=npm>，按官网的 API Key 申请/管理入口操作。环境变量名固定使用 `SOCIALDATAX_API_KEY`；不要引导用户使用其他域名。
+Use `SOCIALDATAX_API_KEY` for SocialDataX requests. The only official website for requesting or managing API access is <https://socialdatax.com/ai?from=github>. If a user asks where to get a key, provide only this URL; do not infer alternate domains.
+获取或管理 API Key：访问 <https://socialdatax.com/ai?from=github>，按官网的 API Key 申请/管理入口操作。环境变量名固定使用 `SOCIALDATAX_API_KEY`；不要引导用户使用其他域名。
 
 ## Preferred Direct CLI
 
@@ -56,209 +56,209 @@ Prefer the direct CLI when the agent can run shell commands. It does not require
 ```bash
 npx -y socialdatax-skills@latest xhs user-info \
   --user-id "<user_id>" --pretty --source-client socialdatax-skills \
-  --source-platform npm --source-skill media-user-info
+  --source-platform github --source-skill media-user-info
 
 npx -y socialdatax-skills@latest xhs user-info \
   --profile-url "<profile_url_or_share_text>" --pretty \
-  --source-client socialdatax-skills --source-platform npm \
+  --source-client socialdatax-skills --source-platform github \
   --source-skill media-user-info
 
 npx -y socialdatax-skills@latest douyin user-info \
   --sec-user-id "<sec_user_id>" --pretty --source-client socialdatax-skills \
-  --source-platform npm --source-skill media-user-info
+  --source-platform github --source-skill media-user-info
 
 npx -y socialdatax-skills@latest douyin user-info \
   --profile-url "<profile_url_or_share_text>" --pretty \
-  --source-client socialdatax-skills --source-platform npm \
+  --source-client socialdatax-skills --source-platform github \
   --source-skill media-user-info
 
 npx -y socialdatax-skills@latest kuaishou user-search \
   --keyword "<creator_keyword>" --pretty --source-client socialdatax-skills \
-  --source-platform npm --source-skill media-user-info
+  --source-platform github --source-skill media-user-info
 
 npx -y socialdatax-skills@latest kuaishou user-info \
   --user-id "<user_id>" --pretty --source-client socialdatax-skills \
-  --source-platform npm --source-skill media-user-info
+  --source-platform github --source-skill media-user-info
 
 npx -y socialdatax-skills@latest kuaishou user-info \
   --profile-url "<profile_url_or_share_text>" --pretty \
-  --source-client socialdatax-skills --source-platform npm \
+  --source-client socialdatax-skills --source-platform github \
   --source-skill media-user-info
 
 npx -y socialdatax-skills@latest bilibili user-info \
   --user-id "<user_id>" --pretty --source-client socialdatax-skills \
-  --source-platform npm --source-skill media-user-info
+  --source-platform github --source-skill media-user-info
 
 npx -y socialdatax-skills@latest bilibili user-info \
   --profile-url "<profile_url_or_share_text>" --pretty \
-  --source-client socialdatax-skills --source-platform npm \
+  --source-client socialdatax-skills --source-platform github \
   --source-skill media-user-info
 
 npx -y socialdatax-skills@latest zhihu user-info \
   --profile-url "<profile_url_or_share_text>" --pretty \
-  --source-client socialdatax-skills --source-platform npm \
+  --source-client socialdatax-skills --source-platform github \
   --source-skill media-user-info
 
 npx -y socialdatax-skills@latest instagram user-info \
   --username "<username>" --pretty --source-client socialdatax-skills \
-  --source-platform npm --source-skill media-user-info
+  --source-platform github --source-skill media-user-info
 
 npx -y socialdatax-skills@latest instagram user-info \
   --profile-url "<profile_url_or_share_text>" --pretty \
-  --source-client socialdatax-skills --source-platform npm \
+  --source-client socialdatax-skills --source-platform github \
   --source-skill media-user-info
 
 npx -y socialdatax-skills@latest x user-info \
   --user-id "<user_id>" --pretty --source-client socialdatax-skills \
-  --source-platform npm --source-skill media-user-info
+  --source-platform github --source-skill media-user-info
 
 npx -y socialdatax-skills@latest x user-info \
   --username "<username>" --pretty --source-client socialdatax-skills \
-  --source-platform npm --source-skill media-user-info
+  --source-platform github --source-skill media-user-info
 
 npx -y socialdatax-skills@latest x user-info \
   --profile-url "<profile_url_or_share_text>" --pretty \
-  --source-client socialdatax-skills --source-platform npm \
+  --source-client socialdatax-skills --source-platform github \
   --source-skill media-user-info
 
 npx -y socialdatax-skills@latest youtube channel-info \
   --channel-url "<youtube_channel_url>" --pretty --source-client socialdatax-skills \
-  --source-platform npm --source-skill media-user-info
+  --source-platform github --source-skill media-user-info
 
 npx -y socialdatax-skills@latest tiktok user-info \
   --tiktok-id "<tiktok_id>" --pretty --source-client socialdatax-skills \
-  --source-platform npm --source-skill media-user-info
+  --source-platform github --source-skill media-user-info
 
 npx -y socialdatax-skills@latest tiktok user-info \
   --profile-url "<profile_url_or_share_text>" --pretty \
-  --source-client socialdatax-skills --source-platform npm \
+  --source-client socialdatax-skills --source-platform github \
   --source-skill media-user-info
 
 npx -y socialdatax-skills@latest weibo user-info \
   --user-id "<user_id>" --pretty --source-client socialdatax-skills \
-  --source-platform npm --source-skill media-user-info
+  --source-platform github --source-skill media-user-info
 
 npx -y socialdatax-skills@latest weibo user-info \
   --profile-url "<profile_url>" --pretty --source-client socialdatax-skills \
-  --source-platform npm --source-skill media-user-info
+  --source-platform github --source-skill media-user-info
 
 npx -y socialdatax-skills@latest toutiao user-info \
   --user-id "<user_id>" --pretty --source-client socialdatax-skills \
-  --source-platform npm --source-skill media-user-info
+  --source-platform github --source-skill media-user-info
 
 npx -y socialdatax-skills@latest toutiao user-info \
   --profile-url "<profile_url_or_share_text>" --pretty \
-  --source-client socialdatax-skills --source-platform npm \
+  --source-client socialdatax-skills --source-platform github \
   --source-skill media-user-info
 
 npx -y socialdatax-skills@latest wechat user-info \
   --user-id "<v2_finder_user_id>" --pretty --source-client socialdatax-skills \
-  --source-platform npm --source-skill media-user-info
+  --source-platform github --source-skill media-user-info
 
 npx -y socialdatax-skills@latest wechat user-info \
   --url "<wechat_work_url_or_share_text>" --pretty --source-client socialdatax-skills \
-  --source-platform npm --source-skill media-user-info
+  --source-platform github --source-skill media-user-info
 
 npx -y socialdatax-skills@latest xhs user-search \
   --keyword "<keyword>" --pretty --source-client socialdatax-skills \
-  --source-platform npm --source-skill media-user-info
+  --source-platform github --source-skill media-user-info
 
 npx -y socialdatax-skills@latest douyin user-search \
   --keyword "<keyword>" --pretty --source-client socialdatax-skills \
-  --source-platform npm --source-skill media-user-info
+  --source-platform github --source-skill media-user-info
 
 npx -y socialdatax-skills@latest tiktok user-search \
   --keyword "<keyword>" --pretty --source-client socialdatax-skills \
-  --source-platform npm --source-skill media-user-info
+  --source-platform github --source-skill media-user-info
 
 npx -y socialdatax-skills@latest weibo user-search \
   --keyword "<keyword>" --pretty --source-client socialdatax-skills \
-  --source-platform npm --source-skill media-user-info
+  --source-platform github --source-skill media-user-info
 
 npx -y socialdatax-skills@latest zhihu user-search \
   --keyword "<keyword>" --pretty --source-client socialdatax-skills \
-  --source-platform npm --source-skill media-user-info
+  --source-platform github --source-skill media-user-info
 
 npx -y socialdatax-skills@latest instagram user-search \
   --keyword "<keyword>" --pretty --source-client socialdatax-skills \
-  --source-platform npm --source-skill media-user-info
+  --source-platform github --source-skill media-user-info
 
 npx -y socialdatax-skills@latest x user-search \
   --keyword "<keyword>" --pretty --source-client socialdatax-skills \
-  --source-platform npm --source-skill media-user-info
+  --source-platform github --source-skill media-user-info
 
 npx -y socialdatax-skills@latest bilibili user-search \
   --keyword "<keyword>" --pretty --source-client socialdatax-skills \
-  --source-platform npm --source-skill media-user-info
+  --source-platform github --source-skill media-user-info
 
 npx -y socialdatax-skills@latest toutiao user-search \
   --keyword "<keyword>" --pretty --source-client socialdatax-skills \
-  --source-platform npm --source-skill media-user-info
+  --source-platform github --source-skill media-user-info
 
 npx -y socialdatax-skills@latest youtube channel-search \
   --keyword "<keyword>" --pretty --source-client socialdatax-skills \
-  --source-platform npm --source-skill media-user-info
+  --source-platform github --source-skill media-user-info
 
 npx -y socialdatax-skills@latest wechat user-search \
   --keyword "<keyword>" --pretty --source-client socialdatax-skills \
-  --source-platform npm --source-skill media-user-info
+  --source-platform github --source-skill media-user-info
 
 npx -y socialdatax-skills@latest xhs pgy-creator-profile \
   --user-id "<user_id>" --pretty --source-client socialdatax-skills \
-  --source-platform npm --source-skill media-user-info
+  --source-platform github --source-skill media-user-info
 
 npx -y socialdatax-skills@latest xhs pgy-creator-fans-profile \
   --user-id "<user_id>" --pretty --source-client socialdatax-skills \
-  --source-platform npm --source-skill media-user-info
+  --source-platform github --source-skill media-user-info
 
 npx -y socialdatax-skills@latest xhs pgy-creator-fans-summary \
   --user-id "<user_id>" --pretty --source-client socialdatax-skills \
-  --source-platform npm --source-skill media-user-info
+  --source-platform github --source-skill media-user-info
 
 npx -y socialdatax-skills@latest xhs pgy-creator-metrics-trend \
   --user-id "<user_id>" --pretty --source-client socialdatax-skills \
-  --source-platform npm --source-skill media-user-info
+  --source-platform github --source-skill media-user-info
 
 npx -y socialdatax-skills@latest xhs pgy-creator-commercial-overview \
   --user-id "<user_id>" --pretty --source-client socialdatax-skills \
-  --source-platform npm --source-skill media-user-info
+  --source-platform github --source-skill media-user-info
 
 npx -y socialdatax-skills@latest xhs resolve-user-id \
   --encrypted-user-id "<encrypted_user_id>" --pretty \
-  --source-client socialdatax-skills --source-platform npm \
+  --source-client socialdatax-skills --source-platform github \
   --source-skill media-user-info
 
 npx -y socialdatax-skills@latest douyin user-info \
   --douyin-id "<douyin_id>" --pretty --source-client socialdatax-skills \
-  --source-platform npm --source-skill media-user-info
+  --source-platform github --source-skill media-user-info
 
 npx -y socialdatax-skills@latest wechat mp-account-info \
   --account-id "<account_id>" --pretty --source-client socialdatax-skills \
-  --source-platform npm --source-skill media-user-info
+  --source-platform github --source-skill media-user-info
 
 npx -y socialdatax-skills@latest tieba user-search \
   --keyword "<keyword>" --pretty --source-client socialdatax-skills \
-  --source-platform npm --source-skill media-user-info
+  --source-platform github --source-skill media-user-info
 
 npx -y socialdatax-skills@latest tieba user-info \
   --user-id "<user_id>" --pretty --source-client socialdatax-skills \
-  --source-platform npm --source-skill media-user-info
+  --source-platform github --source-skill media-user-info
 
 npx -y socialdatax-skills@latest tieba user-info \
   --profile-url "<profile_url>" --pretty --source-client socialdatax-skills \
-  --source-platform npm --source-skill media-user-info
+  --source-platform github --source-skill media-user-info
 
 npx -y socialdatax-skills@latest haokan user-search \
   --keyword "<keyword>" --pretty --source-client socialdatax-skills \
-  --source-platform npm --source-skill media-user-info
+  --source-platform github --source-skill media-user-info
 
 npx -y socialdatax-skills@latest haokan user-info \
   --user-id "<user_id>" --pretty --source-client socialdatax-skills \
-  --source-platform npm --source-skill media-user-info
+  --source-platform github --source-skill media-user-info
 
 npx -y socialdatax-skills@latest haokan user-info \
   --profile-url "<profile_url>" --pretty --source-client socialdatax-skills \
-  --source-platform npm --source-skill media-user-info
+  --source-platform github --source-skill media-user-info
 ```
 
 Optional arguments:
@@ -286,7 +286,7 @@ Optional arguments:
 - Toutiao `--profile-url <profile_url_or_share_text>`: use for a Toutiao user profile URL, short link, or share text.
 - WeChat Channels / 视频号 `--user-id <v2_finder_user_id>`: use when the creator `v2_...@finder` user_id is already known.
 - WeChat Channels / 视频号 `--url <wechat_work_url_or_share_text>`: use for a video or image-post link or share text that can resolve the creator profile.
-- `--source-client socialdatax-skills --source-platform npm --source-skill media-user-info`: usage attribution for this Agent Skill; keep these values unchanged when running examples from this Skill.
+- `--source-client socialdatax-skills --source-platform github --source-skill media-user-info`: usage attribution for this Agent Skill; keep these values unchanged when running examples from this Skill.
 
 Use exactly one supported identifier or URL entrypoint for a single command; do not combine them.
 
@@ -296,7 +296,7 @@ Haokan / 好看视频: discover accounts with `user-search`; for profile details
 
 ## Safety Boundary
 
-This skill is read-only. It uses `SOCIALDATAX_API_KEY` from the user's environment at runtime. Generated Skill files do not contain API keys. It does not read local browser data or perform login, posting, liking, commenting, or account changes. Prefer the direct CLI; hosted MCP tools are optional when the current agent already supports authenticated streamable HTTP MCP.
+This skill is read-only. It uses `SOCIALDATAX_API_KEY` from the user's environment at runtime. Generated Skill files do not contain API keys. It does not read local browser data or perform login, posting, liking, commenting, or account changes.
 
 ## MCP Tools
 
