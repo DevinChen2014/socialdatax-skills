@@ -2401,7 +2401,7 @@ test("skillhub generated skills include quick start result examples and troubles
       assert.match(skill, /如果返回 `insufficient_balance` 或“积分不足”/);
       assert.match(skill, /把错误里的充值链接原样展示给用户/);
       assert.match(skill, /充值后继续执行刚才同一条命令/);
-      assert.match(skill, /重试仍失败：说明当前调用不可用/);
+      assert.match(skill, /`partial: true`.*保留 `data.items` 和错误，明确结果不完整/);
       assert.match(skill, /没结果：/);
       assert.match(skill, /调用失败：先确认 `SOCIALDATAX_API_KEY` 已配置；如果是 `insufficient_balance` 或“积分不足”/);
       assert.match(skill, /充值后继续原命令，不要反复重试/);
@@ -3604,7 +3604,7 @@ test("comment MCP guidance keeps continuation hints as list items", async () => 
 
     assert.match(
       mcpTools,
-      /- 抖音评论和回复只有在 `next_page_token` 非空时才继续翻页；空字符串表示没有更多评论或回复可请求。/
+      /- 抖音评论和回复只有在 `next_page_token` 非空时才继续翻页；空字符串表示没有可用续页令牌，不据此保证评论或回复已全部取完。/
     );
     assert.match(
       mcpTools,
@@ -3612,7 +3612,7 @@ test("comment MCP guidance keeps continuation hints as list items", async () => 
     );
     assert.match(
       mcpTools,
-      /- 快手评论和回复只有在 `next_page_token` 非空时才继续翻页；空字符串表示没有更多评论或回复可请求。/
+      /- 快手评论和回复只有在 `next_page_token` 非空时才继续翻页；空字符串表示没有可用续页令牌，不据此保证评论或回复已全部取完。/
     );
 
     const npmSkill = readGeneratedSkill(
@@ -3622,6 +3622,51 @@ test("comment MCP guidance keeps continuation hints as list items", async () => 
       source.hosts.hosts
     );
     const npmMcpTools = extractMarkdownSection(npmSkill, "MCP Tools");
+    assert.match(skill, /原定页数和条数上限/);
+    assert.match(skill, /累计.*`page_count`.*`item_count`/);
+    assert.match(skill, /已达到任一上限就停止主列表续页/);
+    assert.match(skill, /主评论仍有剩余额度/);
+    assert.match(npmSkill, /original page and item limits/);
+    assert.match(npmSkill, /cumulative `page_count` and `item_count`/);
+    assert.match(npmSkill, /Stop parent-list pagination when either limit is reached/);
+    assert.match(npmSkill, /only if the parent-comment budget remains/);
+
+    for (const text of [skill, npmSkill]) {
+      assert.match(text, /`partial: true`/);
+      assert.match(text, /`replies_partial`/);
+      assert.match(text, /`replies_pending`/);
+      assert.match(text, /`replies_next_page_token`/);
+    }
+    for (const slug of ["media-search", "media-user-posts", "socialdatax-content-research-assistant"]) {
+      const text = readGeneratedSkill(tempRoot, "npm", slug, source.hosts.hosts);
+      assert.match(text, /`partial: true`/);
+      assert.match(text, /Do not restart from the first page/);
+    }
+    for (const [host, slug] of [
+      ["skillhub", "ecommerce-product-research"],
+      ["skillhub", "ecommerce-review-insights"],
+      ["clawhub", "ecommerce-product-research"],
+      ["modelscope", "ecommerce-product-research"],
+    ]) {
+      const text = readGeneratedSkill(tempRoot, host, slug, source.hosts.hosts);
+      assert.match(text, /`partial: true`/);
+      assert.match(text, /不要从第一页自动重跑/);
+      assert.doesNotMatch(extractMarkdownSection(text, "异常处理"), /`replies_pending`|`--include-replies`/);
+    }
+    for (const platform of ["bilibili", "zhihu", "instagram", "x-twitter", "youtube", "tiktok"]) {
+      const listing = source.listings.listings.find(candidate =>
+        candidate.host === "clawhub" && candidate.slug === `socialdatax-${platform}`
+      );
+      assert.ok(listing);
+      const text = readGeneratedSkill(tempRoot, "clawhub", listing.slug, source.hosts.hosts);
+      assert.match(text, /`partial: true`/);
+      assert.doesNotMatch(text, /`replies_pending`/);
+    }
+    for (const slug of ["media-detail", "media-transcript", "sensitive-check"]) {
+      const text = readGeneratedSkill(tempRoot, "npm", slug, source.hosts.hosts);
+      assert.doesNotMatch(text, /`partial: true`/);
+    }
+
 
     assert.match(
       npmMcpTools,
@@ -3633,7 +3678,7 @@ test("comment MCP guidance keeps continuation hints as list items", async () => 
     );
     assert.match(
       npmMcpTools,
-      /- For Douyin comments and replies, continue only when `next_page_token` is non-empty; an empty string means there are no more comments or replies to request\./
+      /- For Douyin comments and replies, continue only when `next_page_token` is non-empty; an empty string provides no continuation token and does not establish complete comment or reply coverage\./
     );
     assert.match(
       npmMcpTools,
@@ -3641,11 +3686,11 @@ test("comment MCP guidance keeps continuation hints as list items", async () => 
     );
     assert.match(
       npmMcpTools,
-      /- For Kuaishou comments and replies, continue only when `next_page_token` is non-empty; an empty string means there are no more comments or replies to request\./
+      /- For Kuaishou comments and replies, continue only when `next_page_token` is non-empty; an empty string provides no continuation token and does not establish complete comment or reply coverage\./
     );
     assert.match(
       npmMcpTools,
-      /- For WeChat Channels \/ 视频号 comments and replies, continue only when `next_page_token` is non-empty; an empty string means there are no more comments or replies to request\./
+      /- For WeChat Channels \/ 视频号 comments and replies, continue only when `next_page_token` is non-empty; an empty string provides no continuation token and does not establish complete comment or reply coverage\./
     );
 
     for (const slug of [
@@ -5064,7 +5109,7 @@ test("retained Tencent ecosystem SkillHub troubleshooting keeps supported input 
       extractMarkdownSection(aggregateSkill, "异常处理"),
       extractMarkdownSection(aggregateSkill, "常见问题"),
     ].join("\n");
-    assert.match(aggregateGuidance, /补充或更换关键词、链接、ID/);
+    assert.match(aggregateGuidance, /`data.next_page_token` 和原查询条件继续/);
     assert.match(aggregateGuidance, /结果太多：补场景、人群、品牌、时间范围或账号名/);
     assert.doesNotMatch(
       aggregateGuidance,

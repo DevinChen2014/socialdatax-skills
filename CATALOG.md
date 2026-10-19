@@ -2,7 +2,7 @@
 
 SocialDataX (社媒数据助手) provides Agent Skills for read-only social media research workflows. These Skills help agents use the `socialdatax-skills` CLI and SocialDataX MCP services for content research, comment analysis, topic planning, video transcript extraction, and copy safety review.
 
-Official website and API Key access: <https://socialdatax.com/ai?from=github>
+Official website and API Key access: <https://socialdatax.com/ai?from=npm>
 
 ## Quick Start
 
@@ -17,7 +17,7 @@ Run a direct CLI command:
 ```bash
 npx -y socialdatax-skills@latest xhs search \
   --keyword "露营" --sort-type like_count_descending --pages 2 --max-items 20 --pretty \
-  --source-client socialdatax-skills --source-platform github --source-skill media-search
+  --source-client socialdatax-skills --source-platform npm --source-skill media-search
 ```
 
 The CLI does not log in to user accounts, post content, like, comment, or change account settings.
@@ -44,7 +44,7 @@ This table is a curated marketplace catalog, not the complete platform support l
 ```bash
 npx -y socialdatax-skills@latest xhs search \
   --keyword "<keyword>" --sort-type like_count_descending --pages 2 --max-items 20 --pretty \
-  --source-client socialdatax-skills --source-platform github --source-skill media-search
+  --source-client socialdatax-skills --source-platform npm --source-skill media-search
 ```
 
 ### XHS Viral Note Research
@@ -52,7 +52,7 @@ npx -y socialdatax-skills@latest xhs search \
 ```bash
 npx -y socialdatax-skills@latest xhs search \
   --keyword "<keyword>" --sort-type like_count_descending --pages 2 --max-items 20 --pretty \
-  --source-client socialdatax-skills --source-platform github --source-skill media-search
+  --source-client socialdatax-skills --source-platform npm --source-skill media-search
 ```
 
 ### XHS Viral Copy Breakdown
@@ -62,7 +62,7 @@ Find candidate notes:
 ```bash
 npx -y socialdatax-skills@latest xhs search \
   --keyword "<keyword>" --sort-type like_count_descending --pages 2 --max-items 20 --pretty \
-  --source-client socialdatax-skills --source-platform github --source-skill socialdatax-content-research-assistant
+  --source-client socialdatax-skills --source-platform npm --source-skill socialdatax-content-research-assistant
 ```
 
 Read one selected note for copy breakdown:
@@ -70,7 +70,7 @@ Read one selected note for copy breakdown:
 ```bash
 npx -y socialdatax-skills@latest xhs detail \
   --url "<xhs_note_url_or_share_text>" --pretty \
-  --source-client socialdatax-skills --source-platform github --source-skill socialdatax-content-research-assistant
+  --source-client socialdatax-skills --source-platform npm --source-skill socialdatax-content-research-assistant
 ```
 
 ### XHS Comment Analysis
@@ -78,14 +78,14 @@ npx -y socialdatax-skills@latest xhs detail \
 ```bash
 npx -y socialdatax-skills@latest xhs comments \
   --url "<xhs_note_url_or_share_text>" --pages 2 --max-items 20 --include-replies --pretty \
-  --source-client socialdatax-skills --source-platform github --source-skill xhs-comment-insights
+  --source-client socialdatax-skills --source-platform npm --source-skill media-comments
 ```
 
 ### XHS Hot Topic Planning
 
 ```bash
 npx -y socialdatax-skills@latest xhs hot-search \
-  --pretty --source-client socialdatax-skills --source-platform github \
+  --pretty --source-client socialdatax-skills --source-platform npm \
   --source-skill socialdatax-content-research-assistant
 ```
 
@@ -94,7 +94,7 @@ Then search notes for one selected hot topic:
 ```bash
 npx -y socialdatax-skills@latest xhs search \
   --keyword "<hot_topic_keyword>" --sort-type like_count_descending --pages 2 --max-items 20 --pretty \
-  --source-client socialdatax-skills --source-platform github --source-skill socialdatax-content-research-assistant
+  --source-client socialdatax-skills --source-platform npm --source-skill socialdatax-content-research-assistant
 ```
 
 ### Douyin Copy Extraction
@@ -102,7 +102,7 @@ npx -y socialdatax-skills@latest xhs search \
 ```bash
 npx -y socialdatax-skills@latest douyin transcript \
   --url "<douyin_video_url_or_share_text>" --pretty \
-  --source-client socialdatax-skills --source-platform github --source-skill douyin-video-copy-extract
+  --source-client socialdatax-skills --source-platform npm --source-skill media-transcript
 ```
 
 If the transcript job is still pending, keep the returned `job_id` and query it again:
@@ -110,7 +110,7 @@ If the transcript job is still pending, keep the returned `job_id` and query it 
 ```bash
 npx -y socialdatax-skills@latest douyin transcript \
   --job-id "<job_id>" --pretty \
-  --source-client socialdatax-skills --source-platform github --source-skill douyin-video-copy-extract
+  --source-client socialdatax-skills --source-platform npm --source-skill media-transcript
 ```
 
 ### Sensitive Term Check
@@ -118,7 +118,7 @@ npx -y socialdatax-skills@latest douyin transcript \
 ```bash
 npx -y socialdatax-skills@latest sensitive-check text \
   --text "<copy_to_check>" --platform xhs --pretty \
-  --source-client socialdatax-skills --source-platform github --source-skill sensitive-check
+  --source-client socialdatax-skills --source-platform npm --source-skill sensitive-check
 ```
 
 ## Output Principles

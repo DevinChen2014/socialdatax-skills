@@ -26,7 +26,7 @@ import {
 export { decryptWechatMediaCommand };
 
 const PACKAGE_NAME = "socialdatax-skills";
-const PACKAGE_VERSION = "0.2.53";
+const PACKAGE_VERSION = "0.2.54";
 const PACKAGE_SPEC = `${PACKAGE_NAME}@latest`;
 const LOG_PREFIX = `[${PACKAGE_NAME}]`;
 const MIN_NODE_VERSION = "20.18.1";
@@ -934,6 +934,11 @@ const PLATFORMS = {
       "XHS_MCP_UPSTREAM_URL",
     ],
     tools: [
+      {
+        name: "xhs_get_share_info",
+        description:
+          "Read the sharer, note summary, and author from a Xiaohongshu short share link or full share text; use note detail tools for complete content. Share time is not included.",
+      },
       {
         name: "xhs_get_search_hot_list",
         description:

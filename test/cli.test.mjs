@@ -954,14 +954,14 @@ test("public package version metadata stays aligned", () => {
   const cli = readFileSync(cliPath, "utf8");
   const versionPattern = escapeRegExp(packageJson.version);
 
-  assert.equal(packageJson.version, "0.2.53");
+  assert.equal(packageJson.version, "0.2.54");
   assert.equal(packageLock.version, packageJson.version);
   assert.equal(packageLock.packages[""].version, packageJson.version);
   assert.match(
     cli,
     new RegExp(`const PACKAGE_VERSION = "${versionPattern}";`)
   );
-  assert.match(readme, /Package capability version: `0\.2\.53`/);
+  assert.match(readme, /Package capability version: `0\.2\.54`/);
 });
 
 test("publish script reads npm auth token from user npmrc", async () => {
@@ -10774,11 +10774,11 @@ test("douyin comment pagination docs only expose next_page_token continuation", 
 
   assert.match(
     douyinWorkflows,
-    /Continue Douyin comment and reply pagination only when `next_page_token` is non-empty; an empty string means there are no more comments or replies to request\./
+    /Continue Douyin comment and reply pagination only when `next_page_token` is non-empty; an empty string provides no continuation token and does not establish complete comment or reply coverage\./
   );
   assert.match(
     commentsSkill,
-    /For Douyin comments and replies, continue only when `next_page_token` is non-empty; an empty string means there are no more comments or replies to request\./
+    /For Douyin comments and replies, continue only when `next_page_token` is non-empty; an empty string provides no continuation token and does not establish complete comment or reply coverage\./
   );
   assert.doesNotMatch(douyinWorkflows, /has_more|total_count/);
   assert.doesNotMatch(commentsSkill, /has_more|total_count/);

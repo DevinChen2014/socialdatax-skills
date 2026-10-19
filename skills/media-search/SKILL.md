@@ -2,7 +2,7 @@
 name: "media-search"
 description: "Search social media content by keyword for social research, competitor research, topic discovery, content planning, market observation, and trend scanning. This version is backed by hosted platform MCP services and supports Xiaohongshu / XHS / RedNote, Douyin, Kuaishou, Bilibili, Zhihu, Instagram, X / Twitter, YouTube, TikTok, Weibo, Toutiao, and WeChat Channels. Additional discovery includes 百度贴吧 / Baidu Tieba post, forum and general search, forum browsing, user/channel and tag discovery, search suggestions, XHS video/image/topic search, XHS and Douyin product search, and WeChat Official Account / 公众号 article search. Use `user-search` in media-user-info for account discovery. Also supports Haokan / 好看视频."
 source_client: "socialdatax-skills"
-source_platform: "github"
+source_platform: "npm"
 source_skill: "media-search"
 metadata:
   openclaw:
@@ -18,7 +18,7 @@ metadata:
         package: "socialdatax-skills"
         bins: []
     emoji: "🔍"
-    homepage: "https://socialdatax.com/ai?from=github"
+    homepage: "https://socialdatax.com/ai?from=npm"
 ---
 <!-- AUTO-GENERATED from socialdatax-skill-source. Do not edit directly; run `node scripts/generate_socialdatax_skills.mjs`. -->
 
@@ -45,8 +45,8 @@ Current platform support:
 
 ## API Key
 
-Use `SOCIALDATAX_API_KEY` for SocialDataX requests. The only official website for requesting or managing API access is <https://socialdatax.com/ai?from=github>. If a user asks where to get a key, provide only this URL; do not infer alternate domains.
-获取或管理 API Key：访问 <https://socialdatax.com/ai?from=github>，按官网的 API Key 申请/管理入口操作。环境变量名固定使用 `SOCIALDATAX_API_KEY`；不要引导用户使用其他域名。
+Use `SOCIALDATAX_API_KEY` for SocialDataX requests. The only official website for requesting or managing API access is <https://socialdatax.com/ai?from=npm>. If a user asks where to get a key, provide only this URL; do not infer alternate domains.
+获取或管理 API Key：访问 <https://socialdatax.com/ai?from=npm>，按官网的 API Key 申请/管理入口操作。环境变量名固定使用 `SOCIALDATAX_API_KEY`；不要引导用户使用其他域名。
 
 ## Preferred Direct CLI
 
@@ -55,207 +55,206 @@ Prefer the direct CLI when the agent can run shell commands. It does not require
 ```bash
 npx -y socialdatax-skills@latest xhs search \
   --keyword "<keyword>" --pretty --source-client socialdatax-skills \
-  --source-platform github --source-skill media-search
+  --source-platform npm --source-skill media-search
 
 npx -y socialdatax-skills@latest xhs search \
   --keyword "<keyword>" --pages 3 --pretty --source-client socialdatax-skills \
-  --source-platform github --source-skill media-search
+  --source-platform npm --source-skill media-search
 
 npx -y socialdatax-skills@latest douyin search \
   --keyword "<keyword>" --pretty --source-client socialdatax-skills \
-  --source-platform github --source-skill media-search
+  --source-platform npm --source-skill media-search
 
 npx -y socialdatax-skills@latest douyin search \
   --keyword "<keyword>" --pages 3 --pretty --source-client socialdatax-skills \
-  --source-platform github --source-skill media-search
+  --source-platform npm --source-skill media-search
 
 npx -y socialdatax-skills@latest kuaishou search \
   --keyword "<keyword>" --pretty --source-client socialdatax-skills \
-  --source-platform github --source-skill media-search
+  --source-platform npm --source-skill media-search
 
 npx -y socialdatax-skills@latest kuaishou search \
   --keyword "<keyword>" --pages 3 --pretty --source-client socialdatax-skills \
-  --source-platform github --source-skill media-search
+  --source-platform npm --source-skill media-search
 
 npx -y socialdatax-skills@latest bilibili search-videos \
   --keyword "<keyword>" --pretty --source-client socialdatax-skills \
-  --source-platform github --source-skill media-search
+  --source-platform npm --source-skill media-search
 
 npx -y socialdatax-skills@latest bilibili search-articles \
   --keyword "<keyword>" --pretty --source-client socialdatax-skills \
-  --source-platform github --source-skill media-search
+  --source-platform npm --source-skill media-search
 
 npx -y socialdatax-skills@latest zhihu search \
   --keyword "<keyword>" --pretty --source-client socialdatax-skills \
-  --source-platform github --source-skill media-search
+  --source-platform npm --source-skill media-search
 
 npx -y socialdatax-skills@latest zhihu search \
   --keyword "<keyword>" --pages 3 --pretty --source-client socialdatax-skills \
-  --source-platform github --source-skill media-search
+  --source-platform npm --source-skill media-search
 
 npx -y socialdatax-skills@latest instagram search \
   --keyword "<keyword>" --pretty --source-client socialdatax-skills \
-  --source-platform github --source-skill media-search
+  --source-platform npm --source-skill media-search
 
 npx -y socialdatax-skills@latest instagram search \
   --keyword "<keyword>" --pages 3 --pretty --source-client socialdatax-skills \
-  --source-platform github --source-skill media-search
+  --source-platform npm --source-skill media-search
 
 npx -y socialdatax-skills@latest x search \
   --keyword "<keyword>" --pretty --source-client socialdatax-skills \
-  --source-platform github --source-skill media-search
+  --source-platform npm --source-skill media-search
 
 npx -y socialdatax-skills@latest x search \
   --keyword "<keyword>" --pages 3 --pretty --source-client socialdatax-skills \
-  --source-platform github --source-skill media-search
+  --source-platform npm --source-skill media-search
 
 npx -y socialdatax-skills@latest youtube search \
   --keyword "<keyword>" --pretty --source-client socialdatax-skills \
-  --source-platform github --source-skill media-search
+  --source-platform npm --source-skill media-search
 
 npx -y socialdatax-skills@latest youtube search \
   --keyword "<keyword>" --pages 3 --pretty --source-client socialdatax-skills \
-  --source-platform github --source-skill media-search
+  --source-platform npm --source-skill media-search
 
 npx -y socialdatax-skills@latest tiktok search \
   --keyword "<keyword>" --pretty --source-client socialdatax-skills \
-  --source-platform github --source-skill media-search
+  --source-platform npm --source-skill media-search
 
 npx -y socialdatax-skills@latest tiktok search \
   --keyword "<keyword>" --pages 3 --pretty --source-client socialdatax-skills \
-  --source-platform github --source-skill media-search
+  --source-platform npm --source-skill media-search
 
 npx -y socialdatax-skills@latest weibo search \
   --keyword "<keyword>" --pretty --source-client socialdatax-skills \
-  --source-platform github --source-skill media-search
+  --source-platform npm --source-skill media-search
 
 npx -y socialdatax-skills@latest weibo search \
   --keyword "<keyword>" --pages 3 --pretty --source-client socialdatax-skills \
-  --source-platform github --source-skill media-search
+  --source-platform npm --source-skill media-search
 
 npx -y socialdatax-skills@latest toutiao search \
   --keyword "<keyword>" --pretty --source-client socialdatax-skills \
-  --source-platform github --source-skill media-search
+  --source-platform npm --source-skill media-search
 
 npx -y socialdatax-skills@latest toutiao search \
   --keyword "<keyword>" --pages 3 --pretty --source-client socialdatax-skills \
-  --source-platform github --source-skill media-search
+  --source-platform npm --source-skill media-search
 
 npx -y socialdatax-skills@latest wechat search \
   --keyword "<keyword>" --pretty --source-client socialdatax-skills \
-  --source-platform github --source-skill media-search
+  --source-platform npm --source-skill media-search
 
 npx -y socialdatax-skills@latest wechat search \
   --keyword "<keyword>" --pages 3 --pretty --source-client socialdatax-skills \
-  --source-platform github --source-skill media-search
+  --source-platform npm --source-skill media-search
 
 npx -y socialdatax-skills@latest xhs search-suggestions \
   --keyword "<keyword>" --pretty --source-client socialdatax-skills \
-  --source-platform github --source-skill media-search
+  --source-platform npm --source-skill media-search
 
 npx -y socialdatax-skills@latest douyin search-suggestions \
   --keyword "<keyword>" --pretty --source-client socialdatax-skills \
-  --source-platform github --source-skill media-search
+  --source-platform npm --source-skill media-search
 
 npx -y socialdatax-skills@latest tiktok search-suggestions \
   --keyword "<keyword>" --pretty --source-client socialdatax-skills \
-  --source-platform github --source-skill media-search
+  --source-platform npm --source-skill media-search
 
 npx -y socialdatax-skills@latest weibo search-suggestions \
   --keyword "<keyword>" --pretty --source-client socialdatax-skills \
-  --source-platform github --source-skill media-search
+  --source-platform npm --source-skill media-search
 
 npx -y socialdatax-skills@latest zhihu search-suggestions \
   --keyword "<keyword>" --pretty --source-client socialdatax-skills \
-  --source-platform github --source-skill media-search
+  --source-platform npm --source-skill media-search
 
 npx -y socialdatax-skills@latest x search-suggestions \
   --keyword "<keyword>" --pretty --source-client socialdatax-skills \
-  --source-platform github --source-skill media-search
+  --source-platform npm --source-skill media-search
 
 npx -y socialdatax-skills@latest bilibili search-suggestions \
   --keyword "<keyword>" --pretty --source-client socialdatax-skills \
-  --source-platform github --source-skill media-search
+  --source-platform npm --source-skill media-search
 
 npx -y socialdatax-skills@latest kuaishou search-suggestions \
   --keyword "<keyword>" --pretty --source-client socialdatax-skills \
-  --source-platform github --source-skill media-search
+  --source-platform npm --source-skill media-search
 
 npx -y socialdatax-skills@latest youtube search-suggestions \
   --keyword "<keyword>" --pretty --source-client socialdatax-skills \
-  --source-platform github --source-skill media-search
+  --source-platform npm --source-skill media-search
 
 npx -y socialdatax-skills@latest toutiao search-suggestions \
   --keyword "<keyword>" --pretty --source-client socialdatax-skills \
-  --source-platform github --source-skill media-search
+  --source-platform npm --source-skill media-search
 
 npx -y socialdatax-skills@latest instagram tag-search \
   --keyword "<keyword>" --pretty --source-client socialdatax-skills \
-  --source-platform github --source-skill media-search
+  --source-platform npm --source-skill media-search
 
 npx -y socialdatax-skills@latest xhs search-images \
   --keyword "<keyword>" --pretty --source-client socialdatax-skills \
-  --source-platform github --source-skill media-search
+  --source-platform npm --source-skill media-search
 
 npx -y socialdatax-skills@latest xhs product-search \
   --keyword "<keyword>" --pretty --source-client socialdatax-skills \
-  --source-platform github --source-skill media-search
+  --source-platform npm --source-skill media-search
 
 npx -y socialdatax-skills@latest douyin product-search \
   --keyword "<keyword>" --pretty --source-client socialdatax-skills \
-  --source-platform github --source-skill media-search
+  --source-platform npm --source-skill media-search
 
 npx -y socialdatax-skills@latest xhs topic-notes \
   --page-id "<page_id>" --pretty --source-client socialdatax-skills \
-  --source-platform github --source-skill media-search
+  --source-platform npm --source-skill media-search
 
 npx -y socialdatax-skills@latest xhs topic-notes \
   --url "<topic_url>" --pretty --source-client socialdatax-skills \
-  --source-platform github --source-skill media-search
+  --source-platform npm --source-skill media-search
 
 npx -y socialdatax-skills@latest wechat article-search \
   --keyword "<keyword>" --pretty --source-client socialdatax-skills \
-  --source-platform github --source-skill media-search
+  --source-platform npm --source-skill media-search
 
 npx -y socialdatax-skills@latest tieba forum-posts \
   --forum-name "<forum_name>" --pretty --source-client socialdatax-skills \
-  --source-platform github --source-skill media-search
+  --source-platform npm --source-skill media-search
 
 npx -y socialdatax-skills@latest tieba search-suggestions \
   --keyword "<keyword>" --pretty --source-client socialdatax-skills \
-  --source-platform github --source-skill media-search
+  --source-platform npm --source-skill media-search
 
 npx -y socialdatax-skills@latest tieba search-general \
   --keyword "<keyword>" --pretty --source-client socialdatax-skills \
-  --source-platform github --source-skill media-search
+  --source-platform npm --source-skill media-search
 
 npx -y socialdatax-skills@latest tieba search \
   --keyword "<keyword>" --pretty --source-client socialdatax-skills \
-  --source-platform github --source-skill media-search
+  --source-platform npm --source-skill media-search
 
 npx -y socialdatax-skills@latest tieba forum-search \
   --forum-name "<forum_name>" --keyword "<keyword>" --pretty \
-  --source-client socialdatax-skills --source-platform github \
-  --source-skill media-search
+  --source-client socialdatax-skills --source-platform npm --source-skill media-search
 
 npx -y socialdatax-skills@latest youtube channel-search \
   --keyword "<keyword>" --pretty --source-client socialdatax-skills \
-  --source-platform github --source-skill media-search
+  --source-platform npm --source-skill media-search
 
 npx -y socialdatax-skills@latest haokan search \
   --keyword "<keyword>" --pretty --source-client socialdatax-skills \
-  --source-platform github --source-skill media-search
+  --source-platform npm --source-skill media-search
 
 npx -y socialdatax-skills@latest haokan user-search \
   --keyword "<keyword>" --pretty --source-client socialdatax-skills \
-  --source-platform github --source-skill media-search
+  --source-platform npm --source-skill media-search
 
 npx -y socialdatax-skills@latest haokan search-suggestions \
   --keyword "<keyword>" --pretty --source-client socialdatax-skills \
-  --source-platform github --source-skill media-search
+  --source-platform npm --source-skill media-search
 
 npx -y socialdatax-skills@latest haokan hot-search \
-  --pretty --source-client socialdatax-skills --source-platform github \
+  --pretty --source-client socialdatax-skills --source-platform npm \
   --source-skill media-search
 ```
 
@@ -327,7 +326,7 @@ Optional arguments:
 - Weibo `--pages <n>`: fetch and merge N search pages from the current starting point; continue with returned `next_page_token`.
 - Toutiao `--pages <n>`: fetch and merge N search pages from the current starting point; continue with returned `next_page_token`.
 - WeChat Channels / 视频号 `--pages <n>`: fetch and merge N search pages from the current starting point; continue with returned `next_page_token`.
-- `--source-client socialdatax-skills --source-platform github --source-skill media-search`: usage attribution for this Agent Skill; keep these values unchanged when running examples from this Skill.
+- `--source-client socialdatax-skills --source-platform npm --source-skill media-search`: usage attribution for this Agent Skill; keep these values unchanged when running examples from this Skill.
 
 XHS sort values:
 - `general`: default sorting.
@@ -397,7 +396,7 @@ Haokan / 好看视频: use `search` for videos, `user-search` for accounts, `sea
 
 ## Safety Boundary
 
-Search access is read-only. It uses `SOCIALDATAX_API_KEY` from the user's environment at runtime for SocialDataX search requests. Generated Skill files do not contain API keys. It does not read local browser data or perform login, posting, liking, commenting, or account changes. The optional X / Twitter local save command writes only to the requested local `--output` path or `--output-dir` directory and does not require `SOCIALDATAX_API_KEY`.
+Search access is read-only. It uses `SOCIALDATAX_API_KEY` from the user's environment at runtime for SocialDataX search requests. Generated Skill files do not contain API keys. It does not read local browser data or perform login, posting, liking, commenting, or account changes. The optional X / Twitter local save command writes only to the requested local `--output` path or `--output-dir` directory and does not require `SOCIALDATAX_API_KEY`. Prefer the direct CLI; hosted MCP tools are optional when the current agent already supports authenticated streamable HTTP MCP.
 
 ## MCP Tools
 
@@ -486,6 +485,7 @@ For WeChat Channels / 视频号 search results, include `encrypted_object_id`, a
 ## Troubleshooting
 
 - If an SDK/dependency, npm network, Node.js/npm/npx availability, permission, or missing runtime error appears, treat it as a local runtime, dependency installation, network, or agent authorization issue, not a SocialDataX API key or business data error. If the current environment has permission, install or restore automatically. When network or execution authorization is needed, ask the user to approve or finish authorization, then continue the same command; do not use public web search as a substitute for SocialDataX data.
+- If the CLI exits with status 1 and prints `partial: true`, preserve `data.items` and the error, and report incomplete results. This recovery rule overrides advice to rerun the original command. After resolving the error (including insufficient balance), resume only with a non-empty `data.next_page_token` and the same query parameters. Keep the original page and item limits: subtract cumulative `page_count` and `item_count` from the respective `--pages` and `--max-items` limits, if set. Stop parent-list pagination when either limit is reached. An empty token does not mean completion. Do not restart from the first page; investigate repeated-token errors before continuing.
 - For non-balance network or API errors, preserve the error message, check `SOCIALDATAX_API_KEY`, parameters, and link or ID format, then retry once when appropriate.
 - If the response returns `insufficient_balance` or says the balance/credits are insufficient, do not retry repeatedly. Show the recharge URL from the error exactly as returned, then continue the same command after the user recharges.
 - If the user has recharged but still sees insufficient balance, confirm `SOCIALDATAX_API_KEY` belongs to the same account that was recharged; if needed, copy a fresh API Key from the official dashboard.
