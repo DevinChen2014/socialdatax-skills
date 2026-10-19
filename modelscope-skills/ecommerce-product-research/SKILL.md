@@ -4,7 +4,7 @@ description: "当用户需要做电商选品、类目机会初筛或整理候选
 source_client: "socialdatax-skills"
 source_platform: "modelscope"
 source_skill: "ecommerce-product-research"
-metadata: {"openclaw":{"requires":{"env":["SOCIALDATAX_API_KEY"],"bins":["node","npm"]},"primaryEnv":"SOCIALDATAX_API_KEY","install":[{"kind":"node","package":"socialdatax-skills","bins":[]}],"emoji":"🛍️","homepage":"https://socialdatax.com/ai?from=modelscope"}}
+metadata: {"openclaw":{"requires":{"env":[],"bins":[]},"primaryEnv":"SOCIALDATAX_API_KEY","install":[],"emoji":"🛍️","homepage":"https://socialdatax.com/ai?from=modelscope"}}
 ---
 <!-- AUTO-GENERATED from socialdatax-skill-source. Do not edit directly; run `node scripts/generate_socialdatax_skills.mjs`. -->
 
@@ -98,7 +98,7 @@ npx -y socialdatax-skills@latest xhs product-detail \
 
 ## 安全边界
 
-这是只读 skill。运行时使用用户环境变量中的 `SOCIALDATAX_API_KEY`；生成的 Skill 文件不包含 API Key。不会读取本地浏览器数据，也不会执行登录、发帖、点赞、评论或账号修改。
+这是只读 skill。已有商品资料直接分析；只有在线商品查询需要 Node.js/npm 与 SOCIALDATAX_API_KEY，生成文件不含API Key。不登录、不发帖、不联系商家、不修改商品或账号。
 
 ## 示例结果
 
