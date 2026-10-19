@@ -1,5 +1,15 @@
 # SocialDataX ModelScope Skills Publishing Record
 
+## 2026-10-19 通用选品与对比在线步骤条件澄清
+
+- 官方upload/settings PATCH更新socialhelper下两项技能，响应success=true，公开详情可读。公共GitHub来源提交`08ca2b0`。
+- 仅两段增加“需要在线查询时”的前提，已有资料直接分析；标题、描述、命令及可选依赖元数据保持不变。132项生成器测试、903项上架检查通过，无后端或npm发布。远端两份SKILL.md与本地逐字节一致。
+
+| Slug | SKILL.md SHA256 |
+| --- | --- |
+| ecommerce-product-research | `c1f95a46f2f5b060ac8e3fd1487b2bb9fff279366c118f601a9c6d8259b30969` |
+| ecommerce-product-comparison | `c6bce9b07b16ebcf4b68f52a1e370ddbd6920f3434c21d674dcbe51613ca0278` |
+
 ## 2026-10-19 通用选品与对比可选依赖修复
 
 - 官方upload/settings PATCH更新socialhelper/ecommerce-product-research与socialhelper/ecommerce-product-comparison，保留原名称、描述、分类、来源和许可；两次响应success=true。公开详情可读，两份archive中的SKILL.md与本地逐字节一致。商品对比首次读取超时，单项重试成功。
