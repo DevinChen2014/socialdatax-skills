@@ -503,7 +503,7 @@ async function runCliWithMockMcp(
   args,
   extraEnv = {},
   structuredContentForToolCall,
-  { onInitialize, onInitializedNotification, mcpToolError, mcpToolErrorStructured } = {}
+  { onInitialize, onInitializedNotification, mcpToolError, mcpToolErrorStructured, mcpToolErrorAt } = {}
 ) {
   const toolCalls = [];
   const toolCallAuthorizationHeaders = [];
@@ -603,7 +603,7 @@ async function runCliWithMockMcp(
           JSON.stringify({
             jsonrpc: "2.0",
             id: payload.id,
-            result: mcpToolError ? {
+            result: mcpToolError && (mcpToolErrorAt === undefined || toolCalls.length === mcpToolErrorAt) ? {
               isError: true,
               structuredContent: mcpToolErrorStructured,
               content: [{ type: "text", text: mcpToolError }],
@@ -954,14 +954,14 @@ test("public package version metadata stays aligned", () => {
   const cli = readFileSync(cliPath, "utf8");
   const versionPattern = escapeRegExp(packageJson.version);
 
-  assert.equal(packageJson.version, "0.2.52");
+  assert.equal(packageJson.version, "0.2.53");
   assert.equal(packageLock.version, packageJson.version);
   assert.equal(packageLock.packages[""].version, packageJson.version);
   assert.match(
     cli,
     new RegExp(`const PACKAGE_VERSION = "${versionPattern}";`)
   );
-  assert.match(readme, /Package capability version: `0\.2\.52`/);
+  assert.match(readme, /Package capability version: `0\.2\.53`/);
 });
 
 test("publish script reads npm auth token from user npmrc", async () => {
@@ -9936,6 +9936,108 @@ test("direct pagination rejects unsupported combinations before checking the API
   );
 });
 
+test("pagination request failure preserves completed pages and original error", async () => {
+  for (const items of [[{ review_id: "review-1", content: "sample".repeat(50000) }], []]) {
+    const failure = { code: "upstream_error", message: "Second page failed", retryable: true };
+    const { result, toolCalls } = await runCliWithMockMcp(
+      ["xhs", "product-reviews", "--sku-id", "sku-1", "--pages", "3"], {},
+      () => ({ items, next_page_token: "opaque+%2F==下一页" }),
+      { mcpToolError: failure.message, mcpToolErrorStructured: failure, mcpToolErrorAt: 2 }
+    );
+    assert.equal(result.status, 1);
+    assert.match(result.stderr, /Second page failed/);
+    assert.equal(toolCalls.length, 2);
+    const output = JSON.parse(result.stdout);
+    assert.equal(output.partial, true);
+    assert.equal(output.platform, "xhs");
+    assert.equal(output.tool, "xhs_get_product_reviews");
+    assert.deepEqual(output.arguments, { sku_id: "sku-1" });
+    assert.deepEqual(output.error, failure);
+    assert.deepEqual(output.data.items, items);
+    assert.equal(output.data.page_count, 1);
+    assert.equal(output.data.item_count, items.length);
+    assert.equal(output.data.next_page_token, "opaque+%2F==下一页");
+  }
+});
+
+test("nested reply failure retains outer comments and marks pending replies", async () => {
+  for (const failAt of [4, 5]) {
+    const failure = { code: "upstream_error", message: "Reply page failed" };
+    const { result, toolCalls } = await runCliWithMockMcp(
+      ["xhs", "comments", "--note-id", "note-1", "--pages", "3", "--include-replies"], {},
+      ({ name, arguments: args }, index) => {
+        if (name === "xhs_get_note_comments_by_note_id") return index === 1
+          ? { items: [{ comment_id: "previous", reply_count: 0 }], next_page_token: "parents-2" }
+          : { items: ["complete", "failed", "pending"].map(comment_id => ({ comment_id, reply_count: 2 })), next_page_token: "parents-3" };
+        assert.equal(name, "xhs_get_note_sub_comments_by_comment_id");
+        return { items: [{ comment_id: args.comment_id + "-reply" }], next_page_token: args.comment_id === "failed" ? "replies+%2F下一页" : "" };
+      }, { mcpToolError: failure.message, mcpToolErrorStructured: failure, mcpToolErrorAt: failAt }
+    );
+    assert.equal(result.status, 1);
+    assert.match(result.stderr, /Reply page failed/);
+    assert.equal(toolCalls.length, failAt);
+    const output = JSON.parse(result.stdout);
+    assert.equal(output.partial, true);
+    assert.equal(output.tool, "xhs_get_note_comments_by_note_id");
+    assert.deepEqual(output.arguments, { note_id: "note-1" });
+    assert.deepEqual(output.error, failure);
+    assert.equal(output.data.page_count, 2);
+    assert.equal(output.data.item_count, 4);
+    assert.equal(output.data.next_page_token, "parents-3");
+    assert.deepEqual(output.data.items.map(x => x.comment_id), ["previous", "complete", "failed", "pending"]);
+    const [, complete, failed, pending] = output.data.items;
+    assert.deepEqual(complete.replies, [{ comment_id: "complete-reply" }]);
+    assert.equal(failed.replies_partial, true);
+    assert.deepEqual(failed.replies_error, failure);
+    assert.deepEqual(failed.replies, failAt === 5 ? [{ comment_id: "failed-reply" }] : []);
+    assert.equal(failed.replies_page_count, failAt === 5 ? 1 : 0);
+    assert.equal(failed.replies_next_page_token, failAt === 5 ? "replies+%2F下一页" : "");
+    assert.equal(pending.replies_pending, true);
+    assert.equal(pending.replies, undefined);
+  }
+});
+
+test("reply failure clears current or earlier parent tokens without changing reply continuation", async () => {
+  for (const parentToken of ["parents-start", "parents-middle"]) {
+    const failure = { code: "upstream_error", message: "Reply request failed" };
+    const { result, toolCalls } = await runCliWithMockMcp(
+      ["xhs", "comments", "--note-id", "note-1", "--page-token", "parents-start", "--pages", "3", "--include-replies"], {},
+      ({ name }, index) => name === "xhs_get_note_comments_by_note_id"
+        ? index === 1
+          ? { items: [{ comment_id: "previous", reply_count: 0 }], next_page_token: "parents-middle" }
+          : { items: [{ comment_id: "parent", reply_count: 2 }], next_page_token: parentToken }
+        : { items: [{ comment_id: "reply" }], next_page_token: "reply+%2F下一页" },
+      { mcpToolError: failure.message, mcpToolErrorStructured: failure, mcpToolErrorAt: 4 }
+    );
+    assert.equal(result.status, 1);
+    assert.equal(toolCalls.length, 4);
+    assert.match(result.stderr, /Reply request failed/);
+    const output = JSON.parse(result.stdout);
+    assert.equal(output.tool, "xhs_get_note_comments_by_note_id");
+    assert.equal(output.partial, true);
+    assert.deepEqual(output.error, failure);
+    assert.equal(output.data.next_page_token, "");
+    assert.equal(output.data.page_count, 2);
+    assert.deepEqual(output.data.items.map(x => x.comment_id), ["previous", "parent"]);
+    const parent = output.data.items[1];
+    assert.deepEqual(parent.replies, [{ comment_id: "reply" }]);
+    assert.equal(parent.replies_next_page_token, "reply+%2F下一页");
+    assert.equal(parent.replies_partial, true);
+    assert.deepEqual(parent.replies_error, failure);
+  }
+});
+
+test("pagination first request failure keeps stdout empty", async () => {
+  const { result, toolCalls } = await runCliWithMockMcp(
+    ["xhs", "product-reviews", "--sku-id", "sku-1", "--pages", "2"], {}, undefined,
+    { mcpToolError: "First page failed" }
+  );
+  assert.equal(result.status, 1);
+  assert.equal(result.stdout, "");
+  assert.match(result.stderr, /Direct CLI call failed.*First page failed/);
+  assert.equal(toolCalls.length, 1);
+});
+
 test("paginated commands reject next marker that repeats the current request", async () => {
   const { result, toolCalls } = await runCliWithMockMcp(
     [
@@ -9958,6 +10060,34 @@ test("paginated commands reject next marker that repeats the current request", a
   assert.equal(result.status, 1);
   assert.match(result.stderr, /Pagination stopped because next_page_token repeated\./);
   assert.equal(toolCalls.length, 1);
+  const output = JSON.parse(result.stdout);
+  assert.equal(output.partial, true);
+  assert.deepEqual(output.data.items, [{ note_id: "note-1" }]);
+  assert.equal(output.data.page_count, 1);
+  assert.equal(output.data.next_page_token, "");
+});
+
+test("nested repeated reply token preserves collected replies without a continuation", async () => {
+  const { result, toolCalls } = await runCliWithMockMcp(
+    ["xhs", "comments", "--note-id", "note-1", "--include-replies"], {},
+    ({ name }, index) => name === "xhs_get_note_comments_by_note_id"
+      ? { items: [{ comment_id: "parent-1", reply_count: 2 }], next_page_token: "parents-next" }
+      : { items: [{ comment_id: `reply-${index}` }], next_page_token: "repeated-reply-token" }
+  );
+  assert.equal(result.status, 1);
+  assert.equal(toolCalls.length, 3);
+  assert.match(result.stderr, /Pagination stopped because next_page_token repeated/);
+  const output = JSON.parse(result.stdout);
+  assert.equal(output.tool, "xhs_get_note_comments_by_note_id");
+  assert.equal(output.partial, true);
+  assert.equal(output.data.next_page_token, "parents-next");
+  const comment = output.data.items[0];
+  assert.equal(comment.comment_id, "parent-1");
+  assert.deepEqual(comment.replies.map(x => x.comment_id), ["reply-2", "reply-3"]);
+  assert.equal(comment.replies_page_count, 2);
+  assert.equal(comment.replies_partial, true);
+  assert.equal(comment.replies_next_page_token, "");
+  assert.match(comment.replies_error.message, /next_page_token repeated/);
 });
 
 test("paginated commands do not reject repeated next marker when page limit is reached", async () => {

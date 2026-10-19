@@ -255,6 +255,7 @@ const approvedCrossPlatformTencentSkillhubSlugs = new Set([
   "short-video-copy-extract-v2",
 ]);
 const approvedNarrowXhsSkillhubSlugs = new Set([
+  "ecommerce-review-insights",
   "content-research-v3",
   "social-content-research",
   "social-content-research-v1",
@@ -495,7 +496,7 @@ test("skill generator emits valid host-specific skill files", async () => {
         assert.doesNotMatch(skill, /`insufficient_balance`|积分不足/);
         assert.doesNotMatch(skill, /SDK\/依赖缺失|SDK\/dependency/);
         assert.doesNotMatch(skill, /--source-client|--source-platform|--source-skill/);
-        assert.match(skill, /纯文本生成型 skill/);
+        assert.match(skill, /纯文本生成型 skill|纯资料分析型 skill/);
         continue;
       }
 
@@ -8195,6 +8196,98 @@ test("existing skills route Haokan and X creator replies to published CLI tools"
     }
     const xSkill = readGeneratedSkill(tempRoot, "clawhub", "socialdatax-x-twitter", source.hosts.hosts);
     for (const flag of ["--user-id", "--username", "--profile-url"]) assertDirectCliExample(xSkill, `x user-replies ${flag}`);
+  } finally {
+    rmSync(tempRoot, { recursive: true, force: true });
+  }
+});
+
+test("new platform listings expose supported workflows with host attribution", async () => {
+  const tempRoot = mkdtempSync(join(tmpdir(), "sdx-new-platforms-"));
+  try {
+    const { hosts } = await loadSkillSource({ repoRoot: projectRoot });
+    await generateSkills({ repoRoot: projectRoot, outRoot: tempRoot });
+    for (const host of ["skillhub", "clawhub", "modelscope"]) {
+      for (const [slug, platform, commands] of [
+        ["haokan-topic-analysis", "haokan", ["search", "detail", "comments", "replies"]],
+        ["tieba-demand-insights", "tieba", ["search", "forum-search", "detail", "comments", "replies"]],
+        ["toutiao-content-research", "toutiao", ["hot-search", "search", "detail"]],
+      ]) {
+        const skill = readGeneratedSkill(tempRoot, host, slug, hosts.hosts);
+        for (const command of commands) assert.ok(skill.includes(`${platform} ${command}`));
+        assert.ok(skill.includes(`--source-platform ${host} --source-skill ${slug}`));
+        assert.ok(skill.includes('SOCIALDATAX_API_KEY'));
+      }
+      const tieba = readGeneratedSkill(tempRoot, host, "tieba-demand-insights", hosts.hosts);
+      assert.match(tieba, /先给出当前 skill 支持的输入：.*关键词或选题方向/);
+      assert.match(tieba, /帖子链接或帖子 ID/);
+    }
+  } finally {
+    rmSync(tempRoot, { recursive: true, force: true });
+  }
+});
+
+test("ecommerce listings separate platform selection from product comparison", async () => {
+  const { listings, hosts } = await loadSkillSource({ repoRoot: projectRoot });
+  for (const prefix of ["ecommerce", "douyin"]) {
+    for (const kind of ["research", "comparison"]) {
+      const slug = `${prefix}-product-${kind}`;
+      const entry = listings.listings.find((item) => item.host === "skillhub" && item.slug === slug);
+      assert.ok(entry);
+      if (prefix === "ecommerce") assert.equal(entry.apiOptional, true);
+      assert.equal(entry.commands.some((ref) => ref.endsWith("cliProductSearch")), kind === "research");
+      assert.equal(entry.commands.some((ref) => ref.startsWith("xhs.")), prefix === "ecommerce");
+      assert.ok(entry.commands.every((ref) => /\.cliProduct(?:Search|DetailBy)/.test(ref)));
+      for (const host of ["skillhub", "clawhub", "modelscope"]) {
+        const skill = readRepoSkill(projectRoot, host, slug, hosts.hosts);
+        assert.ok(skill.includes(`source_platform: "${host}"`));
+        assert.ok(skill.includes(`source_skill: "${slug}"`));
+        assert.doesNotMatch(skill, /product-search[^\n]*--all/);
+        assert.ok(skill.includes("缺少依据时不强行排名") || skill.includes("不代表全市场价格带"));
+      }
+    }
+  }
+});
+
+test("product copy listings accept product detail commands and preserve channel attribution", async () => {
+  const tempRoot = mkdtempSync(join(tmpdir(), "sdx-product-copy-"));
+  try {
+    const { hosts } = await loadSkillSource({ repoRoot: projectRoot });
+    await generateSkills({ repoRoot: projectRoot, outRoot: tempRoot });
+    for (const host of ["skillhub", "clawhub", "modelscope"]) {
+      for (const slug of ["ecommerce-detail-copywriter", "ecommerce-main-image-copywriter", "ecommerce-video-script"]) {
+        const skill = readGeneratedSkill(tempRoot, host, slug, hosts.hosts);
+        const metadata = JSON.parse(skill.match(/^metadata: (.+)$/m)[1]);
+        assert.deepEqual(metadata.openclaw.requires, { env: [], bins: [] });
+        assert.deepEqual(metadata.openclaw.install, []);
+        assert.equal(metadata.openclaw.primaryEnv, "SOCIALDATAX_API_KEY");
+        for (const platform of ["douyin", "xhs"]) {
+          assertDirectCliExample(skill, `${platform} product-detail --url`);
+          assertDirectCliExample(skill, `${platform} product-search --keyword`);
+        }
+        assert.ok(skill.includes(`source_platform: "${host}"`));
+        assert.ok(skill.includes(`source_skill: "${slug}"`));
+      }
+    }
+  } finally {
+    rmSync(tempRoot, { recursive: true, force: true });
+  }
+});
+
+test("ecommerce review insights supports optional sku reviews without forcing API setup", async () => {
+  const source = await loadSkillSource({ repoRoot: projectRoot });
+  const listing = source.listings.listings.find(x => x.host === "skillhub" && x.slug === "ecommerce-review-insights");
+  assert.equal(listing.apiOptional, true);
+  assert.notEqual(listing.listingKind, "prompt_only");
+  assert.deepEqual(listing.commands, ["xhs.cliProductDetailByUrl", "xhs.cliProductReviews", "xhs.cliProductReviewReplies", "xhs.cliProductReviewReplyReplies"]);
+  const tempRoot = mkdtempSync(join(tmpdir(), "socialdatax-review-"));
+  try {
+    await generateSkills({ repoRoot: projectRoot, outRoot: tempRoot, quiet: true });
+    const skill = readGeneratedSkill(tempRoot, "skillhub", listing.slug, source.hosts.hosts);
+    assert.match(skill, /"requires":\{"env":\[\],"bins":\[\]\}/);
+    assert.match(skill, /xhs product-reviews/);
+    assert.match(skill, /--source-skill ecommerce-review-insights/);
+    assert.match(skill, /next_page_token/);
+    assert.doesNotMatch(skill, /纯资料分析型 skill|不调用平台接口|不读取平台链接、浏览器数据或在线评价/);
   } finally {
     rmSync(tempRoot, { recursive: true, force: true });
   }

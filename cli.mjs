@@ -26,7 +26,7 @@ import {
 export { decryptWechatMediaCommand };
 
 const PACKAGE_NAME = "socialdatax-skills";
-const PACKAGE_VERSION = "0.2.52";
+const PACKAGE_VERSION = "0.2.53";
 const PACKAGE_SPEC = `${PACKAGE_NAME}@latest`;
 const LOG_PREFIX = `[${PACKAGE_NAME}]`;
 const MIN_NODE_VERSION = "20.18.1";
@@ -1953,6 +1953,9 @@ async function main() {
       process.exitCode = 1;
     }
   } catch (error) {
+    if (error?.partialOutput) {
+      console.log(JSON.stringify(error.partialOutput));
+    }
     if (error?.structuredContent?.code === "pgy_commercial_data_unavailable") {
       console.error(JSON.stringify({
         code: error.structuredContent.code,
@@ -1961,7 +1964,7 @@ async function main() {
     } else {
       console.error(`${LOG_PREFIX} ${formatCliErrorMessage(error)}`);
     }
-    process.exit(1);
+    process.exitCode = 1;
   }
 }
 
@@ -6625,8 +6628,35 @@ async function collectPaginatedDirectData(
   let currentOperation = cloneDirectOperation(operation);
   let stoppedBySinceDays = false;
 
+  function preservePartialOutput(error, nextMarker) {
+    error.partialOutput = {
+      platform: operation.platform.id,
+      tool: operation.tool,
+      arguments: operation.arguments,
+      partial: true,
+      error: error.structuredContent ?? { message: error.message },
+      data: buildPaginatedData({
+        operation,
+        lastPageData,
+        parentContextData,
+        items: collectedItems,
+        pageCount,
+        nextMarker,
+        stoppedBySinceDays,
+      }),
+    };
+  }
+
   while (pageCount < pageLimit) {
-    const pageData = await callDirectOperation(currentOperation);
+    let pageData;
+    try {
+      pageData = await callDirectOperation(currentOperation);
+    } catch (error) {
+      if (pageCount > 0) {
+        preservePartialOutput(error, currentPageMarker(currentOperation));
+      }
+      throw error;
+    }
     pageCount += 1;
     lastPageData = pageData;
     parentContextData = mergeParentContextData(parentContextData, pageData);
@@ -6645,14 +6675,23 @@ async function collectPaginatedDirectData(
       collectedItems.length,
       pagination.maxItems
     );
-    const decoratedItems =
-      includeReplies && operation.operation === "comments"
-        ? await attachRepliesToCommentItems(
-            currentOperation,
-            candidateItems,
-            parentContextData
-          )
+    let decoratedItems;
+    try {
+      decoratedItems = includeReplies && operation.operation === "comments"
+        ? await attachRepliesToCommentItems(currentOperation, candidateItems, parentContextData)
         : candidateItems;
+    } catch (error) {
+      if (error.partialCommentItems) {
+        appendItemsWithLimit(collectedItems, error.partialCommentItems, pagination.maxItems);
+        delete error.partialCommentItems;
+        const parentNextMarker = readNextPageMarker(currentOperation, pageData);
+        preservePartialOutput(
+          error,
+          seenNextMarkers.has(parentNextMarker) ? undefined : parentNextMarker
+        );
+      }
+      throw error;
+    }
     appendItemsWithLimit(collectedItems, decoratedItems, pagination.maxItems);
 
     nextMarker = readNextPageMarker(currentOperation, pageData);
@@ -6671,9 +6710,11 @@ async function collectPaginatedDirectData(
       break;
     }
     if (markerRepeated) {
-      throw new Error(
+      const error = new Error(
         `Pagination stopped because ${nextMarkerName()} repeated.`
       );
+      preservePartialOutput(error, undefined);
+      throw error;
     }
     seenNextMarkers.add(markerKey);
     currentOperation = operationWithNextPageMarker(currentOperation, nextMarker);
@@ -7036,11 +7077,27 @@ async function attachRepliesToCommentItems(operation, items, pageData) {
       repliesOperation.sourceAttribution = operation.sourceAttribution
         ? { ...operation.sourceAttribution }
         : undefined;
-      const repliesData = await collectPaginatedDirectData(
-        repliesOperation,
-        { all: true, pages: undefined, maxItems: undefined },
-        { includeReplies: false }
-      );
+      let repliesData;
+      try {
+        repliesData = await collectPaginatedDirectData(
+          repliesOperation,
+          { all: true, pages: undefined, maxItems: undefined },
+          { includeReplies: false }
+        );
+      } catch (error) {
+        const partial = error.partialOutput?.data;
+        comment.replies = partial?.items ?? [];
+        comment.replies_page_count = partial?.page_count ?? 0;
+        comment.replies_next_page_token = partial?.next_page_token ?? "";
+        comment.replies_partial = true;
+        comment.replies_error = error.structuredContent ?? { message: error.message };
+        error.partialCommentItems = [
+          ...decorated,
+          comment,
+          ...items.slice(decorated.length + 1).map(pending => ({ ...pending, replies_pending: true })),
+        ];
+        throw error;
+      }
       comment.replies = repliesData.items;
       comment.replies_page_count = repliesData.page_count;
       comment.replies_next_page_token = repliesData.next_page_token || "";
