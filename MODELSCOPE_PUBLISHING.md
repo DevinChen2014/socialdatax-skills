@@ -1,5 +1,19 @@
 # SocialDataX ModelScope Skills Publishing Record
 
+## 2026-10-19 新平台独立需求入口
+
+- 用户要求新增平台上架，并参考现有高下载需求。新增好看视频选题分析、贴吧用户需求洞察、今日头条内容研究，每个平台一个入口；需求证据和发布前基线见 SkillHub `PUBLISHING.md` 当日记录。
+- 复用 CLI 0.2.52，无新增运行时能力或 npm 版本。完整包测试 425 项、最终生成器测试 129 项、public-listing-check 866 项通过。
+- 使用官方文件 upload + POST `/openapi/v1/skills` 创建，必需名称字段为 `skill_name`（`name` 会返回 InputParameterError，未创建条目）。owner=socialhelper，category=marketing-seo，license=MIT License，private=false。三个公开详情可读，公开 archive 的 SKILL.md 与本地逐字节一致，初始下载数均为 0。
+- 公共 GitHub 来源文件已提交推送：`489e441`，路径 `modelscope-skills/<slug>`。
+
+| Slug | SKILL.md SHA256 |
+| --- | --- |
+| haokan-topic-analysis | `0f9ab3435cd7d6384535fe6423397b48cb856a796bf74401221bdaf119f6d441` |
+| tieba-demand-insights | `c57ab43ea30604f3f950d73aa8bcf510f088baef7fbb5a4ab7461c4fc7e78d81` |
+| toutiao-content-research | `08f43f1c6f60cb77427f3c4a60268b2b0dbcc8419023b7e81251fd4f75ac8358` |
+
+
 ## 2026-10-19 aggregate CLI documentation refresh
 
 - Refreshed only `socialhelper/socialdatax-content-research-assistant` through the documented upload and settings API; preserved display name, source URL, category, and license.
