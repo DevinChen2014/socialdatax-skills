@@ -1,5 +1,11 @@
 # SocialDataX ModelScope Skills Publishing Record
 
+## 2026-10-19 商品客服问答发布
+
+- 通过官方upload/create API创建 `socialhelper/ecommerce-customer-service`，private=false，公共GitHub来源提交 `25d7c91`。公开详情可读，初始下载0；公开archive中的SKILL.md与本地逐字节一致，SHA256 `c66e5316f74ea30f9d5f1c3bf1406bad26fb541b25e242a54010b0290079024d`。
+- 支持已有资料直接起草，或按需读取抖音/小红书商品详情；不查询订单物流、不自动发送或办理售后。沿用CLI 0.2.52和apiOptional元数据，没有新增runtime。
+- 131项生成器测试、899项上架检查通过，场景复核覆盖缺失参数、配送承诺、处理进度和拒绝虚报发送。未调用生产接口，不将说明检查称为在线业务验收。
+
 ## 2026-10-19 电商文案三入口发布
 
 - 用户批准接口增强版商品详情页文案、商品主图卖点文案、带货短视频脚本，支持链接读取和用户资料直接写作；仅用户要求时参考少量同类商品。沿用 CLI 0.2.52。
