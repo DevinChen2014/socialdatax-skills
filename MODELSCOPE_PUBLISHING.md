@@ -1,5 +1,11 @@
 # SocialDataX ModelScope Skills Publishing Record
 
+## 2026-10-19 aggregate CLI documentation refresh
+
+- Refreshed only `socialhelper/socialdatax-content-research-assistant` through the documented upload and settings API; preserved display name, source URL, category, and license.
+- Updated the description and archive with Haokan and X creator-replies guidance. Downloaded the public archive after publishing: `SKILL.md` is 58,802 bytes, SHA256 `96574103368eb860de08cff20704f937f46c3130d94fc7b426df02ae03045865`, exactly matching local generated output.
+- Preserved the 2026-10-12 release record from the public GitHub repository when synchronizing this source record.
+
 ## 2026-10-12 CLI 0.2.48 capability refresh
 
 Updated only the two affected existing `socialhelper` entries through the documented

@@ -649,6 +649,7 @@ async function runCliWithMockMcp(
       SOCIAL_MEDIA_WECHAT_MCP_UPSTREAM_URL: `http://127.0.0.1:${address.port}/mcp`,
       SOCIALDATAX_SENSITIVE_CHECK_MCP_UPSTREAM_URL: `http://127.0.0.1:${address.port}/mcp`,
       SOCIALDATAX_TIEBA_MCP_UPSTREAM_URL: `http://127.0.0.1:${address.port}/mcp`,
+      SOCIALDATAX_HAOKAN_MCP_UPSTREAM_URL: `http://127.0.0.1:${address.port}/mcp`,
       SOCIALDATAX_DOCS_MCP_UPSTREAM_URL: `http://127.0.0.1:${address.port}/mcp`,
       ...extraEnv,
     });
@@ -953,14 +954,14 @@ test("public package version metadata stays aligned", () => {
   const cli = readFileSync(cliPath, "utf8");
   const versionPattern = escapeRegExp(packageJson.version);
 
-  assert.equal(packageJson.version, "0.2.50");
+  assert.equal(packageJson.version, "0.2.52");
   assert.equal(packageLock.version, packageJson.version);
   assert.equal(packageLock.packages[""].version, packageJson.version);
   assert.match(
     cli,
     new RegExp(`const PACKAGE_VERSION = "${versionPattern}";`)
   );
-  assert.match(readme, /Package capability version: `0\.2\.50`/);
+  assert.match(readme, /Package capability version: `0\.2\.52`/);
 });
 
 test("publish script reads npm auth token from user npmrc", async () => {
@@ -6337,10 +6338,10 @@ test("xhs openclaw search schema documents semantic sort enums", () => {
   );
   const readme = readFileSync(join(openclawDir, "README.md"), "utf8");
 
-  assert.equal(packageJson.version, "0.1.24");
-  assert.equal(pluginManifest.version, "0.1.24");
-  assert.match(pluginSource, /const PLUGIN_VERSION = "0\.1\.24";/);
-  assert.match(readme, /Version: `0\.1\.24`/);
+  assert.equal(packageJson.version, "0.1.25");
+  assert.equal(pluginManifest.version, "0.1.25");
+  assert.match(pluginSource, /const PLUGIN_VERSION = "0\.1\.25";/);
+  assert.match(readme, /Version: `0\.1\.25`/);
 
   assert.deepEqual(pluginManifest.providerAuthChoices[0], {
     provider: "xhs-insights",
@@ -10092,7 +10093,7 @@ test("doctor json prints parseable safety summary", () => {
   assert.equal(report.security.readsLocalBrowserData, false);
   assert.equal(report.security.readsBrowserCookies, undefined);
   assert.equal(report.security.readsLocalAccountSession, undefined);
-  for (const id of ["tieba", "docs", "account"]) {
+  for (const id of ["tieba", "haokan", "docs", "account"]) {
     assert.ok(report.platforms.some((platform) => platform.id === id), `Missing ${id}`);
   }
   for (const id of ["xhs", "douyin", "kuaishou", "bilibili", "weibo", "wechat", "zhihu", "instagram", "x", "youtube", "tiktok"]) {
@@ -11352,7 +11353,8 @@ test("help and search skill document the five public sort meanings", () => {
   assert.doesNotMatch(searchSkill, /Douyin `--sort-type <number>`/);
   assert.doesNotMatch(searchSkill, /`filter_duration`: optional duration filter/);
   assert.doesNotMatch(searchSkill, /`publish_time`: optional numeric publish-time filter/);
-  assert.doesNotMatch(searchSkill, /hot-search|热榜|热搜/);
+  assert.match(searchSkill, /haokan hot-search/);
+  assert.doesNotMatch(searchSkill, /(?:xhs|douyin|kuaishou|weibo|toutiao|wechat) hot-search/);
 });
 
 test("search skill tells agents not to pass page to douyin or kuaishou MCP search", () => {
@@ -11688,4 +11690,105 @@ test("print-config is no longer supported by the skills package", () => {
     );
   }
   assert.doesNotMatch(result.stdout, /streamable_http/);
+});
+
+test("X creator replies continue through empty pages and keep attribution", async () => {
+  const token = "opaque+%2F==中文";
+  const { result, toolCalls, toolCallSourceSkillHeaders } = await runCliWithMockMcp([
+    "x", "user-replies", "--username", "example", "--all",
+    "--source-skill", "media-user-posts",
+  ], {}, (call) => call.arguments.page_token
+    ? { items: [{ post_id: "reply-1" }], next_page_token: "" }
+    : { items: [], next_page_token: token });
+  assert.equal(result.status, 0, result.stderr);
+  assert.deepEqual(toolCalls, [
+    { name: "x_get_user_replies_by_username", arguments: { username: "example" } },
+    { name: "x_get_user_replies_by_username", arguments: { username: "example", page_token: token } },
+  ]);
+  assert.deepEqual(JSON.parse(result.stdout).data.items, [{ post_id: "reply-1" }]);
+  assert.deepEqual(toolCallSourceSkillHeaders, ["media-user-posts", "media-user-posts"]);
+});
+
+test("X creator replies deduplicate post IDs before applying item limits", async () => {
+  const { result, toolCalls } = await runCliWithMockMcp([
+    "x", "user-replies", "--username", "example", "--pages", "3", "--max-items", "3",
+  ], {}, (_call, index) => ({
+    items: [
+      { post_id: String(index), reply_to_post_id: "parent" },
+      { post_id: String(index + 1), reply_to_post_id: "parent" },
+    ],
+    next_page_token: `page-${index + 1}`,
+  }));
+  assert.equal(result.status, 0, result.stderr);
+  assert.deepEqual(JSON.parse(result.stdout).data.items.map((item) => item.post_id), ["1", "2", "3"]);
+  assert.equal(toolCalls.length, 2);
+});
+
+test("Haokan user posts preserve tokens, identity and attribution across empty pages", async () => {
+  const token = "opaque+%2F==中文";
+  const profileUrl = "https://haokan.baidu.com/author/author_123";
+  const { result, toolCalls, toolCallSourceSkillHeaders } = await runCliWithMockMcp([
+    "haokan", "user-posts", "--profile-url", profileUrl, "--all",
+    "--source-skill", "media-user-posts",
+  ], {}, (call) => call.arguments.page_token
+    ? { items: [{ video_id: "6148991337208256393" }], next_page_token: "" }
+    : { items: [], next_page_token: token });
+  assert.equal(result.status, 0, result.stderr);
+  assert.deepEqual(toolCalls, [
+    { name: "haokan_get_user_posted_videos_by_profile_url", arguments: { profile_url: profileUrl } },
+    { name: "haokan_get_user_posted_videos_by_profile_url", arguments: { profile_url: profileUrl, page_token: token } },
+  ]);
+  assert.deepEqual(JSON.parse(result.stdout).data.items, [{ video_id: "6148991337208256393" }]);
+  assert.deepEqual(toolCallSourceSkillHeaders, ["media-user-posts", "media-user-posts"]);
+});
+
+test("Haokan validates command options before connecting and exposes platform help", () => {
+  for (const [args, message] of [
+    [["search", "--keyword", "摄影", "--all"], /--all is not supported/],
+    [["hot-search", "--pages", "2"], /Unsupported option/],
+    [["search-suggestions", "--keyword", "摄影", "--page-token", "token"], /Unsupported option/],
+    [["replies", "--video-id", "123"], /Missing --comment-id/],
+    [["comments", "--video-id", "123", "--include-replies"], /Unsupported option/],
+    [["unsupported"], /Unsupported haokan command/],
+  ]) {
+    const result = runCli(["haokan", ...args]);
+    assert.equal(result.status, 1);
+    assert.match(result.stderr, message);
+    assert.doesNotMatch(result.stderr, /Missing API Key/);
+  }
+  const help = runCli(["haokan", "--help"]);
+  assert.equal(help.status, 0, help.stderr);
+  assert.match(help.stdout, /haokan_get_comment_replies_by_url/);
+  assert.match(help.stdout, /haokan_search_videos/);
+});
+
+test("extended platform short help matches long help and preserves action help", () => {
+  for (const platform of ["haokan", "tieba", "docs", "account"]) {
+    const longHelp = runCli([platform, "--help"]);
+    assert.equal(longHelp.status, 0, longHelp.stderr);
+    assert.ok(longHelp.stdout.trim());
+    for (const flag of ["-h", "help"]) {
+      const result = runCli([platform, flag]);
+      assert.equal(result.status, 0, result.stderr);
+      assert.equal(result.stdout, longHelp.stdout);
+    }
+  }
+  const actionHelp = runCli(["haokan", "search", "-h"]);
+  assert.equal(actionHelp.status, 0, actionHelp.stderr);
+  assert.match(actionHelp.stdout, /haokan_search_videos/);
+  assert.doesNotMatch(actionHelp.stdout, /haokan_get_hot_search_list/);
+});
+
+test("Haokan content pagination deduplicates video IDs before applying item limits", async () => {
+  for (const [action, input] of [["search", ["--keyword", "摄影"]], ["user-posts", ["--user-id", "author_123"]]]) {
+    const { result, toolCalls } = await runCliWithMockMcp([
+      "haokan", action, ...input, "--pages", "3", "--max-items", "3",
+    ], {}, (_call, index) => ({
+      items: [{ video_id: String(index) }, { video_id: String(index + 1) }],
+      next_page_token: `page-${index + 1}`,
+    }));
+    assert.equal(result.status, 0, result.stderr);
+    assert.deepEqual(JSON.parse(result.stdout).data.items.map((item) => item.video_id), ["1", "2", "3"]);
+    assert.equal(toolCalls.length, 2);
+  }
 });

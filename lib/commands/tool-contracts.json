@@ -1145,6 +1145,7 @@
           "x",
           "youtube",
           "toutiao",
+          "haokan",
           "media_transcript"
         ],
         "type": "string",
@@ -1378,6 +1379,232 @@
       "job_id": {
         "type": "string",
         "required": true
+      }
+    }
+  },
+  "x_get_user_replies_by_user_id": {
+    "description": "根据 X 用户 ID获取该博主发布的回复帖子，包括自回复，支持分页；查看博主回复过什么时使用。查看某条帖子下的评论或评论下的回复时，使用对应评论工具。",
+    "parameters": {
+      "user_id": {
+        "type": "string",
+        "required": true
+      },
+      "page_token": {
+        "default": "",
+        "type": "string",
+        "required": false
+      }
+    }
+  },
+  "x_get_user_replies_by_username": {
+    "description": "根据 X 用户名获取该博主发布的回复帖子，包括自回复，支持分页；查看博主回复过什么时使用。查看某条帖子下的评论或评论下的回复时，使用对应评论工具。",
+    "parameters": {
+      "username": {
+        "type": "string",
+        "required": true
+      },
+      "page_token": {
+        "default": "",
+        "type": "string",
+        "required": false
+      }
+    }
+  },
+  "x_get_user_replies_by_profile_url": {
+    "description": "根据 X 用户主页链接获取该博主发布的回复帖子，包括自回复，支持分页；查看博主回复过什么时使用。查看某条帖子下的评论或评论下的回复时，使用对应评论工具。",
+    "parameters": {
+      "profile_url": {
+        "type": "string",
+        "required": true
+      },
+      "page_token": {
+        "default": "",
+        "type": "string",
+        "required": false
+      }
+    }
+  },
+  "haokan_search_videos": {
+    "description": "按关键词搜索好看视频，返回视频摘要并支持分页；用于查找视频，不用于读取指定视频链接的详情或查找用户。",
+    "parameters": {
+      "keyword": {
+        "minLength": 1,
+        "type": "string",
+        "required": true
+      },
+      "page_token": {
+        "default": "",
+        "type": "string",
+        "required": false
+      }
+    }
+  },
+  "haokan_search_users": {
+    "description": "按关键词搜索好看视频用户、账号或创作者，返回用户摘要并支持分页；不用于搜索视频。",
+    "parameters": {
+      "keyword": {
+        "minLength": 1,
+        "type": "string",
+        "required": true
+      },
+      "page_token": {
+        "default": "",
+        "type": "string",
+        "required": false
+      }
+    }
+  },
+  "haokan_search_suggestions": {
+    "description": "获取好看视频搜索联想词，用于补全或扩展关键词；不返回视频或用户结果，不支持分页。",
+    "parameters": {
+      "keyword": {
+        "minLength": 1,
+        "type": "string",
+        "required": true
+      }
+    }
+  },
+  "haokan_get_hot_search_list": {
+    "description": "获取好看视频当前搜索热词及热度；不返回热门视频列表，不支持分页。",
+    "parameters": {}
+  },
+  "haokan_get_video_detail_by_video_id": {
+    "description": "按视频 ID 读取好看视频详情、播放地址和作者摘要；持有页面链接时使用 haokan_get_video_detail_by_url。播放地址可能过期。",
+    "parameters": {
+      "video_id": {
+        "pattern": "^[0-9]+$",
+        "type": "string",
+        "required": true
+      }
+    }
+  },
+  "haokan_get_video_detail_by_url": {
+    "description": "按页面链接读取好看视频详情、播放地址和作者摘要；只有视频 ID 时使用 haokan_get_video_detail_by_video_id。播放地址可能过期。",
+    "parameters": {
+      "url": {
+        "minLength": 1,
+        "type": "string",
+        "required": true
+      }
+    }
+  },
+  "haokan_get_user_info_by_user_id": {
+    "description": "按用户 ID 获取好看视频用户资料；ID 可从用户搜索结果获取，持有主页链接时使用 haokan_get_user_info_by_url；不返回作品列表。",
+    "parameters": {
+      "user_id": {
+        "pattern": "^[A-Za-z0-9_-]+$",
+        "type": "string",
+        "required": true
+      }
+    }
+  },
+  "haokan_get_user_info_by_url": {
+    "description": "按用户主页链接获取好看视频用户资料；只有用户 ID 时使用 haokan_get_user_info_by_user_id；不返回作品列表。",
+    "parameters": {
+      "url": {
+        "minLength": 1,
+        "type": "string",
+        "required": true
+      }
+    }
+  },
+  "haokan_get_user_posted_videos_by_user_id": {
+    "description": "按用户 ID 获取好看视频用户发布视频列表，支持分页；持有用户主页链接时使用 haokan_get_user_posted_videos_by_profile_url。",
+    "parameters": {
+      "user_id": {
+        "pattern": "^[A-Za-z0-9_-]+$",
+        "type": "string",
+        "required": true
+      },
+      "page_token": {
+        "default": "",
+        "type": "string",
+        "required": false
+      }
+    }
+  },
+  "haokan_get_user_posted_videos_by_profile_url": {
+    "description": "按用户主页链接获取好看视频用户发布视频列表，支持分页；不要传视频链接，已有用户 ID 时使用 haokan_get_user_posted_videos_by_user_id。",
+    "parameters": {
+      "profile_url": {
+        "minLength": 1,
+        "type": "string",
+        "required": true
+      },
+      "page_token": {
+        "default": "",
+        "type": "string",
+        "required": false
+      }
+    }
+  },
+  "haokan_get_video_comments_by_video_id": {
+    "description": "按视频 ID读取好看视频一级评论，支持分页；附带的回复仅为预览。另一种输入使用 haokan_get_video_comments_by_url。",
+    "parameters": {
+      "video_id": {
+        "pattern": "^[0-9]+$",
+        "type": "string",
+        "required": true
+      },
+      "page_token": {
+        "default": "",
+        "type": "string",
+        "required": false
+      }
+    }
+  },
+  "haokan_get_video_comments_by_url": {
+    "description": "按视频页面链接读取好看视频一级评论，支持分页；附带的回复仅为预览。另一种输入使用 haokan_get_video_comments_by_video_id。",
+    "parameters": {
+      "url": {
+        "minLength": 1,
+        "type": "string",
+        "required": true
+      },
+      "page_token": {
+        "default": "",
+        "type": "string",
+        "required": false
+      }
+    }
+  },
+  "haokan_get_comment_replies_by_video_id": {
+    "description": "按视频 ID和一级评论 ID 读取完整回复列表，支持分页；comment_id 取视频评论列表，另一入口使用 haokan_get_comment_replies_by_url。",
+    "parameters": {
+      "video_id": {
+        "pattern": "^[0-9]+$",
+        "type": "string",
+        "required": true
+      },
+      "comment_id": {
+        "pattern": "^[1-9][0-9]*$",
+        "type": "string",
+        "required": true
+      },
+      "page_token": {
+        "default": "",
+        "type": "string",
+        "required": false
+      }
+    }
+  },
+  "haokan_get_comment_replies_by_url": {
+    "description": "按视频页面链接和一级评论 ID 读取完整回复列表，支持分页；comment_id 取视频评论列表，另一入口使用 haokan_get_comment_replies_by_video_id。",
+    "parameters": {
+      "url": {
+        "minLength": 1,
+        "type": "string",
+        "required": true
+      },
+      "comment_id": {
+        "pattern": "^[1-9][0-9]*$",
+        "type": "string",
+        "required": true
+      },
+      "page_token": {
+        "default": "",
+        "type": "string",
+        "required": false
       }
     }
   }

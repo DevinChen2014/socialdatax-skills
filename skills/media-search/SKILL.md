@@ -1,6 +1,6 @@
 ---
 name: "media-search"
-description: "Search social media content by keyword for social research, competitor research, topic discovery, content planning, market observation, and trend scanning. This version is backed by hosted platform MCP services and supports Xiaohongshu / XHS / RedNote, Douyin, Kuaishou, Bilibili, Zhihu, Instagram, X / Twitter, YouTube, TikTok, Weibo, Toutiao, and WeChat Channels. Additional discovery includes 百度贴吧 / Baidu Tieba post, forum and general search, forum browsing, user/channel and tag discovery, search suggestions, XHS video/image/topic search, XHS and Douyin product search, and WeChat Official Account / 公众号 article search. Use `user-search` in media-user-info for account discovery."
+description: "Search social media content by keyword for social research, competitor research, topic discovery, content planning, market observation, and trend scanning. This version is backed by hosted platform MCP services and supports Xiaohongshu / XHS / RedNote, Douyin, Kuaishou, Bilibili, Zhihu, Instagram, X / Twitter, YouTube, TikTok, Weibo, Toutiao, and WeChat Channels. Additional discovery includes 百度贴吧 / Baidu Tieba post, forum and general search, forum browsing, user/channel and tag discovery, search suggestions, XHS video/image/topic search, XHS and Douyin product search, and WeChat Official Account / 公众号 article search. Use `user-search` in media-user-info for account discovery. Also supports Haokan / 好看视频."
 source_client: "socialdatax-skills"
 source_platform: "github"
 source_skill: "media-search"
@@ -24,7 +24,7 @@ metadata:
 
 # Media Search
 
-Use this skill when the user wants to discover social media content from a keyword, brand, product, campaign, creator niche, or research topic. Additional discovery includes 百度贴吧 / Baidu Tieba post, forum and general search, forum browsing, user/channel and tag discovery, search suggestions, XHS video/image/topic search, XHS and Douyin product search, and WeChat Official Account / 公众号 article search. Use `user-search` in media-user-info for account discovery.
+Use this skill when the user wants to discover social media content from a keyword, brand, product, campaign, creator niche, or research topic. Additional discovery includes 百度贴吧 / Baidu Tieba post, forum and general search, forum browsing, user/channel and tag discovery, search suggestions, XHS video/image/topic search, XHS and Douyin product search, and WeChat Official Account / 公众号 article search. Use `user-search` in media-user-info for account discovery. Also supports Haokan / 好看视频.
 
 Current platform support:
 
@@ -41,6 +41,7 @@ Current platform support:
 - Toutiao / 今日头条 posts through `toutiao_search_posts`.
 - WeChat Channels / 视频号 videos through `wechat_search_videos`.
 - Additional discovery includes 百度贴吧 / Baidu Tieba post, forum and general search, forum browsing, user/channel and tag discovery, search suggestions, XHS video/image/topic search, XHS and Douyin product search, and WeChat Official Account / 公众号 article search. Use `user-search` in media-user-info for account discovery.
+- Haokan / 好看视频 video and account discovery, query suggestions, and hot-search terms.
 
 ## API Key
 
@@ -240,6 +241,22 @@ npx -y socialdatax-skills@latest tieba forum-search \
 npx -y socialdatax-skills@latest youtube channel-search \
   --keyword "<keyword>" --pretty --source-client socialdatax-skills \
   --source-platform github --source-skill media-search
+
+npx -y socialdatax-skills@latest haokan search \
+  --keyword "<keyword>" --pretty --source-client socialdatax-skills \
+  --source-platform github --source-skill media-search
+
+npx -y socialdatax-skills@latest haokan user-search \
+  --keyword "<keyword>" --pretty --source-client socialdatax-skills \
+  --source-platform github --source-skill media-search
+
+npx -y socialdatax-skills@latest haokan search-suggestions \
+  --keyword "<keyword>" --pretty --source-client socialdatax-skills \
+  --source-platform github --source-skill media-search
+
+npx -y socialdatax-skills@latest haokan hot-search \
+  --pretty --source-client socialdatax-skills --source-platform github \
+  --source-skill media-search
 ```
 
 Required arguments:
@@ -376,6 +393,7 @@ Weibo, Toutiao, and WeChat Channels search pagination:
 - Continue only when `next_page_token` is not empty.
 - Pass the complete returned `next_page_token` back unchanged as `page_token` for the same search pagination chain. Do not modify, truncate, redact, mask, omit, normalize, rebuild, generate, or replace the middle with ellipses.
 Use `npx -y socialdatax-skills@latest <platform> <action> --help` for exact flags and values. Paginated commands require the complete returned `next_page_token`. Do not modify, truncate, redact, mask, omit, normalize, rebuild, generate, or replace the middle with ellipses. Commands without `--page-token`, including suggestions and first-page-only searches, do not support pagination.
+Haokan / 好看视频: use `search` for videos, `user-search` for accounts, `search-suggestions` for query suggestions, and `hot-search` for search terms rather than a video ranking. Only the two search commands accept page tokens; video search uses bounded `--pages`, not `--all`. No `--since-days` filter is available.
 
 ## Safety Boundary
 
@@ -398,6 +416,7 @@ MCP tools matching the direct CLI commands above:
 - TOUTIAO: `toutiao_search_posts`, `toutiao_search_suggestions`
 - WECHAT: `wechat_search_videos`, `wechat_search_mp_articles`
 - BAIDU: `baidu_tieba_get_forum_posts`, `baidu_tieba_search_suggestions`, `baidu_tieba_search_general`, `baidu_tieba_search_posts`, `baidu_tieba_search_posts_in_forum`
+- HAOKAN: `haokan_search_videos`, `haokan_search_users`, `haokan_search_suggestions`, `haokan_get_hot_search_list`
 
 For XHS, call `xhs_search_notes` with:
 - `keyword`: required search phrase or topic; use the user's actual intent and trim whitespace.

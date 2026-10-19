@@ -2,7 +2,16 @@
 
 Use this checklist before syncing this listing to the public `socialdatax-skills` repository or publishing the unified npm skill installer package. Do not submit this package as a unified MCP registry entry unless a real aggregate MCP endpoint exists.
 
-- npm latest: `socialdatax-skills@0.2.50`, published and verified on `2026-10-15`.
+- npm latest: `socialdatax-skills@0.2.52`, published and verified on `2026-10-19`.
+- Legacy npm wrapper: `social-media-insights-skills@0.2.52`, published and verified on `2026-10-19`; its registry dependency and installed `doctor --json` both resolve to `socialdatax-skills@0.2.52`.
+
+## 2026-10-19 skill documentation release
+
+- Published both npm packages at `0.2.52`. Updated existing skills with Haokan and X creator-replies routing; runtime changes are limited to the version constant.
+- Fixed the obsolete test that prohibited every hot-search mention in media-search; Haokan hot-search is now explicitly covered while existing platform restrictions remain.
+- Publish dry-run passed 424 primary-package tests and 7 wrapper tests. The primary registry integrity matches the local release pack. A fresh install of both packages succeeded; all six affected installed skills match local files byte for byte, and wrapper doctor reports `0.2.52`.
+- Commands: `node scripts/publish_socialdatax_skills.mjs --dry-run`, then `node scripts/publish_socialdatax_skills.mjs --skip-checks`. The primary publication succeeded but registry propagation exceeded the paired script wait; after verifying the primary version, completed the wrapper with `node scripts/publish_social_media_insights_skills.mjs --skip-checks`.
+- No paid business calls were repeated for this documentation release.
 
 ## Public Repository
 
@@ -27,9 +36,10 @@ Use this checklist before syncing this listing to the public `socialdatax-skills
 - X / Twitter hosted MCP endpoint: `https://mcp.socialdatax.com/x/mcp`
 - YouTube hosted MCP endpoint: `https://mcp.socialdatax.com/youtube/mcp`
 - TikTok hosted MCP endpoint: `https://mcp.socialdatax.com/tiktok/mcp`
+- Haokan hosted MCP endpoint: `https://mcp.socialdatax.com/haokan/mcp`
 - Sensitive Words Check hosted MCP endpoint: `https://mcp.socialdatax.com/sensitive-check/mcp`
 - Hosted auth: `Authorization: Bearer <SOCIALDATAX_API_KEY>`
-- Repo-tracked platform MCP listings: `com.52choujiang/xhs-insights`, `com.52choujiang/douyin-insights`, `com.52choujiang/kuaishou-insights`, `com.52choujiang/bilibili-insights`, `com.52choujiang/weibo-insights`, `com.52choujiang/wechat-channels-insights`, `com.52choujiang/zhihu-insights`, `com.52choujiang/instagram-insights`, `com.52choujiang/x-insights`, `com.52choujiang/youtube-insights`, and `com.52choujiang/tiktok-insights`.
+- Repo-tracked platform MCP listings: `com.52choujiang/xhs-insights`, `com.52choujiang/douyin-insights`, `com.52choujiang/kuaishou-insights`, `com.52choujiang/bilibili-insights`, `com.52choujiang/weibo-insights`, `com.52choujiang/wechat-channels-insights`, `com.52choujiang/zhihu-insights`, `com.52choujiang/instagram-insights`, `com.52choujiang/x-insights`, `com.52choujiang/youtube-insights`, `com.52choujiang/tiktok-insights`, and `com.socialdatax/haokan`.
 - Repo-tracked future SocialDataX namespace draft files exist for XHS and Douyin: `com.socialdatax/xhs-insights` and `com.socialdatax/douyin-insights`.
 - Reserved future SocialDataX namespace names for existing platform listings without draft files yet: `com.socialdatax/kuaishou-insights`, `com.socialdatax/bilibili-insights`, `com.socialdatax/weibo-insights`, `com.socialdatax/wechat-channels-insights`, `com.socialdatax/zhihu-insights`, `com.socialdatax/instagram-insights`, `com.socialdatax/x-insights`, `com.socialdatax/youtube-insights`, and `com.socialdatax/tiktok-insights`.
 - Hosted endpoints without a repo-tracked standalone listing: Toutiao / 今日头条 and Sensitive Words Check.
@@ -223,7 +233,9 @@ Use this checklist before syncing this listing to the public `socialdatax-skills
 - Historical verification on 2026-10-08: Instagram hosted MCP `0.1.6` returned 14 public tools and user-search calls passed; superseded by the `0.1.7` release below.
 - Instagram hosted MCP `0.1.7` returns 15 public tools, including first-page tag search; deployment and Registry publication were verified on 2026-10-11.
 - With a valid key, Instagram hosted MCP `tools/list` includes `socialdatax_get_points_balance`.
-- X / Twitter hosted MCP `0.1.3` returns 18 public tools; hosted deployment, authenticated `tools/list`, user search, and Registry publication were verified on 2026-10-08.
+- On 2026-10-16, the public hosted [Haokan server card](https://mcp.socialdatax.com/.well-known/mcp/haokan-server-card.json) listed 15 tools: 14 business read tools and account balance. The local CLI exposes all 14 business tools through nine `haokan` commands. Parameter contracts and mocked pagination are tested locally; the authenticated CLI smoke check below also passed.
+- On 2026-10-16, the public hosted [X server card](https://mcp.socialdatax.com/.well-known/mcp/x-server-card.json) listed 21 tools, including all three user-replies entries. This check did not exercise authenticated tools/list or business calls. The local CLI now includes `x user-replies`; this CLI update, the `docs search --platform-id haokan` fix, and the Haokan commands were published in npm `socialdatax-skills@0.2.51` on 2026-10-16. The registry tarball integrity and contents match the release source; installed-package help checks passed for all three command groups.
+- Historical verification on 2026-10-08: X / Twitter hosted MCP `0.1.3` returned 18 public tools; hosted deployment, authenticated `tools/list`, user search, and Registry publication were verified on 2026-10-08.
 - With a valid key, X / Twitter hosted MCP `tools/list` includes `socialdatax_get_points_balance`.
 - With a valid key, X / Twitter hosted MCP `tools/list` includes `x_submit_video_speech_text_by_post_url`, `x_submit_video_speech_text_by_post_id`, and `x_get_video_speech_text_job`.
 - YouTube hosted MCP `tools/list` must match the public tool allowlist in `public-listings/youtube-insights/server-card.json`. Use that platform listing’s `Recorded release status` section for dated channel observations.
@@ -233,6 +245,16 @@ Use this checklist before syncing this listing to the public `socialdatax-skills
 - With a valid key, TikTok hosted MCP `tools/list` includes `socialdatax_get_points_balance`.
 - With a valid key, TikTok hosted MCP `tools/list` includes `tiktok_submit_video_speech_text_by_url`, `tiktok_submit_video_speech_text_by_aweme_id`, and `tiktok_get_video_speech_text_job`.
 - With a valid key, Sensitive Words Check hosted MCP `tools/list` returns the current 2 public tools: `check_sensitive_text` and `socialdatax_get_points_balance`.
+
+### CLI 0.2.51 authenticated smoke check (2026-10-16)
+
+Using the published npm package, each command completed one request without following continuation tokens:
+
+- `haokan search --keyword "摄影" --max-items 2 --source-platform npm`: returned two videos and a continuation token; reported cost: 10 points.
+- `x user-replies --username OpenAI --max-items 2 --source-platform npm`: returned two replies with `post_id` and `reply_to_post_id`, plus a continuation token; reported cost: 10 points.
+- `docs search --query "视频" --platform-id haokan --limit 2 --source-platform npm`: returned two Haokan API operations.
+
+All commands used `npm exec --yes --package=socialdatax-skills@0.2.51 -- socialdatax-skills`. API keys and raw responses are not stored in the repository. These checks verify one page per command, not live multi-page completeness.
 
 ## Directory Submission Order
 

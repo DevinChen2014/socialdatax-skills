@@ -84,6 +84,7 @@ Common search phrases for this skill package:
 - Instagram hosted MCP endpoint: `https://mcp.socialdatax.com/instagram/mcp`
 - X / Twitter hosted MCP endpoint: `https://mcp.socialdatax.com/x/mcp`
 - YouTube hosted MCP endpoint: `https://mcp.socialdatax.com/youtube/mcp`
+- Haokan / 好看视频 hosted MCP endpoint: `https://mcp.socialdatax.com/haokan/mcp`
 - TikTok hosted MCP endpoint: `https://mcp.socialdatax.com/tiktok/mcp`
 - Sensitive Words Check hosted MCP endpoint: `https://mcp.socialdatax.com/sensitive-check/mcp`
 - Hosted transport: `streamable-http`
@@ -92,9 +93,9 @@ Common search phrases for this skill package:
 - Repo-tracked platform MCP listings: `com.52choujiang/xhs-insights`, `com.52choujiang/douyin-insights`, `com.52choujiang/kuaishou-insights`, `com.52choujiang/bilibili-insights`, `com.52choujiang/weibo-insights`, `com.52choujiang/wechat-channels-insights`, `com.52choujiang/zhihu-insights`, `com.52choujiang/instagram-insights`, `com.52choujiang/x-insights`, `com.52choujiang/youtube-insights`, and `com.52choujiang/tiktok-insights`.
 - Repo-tracked future SocialDataX namespace draft files exist for XHS and Douyin: `com.socialdatax/xhs-insights` and `com.socialdatax/douyin-insights`.
 - Reserved future SocialDataX namespace names for existing platform listings without draft files yet: `com.socialdatax/kuaishou-insights`, `com.socialdatax/bilibili-insights`, `com.socialdatax/weibo-insights`, `com.socialdatax/wechat-channels-insights`, `com.socialdatax/zhihu-insights`, `com.socialdatax/instagram-insights`, `com.socialdatax/x-insights`, `com.socialdatax/youtube-insights`, and `com.socialdatax/tiktok-insights`.
-- Hosted endpoints without a repo-tracked standalone listing: Toutiao / 今日头条 and Sensitive Words Check.
+- Hosted endpoints without a repo-tracked standalone listing: Toutiao / 今日头条, Haokan / 好看视频, and Sensitive Words Check.
 - Unified MCP registry name: none; this package installs skills and calls explicit hosted MCP entries.
-- Package capability version: `0.2.50`
+- Package capability version: `0.2.52`
 
 ## XHS 蒲公英 / Pugongying commercial note details
 
@@ -114,6 +115,8 @@ For most skill users, no MCP client configuration is required. Install the skill
 Examples:
 
 ```bash
+npx -y socialdatax-skills@latest haokan search --keyword "露营" --pages 2 --pretty
+npx -y socialdatax-skills@latest haokan user-posts --user-id "<user_id>" --all --pretty
 npx -y socialdatax-skills@latest xhs search --keyword "露营" --pretty
 npx -y socialdatax-skills@latest xhs search --keyword "露营" --since-days 7 --pages 2 --pretty
 npx -y socialdatax-skills@latest xhs hot-search --pretty
@@ -259,6 +262,7 @@ npx -y socialdatax-skills@latest x user-info --profile-url "<profile_url_or_shar
 npx -y socialdatax-skills@latest x user-posts --user-id "<user_id>" --pretty
 npx -y socialdatax-skills@latest x user-posts --username "<username>" --pretty
 npx -y socialdatax-skills@latest x user-posts --profile-url "<profile_url_or_share_text>" --pretty
+npx -y socialdatax-skills@latest x user-replies --username "<username>" --all --pretty
 npx -y socialdatax-skills@latest x download-media --url "<x_media_url>" --output-dir ./downloads --pretty
 npx -y socialdatax-skills@latest youtube search --keyword "camping" --pretty
 npx -y socialdatax-skills@latest youtube detail --url "<youtube_video_url>" --pretty
@@ -310,7 +314,7 @@ For transcript commands, the direct CLI tries to deliver the final result in one
 
 For XHS outputs with a returned `note_url` field, when `note_url` is non-null, preserve it exactly as the full URL, including `xsec_token` query parameters, such as in final answers or display. Do not modify, truncate, redact, normalize, rebuild, or replace it with a link assembled from `note_id`. If `note_url` is null, do not synthesize a public link from `note_id`.
 
-For list-style commands, use `--pages <n>` to fetch N pages from the current starting point and `--max-items <n>` to cap the merged `data.items` output. The original content-search commands support `--pages` but not `--all`, because search has no stable complete-result boundary. Additional commands in [CLI_COMMANDS.md](./CLI_COMMANDS.md) accept `--all` only when their parameter table lists `--page-token`, except `tieba search`, which also requires bounded `--pages`; this follows the available token chain rather than guaranteeing exhaustive results.
+For list-style commands, use `--pages <n>` to fetch N pages from the current starting point and `--max-items <n>` to cap the merged `data.items` output. The original content-search commands support `--pages` but not `--all`, because search has no stable complete-result boundary. Additional commands in [CLI_COMMANDS.md](./CLI_COMMANDS.md) accept `--all` only when their parameter table lists `--page-token`, except `tieba search` and `haokan search`, which also requires bounded `--pages`; this follows the available token chain rather than guaranteeing exhaustive results.
 
 Use `--since-days <1-365>` only on XHS, Douyin, Kuaishou, Weibo, and WeChat Channels search and creator content-list commands. For Bilibili video search, Zhihu search, and YouTube search, use the documented publish-time filters instead; Instagram, X / Twitter, TikTok, and Bilibili article search do not expose a recent-window CLI option.
 
@@ -975,4 +979,4 @@ The files in this public repository are released under the MIT License. The lice
 
 ## Source repository maintenance
 
-For maintainers working in the SocialDataX service source repository, check the 91 extended command handler contracts with `uv run --locked --env-file env.local python scripts/sync_socialdatax_cli_contracts.py`. The default mode checks for drift; append `--write` to regenerate the contract file after an intentional handler change. This maintenance script is in the service source repository and is not included in the npm package.
+For maintainers working in the SocialDataX service source repository, check the extended command handler contracts with `uv run --locked --env-file env.local python scripts/sync_socialdatax_cli_contracts.py`. The default mode checks for drift; append `--write` to regenerate the contract file after an intentional handler change. This maintenance script is in the service source repository and is not included in the npm package.

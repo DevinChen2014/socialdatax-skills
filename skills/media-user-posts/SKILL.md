@@ -1,6 +1,6 @@
 ---
 name: "media-user-posts"
-description: "Retrieve social media creator content lists from platform-supported user IDs, usernames, channel URLs, profile URLs, short links, or share text for account research and content style analysis. Supported input forms vary by platform. This version is backed by hosted platform MCP services and supports Xiaohongshu / XHS / RedNote, Douyin, Kuaishou, Bilibili, Zhihu, Instagram, X / Twitter, YouTube, TikTok, Weibo, Toutiao, and WeChat Channels creators. Also use this skill for 百度贴吧 / Baidu Tieba user posts and followed forums, WeChat Official Account / 公众号 account articles, and XHS 蒲公英 / Pugongying creator notes performance."
+description: "Retrieve social media creator content lists from platform-supported user IDs, usernames, channel URLs, profile URLs, short links, or share text for account research and content style analysis. Supported input forms vary by platform. This version is backed by hosted platform MCP services and supports Xiaohongshu / XHS / RedNote, Douyin, Kuaishou, Bilibili, Zhihu, Instagram, X / Twitter, YouTube, TikTok, Weibo, Toutiao, and WeChat Channels creators. Also use this skill for 百度贴吧 / Baidu Tieba user posts and followed forums, WeChat Official Account / 公众号 account articles, and XHS 蒲公英 / Pugongying creator notes performance. Also supports Haokan / 好看视频. For replies authored by an X creator, use `x user-replies`."
 source_client: "socialdatax-skills"
 source_platform: "github"
 source_skill: "media-user-posts"
@@ -24,7 +24,7 @@ metadata:
 
 # Media User Posts
 
-Use this skill when the user wants a creator's published content list, content style analysis, recent-topic review, creator benchmarking, or account tracking for supported social media platforms. Also use this skill for 百度贴吧 / Baidu Tieba user posts and followed forums, WeChat Official Account / 公众号 account articles, and XHS 蒲公英 / Pugongying creator notes performance.
+Use this skill when the user wants a creator's published content list, content style analysis, recent-topic review, creator benchmarking, or account tracking for supported social media platforms. Also use this skill for 百度贴吧 / Baidu Tieba user posts and followed forums, WeChat Official Account / 公众号 account articles, and XHS 蒲公英 / Pugongying creator notes performance. Also supports Haokan / 好看视频. For replies authored by an X creator, use `x user-replies`.
 
 Current platform support:
 
@@ -42,6 +42,8 @@ Current platform support:
 - Toutiao / 今日头条 creator posts through the `toutiao_get_user_posts_by_*` tools, optionally filtered by `content_type` (`all`, `article`, `video`, or `micro_post`).
 - WeChat Channels / 视频号 creator videos and image posts through the `wechat_get_user_posted_videos_by_*` tools; the user_id entrypoint requires a `v2_...@finder` user_id.
 - Also use this skill for 百度贴吧 / Baidu Tieba user posts and followed forums, WeChat Official Account / 公众号 account articles, and XHS 蒲公英 / Pugongying creator notes performance.
+- Haokan / 好看视频 creator videos by user ID or profile URL.
+- X / Twitter replies authored by a creator through `x_get_user_replies_by_*`, including self-replies.
 
 ## API Key
 
@@ -254,6 +256,26 @@ npx -y socialdatax-skills@latest tieba user-forums \
 npx -y socialdatax-skills@latest tieba user-forums \
   --profile-url "<profile_url>" --pretty --source-client socialdatax-skills \
   --source-platform github --source-skill media-user-posts
+
+npx -y socialdatax-skills@latest haokan user-posts \
+  --user-id "<user_id>" --pretty --source-client socialdatax-skills \
+  --source-platform github --source-skill media-user-posts
+
+npx -y socialdatax-skills@latest haokan user-posts \
+  --profile-url "<profile_url>" --pretty --source-client socialdatax-skills \
+  --source-platform github --source-skill media-user-posts
+
+npx -y socialdatax-skills@latest x user-replies \
+  --user-id "<user_id>" --pretty --source-client socialdatax-skills \
+  --source-platform github --source-skill media-user-posts
+
+npx -y socialdatax-skills@latest x user-replies \
+  --username "<username>" --pretty --source-client socialdatax-skills \
+  --source-platform github --source-skill media-user-posts
+
+npx -y socialdatax-skills@latest x user-replies \
+  --profile-url "<profile_url>" --pretty --source-client socialdatax-skills \
+  --source-platform github --source-skill media-user-posts
 ```
 
 Optional arguments:
@@ -291,8 +313,10 @@ Optional arguments:
 Use either the ID option or the profile URL option for a single command, not both.
 
 The command prints JSON with `platform`, `tool`, `arguments`, and `data`. Multi-page output keeps merged creator content or series items in `data.items` and adds `page_count`, `item_count`, and `next_page_token`.
-For recent creator research, prefer CLI `--since-days 30` or another user-specified day window. `--since-days` applies to creator content lists only, not Douyin `user-series`.
+For recent creator research, `--since-days` is available only on XHS, Douyin, Kuaishou, Weibo, and WeChat Channels creator content lists; use the user-specified day window where supported.
 Use `npx -y socialdatax-skills@latest <platform> <action> --help` for exact flags and values. Paginated commands require the complete returned `next_page_token`. Do not modify, truncate, redact, mask, omit, normalize, rebuild, generate, or replace the middle with ellipses. Commands without `--page-token`, including suggestions and first-page-only searches, do not support pagination.
+Haokan / 好看视频: choose either `--user-id` or `--profile-url` to list creator videos; preserve the identity and complete returned `next_page_token` when continuing. `--since-days` is not supported.
+X creator replies: use `x user-replies` for replies authored by the creator, including self-replies; use `x comments` or `x replies` for discussions under a post. Choose exactly one of `--user-id`, `--username`, or `--profile-url`. Keep identity and the full returned token unchanged; `user-posts` tokens cannot be reused. An empty page with a nonempty token can continue. `--since-days` is not supported.
 
 ## Safety Boundary
 
@@ -308,13 +332,14 @@ MCP tools matching the direct CLI commands above:
 - BILIBILI: `bilibili_get_user_posted_videos_by_user_id`, `bilibili_get_user_posted_videos_by_profile_url`, `bilibili_get_user_posted_articles_by_user_id`, `bilibili_get_user_posted_articles_by_profile_url`, `bilibili_get_user_posted_dynamics_by_user_id`, `bilibili_get_user_posted_dynamics_by_profile_url`
 - ZHIHU: `zhihu_get_user_posted_articles_by_profile_url`
 - INSTAGRAM: `instagram_get_user_posts_by_username`, `instagram_get_user_posts_by_profile_url`
-- X: `x_get_user_posts_by_user_id`, `x_get_user_posts_by_username`, `x_get_user_posts_by_profile_url`
+- X: `x_get_user_posts_by_user_id`, `x_get_user_posts_by_username`, `x_get_user_posts_by_profile_url`, `x_get_user_replies_by_user_id`, `x_get_user_replies_by_username`, `x_get_user_replies_by_profile_url`
 - YOUTUBE: `youtube_get_user_posted_videos_by_channel_url`
 - TIKTOK: `tiktok_get_user_posts_by_tiktok_id`, `tiktok_get_user_posts_by_profile_url`
 - WEIBO: `weibo_get_user_posts_by_user_id`, `weibo_get_user_posts_by_profile_url`
 - TOUTIAO: `toutiao_get_user_posts_by_user_id`, `toutiao_get_user_posts_by_profile_url`
 - WECHAT: `wechat_get_user_posted_videos_by_user_id`, `wechat_get_user_posted_videos_by_url`, `wechat_get_mp_account_articles_by_account_id`
 - BAIDU: `baidu_tieba_get_user_posts_by_user_id`, `baidu_tieba_get_user_posts_by_profile_url`, `baidu_tieba_get_user_followed_forums_by_user_id`, `baidu_tieba_get_user_followed_forums_by_profile_url`
+- HAOKAN: `haokan_get_user_posted_videos_by_user_id`, `haokan_get_user_posted_videos_by_profile_url`
 
 If MCP tools are already available in the current agent, use one of these tools:
 - `xhs_get_user_posted_notes_by_user_id`: preferred when `user_id` is already known.

@@ -1,7 +1,7 @@
 interface:
   display_name: "Media Comments"
   short_description: "Fetch social comments"
-  default_prompt: "Use $media-comments to fetch and analyze XHS, Douyin, Kuaishou, Bilibili, Zhihu, Instagram, X / Twitter, YouTube, TikTok, Weibo, Toutiao, or WeChat Channels comments and replies."
+  default_prompt: "Use $media-comments to fetch and analyze XHS, Douyin, Kuaishou, Bilibili, Zhihu, Instagram, X / Twitter, YouTube, TikTok, Weibo, Toutiao, or WeChat Channels comments and replies. Also supports Haokan / 好看视频."
 
 policy:
   allow_implicit_invocation: true

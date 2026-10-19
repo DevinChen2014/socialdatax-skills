@@ -14,6 +14,7 @@ import { tmpdir } from "node:os";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import test from "node:test";
+import { buildExtendedCall, extendedCommandOptions, findExtendedCommand } from "../lib/commands/extended.mjs";
 
 import {
   generateSkills,
@@ -8146,5 +8147,55 @@ test("skill source does not mark mapped direct CLI tools as MCP-only", async () 
     for (const tool of entry.mcpOnlyTools ?? []) {
       assert.equal(mappedTools.has(tool), false, `${name}: ${tool} already has a direct CLI mapping`);
     }
+  }
+});
+
+test("existing skills route Haokan and X creator replies to published CLI tools", async () => {
+  const source = await loadSkillSource({ repoRoot: projectRoot });
+  const contracts = JSON.parse(readFileSync(join(packageDir, "lib/commands/tool-contracts.json"), "utf8"));
+  assert.deepEqual(
+    Object.values(source.catalog.platforms.haokan?.tools ?? {}).sort(),
+    Object.keys(contracts).filter((name) => name.startsWith("haokan_")).sort()
+  );
+  const sample = { keyword: "photography", video_id: "123", comment_id: "456", user_id: "789", username: "OpenAI", video_url: "https://haokan.baidu.com/v?vid=123", profile_url: "https://haokan.baidu.com/author/789" };
+  for (const platform of ["haokan", "x"]) {
+    const entry = source.catalog.platforms[platform];
+    for (const [key, example] of Object.entries(entry.commands)) {
+      if (platform === "x" && !key.startsWith("userReplies")) continue;
+      const args = example.replace(/<([a-z_]+)>/g, (_, name) => sample[name]).match(/"[^"]*"|\S+/g);
+      const definition = findExtendedCommand(platform, args[1]);
+      assert.ok(definition, example);
+      const options = {};
+      for (let i = 2; i < args.length; i++) {
+        const name = args[i].slice(2).replace(/-([a-z])/g, (_, letter) => letter.toUpperCase());
+        assert.ok(extendedCommandOptions(definition).includes(name), example);
+        options[name] = name === "pretty" ? true : args[++i].replace(/^"|"$/g, "");
+      }
+      assert.equal(buildExtendedCall(definition, options).tool, entry.tools[key], example);
+    }
+  }
+  const tempRoot = mkdtempSync(join(tmpdir(), "socialdatax-skills-routing-"));
+  try {
+    await generateSkills({ repoRoot: projectRoot, outRoot: tempRoot, quiet: true });
+    for (const host of ["npm", "github"]) {
+      for (const [slug, command] of [
+        ["media-search", "haokan search"], ["media-detail", "haokan detail"],
+        ["media-comments", "haokan replies"], ["media-user-info", "haokan user-info"],
+        ["media-user-posts", "haokan user-posts"], ["media-user-posts", "x user-replies"],
+      ]) {
+        assertDirectCliExample(readGeneratedSkill(tempRoot, host, slug, source.hosts.hosts), command);
+      }
+      assertNoDirectCliExample(readGeneratedSkill(tempRoot, host, "media-transcript", source.hosts.hosts), "haokan transcript");
+      assertNoDirectCliExample(readGeneratedSkill(tempRoot, host, "media-comments", source.hosts.hosts), "x user-replies");
+    }
+    for (const host of ["npm", "github", "modelscope", "skillhub"]) {
+      const skill = readGeneratedSkill(tempRoot, host, "socialdatax-content-research-assistant", source.hosts.hosts);
+      assertDirectCliExample(skill, "haokan search");
+      assertDirectCliExample(skill, "x user-replies");
+    }
+    const xSkill = readGeneratedSkill(tempRoot, "clawhub", "socialdatax-x-twitter", source.hosts.hosts);
+    for (const flag of ["--user-id", "--username", "--profile-url"]) assertDirectCliExample(xSkill, `x user-replies ${flag}`);
+  } finally {
+    rmSync(tempRoot, { recursive: true, force: true });
   }
 });

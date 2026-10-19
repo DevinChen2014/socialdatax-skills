@@ -1,6 +1,6 @@
 ---
 name: "socialdatax-content-research-assistant"
-description: "面向内容运营、品牌调研和创作者的跨平台社媒内容研究助手。适用于小红书、抖音、快手、Bilibili、知乎、Instagram、X / Twitter、YouTube、TikTok、微博、今日头条和视频号的选题策划、竞品观察、趋势判断、评论洞察和创作者资料整理，也支持公众号文章链接详情、内容整理和互动统计，来自 SocialDataX 社媒数据助手。"
+description: "面向内容运营、品牌调研和创作者的跨平台社媒内容研究助手。适用于小红书、抖音、快手、Bilibili、知乎、Instagram、X / Twitter、YouTube、TikTok、微博、今日头条、好看视频和视频号的选题策划、竞品观察、趋势判断、评论洞察和创作者资料整理，也支持公众号文章链接详情、内容整理和互动统计，来自 SocialDataX 社媒数据助手。"
 source_client: "socialdatax-skills"
 source_platform: "modelscope"
 source_skill: "socialdatax-content-research-assistant"
@@ -12,7 +12,7 @@ metadata: {"openclaw":{"requires":{"env":["SOCIALDATAX_API_KEY"],"bins":["node",
 
 ## 适用场景
 
-面向内容运营、品牌调研和创作者的跨平台社媒内容研究助手。适用于小红书、抖音、快手、Bilibili、知乎、Instagram、X / Twitter、YouTube、TikTok、微博、今日头条和视频号的选题策划、竞品观察、趋势判断、评论洞察和创作者资料整理，也支持公众号文章链接详情、内容整理和互动统计，来自 SocialDataX 社媒数据助手。
+面向内容运营、品牌调研和创作者的跨平台社媒内容研究助手。适用于小红书、抖音、快手、Bilibili、知乎、Instagram、X / Twitter、YouTube、TikTok、微博、今日头条、好看视频和视频号的选题策划、竞品观察、趋势判断、评论洞察和创作者资料整理，也支持公众号文章链接详情、内容整理和互动统计，来自 SocialDataX 社媒数据助手。
 
 ## 快速开始
 
@@ -119,6 +119,23 @@ npx -y socialdatax-skills@latest douyin product-search --keyword "<keyword>" --p
 npx -y socialdatax-skills@latest douyin product-detail --product-id "<product_id>" --pretty --source-client socialdatax-skills --source-platform modelscope --source-skill socialdatax-content-research-assistant
 npx -y socialdatax-skills@latest douyin product-detail --url "<url>" --pretty --source-client socialdatax-skills --source-platform modelscope --source-skill socialdatax-content-research-assistant
 npx -y socialdatax-skills@latest wechat share-link --object-id "<object_id>" --pretty --source-client socialdatax-skills --source-platform modelscope --source-skill socialdatax-content-research-assistant
+npx -y socialdatax-skills@latest haokan search --keyword "<keyword>" --pretty --source-client socialdatax-skills --source-platform modelscope --source-skill socialdatax-content-research-assistant
+npx -y socialdatax-skills@latest haokan user-search --keyword "<keyword>" --pretty --source-client socialdatax-skills --source-platform modelscope --source-skill socialdatax-content-research-assistant
+npx -y socialdatax-skills@latest haokan search-suggestions --keyword "<keyword>" --pretty --source-client socialdatax-skills --source-platform modelscope --source-skill socialdatax-content-research-assistant
+npx -y socialdatax-skills@latest haokan hot-search --pretty --source-client socialdatax-skills --source-platform modelscope --source-skill socialdatax-content-research-assistant
+npx -y socialdatax-skills@latest haokan detail --video-id "<video_id>" --pretty --source-client socialdatax-skills --source-platform modelscope --source-skill socialdatax-content-research-assistant
+npx -y socialdatax-skills@latest haokan detail --url "<video_url>" --pretty --source-client socialdatax-skills --source-platform modelscope --source-skill socialdatax-content-research-assistant
+npx -y socialdatax-skills@latest haokan comments --video-id "<video_id>" --pretty --source-client socialdatax-skills --source-platform modelscope --source-skill socialdatax-content-research-assistant
+npx -y socialdatax-skills@latest haokan comments --url "<video_url>" --pretty --source-client socialdatax-skills --source-platform modelscope --source-skill socialdatax-content-research-assistant
+npx -y socialdatax-skills@latest haokan replies --video-id "<video_id>" --comment-id "<comment_id>" --pretty --source-client socialdatax-skills --source-platform modelscope --source-skill socialdatax-content-research-assistant
+npx -y socialdatax-skills@latest haokan replies --url "<video_url>" --comment-id "<comment_id>" --pretty --source-client socialdatax-skills --source-platform modelscope --source-skill socialdatax-content-research-assistant
+npx -y socialdatax-skills@latest haokan user-info --user-id "<user_id>" --pretty --source-client socialdatax-skills --source-platform modelscope --source-skill socialdatax-content-research-assistant
+npx -y socialdatax-skills@latest haokan user-info --profile-url "<profile_url>" --pretty --source-client socialdatax-skills --source-platform modelscope --source-skill socialdatax-content-research-assistant
+npx -y socialdatax-skills@latest haokan user-posts --user-id "<user_id>" --pretty --source-client socialdatax-skills --source-platform modelscope --source-skill socialdatax-content-research-assistant
+npx -y socialdatax-skills@latest haokan user-posts --profile-url "<profile_url>" --pretty --source-client socialdatax-skills --source-platform modelscope --source-skill socialdatax-content-research-assistant
+npx -y socialdatax-skills@latest x user-replies --user-id "<user_id>" --pretty --source-client socialdatax-skills --source-platform modelscope --source-skill socialdatax-content-research-assistant
+npx -y socialdatax-skills@latest x user-replies --username "<username>" --pretty --source-client socialdatax-skills --source-platform modelscope --source-skill socialdatax-content-research-assistant
+npx -y socialdatax-skills@latest x user-replies --profile-url "<profile_url>" --pretty --source-client socialdatax-skills --source-platform modelscope --source-skill socialdatax-content-research-assistant
 ```
 
 更多 direct CLI 入口：
@@ -245,6 +262,8 @@ npx -y socialdatax-skills@latest wechat user-posts --user-id "<v2_finder_user_id
 ## 如何选入口
 
 优先使用最贴近用户任务的 direct CLI 命令，不要把所有需求都塞回关键词搜索。命令返回 JSON，通常包含 `platform`、`tool`、`arguments` 和 `data`。
+- 好看视频 / Haokan：用 `search` 找视频、`user-search` 找账号，`search-suggestions` 返回联想词，`hot-search` 返回热词而非热门视频。可读取详情、评论、用户资料和作品列表。视频 ID 与视频链接二选一，用户 ID 与主页链接二选一。视频搜索用有限 `--pages`，不支持 `--all`；联想词、热词、详情和用户资料不分页。评论中的回复只是预览，完整回复用 `replies` 加一级 `comment_id` 分页读取。不支持 `--include-replies`、`--since-days` 或口播转文字。
+- X 博主发出的回复（含自回复）使用 `x user-replies`；帖子下的评论使用 `x comments` / `x replies`。用户 ID、用户名和主页链接三选一；翻页保持定位方式和完整令牌不变，不混用 `user-posts` 令牌。空页有令牌时可继续，不支持 `--since-days`。
 
 ## 输出建议
 
@@ -267,12 +286,13 @@ npx -y socialdatax-skills@latest wechat user-posts --user-id "<v2_finder_user_id
 - BILIBILI: `bilibili_search_videos`, `bilibili_search_articles`, `bilibili_get_content_detail_by_id`, `bilibili_get_content_comments_by_id`, `bilibili_get_user_info_by_user_id`, `bilibili_get_user_posted_videos_by_user_id`, `bilibili_get_user_posted_articles_by_user_id`, `bilibili_get_content_detail_by_url`, `bilibili_get_content_comments_by_url`, `bilibili_get_content_comment_replies_by_comment_id`, `bilibili_get_content_likes_and_reposts_by_post_id`, `bilibili_get_content_likes_and_reposts_by_url`, `bilibili_get_user_info_by_profile_url`, `bilibili_get_user_posted_videos_by_profile_url`, `bilibili_get_user_posted_articles_by_profile_url`, `bilibili_get_user_posted_dynamics_by_user_id`, `bilibili_get_user_posted_dynamics_by_profile_url`
 - ZHIHU: `zhihu_get_hot_list`, `zhihu_search_content`, `zhihu_get_content_detail_by_url`, `zhihu_get_content_comments_by_url`, `zhihu_get_user_info_by_profile_url`, `zhihu_get_user_posted_articles_by_profile_url`, `zhihu_get_comment_replies_by_url`
 - INSTAGRAM: `instagram_search_posts`, `instagram_get_post_detail_by_post_id`, `instagram_get_post_comments_by_post_url`, `instagram_get_user_info_by_username`, `instagram_get_user_posts_by_username`, `instagram_get_post_detail_by_post_url`, `instagram_get_post_comment_replies_by_comment_id`, `instagram_get_user_info_by_profile_url`, `instagram_get_user_posts_by_profile_url`
-- X: `x_search_posts`, `x_get_post_detail_by_post_id`, `x_get_post_comments_by_post_id`, `x_get_user_info_by_username`, `x_get_user_posts_by_username`, `x_get_post_detail_by_post_url`, `x_get_post_comments_by_post_url`, `x_get_post_comment_replies_by_comment_id`, `x_get_user_info_by_user_id`, `x_get_user_info_by_profile_url`, `x_get_user_posts_by_user_id`, `x_get_user_posts_by_profile_url`
+- X: `x_search_posts`, `x_get_post_detail_by_post_id`, `x_get_post_comments_by_post_id`, `x_get_user_info_by_username`, `x_get_user_posts_by_username`, `x_get_user_replies_by_user_id`, `x_get_user_replies_by_username`, `x_get_user_replies_by_profile_url`, `x_get_post_detail_by_post_url`, `x_get_post_comments_by_post_url`, `x_get_post_comment_replies_by_comment_id`, `x_get_user_info_by_user_id`, `x_get_user_info_by_profile_url`, `x_get_user_posts_by_user_id`, `x_get_user_posts_by_profile_url`
 - YOUTUBE: `youtube_search_videos`, `youtube_get_video_detail_by_url`, `youtube_get_video_comments_by_url`, `youtube_get_channel_info_by_url`, `youtube_get_user_posted_videos_by_channel_url`, `youtube_get_video_comment_replies`
 - TIKTOK: `tiktok_search_posts`, `tiktok_get_post_detail_by_url`, `tiktok_get_post_comments_by_post_id`, `tiktok_get_user_info_by_tiktok_id`, `tiktok_get_user_posts_by_tiktok_id`, `tiktok_get_post_comments_by_url`, `tiktok_get_post_comment_replies`, `tiktok_get_user_info_by_profile_url`, `tiktok_get_user_posts_by_profile_url`
 - WEIBO: `weibo_get_hot_search_list`, `weibo_search_posts`, `weibo_get_post_detail_by_post_id`, `weibo_get_post_comments_by_post_id`, `weibo_get_user_info_by_user_id`, `weibo_get_user_posts_by_user_id`, `weibo_get_post_liker_list_by_post_url`, `weibo_get_post_repost_list_by_post_url`, `weibo_get_post_detail_by_post_url`, `weibo_get_post_comments_by_post_url`, `weibo_get_post_liker_list_by_post_id`, `weibo_get_post_repost_list_by_post_id`, `weibo_get_user_info_by_profile_url`, `weibo_get_user_posts_by_profile_url`, `weibo_get_post_comment_replies_by_comment_id`
 - TOUTIAO: `toutiao_get_hot_search_list`, `toutiao_search_posts`, `toutiao_get_post_detail_by_post_id`, `toutiao_get_post_comments_by_post_id`, `toutiao_get_user_info_by_user_id`, `toutiao_get_user_posts_by_user_id`, `toutiao_get_post_detail_by_url`, `toutiao_get_post_comments_by_url`, `toutiao_get_user_info_by_profile_url`, `toutiao_get_user_posts_by_profile_url`, `toutiao_get_post_comment_replies_by_comment_id`
 - WECHAT: `wechat_get_hot_search_list`, `wechat_search_videos`, `wechat_get_video_detail_by_encrypted_object_id`, `wechat_get_mp_article_detail_by_url`, `wechat_get_mp_article_stats_by_url`, `wechat_get_video_comments_by_object_id`, `wechat_get_user_info_by_user_id`, `wechat_get_user_posted_videos_by_user_id`, `wechat_get_video_share_url_by_object_id`, `wechat_get_video_detail_by_url`, `wechat_get_video_comments_by_url`, `wechat_get_video_comment_replies_by_comment_id`, `wechat_get_user_info_by_url`, `wechat_get_user_posted_videos_by_url`
+- HAOKAN: `haokan_search_videos`, `haokan_search_users`, `haokan_search_suggestions`, `haokan_get_hot_search_list`, `haokan_get_video_detail_by_video_id`, `haokan_get_video_detail_by_url`, `haokan_get_video_comments_by_video_id`, `haokan_get_video_comments_by_url`, `haokan_get_comment_replies_by_video_id`, `haokan_get_comment_replies_by_url`, `haokan_get_user_info_by_user_id`, `haokan_get_user_info_by_url`, `haokan_get_user_posted_videos_by_user_id`, `haokan_get_user_posted_videos_by_profile_url`
 
 上面自动列出的 MCP 工具名就是事实源；根据用户的平台和任务，优先选择最贴近的那个工具。
 搜索翻页时，第一页不要传 `page_token`；继续同一条链路时，只能传完整返回的 `next_page_token`，后续续页都继续用 `page_token`。

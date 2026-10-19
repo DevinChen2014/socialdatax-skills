@@ -1,6 +1,6 @@
 ---
 name: "media-detail"
-description: "Read structured social media content details and metrics from content IDs, URLs, short links, or share text for supported platforms including Xiaohongshu / XHS / RedNote, Douyin, Kuaishou, Bilibili, Zhihu, Instagram, X / Twitter, YouTube, TikTok, Weibo, Toutiao, and WeChat Channels. For WeChat Official Account articles, read article details, body text, and statistics from article links. Supports XHS 蒲公英 / Pugongying commercial note details when requested. Also use this skill for 百度贴吧 / Baidu Tieba thread and forum details, XHS and Douyin product details, and WeChat Channels share links from object IDs."
+description: "Read structured social media content details and metrics from content IDs, URLs, short links, or share text for supported platforms including Xiaohongshu / XHS / RedNote, Douyin, Kuaishou, Bilibili, Zhihu, Instagram, X / Twitter, YouTube, TikTok, Weibo, Toutiao, and WeChat Channels. For WeChat Official Account articles, read article details, body text, and statistics from article links. Supports XHS 蒲公英 / Pugongying commercial note details when requested. Also use this skill for 百度贴吧 / Baidu Tieba thread and forum details, XHS and Douyin product details, and WeChat Channels share links from object IDs. Also supports Haokan / 好看视频."
 source_client: "socialdatax-skills"
 source_platform: "github"
 source_skill: "media-detail"
@@ -24,7 +24,7 @@ metadata:
 
 # Media Detail
 
-Use this skill when the user provides an mp.weixin.qq.com article link and wants WeChat Official Account article body text or reading/engagement statistics. For other supported content links, short links, share text, or content IDs, use it for structured details or interaction metrics where supported. For explicit XHS 蒲公英 / Pugongying commercial note requests, choose the commercial detail route (20 points per successful call; failures are not charged). Also use this skill for 百度贴吧 / Baidu Tieba thread and forum details, XHS and Douyin product details, and WeChat Channels share links from object IDs.
+Use this skill when the user provides an mp.weixin.qq.com article link and wants WeChat Official Account article body text or reading/engagement statistics. For other supported content links, short links, share text, or content IDs, use it for structured details or interaction metrics where supported. For explicit XHS 蒲公英 / Pugongying commercial note requests, choose the commercial detail route (20 points per successful call; failures are not charged). Also use this skill for 百度贴吧 / Baidu Tieba thread and forum details, XHS and Douyin product details, and WeChat Channels share links from object IDs. Also supports Haokan / 好看视频.
 
 Current platform support:
 
@@ -43,6 +43,7 @@ Current platform support:
 - WeChat Official Account / 微信公众号 articles through `wechat_get_mp_article_detail_by_url` and `wechat_get_mp_article_stats_by_url`.
 - Xiaohongshu / XHS 蒲公英 / Pugongying single-note commercial details through `xhs_pgy_get_note_detail_by_note_id` or `xhs_pgy_get_note_detail_by_note_url`.
 - Also use this skill for 百度贴吧 / Baidu Tieba thread and forum details, XHS and Douyin product details, and WeChat Channels share links from object IDs.
+- Haokan / 好看视频 video details by video ID or video page URL.
 
 ## API Key
 
@@ -193,6 +194,14 @@ npx -y socialdatax-skills@latest tieba detail \
 npx -y socialdatax-skills@latest tieba detail \
   --url "<url>" --pretty --source-client socialdatax-skills --source-platform github \
   --source-skill media-detail
+
+npx -y socialdatax-skills@latest haokan detail \
+  --video-id "<video_id>" --pretty --source-client socialdatax-skills \
+  --source-platform github --source-skill media-detail
+
+npx -y socialdatax-skills@latest haokan detail \
+  --url "<video_url>" --pretty --source-client socialdatax-skills \
+  --source-platform github --source-skill media-detail
 ```
 
 Optional arguments:
@@ -232,6 +241,7 @@ Use this route when the user asks for 蒲公英 / Pugongying commercial details.
 Choose exactly one input: the complete `--note-id`, or `--url` with the original note link, short link or share text. Do not call both routes for the same note.
 If the user asks only for exposure, reads or pricing without establishing the 蒲公英 commercial scope, clarify that scope and the 20-point successful-call cost before calling. Do not ask again when the conversation has already established this scope.
 Use `npx -y socialdatax-skills@latest <platform> <action> --help` for exact flags and values. Paginated commands require the complete returned `next_page_token`. Do not modify, truncate, redact, mask, omit, normalize, rebuild, generate, or replace the middle with ellipses. Commands without `--page-token`, including suggestions and first-page-only searches, do not support pagination.
+Haokan / 好看视频: choose either `--video-id` or `--url` (video page URL); do not combine them. Detail is not paginated and does not provide a transcript.
 
 ## Safety Boundary
 
@@ -254,6 +264,7 @@ MCP tools matching the direct CLI commands above:
 - TOUTIAO: `toutiao_get_post_detail_by_post_id`, `toutiao_get_post_detail_by_url`
 - WECHAT: `wechat_get_video_detail_by_encrypted_object_id`, `wechat_get_video_detail_by_url`, `wechat_get_mp_article_detail_by_url`, `wechat_get_mp_article_stats_by_url`, `wechat_get_video_share_url_by_object_id`
 - BAIDU: `baidu_tieba_get_forum_detail`, `baidu_tieba_get_post_detail_by_thread_id`, `baidu_tieba_get_post_detail_by_url`
+- HAOKAN: `haokan_get_video_detail_by_video_id`, `haokan_get_video_detail_by_url`
 
 If MCP tools are already available in the current agent, use one of these tools:
 - `xhs_get_note_detail_by_note_id`: use when the full `note_id` is already known; do not pass only a prefix.

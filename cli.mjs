@@ -26,7 +26,7 @@ import {
 export { decryptWechatMediaCommand };
 
 const PACKAGE_NAME = "socialdatax-skills";
-const PACKAGE_VERSION = "0.2.50";
+const PACKAGE_VERSION = "0.2.52";
 const PACKAGE_SPEC = `${PACKAGE_NAME}@latest`;
 const LOG_PREFIX = `[${PACKAGE_NAME}]`;
 const MIN_NODE_VERSION = "20.18.1";
@@ -1859,6 +1859,7 @@ const PLATFORMS = {
   },
 };
 for (const [id, displayName, path, upstreamEnv] of [
+  ["haokan", "好看视频 / Haokan", "haokan", ["SOCIALDATAX_HAOKAN_MCP_UPSTREAM_URL"]],
   ["tieba", "百度贴吧 / Baidu Tieba", "baidu-tieba", ["SOCIALDATAX_TIEBA_MCP_UPSTREAM_URL"]],
   ["docs", "SocialDataX API documentation", "docs", ["SOCIALDATAX_DOCS_MCP_UPSTREAM_URL"]],
   ["account", "SocialDataX account", "xhs", PLATFORMS.xhs.upstreamEnv],
@@ -1902,7 +1903,7 @@ async function main() {
       (shouldPrintDirectHelp(parsed.options, parsed.positional)
         ? EXTENDED_COMMANDS.find((entry) => entry.platform === extendedPlatform && entry.action === parsed.positional[0])
         : undefined);
-    if (extended || ["tieba", "account", "docs"].includes(extendedPlatform)) {
+    if (extended || ["tieba", "haokan", "account", "docs"].includes(extendedPlatform)) {
       await runExtendedDirectCommand(extendedPlatform, parsed, extended);
       return;
     }
@@ -1967,7 +1968,7 @@ async function main() {
 async function runExtendedDirectCommand(platformId, { options, positional }, definition) {
   if (shouldPrintDirectHelp(options, positional)) {
     if (definition?.whenOption) printHelp();
-    console.log(extendedHelp(platformId, positional[0] === "help" ? undefined : positional[0]));
+    console.log(extendedHelp(platformId, ["help", "-h"].includes(positional[0]) ? undefined : positional[0]));
     return;
   }
   if (!definition) throw new Error(`Unsupported ${platformId} command. Use ${EXTENDED_COMMANDS.filter((entry) => entry.platform === platformId).map((entry) => entry.action).join(", ")}.`);
@@ -6805,7 +6806,7 @@ function shouldDeduplicateCommentItems(operation) {
 }
 
 function shouldDeduplicateContentItems(operation) {
-  return ["search", "user-posts", "user-series"].includes(operation.operation);
+  return ["search", "user-posts", "user-replies", "user-series"].includes(operation.operation);
 }
 
 function contentItemId(operation, item) {
@@ -6845,6 +6846,7 @@ function contentItemId(operation, item) {
       return itemStringField(item, "post_id");
     case "x":
       return itemStringField(item, "post_id");
+    case "haokan":
     case "youtube":
       return itemStringField(item, "video_id");
     case "tiktok":

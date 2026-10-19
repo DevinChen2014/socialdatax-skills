@@ -124,6 +124,8 @@ test("six transcript command families use their exact URL and ID parameter names
 });
 
 test("docs numeric bounds and required values are validated before connecting", () => {
+  assert.deepEqual(call("docs", "search", { query: "视频", platformId: "haokan" }).toolArguments,
+    { query: "视频", platform_id: "haokan" });
   assert.deepEqual(call("docs", "search", { query: "搜索", platformId: "baidu-tieba", limit: "50", offset: "0" }).toolArguments,
     { query: "搜索", platform_id: "baidu-tieba", limit: 50, offset: 0 });
   for (const options of [{ limit: "51" }, { offset: "-1" }]) assert.throws(() => call("docs", "search", options), /allowed range/);
@@ -144,5 +146,78 @@ test("every packaged extended tool has a reachable command and every option is d
         assert.ok(extendedCommandOptions(definition).includes(parameterOption(definition, parameter)));
       }
     }
+  }
+});
+
+test("X creator replies select exactly one identity and preserve continuation tokens", () => {
+  const pageToken = "opaque+%2F==中文";
+  for (const [option, argument, value] of [
+    ["userId", "user_id", "123"],
+    ["username", "username", "example"],
+    ["profileUrl", "profile_url", "https://x.com/example"],
+  ]) {
+    assert.deepEqual(call("x", "user-replies", { [option]: value, pageToken }), {
+      tool: `x_get_user_replies_by_${argument}`,
+      toolArguments: { [argument]: value, page_token: pageToken },
+    });
+  }
+  assert.throws(() => call("x", "user-replies", {}), /exactly one/);
+  assert.throws(() => call("x", "user-replies", { userId: "123", username: "example" }), /exactly one/);
+  assert.throws(() => call("x", "user-replies", { username: " " }), /non-empty value/);
+});
+
+test("Haokan commands map all registered read entrypoints", () => {
+  const keyword = "露营 + 摄影";
+  const pageToken = "opaque+%2F==中文";
+  for (const [action, tool] of [["search", "haokan_search_videos"], ["user-search", "haokan_search_users"]]) {
+    assert.deepEqual(call("haokan", action, { keyword, pageToken }), {
+      tool, toolArguments: { keyword, page_token: pageToken },
+    });
+  }
+  assert.deepEqual(call("haokan", "search-suggestions", { keyword }), {
+    tool: "haokan_search_suggestions", toolArguments: { keyword },
+  });
+  assert.deepEqual(call("haokan", "hot-search", {}), {
+    tool: "haokan_get_hot_search_list", toolArguments: {},
+  });
+  for (const [action, stem, extra] of [
+    ["detail", "haokan_get_video_detail_by", {}],
+    ["comments", "haokan_get_video_comments_by", { pageToken }],
+    ["replies", "haokan_get_comment_replies_by", { commentId: "987", pageToken }],
+  ]) {
+    for (const [option, argument, value] of [["videoId", "video_id", "6148991337208256393"], ["url", "url", "https://haokan.baidu.com/v?vid=6148991337208256393"]]) {
+      const expected = { [argument]: value };
+      if (extra.commentId) expected.comment_id = extra.commentId;
+      if (extra.pageToken) expected.page_token = extra.pageToken;
+      assert.deepEqual(call("haokan", action, { [option]: value, ...extra }), {
+        tool: `${stem}_${argument}`, toolArguments: expected,
+      });
+    }
+  }
+  for (const [action, stem, urlArgument] of [
+    ["user-info", "haokan_get_user_info_by", "url"],
+    ["user-posts", "haokan_get_user_posted_videos_by", "profile_url"],
+  ]) {
+    for (const [option, argument, value] of [["userId", "user_id", "author_123"], ["profileUrl", urlArgument, "https://haokan.baidu.com/author/author_123"]]) {
+      assert.deepEqual(call("haokan", action, { [option]: value }), {
+        tool: `${stem}_${argument}`, toolArguments: { [argument]: value },
+      });
+    }
+  }
+});
+
+test("Haokan rejects invalid identities and preserves pagination boundaries", () => {
+  assert.throws(() => call("haokan", "detail", { videoId: "not-a-number" }), /required format/);
+  assert.throws(() => call("haokan", "user-info", { userId: "bad id" }), /required format/);
+  assert.throws(() => call("haokan", "replies", { videoId: "123" }), /Missing --comment-id/);
+  assert.throws(() => call("haokan", "replies", { videoId: "123", commentId: "0" }), /required format/);
+  for (const action of ["detail", "comments", "replies"]) {
+    assert.throws(() => call("haokan", action, { videoId: "123", url: "url", commentId: "987" }), /exactly one/);
+  }
+  for (const action of ["detail", "user-info", "search-suggestions", "hot-search"]) {
+    const definition = findExtendedCommand("haokan", action, {});
+    assert.ok(definition);
+    assert.ok(!extendedCommandOptions(definition).includes("pageToken"));
+    assert.ok(!extendedCommandOptions(definition).includes("all"));
   }
 });

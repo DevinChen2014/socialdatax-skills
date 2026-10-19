@@ -1,6 +1,6 @@
 ---
 name: "media-user-info"
-description: "Retrieve social media creator profile information from platform-supported user IDs, usernames, channel URLs, profile URLs, short links, or share text. Supported input forms vary by platform. This version is backed by hosted platform MCP services and supports Xiaohongshu / XHS / RedNote, Douyin, Kuaishou, Bilibili, Zhihu, Instagram, X / Twitter, YouTube, TikTok, Weibo, Toutiao, and WeChat Channels creators. Also use this skill for 百度贴吧 / Baidu Tieba user search and profiles, platform user/channel search, XHS 蒲公英 / Pugongying creator profile, fans and commercial analytics, XHS encrypted-user-ID resolution, Douyin profile lookup by douyin_id, and WeChat Official Account / 公众号 account profiles."
+description: "Retrieve social media creator profile information from platform-supported user IDs, usernames, channel URLs, profile URLs, short links, or share text. Supported input forms vary by platform. This version is backed by hosted platform MCP services and supports Xiaohongshu / XHS / RedNote, Douyin, Kuaishou, Bilibili, Zhihu, Instagram, X / Twitter, YouTube, TikTok, Weibo, Toutiao, and WeChat Channels creators. Also use this skill for 百度贴吧 / Baidu Tieba user search and profiles, platform user/channel search, XHS 蒲公英 / Pugongying creator profile, fans and commercial analytics, XHS encrypted-user-ID resolution, Douyin profile lookup by douyin_id, and WeChat Official Account / 公众号 account profiles. Also supports Haokan / 好看视频."
 source_client: "socialdatax-skills"
 source_platform: "github"
 source_skill: "media-user-info"
@@ -24,7 +24,7 @@ metadata:
 
 # Media User Info
 
-Use this skill when the user wants creator profile data, account basics, creator positioning, audience scale, or profile lookup for supported social media platforms. Also use this skill for 百度贴吧 / Baidu Tieba user search and profiles, platform user/channel search, XHS 蒲公英 / Pugongying creator profile, fans and commercial analytics, XHS encrypted-user-ID resolution, Douyin profile lookup by douyin_id, and WeChat Official Account / 公众号 account profiles.
+Use this skill when the user wants creator profile data, account basics, creator positioning, audience scale, or profile lookup for supported social media platforms. Also use this skill for 百度贴吧 / Baidu Tieba user search and profiles, platform user/channel search, XHS 蒲公英 / Pugongying creator profile, fans and commercial analytics, XHS encrypted-user-ID resolution, Douyin profile lookup by douyin_id, and WeChat Official Account / 公众号 account profiles. Also supports Haokan / 好看视频.
 
 Current platform support:
 
@@ -42,6 +42,7 @@ Current platform support:
 - Toutiao / 今日头条 creators through the `toutiao_get_user_info_by_*` tools.
 - WeChat Channels / 视频号 creators through `wechat_get_user_info_by_url` for video or image-post links or share text, or `wechat_get_user_info_by_user_id` when a `v2_...@finder` user_id is already known.
 - Also use this skill for 百度贴吧 / Baidu Tieba user search and profiles, platform user/channel search, XHS 蒲公英 / Pugongying creator profile, fans and commercial analytics, XHS encrypted-user-ID resolution, Douyin profile lookup by douyin_id, and WeChat Official Account / 公众号 account profiles.
+- Haokan / 好看视频 account discovery and creator profiles by user ID or profile URL.
 
 ## API Key
 
@@ -246,6 +247,18 @@ npx -y socialdatax-skills@latest tieba user-info \
 npx -y socialdatax-skills@latest tieba user-info \
   --profile-url "<profile_url>" --pretty --source-client socialdatax-skills \
   --source-platform github --source-skill media-user-info
+
+npx -y socialdatax-skills@latest haokan user-search \
+  --keyword "<keyword>" --pretty --source-client socialdatax-skills \
+  --source-platform github --source-skill media-user-info
+
+npx -y socialdatax-skills@latest haokan user-info \
+  --user-id "<user_id>" --pretty --source-client socialdatax-skills \
+  --source-platform github --source-skill media-user-info
+
+npx -y socialdatax-skills@latest haokan user-info \
+  --profile-url "<profile_url>" --pretty --source-client socialdatax-skills \
+  --source-platform github --source-skill media-user-info
 ```
 
 Optional arguments:
@@ -279,6 +292,7 @@ Use exactly one supported identifier or URL entrypoint for a single command; do 
 
 The command prints JSON with `platform`, `tool`, `arguments`, and `data`.
 Use `npx -y socialdatax-skills@latest <platform> <action> --help` for exact flags and values. Paginated commands require the complete returned `next_page_token`. Do not modify, truncate, redact, mask, omit, normalize, rebuild, generate, or replace the middle with ellipses. Commands without `--page-token`, including suggestions and first-page-only searches, do not support pagination.
+Haokan / 好看视频: discover accounts with `user-search`; for profile details choose either `--user-id` or `--profile-url`. Profile details are not paginated and do not include the creator video list.
 
 ## Safety Boundary
 
@@ -301,6 +315,7 @@ MCP tools matching the direct CLI commands above:
 - TOUTIAO: `toutiao_get_user_info_by_user_id`, `toutiao_get_user_info_by_profile_url`, `toutiao_search_users`
 - WECHAT: `wechat_get_user_info_by_user_id`, `wechat_get_user_info_by_url`, `wechat_search_finder_user`, `wechat_get_mp_account_info_by_account_id`
 - BAIDU: `baidu_tieba_search_users`, `baidu_tieba_get_user_info_by_user_id`, `baidu_tieba_get_user_info_by_profile_url`
+- HAOKAN: `haokan_search_users`, `haokan_get_user_info_by_user_id`, `haokan_get_user_info_by_url`
 
 If MCP tools are already available in the current agent, use one of these tools:
 - `xhs_get_user_info_by_user_id`: preferred when `user_id` is already known from search, detail, comments, or creator note lists.

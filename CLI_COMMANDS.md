@@ -1,6 +1,6 @@
 # SocialDataX CLI Command Reference
 
-This reference covers the additional direct CLI commands for discovery, products, creator analytics, WeChat Official Accounts, Baidu Tieba, account points, API documentation, and six more transcript platforms. See [README](./README.md) for installation and the existing content, comment, creator, download, and transcript commands.
+This reference covers the additional direct CLI commands for discovery, products, creator analytics, WeChat Official Accounts, Baidu Tieba, Haokan, account points, API documentation, and six more transcript platforms. See [README](./README.md) for installation and the existing content, comment, creator, download, and transcript commands.
 
 Set `SOCIALDATAX_API_KEY` in the environment for hosted requests. Obtain or manage your key at <https://socialdatax.com>. Run commands with `npx -y socialdatax-skills@latest`; use `<platform> <action> --help` to inspect the installed version. Angle-bracket values are placeholders: replace them with the user’s keyword, returned ID, URL or token.
 
@@ -8,7 +8,7 @@ Set `SOCIALDATAX_API_KEY` in the environment for hosted requests. Obtain or mana
 
 - All commands accept `--pretty`, `--source-client`, `--source-platform`, and `--source-skill`. Installed skills supply attribution automatically; preserve it when adapting their examples.
 - A command with multiple input variants accepts exactly one variant, for example `--sku-id` or `--url`, or transcript `--url`, content ID, or `--job-id`. Required flags in the tables apply to that variant.
-- Only variants listing `--page-token` support `--pages <n>` and `--max-items <n>`. These variants also accept `--all` except `tieba search`, which requires bounded `--pages` instead. Omit the token for the first page; pass the full returned `next_page_token` unchanged to continue with the same search/filter inputs. An empty token ends pagination. `--all` follows the available token chain and does not guarantee complete platform-wide results.
+- Only variants listing `--page-token` support `--pages <n>` and `--max-items <n>`. These variants also accept `--all` except `tieba search` and `haokan search`, which requires bounded `--pages` instead. Omit the token for the first page; pass the full returned `next_page_token` unchanged to continue with the same search/filter inputs. An empty token ends pagination. `--all` follows the available token chain and does not guarantee complete platform-wide results.
 - Boolean filters take `true` or `false`. Nullable integer filters accept `null` or an integer. Omitted optional flags use the shown service default.
 - Transcript commands also accept positive `--max-wait-seconds <seconds>`. They poll the same job; when interrupted or the wait window ends, continue with `transcript --job-id "<job_id>"`. Do not resubmit an unfinished job.
 
@@ -22,6 +22,7 @@ Set `SOCIALDATAX_API_KEY` in the environment for hosted requests. Obtain or mana
 | Creator commercial analytics | XHS `pgy-creator-*` |
 | Official Account articles and accounts | WeChat `article-search`, `mp-account-info`, `mp-account-articles`, `article-comments`, `article-replies` |
 | Tieba communities and discussions | `tieba` forum, search, detail, comment and user commands below |
+| Haokan videos and creators | `haokan` search, hot-search, detail, comment and user commands below |
 | Credits and API documentation | `account balance`; `docs search`, `docs operation`, `docs openapi` |
 | Video speech-to-text | `transcript` on Bilibili, Zhihu, Instagram, X, TikTok and YouTube, plus the five platforms in README |
 
@@ -547,6 +548,27 @@ npx -y socialdatax-skills@latest instagram transcript --job-id "<job_id>" --pret
 
 ### X / Twitter (x)
 
+#### `x user-replies`
+
+Read replies authored by a creator, including self-replies. To read comments under a specific post, use `x comments` or `x replies` instead.
+
+Choose exactly one identity:
+
+```sh
+npx -y socialdatax-skills@latest x user-replies --user-id "<user_id>" --pretty
+npx -y socialdatax-skills@latest x user-replies --username "<username>" --pretty
+npx -y socialdatax-skills@latest x user-replies --profile-url "<profile_url>" --pretty
+```
+
+| Flag | Required | Type / accepted values | Default / constraints |
+| --- | --- | --- | --- |
+| `--user-id` | one identity | string | mutually exclusive with username/profile URL |
+| `--username` | one identity | string | mutually exclusive with user ID/profile URL |
+| `--profile-url` | one identity | string | mutually exclusive with user ID/username |
+| `--page-token` | no | string | use only the token returned by this user-replies chain |
+
+Supports `--pages`, `--all`, and `--max-items`. Keep the user and identity option unchanged when continuing. An empty page with a nonempty `next_page_token` can be continued; do not reuse a `user-posts` token.
+
 #### `x user-search`
 
 ```sh
@@ -1038,6 +1060,38 @@ npx -y socialdatax-skills@latest tieba user-forums --profile-url "<profile_url>"
 | `--profile-url` | yes | string | minLength: 1 |
 | `--page-token` | no | string | default: "" |
 
+### Haokan / 好看视频 (haokan)
+
+Video inputs accept exactly one of `--video-id` (digits) or `--url` (video page URL). User inputs accept exactly one of `--user-id` (letters, digits, `_`, or `-`) or `--profile-url`. Pass IDs as strings.
+
+| Command | Required input | Optional pagination | MCP tool(s) |
+| --- | --- | --- | --- |
+| `haokan search` | `--keyword` | `--page-token`, `--pages`, `--max-items` | `haokan_search_videos` |
+| `haokan user-search` | `--keyword` | `--page-token`, `--pages`, `--all`, `--max-items` | `haokan_search_users` |
+| `haokan search-suggestions` | `--keyword` | none | `haokan_search_suggestions` |
+| `haokan hot-search` | none | none | `haokan_get_hot_search_list` |
+| `haokan detail` | video input | none | `haokan_get_video_detail_by_video_id`, `haokan_get_video_detail_by_url` |
+| `haokan comments` | video input | `--page-token`, `--pages`, `--all`, `--max-items` | `haokan_get_video_comments_by_video_id`, `haokan_get_video_comments_by_url` |
+| `haokan replies` | video input and `--comment-id` | `--page-token`, `--pages`, `--all`, `--max-items` | `haokan_get_comment_replies_by_video_id`, `haokan_get_comment_replies_by_url` |
+| `haokan user-info` | user input | none | `haokan_get_user_info_by_user_id`, `haokan_get_user_info_by_url` |
+| `haokan user-posts` | user input | `--page-token`, `--pages`, `--all`, `--max-items` | `haokan_get_user_posted_videos_by_user_id`, `haokan_get_user_posted_videos_by_profile_url` |
+
+`hot-search` returns search terms and their popularity, not a video ranking. `search-suggestions` returns suggested queries. Neither supports pagination. `search` requires bounded `--pages` rather than `--all`.
+
+`comments` returns top-level comments; attached replies are previews. To page through replies, use `replies` with the positive numeric `comment_id` returned by `comments`. `--include-replies` is not supported. Keep page tokens unchanged and use them only with the same command and input; an empty page can still carry a continuation token. `user-info --profile-url` maps to the MCP tool's `url` argument.
+
+```bash
+npx -y socialdatax-skills@latest haokan search --keyword "露营" --pages 2 --pretty
+npx -y socialdatax-skills@latest haokan user-search --keyword "摄影" --pretty
+npx -y socialdatax-skills@latest haokan search-suggestions --keyword "旅行" --pretty
+npx -y socialdatax-skills@latest haokan hot-search --pretty
+npx -y socialdatax-skills@latest haokan detail --url "<video_url>" --pretty
+npx -y socialdatax-skills@latest haokan comments --video-id "<video_id>" --pages 2 --pretty
+npx -y socialdatax-skills@latest haokan replies --video-id "<video_id>" --comment-id "<comment_id>" --all --pretty
+npx -y socialdatax-skills@latest haokan user-info --profile-url "<profile_url>" --pretty
+npx -y socialdatax-skills@latest haokan user-posts --user-id "<user_id>" --page-token "<next_page_token>" --pretty
+```
+
 ### SocialDataX Account (account)
 
 #### `account balance`
@@ -1059,7 +1113,7 @@ npx -y socialdatax-skills@latest docs search --query "<query>" --pretty
 | Flag | Required | Type / accepted values | Default / constraints |
 | --- | --- | --- | --- |
 | `--query` | no | string | default: "" |
-| `--platform-id` | no | ,account,xhs,douyin,tiktok,kuaishou,bilibili,baidu-tieba,weibo,wechat,zhihu,instagram,x,youtube,toutiao,media_transcript | default: "" |
+| `--platform-id` | no | ,account,xhs,douyin,tiktok,kuaishou,bilibili,baidu-tieba,weibo,wechat,zhihu,instagram,x,youtube,toutiao,haokan,media_transcript | default: "" |
 | `--surface` | no | ,http | default: "" |
 | `--limit` | no | integer | default: 20; minimum: 1; maximum: 50 |
 | `--offset` | no | integer | default: 0; minimum: 0 |

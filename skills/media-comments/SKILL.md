@@ -1,6 +1,6 @@
 ---
 name: "media-comments"
-description: "Fetch and analyze comments/replies for supported SocialDataX public platforms. This version is backed by hosted platform MCP services and supports Xiaohongshu / XHS / RedNote, Douyin, Kuaishou, Bilibili, Zhihu, Instagram, X / Twitter, YouTube, TikTok, Weibo, Toutiao, and WeChat Channels. Also use this skill for 百度贴吧 / Baidu Tieba comments and replies, XHS product reviews and nested review replies, WeChat Official Account / 公众号 article comments and replies, and Weibo liker/repost lists by post URL."
+description: "Fetch and analyze comments/replies for supported SocialDataX public platforms. This version is backed by hosted platform MCP services and supports Xiaohongshu / XHS / RedNote, Douyin, Kuaishou, Bilibili, Zhihu, Instagram, X / Twitter, YouTube, TikTok, Weibo, Toutiao, and WeChat Channels. Also use this skill for 百度贴吧 / Baidu Tieba comments and replies, XHS product reviews and nested review replies, WeChat Official Account / 公众号 article comments and replies, and Weibo liker/repost lists by post URL. Also supports Haokan / 好看视频."
 source_client: "socialdatax-skills"
 source_platform: "github"
 source_skill: "media-comments"
@@ -24,7 +24,7 @@ metadata:
 
 # Media Comments
 
-Use this skill when the user wants comment mining, audience feedback, sentiment themes, objections, pain points, FAQ extraction, or discussion summaries for supported social media content. Also use this skill for 百度贴吧 / Baidu Tieba comments and replies, XHS product reviews and nested review replies, WeChat Official Account / 公众号 article comments and replies, and Weibo liker/repost lists by post URL.
+Use this skill when the user wants comment mining, audience feedback, sentiment themes, objections, pain points, FAQ extraction, or discussion summaries for supported social media content. Also use this skill for 百度贴吧 / Baidu Tieba comments and replies, XHS product reviews and nested review replies, WeChat Official Account / 公众号 article comments and replies, and Weibo liker/repost lists by post URL. Also supports Haokan / 好看视频.
 
 Current platform support:
 
@@ -41,6 +41,7 @@ Current platform support:
 - Toutiao / 今日头条 posts through the `toutiao_get_post_comments_by_*` and `toutiao_get_post_comment_replies_by_comment_id` tools.
 - WeChat Channels / 视频号 videos through the `wechat_get_video_comments_by_*` and `wechat_get_video_comment_replies_by_comment_id` tools.
 - Also use this skill for 百度贴吧 / Baidu Tieba comments and replies, XHS product reviews and nested review replies, WeChat Official Account / 公众号 article comments and replies, and Weibo liker/repost lists by post URL.
+- Haokan / 好看视频 top-level comments and paginated replies by video ID or video page URL.
 
 ## API Key
 
@@ -273,6 +274,24 @@ npx -y socialdatax-skills@latest tieba comments \
 npx -y socialdatax-skills@latest tieba comments \
   --url "<url>" --pretty --source-client socialdatax-skills --source-platform github \
   --source-skill media-comments
+
+npx -y socialdatax-skills@latest haokan comments \
+  --video-id "<video_id>" --pretty --source-client socialdatax-skills \
+  --source-platform github --source-skill media-comments
+
+npx -y socialdatax-skills@latest haokan comments \
+  --url "<video_url>" --pretty --source-client socialdatax-skills \
+  --source-platform github --source-skill media-comments
+
+npx -y socialdatax-skills@latest haokan replies \
+  --video-id "<video_id>" --comment-id "<comment_id>" --pretty \
+  --source-client socialdatax-skills --source-platform github \
+  --source-skill media-comments
+
+npx -y socialdatax-skills@latest haokan replies \
+  --url "<video_url>" --comment-id "<comment_id>" --pretty \
+  --source-client socialdatax-skills --source-platform github \
+  --source-skill media-comments
 ```
 
 Optional arguments:
@@ -314,6 +333,8 @@ Use one first-level comment entrypoint shown in the CLI example at a time; do no
 
 The command prints JSON with `platform`, `tool`, `arguments`, and `data`. Multi-page output keeps merged primary comments in `data.items` and adds `page_count`, `item_count`, and the next-page marker. On platforms that support `--include-replies`, each first-level comment includes `replies`, `replies_page_count`, and `replies_next_page_token`.
 Use `npx -y socialdatax-skills@latest <platform> <action> --help` for exact flags and values. Paginated commands require the complete returned `next_page_token`. Do not modify, truncate, redact, mask, omit, normalize, rebuild, generate, or replace the middle with ellipses. Commands without `--page-token`, including suggestions and first-page-only searches, do not support pagination.
+Haokan / 好看视频: choose either `--video-id` or `--url`. `comments` returns top-level comments with reply previews; use `replies` with the parent `comment_id` to page through replies. `--include-replies` is not supported. Preserve the token and the same video/comment inputs when continuing.
+For replies authored by an X creator rather than comments under a post, use `media-user-posts` with `x user-replies`.
 
 ## Safety Boundary
 
@@ -336,6 +357,7 @@ MCP tools matching the direct CLI commands above:
 - TOUTIAO: `toutiao_get_post_comments_by_post_id`, `toutiao_get_post_comments_by_url`, `toutiao_get_post_comment_replies_by_comment_id`
 - WECHAT: `wechat_get_video_comments_by_object_id`, `wechat_get_video_comments_by_url`, `wechat_get_video_comment_replies_by_comment_id`, `wechat_get_mp_article_comments_by_url`, `wechat_get_mp_article_comment_replies_by_url`
 - BAIDU: `baidu_tieba_get_post_comment_replies`, `baidu_tieba_get_post_comments_by_thread_id`, `baidu_tieba_get_post_comments_by_url`
+- HAOKAN: `haokan_get_video_comments_by_video_id`, `haokan_get_video_comments_by_url`, `haokan_get_comment_replies_by_video_id`, `haokan_get_comment_replies_by_url`
 
 If MCP tools are already available in the current agent, use one of these tools:
 - `xhs_get_note_comments_by_note_id`: use when the full `note_id` is known; do not pass only a prefix; optional `sort_type` accepts `default`, `time_descending`, or `like_count_descending`.
