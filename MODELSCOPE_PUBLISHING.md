@@ -1,5 +1,17 @@
 # SocialDataX ModelScope Skills Publishing Record
 
+## 2026-10-19 电商四入口发布验收
+
+- 四项使用现有 CLI 0.2.52 商品能力，公开来源 GitHub 提交 `401246f`。通过官方 upload + create API 发布，owner=socialhelper，private=false。第三项上传曾限流，等待后成功；没有重复创建。四项公开详情可读，下载 archive 中 SKILL.md 与本地逐字节一致，初始下载均为 0。
+- 本地生成器测试 130 项通过，public-listing-check 882 PASS、0 WARN、0 FAIL。只新增选品/比较 × 通用/抖音四个入口，需求基线见 SkillHub 同日记录。
+
+| Slug | SKILL.md SHA256 |
+| --- | --- |
+| ecommerce-product-research | `fccb1a381923d7a15aa00f402bd68f96e98135c6ef3022b8078307120b4158ff` |
+| ecommerce-product-comparison | `458d8a1af4ad8d00138f6211977f0d2a807986a9b94645edd6fa526621f93be9` |
+| douyin-product-research | `324b90dda48f1fa79ff604da85669eb9b4bcf224835595b92dce38772208006b` |
+| douyin-product-comparison | `62d8901406cb3d5bf8af9d5694e211286c8f462f8e074a266ecd6c28509af134` |
+
 ## 2026-10-19 新平台独立需求入口
 
 - 用户要求新增平台上架，并参考现有高下载需求。新增好看视频选题分析、贴吧用户需求洞察、今日头条内容研究，每个平台一个入口；需求证据和发布前基线见 SkillHub `PUBLISHING.md` 当日记录。
