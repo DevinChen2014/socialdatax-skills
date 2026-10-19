@@ -2,8 +2,15 @@
 
 Use this checklist before syncing this listing to the public `socialdatax-skills` repository or publishing the unified npm skill installer package. Do not submit this package as a unified MCP registry entry unless a real aggregate MCP endpoint exists.
 
-- npm latest: `socialdatax-skills@0.2.53`, published and verified on `2026-10-19`.
-- Legacy npm wrapper: `social-media-insights-skills@0.2.53`, published and verified on `2026-10-19`; its registry dependency and installed `doctor --json` both resolve to `socialdatax-skills@0.2.53`.
+- npm latest: `socialdatax-skills@0.2.54`, published and verified on `2026-10-19`.
+- Legacy npm wrapper: `social-media-insights-skills@0.2.54`, published and verified on `2026-10-19`; its registry dependency and installed `doctor --json` both resolve to `socialdatax-skills@0.2.54`.
+
+## 2026-10-19 pagination recovery guidance release
+
+- Published both npm packages at `0.2.54`. Skills and README preserve retained partial results, original page/item limits, and separate parent-comment and reply continuation tokens. Runtime changes are limited to the version and the `doctor` inventory entry for the already-public `xhs_get_share_info` tool; no new CLI action or pagination behavior.
+- Full release preflight exposed two missed checks: the comment documentation test still expected the old empty-token wording, and `doctor` omitted `xhs_get_share_info` from the server-card inventory. Updated the stale assertion and remaining README sentence, and restored the missing inventory entry. All 433 primary-package tests and 7 wrapper tests then passed.
+- Commands: `node scripts/publish_socialdatax_skills.mjs`, followed by `node scripts/publish_social_media_insights_skills.mjs` after primary registry propagation. No checks skipped. Fresh registry installation confirmed all 29 primary-package files match the local release byte for byte; primary and wrapper `doctor --json` report `0.2.54`, and the wrapper pins the exact dependency.
+- Public GitHub source: `b136eeb`; GitHub skills and catalog retain GitHub source attribution. Standalone public-package test passed. No paid business calls were made.
 
 ## 2026-10-19 pagination partial-result release
 

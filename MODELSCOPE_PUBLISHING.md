@@ -1,5 +1,65 @@
 # SocialDataX ModelScope Skills Publishing Record
 
+## 2026-10-19 分页恢复说明发布验收（0.2.54）
+
+- 用户批准同步已合并的分页恢复说明。仅更新已有且非 retained 的条目；已提交 49 项，公开下载逐字节匹配 49 项。标题、市场身份、来源和运行命令保持不变。
+- npm 主包与兼容包均为 0.2.54；433 项主包测试、7 项兼容包测试通过。公共 GitHub 运行源码提交 `b136eeb`，GitHub 专用 skills/catalog 保留渠道归因。无付费业务调用。
+- 使用官方 upload + settings PATCH 更新 `socialhelper` 已有条目，保留 display_name、description、source_url、category、license。上传限流后暂停并降频；公开 archive 解压后核对唯一 SKILL.md。
+
+| Slug | SKILL.md SHA-256 | Downloads | 文件验收 |
+| --- | --- | --- | --- |
+| bilibili-comment-insights | `8902af7a663d608f8bc15bd82b581fdd30024d88c828ad7c317c825dd7c72376` | 15 | 匹配 |
+| bilibili-content-research | `ca4ef3235c6dbb364696e7428cf4af3c0f24a2db5beb5d447e08812fc2e53634` | 27 | 匹配 |
+| douyin-account-analysis-report | `394ee97b3f94637148e7b312e70305bc6291cd788581192eb3c85a8c71cb0a3d` | 33 | 匹配 |
+| douyin-comment-insights | `bef9d2e31f1ae4e673a6adae9f6c6e9a8d8fe8a359df4c5f3703305b42525208` | 33 | 匹配 |
+| douyin-competitor-research | `3f10834840b19a49e1432339aabc81824d1441e205259eb10d088cfca541fd04` | 27 | 匹配 |
+| douyin-content-research | `5135a130b620027607bda1e1270889f4006b41288fd269618dd5eefb71a2c8c5` | 26 | 匹配 |
+| douyin-product-research | `c23846984907f51f23893999618b44757cf4ba751406eb22b7abe557bb55e135` | 1 | 匹配 |
+| douyin-topic-analysis | `cd18990ebeae0fc3f47b766ba0771c845cb06448353a85926ceda82ad80c9742` | 33 | 匹配 |
+| douyin-trend-insights | `c3ca9571d07aff673c7d9625ce4268ba9f6a51a064ac18e7d638d62256fb1d04` | 31 | 匹配 |
+| ecommerce-detail-copywriter | `f84707c4ed67372ff009046566e5ff7cfd9cf624c795d98029445a6e9f4e9ded` | 1 | 匹配 |
+| ecommerce-main-image-copywriter | `230ad9922db0c1e9077a16f11b56aee37c844c9ea40188b38af0b4d2e705656d` | 1 | 匹配 |
+| ecommerce-product-research | `0886c6429bb78f0bc32e8c1565652cab1d918edb5ea7cf2dec2f37f81192e99f` | 4 | 匹配 |
+| ecommerce-video-script | `91a743c5fefd4fd08abec155940f065c9af469d42c9915e1c3fad50832909a0e` | 1 | 匹配 |
+| haokan-topic-analysis | `4d584437a670ca7776f92899842662508e077111477b7c42349e8688eb3acd9b` | 1 | 匹配 |
+| instagram-comment-insights | `ce08e37ed1175314a034e60c60b9bdb39fb921f288d1798d602c1e362d806091` | 22 | 匹配 |
+| instagram-content-research | `d290ac2a58d7983a2432a42d1ba741fc77d050f56753791709f6c7b6be867960` | 26 | 匹配 |
+| kuaishou-comment-insights | `0800f3f748ff437e06d96398c60879e0c0ef554303bd7b0db0dfdc3da8f77736` | 23 | 匹配 |
+| kuaishou-competitor-research | `562cadad8efcb4e051140a1b2e05da4cb300e1badd5d8150cb633c2a1f029b23` | 26 | 匹配 |
+| kuaishou-content-research | `6ad8126c8c016595583841c270a6bba96777409f56c089f6c3c432c689a35470` | 26 | 匹配 |
+| kuaishou-topic-analysis | `52e05ff5069eda952ddca41248e163019f50b48d874a561ca5fec08a05ab5c14` | 24 | 匹配 |
+| kuaishou-trend-insights | `5e7df0f5f3a1ad6415f46718c4a9968cd33ee5b00e9e48ee8c9bc5d5a5ff2c91` | 22 | 匹配 |
+| socialdatax-content-research-assistant | `a7a4e11a58b61103a0e6cb7f9ef08e249a0967b32867c48f45f62f73fb1e892e` | 310 | 匹配 |
+| tieba-demand-insights | `9f183f826dee7f19836fc5ef8dcdefb8d93567ff81c94dcf38346116a278e691` | 1 | 匹配 |
+| tiktok-comment-insights | `e3690e1df31199f0c2a957588df1f6f29705feef100528d8361d7ce01ed06ac6` | 26 | 匹配 |
+| tiktok-content-research | `2843e48302876c1646db9428baaa8420f39b54569f5e2eb802640c073401b768` | 24 | 匹配 |
+| toutiao-content-research | `c11a06271e14dc5f769da1dc35bedc78acfd7a2489fcf9e7efeae933b3871822` | 1 | 匹配 |
+| wechat-channels-account-analysis | `508c136cefc43c9904e9ab2fe048c0dce7bbd214f89f48f26f86f668160e0e37` | 32 | 匹配 |
+| wechat-channels-viral-video-breakdown | `51480c31365a5089e687bde722a2d914d7ad7df3823cbc1f49edf38ef5f1b95e` | 50 | 匹配 |
+| weibo-comment-insights | `ba49243ffe2c830c0ab176ba4c42ad9333ad390f1b9133258e79f49e11669a86` | 13 | 匹配 |
+| weibo-competitor-research | `84bb6cfcee142180d31f52ba061cb5f1c6b6a9d9194d37fb047ca839312c8ec5` | 21 | 匹配 |
+| weibo-content-research | `aae28443bb1a05ed21118cd491b9f8e3747875cba8df65e48cb13ab0e29b4d0a` | 23 | 匹配 |
+| weibo-topic-analysis | `dd56f266ee279e49e6b7b0cfbfa226153cbee5e6887e8a24bb148b04699c05e2` | 20 | 匹配 |
+| weibo-trend-insights | `2ed9cc0188f7f33910913f13062800850eb5d14acae9d3bd2f1c0bd60c36d613` | 21 | 匹配 |
+| x-twitter-comment-insights | `a7bada0dd5c6f53adddb54b8ad7089b589a29854e24abe62e34d4c08d4c1c0f3` | 21 | 匹配 |
+| x-twitter-content-research | `3db7d990662e69c80a17679929e3f160356c0dd472030b1f81ffc8c44946e1bc` | 23 | 匹配 |
+| xhs-comment-insights | `8b33e63d13cbdea6996a0f5070119e962e434e1f27321d2421088bededb69531` | 44 | 匹配 |
+| xhs-competitor-research-v2 | `50aa2d6a625d36c8b481cfa318ce5c697a6acff117bf9e160e4aec2a7ddf1769` | 44 | 匹配 |
+| xhs-content-research-assistant | `cc254a6d570dbd1d99b8495c31dab0529c9dd5006a7d5a3b4063ef6bd1372953` | 48 | 匹配 |
+| xhs-content-research | `9474a0ba1e5066c5820d83420dec21d49626af7635f4ef4f23da3c91aa3619b1` | 52 | 匹配 |
+| xhs-creator-content-research | `51c8435edfa62dbcf38b6ca6e7e36241641ca046935cb0d211d09dba12f1e16d` | 29 | 匹配 |
+| xhs-hot-topic-selection | `87190ab272d67b3c1c62c5d3790e51e12b09e4d79592c80f26cc18a51e04ca3f` | 42 | 匹配 |
+| xhs-topic-analysis-v2 | `578d1a47a0c8e010ff81e68e9200cce982107cd76e2e74b92b9433c5a0373ef3` | 44 | 匹配 |
+| xhs-trend-insights-v2 | `b4071865df26ebea290878c1150111feceebe610af931d369819a75964aee569` | 43 | 匹配 |
+| xhs-viral-copy-breakdown | `b22b90d60c62d6a7755c5ca405ca005001caa5df0d9681c0ec48c988c339ca66` | 46 | 匹配 |
+| xhs-viral-note-research | `4af00bba861ce7d94d48d82fd62b9715afa0f03d5c0aa619d7739ef9f0809b35` | 37 | 匹配 |
+| youtube-comment-insights | `781d6c3203d94472ea97d055b7728005a87ca417b6665cf4f1f3f7c6a2b1d1be` | 23 | 匹配 |
+| youtube-content-research | `adcf8eb55303bd35ec458646b5b5e603d8adf0201ac4b3fb52838d0bf4c87464` | 22 | 匹配 |
+| zhihu-comment-insights | `de3f92995fca206082aebfbac3cd90689111442145ecdd5185732271800d498e` | 15 | 匹配 |
+| zhihu-content-research | `8111b6aa3463896d9351e43022b79a0efe4156afac687e395f65a0207a747221` | 25 | 匹配 |
+
+下载计数包含发布验收读取，不能视为自然增长。
+
 ## 2026-10-19 选品快速开始条件补齐
 
 - 官方 upload/settings PATCH 更新 socialhelper/ecommerce-product-research，HTTP 200、success=true。保留名称、描述、分类、来源和许可；公共 GitHub 来源提交 `e843b64`。
