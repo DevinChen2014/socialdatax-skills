@@ -1,5 +1,15 @@
 # SocialDataX ModelScope Skills Publishing Record
 
+## 2026-10-19 通用选品与对比可选依赖修复
+
+- 官方upload/settings PATCH更新socialhelper/ecommerce-product-research与socialhelper/ecommerce-product-comparison，保留原名称、描述、分类、来源和许可；两次响应success=true。公开详情可读，两份archive中的SKILL.md与本地逐字节一致。商品对比首次读取超时，单项重试成功。
+- 公共GitHub来源提交`7ab6582`。仅复用apiOptional，资料分析不强制Key/Node/npm，在线查询仍需配置；没有新增接口或npm发布。132项生成器测试、903项上架检查通过。
+
+| Slug | SKILL.md SHA256 |
+| --- | --- |
+| ecommerce-product-research | `906f71d454f1a23056f3e759f3297cc0470ffbade9c1bb5b852024372e2a53df` |
+| ecommerce-product-comparison | `56da68bd6e53648d140dce504835d43cf4992e26d083e6b8ad7f40bf00be488e` |
+
 ## 2026-10-19 直播带货话术发布
 
 - 官方upload/create API已创建socialhelper/ecommerce-live-sales-script，private=false，初始下载0；公开archive的SKILL.md与本地逐字节一致，SHA256 `b9cc9ee92115b40bce3882f0e5f4a7eea311380840416227d2570299398d7ba9`。公共GitHub来源提交b116336。
