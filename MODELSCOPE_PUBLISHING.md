@@ -1,5 +1,10 @@
 # SocialDataX ModelScope Skills Publishing Record
 
+## 2026-10-19 直播带货话术发布
+
+- 官方upload/create API已创建socialhelper/ecommerce-live-sales-script，private=false，初始下载0；公开archive的SKILL.md与本地逐字节一致，SHA256 `b9cc9ee92115b40bce3882f0e5f4a7eea311380840416227d2570299398d7ba9`。公共GitHub来源提交b116336。
+- 支持资料直接写作及按需商品详情，交付整场流程、逐品口播、互动与转场；不生成图片配音，不自动开播，不编造优惠或库存。132项生成器测试、903项上架检查与30分钟3商品场景复核通过。无新增runtime或npm版本，未调用真实商品接口。
+
 ## 2026-10-19 商品客服问答发布
 
 - 通过官方upload/create API创建 `socialhelper/ecommerce-customer-service`，private=false，公共GitHub来源提交 `25d7c91`。公开详情可读，初始下载0；公开archive中的SKILL.md与本地逐字节一致，SHA256 `c66e5316f74ea30f9d5f1c3bf1406bad26fb541b25e242a54010b0290079024d`。
