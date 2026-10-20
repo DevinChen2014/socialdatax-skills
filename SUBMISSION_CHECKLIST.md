@@ -2,8 +2,15 @@
 
 Use this checklist before syncing this listing to the public `socialdatax-skills` repository or publishing the unified npm skill installer package. Do not submit this package as a unified MCP registry entry unless a real aggregate MCP endpoint exists.
 
-- npm latest: `socialdatax-skills@0.2.54`, published and verified on `2026-10-19`.
-- Legacy npm wrapper: `social-media-insights-skills@0.2.54`, published and verified on `2026-10-19`; its registry dependency and installed `doctor --json` both resolve to `socialdatax-skills@0.2.54`.
+- npm latest: `socialdatax-skills@0.2.55`, published and verified on `2026-10-20`.
+- Legacy npm wrapper: `social-media-insights-skills@0.2.55`, published and verified on `2026-10-20`; its registry dependency and installed `doctor --json` both resolve to `socialdatax-skills@0.2.55`.
+
+## 2026-10-20 pinned-date pagination release
+
+- Released both packages at `0.2.55`. Old pinned creator posts remain excluded by the date filter but no longer stop `--since-days` pagination. Ordinary old posts retain the existing cutoff behavior.
+- Command: `node scripts/publish_socialdatax_skills.mjs`, then `node scripts/publish_social_media_insights_skills.mjs` after the primary registry propagation exceeded the paired wait. All checks enabled: 437 primary tests, 7 wrapper tests, 909 listing checks; fresh installation matches all 29 primary files, and 4 installed-CLI pinned-date regressions pass.
+- Both doctor reports and the wrapper's exact registry dependency resolve to `0.2.55`. CLI SHA-256: `0a7a23021b4377b8c9c6bf6c5e60faf63fa870f5555251c66ea48f366bc0ca25`.
+- Public GitHub runtime source: `e36ad5f`; standalone public-package test passed. Refreshed the existing creator-research entry on SkillHub, ClawHub, and ModelScope; all public files match generated source. No paid business calls.
 
 ## 2026-10-19 pagination recovery guidance release
 

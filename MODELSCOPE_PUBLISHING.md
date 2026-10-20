@@ -1,5 +1,15 @@
 # SocialDataX ModelScope Skills Publishing Record
 
+## 2026-10-20 置顶日期分页与创作者研究发布验收（0.2.55）
+
+- 用户批准发布已合并的 CLI 修复，并仅刷新已有 `socialdatax-creator-research`；保留标题、作者、slug 与渠道归因。补齐小红书/抖音账号发现、ID 衔接及三平台近 30 天作品翻页说明。
+- npm 主包与兼容包均为 0.2.55；437 项主包测试、7 项兼容包测试和 909 项上架检查通过（0 WARN / FAIL）。全新 registry 安装的 29 个主包文件与本地一致，主包及兼容包 doctor 均报告 0.2.55，4 项已安装 CLI 旧置顶分页回归通过。
+- 公共 GitHub 运行源码提交 `e36ad5f`，原有 GitHub 专用 skills/catalog 归因保留，ModelScope 来源文件已同步。未调用付费业务接口。
+- 使用官方文件上传与 settings PATCH，保留 display_name、description、source_url、category、license。PATCH 45 秒超时后停止写操作，通过后续公开下载逐字节核对确认生效，未重传文件或重试更新。
+- 公开 archive 内唯一 SKILL.md 与本地一致，SHA-256：`1d3985e62f5c8c8628466e1ef6d01f1d6db218bdd703506f043527f06b525716`；读取时累计下载 4。
+
+下载计数包含验收读取，不作为自然增长或转化证据。
+
 ## 2026-10-20 内容日历与创作者研究补交验收
 
 - 用户批准将已有两项 SkillHub 技能补交 ClawHub、ModelScope，共四个条目；本节记录当前渠道两项。发布前对应公开详情返回 404；ModelScope 另以现有 API Key 查询确认 ResourceNotFound。沿用已有命令和流程，通过源配置 mirrorFrom 生成，未修改 SkillHub、CLI 或 npm 版本。
