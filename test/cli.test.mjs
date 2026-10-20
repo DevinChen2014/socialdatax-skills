@@ -954,14 +954,14 @@ test("public package version metadata stays aligned", () => {
   const cli = readFileSync(cliPath, "utf8");
   const versionPattern = escapeRegExp(packageJson.version);
 
-  assert.equal(packageJson.version, "0.2.55");
+  assert.equal(packageJson.version, "0.2.56");
   assert.equal(packageLock.version, packageJson.version);
   assert.equal(packageLock.packages[""].version, packageJson.version);
   assert.match(
     cli,
     new RegExp(`const PACKAGE_VERSION = "${versionPattern}";`)
   );
-  assert.match(readme, /Package capability version: `0\.2\.55`/);
+  assert.match(readme, /Package capability version: `0\.2\.56`/);
 });
 
 test("publish script reads npm auth token from user npmrc", async () => {

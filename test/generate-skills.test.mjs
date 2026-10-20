@@ -2004,7 +2004,7 @@ test("generated douyin video copy extraction skill stays douyin-only and transcr
       assert.match(skill, /调用失败：如果已有 `job_id`，只查询同一个任务/);
       assert.match(skill, /SDK\/依赖缺失、npm 网络、Node\.js\/npm\/npx 不可用或执行权限错误/);
       assert.match(skill, /不是 SocialDataX API Key 或业务数据返回错误/);
-      assert.match(skill, /有权限时可自动安装或修复/);
+      assert.match(skill, /仅在用户已授权的范围内安装或修复本任务所需依赖/);
       assert.match(skill, /需要网络或执行授权时提醒用户同意或完成授权/);
       assert.match(skill, /不要改用公开网页搜索替代 SocialDataX 数据/);
       assert.match(skill, /如果返回 `insufficient_balance` 或“积分不足”/);
@@ -2395,7 +2395,7 @@ test("skillhub generated skills include quick start result examples and troubles
       assert.match(skill, /网络或 API 异常：保留错误信息/);
       assert.match(skill, /SDK\/依赖缺失、npm 网络、Node\.js\/npm\/npx 不可用或执行权限错误/);
       assert.match(skill, /不是 SocialDataX API Key 或业务数据返回错误/);
-      assert.match(skill, /有权限时可自动安装或修复/);
+      assert.match(skill, /仅在用户已授权的范围内安装或修复本任务所需依赖/);
       assert.match(skill, /需要网络或执行授权时提醒用户同意或完成授权/);
       assert.match(skill, /不要改用公开网页搜索替代 SocialDataX 数据/);
       assert.match(skill, /如果返回 `insufficient_balance` 或“积分不足”/);
