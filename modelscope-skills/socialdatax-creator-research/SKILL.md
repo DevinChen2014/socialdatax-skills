@@ -17,7 +17,7 @@ metadata: {"openclaw":{"requires":{"env":["SOCIALDATAX_API_KEY"],"bins":["node",
 ## 快速开始
 
 - 先给出当前 skill 支持的输入：账号关键词、达人名称或赛道方向、账号主页、账号分享文本或平台账号 ID。
-- 如果结果有分页，先取第一页；要继续扩大，再按返回的下一页标记继续。
+- 账号搜索默认取一页；作品示例使用 `--since-days 30` 自动翻页至日期截止或列表结束，可加 `--pages <n>` 限制请求页数。
 - 你通常会得到：候选账号、昵称、平台账号 ID 和粉丝信号、账号资料、认证、粉丝或互动信号、近期内容列表、发布时间和互动信号，以及可继续追问的角度。
 
 ## API Key 获取
@@ -29,6 +29,10 @@ metadata: {"openclaw":{"requires":{"env":["SOCIALDATAX_API_KEY"],"bins":["node",
 优先使用 direct CLI；能运行 shell 命令的 Agent 不需要额外配置 MCP server：
 
 ```bash
+npx -y socialdatax-skills@latest xhs user-search \
+  --keyword "<keyword>" --pretty --source-client socialdatax-skills \
+  --source-platform modelscope --source-skill socialdatax-creator-research
+
 npx -y socialdatax-skills@latest xhs user-info \
   --profile-url "<profile_url_or_share_text>" --pretty \
   --source-client socialdatax-skills --source-platform modelscope \
@@ -38,6 +42,10 @@ npx -y socialdatax-skills@latest xhs user-posts \
   --profile-url "<profile_url_or_share_text>" --since-days 30 --pretty \
   --source-client socialdatax-skills --source-platform modelscope \
   --source-skill socialdatax-creator-research
+
+npx -y socialdatax-skills@latest douyin user-search \
+  --keyword "<keyword>" --pretty --source-client socialdatax-skills \
+  --source-platform modelscope --source-skill socialdatax-creator-research
 
 npx -y socialdatax-skills@latest douyin user-info \
   --profile-url "<profile_url_or_share_text>" --pretty \
@@ -77,7 +85,7 @@ npx -y socialdatax-skills@latest xhs user-info \
   --source-platform modelscope --source-skill socialdatax-creator-research
 
 npx -y socialdatax-skills@latest xhs user-posts \
-  --user-id "<user_id>" --pretty --source-client socialdatax-skills \
+  --user-id "<user_id>" --since-days 30 --pretty --source-client socialdatax-skills \
   --source-platform modelscope --source-skill socialdatax-creator-research
 
 npx -y socialdatax-skills@latest douyin user-info \
@@ -85,8 +93,9 @@ npx -y socialdatax-skills@latest douyin user-info \
   --source-platform modelscope --source-skill socialdatax-creator-research
 
 npx -y socialdatax-skills@latest douyin user-posts \
-  --sec-user-id "<sec_user_id>" --pretty --source-client socialdatax-skills \
-  --source-platform modelscope --source-skill socialdatax-creator-research
+  --sec-user-id "<sec_user_id>" --since-days 30 --pretty \
+  --source-client socialdatax-skills --source-platform modelscope \
+  --source-skill socialdatax-creator-research
 
 npx -y socialdatax-skills@latest douyin user-series \
   --sec-user-id "<sec_user_id>" --pretty --source-client socialdatax-skills \
@@ -101,20 +110,17 @@ npx -y socialdatax-skills@latest kuaishou user-info \
   --source-platform modelscope --source-skill socialdatax-creator-research
 
 npx -y socialdatax-skills@latest kuaishou user-posts \
-  --user-id "<user_id>" --pretty --source-client socialdatax-skills \
+  --user-id "<user_id>" --since-days 30 --pretty --source-client socialdatax-skills \
   --source-platform modelscope --source-skill socialdatax-creator-research
 ```
 
 ## 参数说明
 
 创作者 / 账号：
-- 说明：如果手里是主页链接、短链或分享文本，使用 `--profile-url <profile_url_or_share_text>`。
-- 说明：如果用户只提供了快手账号关键词、达人名称或赛道方向，先用 `kuaishou user-search --keyword <creator_keyword>` 找候选账号，再用返回的 `user_id` 继续查资料或内容列表。
-- 说明：如果创作者 ID 已经明确，XHS 或快手使用 `--user-id <user_id>`，抖音使用 `--sec-user-id <sec_user_id>`。
+- 说明：用户只提供账号名称或赛道时，先用对应平台的 `xhs user-search`、`douyin user-search` 或 `kuaishou user-search`，通过 `--keyword` 找候选账号；用返回的小红书/快手 `user_id`（`--user-id`）或抖音 `sec_user_id`（`--sec-user-id`）继续查资料或作品。候选不唯一时先确认目标；已提供主页或 ID 时直接查询。
 - 可选：`--page-token <next_page_token>`：创作者内容列表或合集续页时，只能原样使用完整返回 token；不能截断、改写、脱敏、重建，或用省略号替换中间内容。
 
 通用：
-- 可选：`--pretty`：只影响输出格式，不改变实际请求结果。
 - 可选：`--source-client socialdatax-skills --source-platform modelscope --source-skill socialdatax-creator-research`：这是当前 Agent Skill 的来源标记；按本 Skill 示例执行时保持这些值不变。
 
 只有在用户同时需要账号资料和近期内容证据时，才同时使用资料命令和内容列表命令。命令返回 JSON，包含 `platform`、`tool`、`arguments` 和 `data`。
@@ -132,8 +138,10 @@ npx -y socialdatax-skills@latest kuaishou user-posts \
 
 与上面 direct CLI 命令对应的 MCP 工具：
 
+- `xhs_search_users`
 - `xhs_get_user_info_by_profile_url`
 - `xhs_get_user_posted_notes_by_profile_url`
+- `douyin_search_users`
 - `douyin_get_user_info_by_profile_url`
 - `douyin_get_user_posted_videos_by_profile_url`
 - `douyin_get_user_series_by_profile_url`
@@ -148,9 +156,8 @@ npx -y socialdatax-skills@latest kuaishou user-posts \
 - `kuaishou_get_user_info_by_user_id`
 - `kuaishou_get_user_posted_videos_by_user_id`
 
-上面自动列出的 MCP 工具名就是 URL / profile-url 入口的事实源；只有在平台 ID 已经明确时，才改用对应的 ID 型资料或内容列表工具。
 如果用户给的是公开抖音号 douyin_id，使用 `douyin_get_user_info_by_douyin_id`；不要把它当作昵称/搜索关键词、`sec_user_id` 或 `profile_url`。
-做快手创作者发现时，使用 `kuaishou_search_users` 并传 `keyword`；只有续页时才传 `page_token`，不要传 `page`。
+MCP 账号发现使用对应平台的 `xhs_search_users`、`douyin_search_users` 或 `kuaishou_search_users`，传入 `keyword`；续页使用返回的完整 `next_page_token`，不要传 `page`。
 创作者内容列表和合集翻页使用不透明的 `page_token`；在同一用户链路下，必须把完整返回的 `next_page_token` 原样传回，不能截断、改写、脱敏、重建，或用省略号替换中间内容。
 
 ## 安全边界

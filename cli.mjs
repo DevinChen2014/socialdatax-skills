@@ -26,7 +26,7 @@ import {
 export { decryptWechatMediaCommand };
 
 const PACKAGE_NAME = "socialdatax-skills";
-const PACKAGE_VERSION = "0.2.54";
+const PACKAGE_VERSION = "0.2.55";
 const PACKAGE_SPEC = `${PACKAGE_NAME}@latest`;
 const LOG_PREFIX = `[${PACKAGE_NAME}]`;
 const MIN_NODE_VERSION = "20.18.1";
@@ -6790,6 +6790,9 @@ function shouldStopAtSinceDaysBoundary(operation, cutoffPublishTime, items) {
     return false;
   }
   return items.some((item) => {
+    if (item?.is_pinned === true) {
+      return false;
+    }
     const publishTime = itemPublishTimeSeconds(item);
     return publishTime !== undefined && publishTime < cutoffPublishTime;
   });

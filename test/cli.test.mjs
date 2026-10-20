@@ -23,7 +23,7 @@ import test from "node:test";
 import {
   readToken as readPublishToken,
   validateLegacyWrapperRegistryLock,
-} from "../../../scripts/publish_social_media_insights_skills.mjs";
+} from "../../scripts/publish_social_media_insights_skills.mjs";
 import {
   decryptWechatMediaCommand,
   formatCliErrorMessage,
@@ -390,7 +390,7 @@ function assertDirectCliExample(markdown, command, message) {
 
 function readWechatCapture(fileName) {
   return JSON.parse(
-    readFileSync(join(packageDir, "..", "..", "capture", "wechat", fileName), "utf8")
+    readFileSync(join(packageDir, "..", "..", "..", "capture", "wechat", fileName), "utf8")
   );
 }
 
@@ -954,14 +954,14 @@ test("public package version metadata stays aligned", () => {
   const cli = readFileSync(cliPath, "utf8");
   const versionPattern = escapeRegExp(packageJson.version);
 
-  assert.equal(packageJson.version, "0.2.54");
+  assert.equal(packageJson.version, "0.2.55");
   assert.equal(packageLock.version, packageJson.version);
   assert.equal(packageLock.packages[""].version, packageJson.version);
   assert.match(
     cli,
     new RegExp(`const PACKAGE_VERSION = "${versionPattern}";`)
   );
-  assert.match(readme, /Package capability version: `0\.2\.54`/);
+  assert.match(readme, /Package capability version: `0\.2\.55`/);
 });
 
 test("publish script reads npm auth token from user npmrc", async () => {
@@ -9231,6 +9231,52 @@ test("user-posts since-days auto paginates until the publish-time boundary", asy
   assert.equal(payload.data.next_page_token, "still-has-more");
   assert.equal(payload.data.stopped_by_since_days, true);
 });
+
+for (const [platform, idFlag, itemId, tool] of [
+  ["douyin", "--sec-user-id", "aweme_id", "douyin_get_user_posted_videos_by_sec_user_id"],
+  ["weibo", "--user-id", "post_id", "weibo_get_user_posts_by_user_id"],
+]) {
+  for (const pinnedOnly of [false, true]) {
+    test(`${platform} user-posts since-days continues past old pinned ${pinnedOnly ? "pages" : "items"}`, async () => {
+      const oldPinned = {
+        [itemId]: "old-pinned", publish_time: unixSecondsDaysAgo(90), is_pinned: true,
+      };
+      const recentPinned = {
+        [itemId]: "recent-pinned", publish_time: unixSecondsDaysAgo(1), is_pinned: true,
+      };
+      const { result, toolCalls } = await runCliWithMockMcp(
+        [platform, "user-posts", idFlag, "author-1", "--since-days", "30"],
+        {},
+        ({ name }, count) => {
+          assert.equal(name, tool);
+          return count === 1
+            ? {
+                items: pinnedOnly ? [oldPinned] : [oldPinned, recentPinned],
+                next_page_token: "next-posts-token",
+              }
+            : {
+                items: [
+                  { [itemId]: "recent-next-page", publish_time: unixSecondsDaysAgo(2), is_pinned: false },
+                  { [itemId]: "ordinary-old", publish_time: unixSecondsDaysAgo(40), is_pinned: false },
+                ],
+                next_page_token: "older-posts-token",
+              };
+        }
+      );
+
+      assert.equal(result.status, 0, result.stderr);
+      assert.equal(toolCalls.length, 2);
+      assert.equal(toolCalls[1].arguments.page_token, "next-posts-token");
+      const { data } = JSON.parse(result.stdout);
+      assert.deepEqual(
+        data.items.map((item) => item[itemId]),
+        pinnedOnly ? ["recent-next-page"] : ["recent-pinned", "recent-next-page"]
+      );
+      assert.equal(data.stopped_by_since_days, true);
+      assert.equal(data.next_page_token, "older-posts-token");
+    });
+  }
+}
 
 test("user-posts since-days missing publish times do not trigger boundary stop", async () => {
   let postsCallCount = 0;
