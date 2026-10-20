@@ -1,5 +1,24 @@
 # SocialDataX ModelScope Skills Publishing Record
 
+## 2026-10-20 商品评价分析补交验收
+
+- 用户批准补齐 ClawHub、ModelScope，复用现有商品评价分析与 mirrorFrom；标题和 slug 保持不变，SkillHub 原条目未修改或重复发布，未新增运行时、接口或 npm 版本。
+- 两份生成文件的业务正文在排除渠道归因与命令换行后与 SkillHub 一致；保留 apiOptional、纯资料分析入口及可选小红书商品详情/评价/两级回复命令。132 项生成器测试、912 项上架检查（0 WARN / FAIL）和公共仓库 smoke 1/1 通过；无付费业务调用。
+- 发布前两渠道作者限定详情均为 404，ModelScope 认证详情为 ResourceNotFound。公共 GitHub 来源提交 `c8ad3d1`，ModelScope source_url 与公开文件已核对。
+- 通过官方文件上传与 POST /openapi/v1/skills 首次发布，owner=socialhelper、private=false，ZIP 只含根目录 SKILL.md；创建返回成功，公开 archive 下载文件与本地逐字节一致。
+
+| Skill | 公开条目 | 读取时 Downloads | SKILL.md SHA-256 | 文件验收 |
+| --- | --- | --- | --- | --- |
+| 商品评价分析 | [ecommerce-review-insights](https://www.modelscope.cn/skills/socialhelper/ecommerce-review-insights) | 0 | `ce5654c81af076f6c345654dcf125fc5daeaca097adef3317895350f536b673f` | 匹配 |
+
+商品相关 10 个独立技能现已覆盖三个市场，每市场 10 项，共 30 个条目。下载计数包含验收读取，不作为自然增长或转化证据。
+
+## 2026-10-20 商品评价分析补齐渠道（发布前基线）
+
+- 用户明确要求将既有 `ecommerce-review-insights` 同步至 ClawHub、ModelScope；复用 SkillHub 已有商品评价分析流程，不新增需求、平台接口、运行时或 npm 版本。
+- 已有资料无需 API Key，在线仅支持现有小红书商品详情、评价和两级回复命令。保持标题、slug、apiOptional 和交付内容，通过 mirrorFrom 生成并保留各渠道归因；SkillHub 原条目不修改、不重复发布。
+- 发布前检查两渠道同 owner/slug 的公开详情；仅在确认不存在后创建，结果不确定时先回读，不重复提交。观察新增渠道下载、source_skill 调用及失败情况，下载不作为自然转化证明。
+
 ## 2026-10-20 置顶日期分页与创作者研究发布验收（0.2.55）
 
 - 用户批准发布已合并的 CLI 修复，并仅刷新已有 `socialdatax-creator-research`；保留标题、作者、slug 与渠道归因。补齐小红书/抖音账号发现、ID 衔接及三平台近 30 天作品翻页说明。
