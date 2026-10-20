@@ -1,5 +1,20 @@
 # SocialDataX ModelScope Skills Publishing Record
 
+## 2026-10-20 内容日历与创作者研究补交验收
+
+- 用户批准将已有两项 SkillHub 技能补交 ClawHub、ModelScope，共四个条目；本节记录当前渠道两项。发布前对应公开详情返回 404；ModelScope 另以现有 API Key 查询确认 ResourceNotFound。沿用已有命令和流程，通过源配置 mirrorFrom 生成，未修改 SkillHub、CLI 或 npm 版本。
+- 需求基线：2026-10-20 实查 SkillHub 内容日历研究累计下载 739、创作者研究 781；计数包含验收读取，不能称为自然需求或转化。观察指标为新渠道下载增量、source_skill 实际调用及失败情况，不扩展相同需求的新 slug。
+- 验证：132 项生成器测试、909 项 public-listing-check 通过，0 WARN / FAIL；两个公开文件与本地逐字节一致，作者、中文标题、渠道归因和官网链接已核对。未执行付费业务调用。
+- 使用官方文件上传与 POST /openapi/v1/skills，owner=socialhelper、private=false；ZIP 只含根目录 SKILL.md。公开 GitHub 来源提交 cafbfd4，两个 source_url 均指向对应 modelscope-skills/<slug>。
+- 创作者研究首次创建请求 30 秒超时；认证详情两次仍为 ResourceNotFound 后，复用同一 uploadId 和同一 owner/skill_name 有界重试一次，也超时。停止写操作，随后作者主页与公开详情可见，最终下载文件匹配；记录为远端回读确认成功，未重传文件、改名或继续重试。
+
+| Skill | 公开条目 | 读取时 Downloads | SKILL.md SHA-256 | 文件验收 |
+| --- | --- | --- | --- | --- |
+| SocialDataX 内容日历研究 | [socialdatax-content-calendar-research](https://www.modelscope.cn/skills/socialhelper/socialdatax-content-calendar-research) | 2 | `ed6afb7a2ba69826dadef92d295827c6e2d2a916bf71b2d4c50c0f3072bfed6a` | 匹配 |
+| SocialDataX 创作者研究 | [socialdatax-creator-research](https://www.modelscope.cn/skills/socialhelper/socialdatax-creator-research) | 0 | `47d6ed2ebe9e3cb94f0dd676cf5864f1b42efa80deedacd8b9b3609ba9ebbd1e` | 匹配 |
+
+下载计数包含本次验收读取，不代表自然增长。
+
 ## 2026-10-19 分页恢复说明发布验收（0.2.54）
 
 - 用户批准同步已合并的分页恢复说明。仅更新已有且非 retained 的条目；已提交 49 项，公开下载逐字节匹配 49 项。标题、市场身份、来源和运行命令保持不变。
