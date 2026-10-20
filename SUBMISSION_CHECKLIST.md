@@ -2,8 +2,15 @@
 
 Use this checklist before syncing this listing to the public `socialdatax-skills` repository or publishing the unified npm skill installer package. Do not submit this package as a unified MCP registry entry unless a real aggregate MCP endpoint exists.
 
-- npm latest: `socialdatax-skills@0.2.55`, published and verified on `2026-10-20`.
-- Legacy npm wrapper: `social-media-insights-skills@0.2.55`, published and verified on `2026-10-20`; its registry dependency and installed `doctor --json` both resolve to `socialdatax-skills@0.2.55`.
+- npm latest: `socialdatax-skills@0.2.56`, published and verified on `2026-10-20`.
+- Legacy npm wrapper: `social-media-insights-skills@0.2.56`, published and verified on `2026-10-20`; its registry dependency and installed `doctor --json` both resolve to `socialdatax-skills@0.2.56`.
+
+## 2026-10-20 dependency repair authorization guidance release
+
+- Released both packages at `0.2.56`. Existing skills now distinguish execution permissions from user authorization, limit repairs to task dependencies, prefer project-local or temporary environments, and require consent for changes outside existing authorization. CLI behavior, command syntax, attribution, and dependency version strategy are unchanged apart from release version metadata.
+- Commands: `node scripts/publish_socialdatax_skills.mjs`, then `node scripts/publish_social_media_insights_skills.mjs` after primary registry propagation exceeded the paired wait. All checks enabled: 437 primary tests and 7 wrapper tests passed; public-listing checks passed 912 with no warnings or failures. The initial release preflight caught one stale README-version assertion; it was corrected before publication.
+- At `2026-10-20T08:17:41.499Z`, a fresh registry installation matched all 29 primary-package files byte for byte. Both doctor reports resolve to `0.2.56`, and the wrapper pins the exact primary registry dependency. CLI SHA-256: `ab90e508f5e9e7ddf408f494fa6aa89252325dddcd50cf67d1a0c230adfb90c6`.
+- Public GitHub source: `d673480`; its standalone package smoke passed 1/1, and the public GitHub-attributed media-search file matched the generated source. Marketplace synchronization is tracked separately in each channel's publishing record. No paid business calls were made.
 
 ## 2026-10-20 pinned-date pagination release
 

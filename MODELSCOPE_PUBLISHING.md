@@ -1,5 +1,78 @@
 # SocialDataX ModelScope Skills Publishing Record
 
+## 2026-10-20 依赖排障授权范围澄清（同步验收）
+
+- 用户批准修正共享依赖排障说明并同步既有条目；截至 2026-10-20T08:59:08.594Z，当前渠道涉及 61 项，已接受 61 项，公开文件验收通过 61 项。保留标题、owner、slug、渠道归因、命令、输出和依赖版本策略。
+- 193 份三市场载荷均通过反向替换 SHA-256 校验：只将原排障段落替换为用户授权范围说明，其余原公开字节保持不变。少数原公开正文与当前生成文件另有差异，本次未夹带其他正文更新；各行 SHA-256 以实际发布载荷为准。
+- 生成器中英文说明统一修改；275 份生成文件只改这一段，62 个 retained 样本不进入发布队列，纯资料且无该说明的条目不更新。437 项主包测试、7 项兼容包测试、912 项上架检查（0 WARN / FAIL）和独立公共包 smoke 1/1 通过。npm 两包 0.2.56 全新安装的 29 个主包文件匹配，GitHub 来源提交 d673480。
+- 使用官方文件上传与 PATCH settings，仅上传根目录 SKILL.md，保留原 source_url 与其它设置。2 项 settings 请求超时后公开 archive 已匹配，因此记录回读成功而未重发。一次上传在返回文件 ID 前遭遇 HTTP 429；核对公开文件仍为原 SHA 后冷却重试，并将间隔从 20 秒增至 30 秒。原失败尝试与回读结果保留，避免把超时或接受回执直接等同于公开成功。
+- 下载计数包含发布验收读取，不作为自然增长证据。
+
+| Slug | SKILL.md SHA-256 | 公开文件验收 | Downloads |
+| --- | --- | --- | --- |
+| bilibili-comment-insights | `08bd1dd94752fc225d622b467a0e251f5315457abf008118a544120e1a9f218b` | 通过 | 18 |
+| bilibili-content-research | `da157a8260b569733da01e193c0335e5932551b8d0a09b85847223b6e48ba2bc` | 通过 | 30 |
+| douyin-account-analysis-report | `1e86f2f3998dc2fd18a62efea6bd25299bf2cd91b956dd09f05df8d6d8c23fe8` | 通过 | 36 |
+| douyin-comment-insights | `81e1392ed5f97609cd8d8fc9a9bfcfc85db4d236e6cd902c651f63eece6bf726` | 通过 | 36 |
+| douyin-competitor-research | `0615ff6c598a68aadd10d6a0a2c3ea21a4076443fdc5d5b56a477ca6436558d0` | 通过 | 30 |
+| douyin-content-research | `507dbfb3e578a1f0af6643014b41b777bdadbaabf72f2a9b5852c40df4b033bf` | 通过 | 29 |
+| douyin-product-comparison | `56299a3214307853788bf3a9853b79e874b7f14d1b0ff69e12e0d6a4bc0565fc` | 通过 | 4 |
+| douyin-product-research | `f1987e6e1f5bb0b5edc4893bb96ef6b0658aa7132dfd347280c7c9ed53bc2714` | 通过 | 5 |
+| douyin-topic-analysis | `48dc22d2d4a6ace530c278251c80d87a4d5730c1bbca4a3fed97cf0e2d2befc2` | 通过 | 36 |
+| douyin-trend-insights | `97fe9ef12ee94390f22abe9d615603c539fb62b841f9afea7dba506fe740f09b` | 通过 | 34 |
+| douyin-video-copy-extract | `aac66b77b02fd5e7ea28ccd97b08faae26d234b497d84b075767189b4c47e1e4` | 通过 | 122 |
+| ecommerce-customer-service | `a0e6e9d327428d86348dd2af56678f4b0821064e98c83f6336d078f8e2ec8b91` | 通过 | 4 |
+| ecommerce-detail-copywriter | `92a363900e7429b34e69d65bb5e4046e366999dafcefb0eda740109b6701e4cc` | 通过 | 6 |
+| ecommerce-live-sales-script | `9e40e18db4a3f8271fc18519b6e4b382659887adb7145d9510c4d1c0275aa2b7` | 通过 | 4 |
+| ecommerce-main-image-copywriter | `241b866e92f2c915f8a9c49105572326bd19a18e3316a0d186ee4c00e96711cd` | 通过 | 5 |
+| ecommerce-product-comparison | `3d4247115886888ddae5570f46f6f92057c1ea2d13ec6efe8f2377a66bf09610` | 通过 | 6 |
+| ecommerce-product-research | `ced644b6f934755aa6280a4a7ff7ccac54e7dbb325000eaeaabc124036907226` | 通过 | 8 |
+| ecommerce-review-insights | `cb6e770150340d728df1d35254ef5e7f8f7337c73f6778e5220def8b2cdcfd78` | 通过 | 2 |
+| ecommerce-video-script | `d5f82d7f1f90a358e9e4bd910b79fd532861376b0bc04045b9edbe779030bf4c` | 通过 | 5 |
+| haokan-topic-analysis | `07225a2363c03a294e08f3100004e9ec83e8004256a68d7fa1fac1ac99e4a3bf` | 通过 | 5 |
+| instagram-comment-insights | `1e9fff8a00207e0a7454ca6ba5e56a528773029299a29861075dbb47601babcc` | 通过 | 25 |
+| instagram-content-research | `b216309e3492ba2134c52f744abd7eb33354afbc6df567c710dbd4644d70cf9e` | 通过 | 29 |
+| kuaishou-comment-insights | `5675b00bd6ff1236b59be9d23c6b33b37a2a2319da2e17bac13581df8e377204` | 通过 | 26 |
+| kuaishou-competitor-research | `61f43a78140d2fcc37cff39cc2ed20e9d34939300ba3510829110b07ead18e72` | 通过 | 29 |
+| kuaishou-content-research | `3e04c4acac6c5246f98be22cd64fd882caf232a2df5866824aadfad02027a7e8` | 通过 | 29 |
+| kuaishou-topic-analysis | `876c750f4f448fbf30718efa557b9d76a4a8cbf9345ca600fd4ddd8ed45345bb` | 通过 | 27 |
+| kuaishou-trend-insights | `315a7fccdbfba6eec3e78f6cecd31ece37b64ca5585c2e76d61f1bdd7c2e0225` | 通过 | 25 |
+| socialdatax-content-calendar-research | `b12964542920130f07525d4f1b7f855c03a9e04c7e598f31c5c21977cea69aa5` | 通过 | 5 |
+| socialdatax-content-research-assistant | `1259b0caefd4e97273ea3cbc779a820d6b66cae9a1415008aa3862d15ba738ce` | 通过 | 314 |
+| socialdatax-creator-research | `808e6f23bb8b1bd5a15a1df3f28817178eef7c72cd76baff786f19a5bcfebd85` | 通过 | 6 |
+| socialdatax-sensitive-check | `b8875b6e11872aa3365f54bca8156de07b488bfb21b36413d112c82e762e02da` | 通过 | 26 |
+| socialdatax-short-video-copy-extract | `9aa1081e450b53300adf932e21c9d055d23695b9cfed0073876c037410c07ae0` | 通过 | 42 |
+| tieba-demand-insights | `9472721c5a32b5c8000a68dd3725e71e603ce90453c3d3791f0038aace88dfb5` | 通过 | 5 |
+| tiktok-comment-insights | `8840f670560c2dc30962cc77a9443eab82362bc84f040407e0fb036a32ebb317` | 通过 | 29 |
+| tiktok-content-research | `550207354336626646a8e4dc2fcd49a4ee4e6a77ef41a9cd92f3e4b03f973184` | 通过 | 27 |
+| toutiao-content-research | `0f21b482a3a9964d04482dd2905fd1957f754b0b19606d8ac5c419400d438ea9` | 通过 | 5 |
+| wechat-channels-account-analysis | `8e723d7c8f70c2d3751559b246ad4eb444404fc63c4264fc78a34abff884ede8` | 通过 | 35 |
+| wechat-channels-viral-video-breakdown | `05f7fb9389711623877947f39b135a4c3603d0ee107d152cd7ffdee0bf41243f` | 通过 | 53 |
+| wechat-mp-article-extract | `ec2983e4552d9657ec19ec749a3782291d9b216c4925176bfee024135beb9738` | 通过 | 28 |
+| weibo-comment-insights | `5dc8d256fcfd70dd97c4b5747584fe12b7beb7ab4a802fb7a251c50d39c4d313` | 通过 | 16 |
+| weibo-competitor-research | `556acd30600f403afe50f1fd313156d3c65b7f05343864ee09c13a75ec125b17` | 通过 | 24 |
+| weibo-content-research | `7460f67faf6cc75cc8d405ff558b1372385cc89e1ee814c9ad027dc0c1ad117e` | 通过 | 26 |
+| weibo-topic-analysis | `542502c4e4b63573e37ac19abce9776a0a13047b4b4fab1bc693e887c2c3fb92` | 通过 | 23 |
+| weibo-trend-insights | `0b867a2d3cdf75ded956f4467bf8546fd111652fba83a81145b9774b450c7fc5` | 通过 | 24 |
+| x-twitter-comment-insights | `1a1d67f3d1033fe29aaf9b8587d83b3b3e01da30b5a6b89a3ecd5b91688796b4` | 通过 | 24 |
+| x-twitter-content-research | `275b7fe6af77c747e238afc22c19d7e0492bfde7426994ffb0799897c6039c54` | 通过 | 26 |
+| xhs-comment-insights | `4b0ae36568f063e33816ecfc391bd994765eef2bfc4922ac1a848d330aaf118c` | 通过 | 47 |
+| xhs-competitor-research-v2 | `3c9c13a6c501ef200283e9c9f193073e9563b9228dde111dbf7991d82074751b` | 通过 | 47 |
+| xhs-content-research | `958b5d648931f614cafd07d82cfa32ef3c92bd129bcfb2625a7a8822eae9a737` | 通过 | 55 |
+| xhs-content-research-assistant | `4008e77d8ac25ea37816901a4de8d0fe4a738aecc1bf859e7294d290fa81ec15` | 通过 | 51 |
+| xhs-creator-content-research | `1593526b0a1db9cc14f443f8a85fa924973ef425cdf9099eb97683cb3eccb0a3` | 通过 | 32 |
+| xhs-creator-profile-insights | `93d8179f3cb2b7d1fc1bedee0e11d7a1f95af92efdbcfb7c2111a70331ec9ce4` | 通过 | 27 |
+| xhs-hot-topic-selection | `2f646b6e261cb2c6931ae8a44c9ceece9c348c488f7138c89b5cc13c714075f8` | 通过 | 45 |
+| xhs-topic-analysis-v2 | `e9d5e3ae126571452bc1f98891b8202389e82de9230d1cff3f1adc50df2fc105` | 通过 | 47 |
+| xhs-trend-insights-v2 | `ef1c8b32ae4669e4bab287fdac61fdfdcd7d2e611df553a1c4c638d7b5124f0c` | 通过 | 46 |
+| xhs-viral-copy-breakdown | `ed55c8c88a355938e223a58aec0fc170fa1bbb3e5c6a3ce57ba1e9bc35af4bf1` | 通过 | 49 |
+| xhs-viral-note-research | `0fcc63c6b5a21e53ea27962493be14fc0d501f99b9c01006452cc1da33ecee6f` | 通过 | 40 |
+| youtube-comment-insights | `785e5b9b107eec15c75421b501bbc0c5b3fc84f809b3b749b069c8bc4adf1341` | 通过 | 26 |
+| youtube-content-research | `eb09f81e6398b074708efb66e7fa7d477bfbeba79ec66bbf25dab37eaf1a9d40` | 通过 | 25 |
+| zhihu-comment-insights | `39c04c3b2cde027b0204ff5f64d5d24a2fef6b3006df7002d06938b7ca193fa6` | 通过 | 18 |
+| zhihu-content-research | `c966fe0ca15a438bb03e23976d0dba222f76e5b198c4e3987b729ce172bc1835` | 通过 | 28 |
+
+
 ## 2026-10-20 商品评价分析补交验收
 
 - 用户批准补齐 ClawHub、ModelScope，复用现有商品评价分析与 mirrorFrom；标题和 slug 保持不变，SkillHub 原条目未修改或重复发布，未新增运行时、接口或 npm 版本。
