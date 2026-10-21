@@ -1,6 +1,6 @@
 ---
 name: "x-twitter-content-research"
-description: "当用户需要做 X / Twitter 内容研究、账号内容观察、竞品内容对比、趋势判断或素材整理时使用。面向内容运营、品牌调研和创作者。"
+description: "当用户需要做 X / Twitter 内容研究、账号作品观察、账号发出的回复分析、竞品内容对比或趋势判断时使用。区分账号主动参与的讨论与帖子收到的评论，保留可追溯的内容证据。"
 source_client: "socialdatax-skills"
 source_platform: "modelscope"
 source_skill: "x-twitter-content-research"
@@ -12,13 +12,13 @@ metadata: {"openclaw":{"requires":{"env":["SOCIALDATAX_API_KEY"],"bins":["node",
 
 ## 适用场景
 
-当用户需要做 X / Twitter 内容研究、账号内容观察、竞品内容对比、趋势判断或素材整理时使用。面向内容运营、品牌调研和创作者。
+当用户需要做 X / Twitter 内容研究、账号作品观察、账号发出的回复分析、竞品内容对比或趋势判断时使用。区分账号主动参与的讨论与帖子收到的评论，保留可追溯的内容证据。
 
 ## 快速开始
 
-- 先给出当前 skill 支持的输入：关键词或选题方向。
-- 如果你只想先看样本，先取 1 页；要继续扩大，再按参数说明使用分页或 `--max-items`。
-- 你通常会得到：相关标题、作者或账号、链接或内容 ID，以及可继续追问的角度。
+提供选题关键词，或 X 用户名、用户 ID、主页链接，并说明要看账号作品还是该账号发出的回复。
+关键词用 `x search`；账号作品用 `x user-posts`；账号发出的回复用 `x user-replies`。
+交付样本范围、账号参与的话题、代表内容链接和观察结论。
 
 ## API Key 获取
 
@@ -32,28 +32,65 @@ metadata: {"openclaw":{"requires":{"env":["SOCIALDATAX_API_KEY"],"bins":["node",
 npx -y socialdatax-skills@latest x search \
   --keyword "<keyword>" --pretty --source-client socialdatax-skills \
   --source-platform modelscope --source-skill x-twitter-content-research
+
+npx -y socialdatax-skills@latest x user-info \
+  --username "<username>" --pretty --source-client socialdatax-skills \
+  --source-platform modelscope --source-skill x-twitter-content-research
+
+npx -y socialdatax-skills@latest x user-info \
+  --user-id "<user_id>" --pretty --source-client socialdatax-skills \
+  --source-platform modelscope --source-skill x-twitter-content-research
+
+npx -y socialdatax-skills@latest x user-info \
+  --profile-url "<profile_url_or_share_text>" --pretty \
+  --source-client socialdatax-skills --source-platform modelscope \
+  --source-skill x-twitter-content-research
+
+npx -y socialdatax-skills@latest x user-posts \
+  --username "<username>" --pretty --source-client socialdatax-skills \
+  --source-platform modelscope --source-skill x-twitter-content-research
+
+npx -y socialdatax-skills@latest x user-posts \
+  --user-id "<user_id>" --pretty --source-client socialdatax-skills \
+  --source-platform modelscope --source-skill x-twitter-content-research
+
+npx -y socialdatax-skills@latest x user-posts \
+  --profile-url "<profile_url_or_share_text>" --pretty \
+  --source-client socialdatax-skills --source-platform modelscope \
+  --source-skill x-twitter-content-research
+
+npx -y socialdatax-skills@latest x user-replies \
+  --username "<username>" --pretty --source-client socialdatax-skills \
+  --source-platform modelscope --source-skill x-twitter-content-research
+
+npx -y socialdatax-skills@latest x user-replies \
+  --user-id "<user_id>" --pretty --source-client socialdatax-skills \
+  --source-platform modelscope --source-skill x-twitter-content-research
+
+npx -y socialdatax-skills@latest x user-replies \
+  --profile-url "<profile_url>" --pretty --source-client socialdatax-skills \
+  --source-platform modelscope --source-skill x-twitter-content-research
 ```
 
 ## 参数说明
 
-搜索：
-- 说明：X / Twitter `search --keyword <text>`：使用 `x search` 时必填；使用用户真实意图，去掉多余空格，并保持关键词聚焦。
-- 可选：`--max-items <n>`：收集到 N 条搜索结果后停止。
-- 说明：X / Twitter `--sort-type <hot|time_descending>`：可选排序参数；不传就使用默认排序。
-- 说明：X / Twitter `--pages <n>`：从当前起点继续获取并合并 N 页搜索结果；如果返回了 `next_page_token`，可继续续页。
+创作者 / 账号：
+- 说明：账号查询从 `--username`、`--user-id`、`--profile-url` 选择一种输入。列表续页使用同一账号、同一命令返回的完整 `next_page_token`。
 
 通用：
-- 可选：`--pretty`：只影响输出格式，不改变实际请求结果。
-- 说明：X / Twitter `--page-token <next_page_token>`：这是不透明的分页 token；第一页不要传。继续同一条搜索链路时，只能原样传回完整返回的 `next_page_token`。
+- 说明：列表先取一页，用户需要更多时按约定页数或条数继续；不使用其他列表的分页令牌。
 - 可选：`--source-client socialdatax-skills --source-platform modelscope --source-skill x-twitter-content-research`：这是当前 Agent Skill 的来源标记；按本 Skill 示例执行时保持这些值不变。
 
-命令返回 JSON，包含 `platform`、`tool`、`arguments` 和 `data`。搜索支持 `--pages` 和 `--max-items`，但不支持 `--all`，因为搜索没有稳定的完整结果边界。多页结果会把结果合并到 `data.items`，并补充 `page_count`、`item_count` 和下一页标记。
+给定账号并询问其参与哪些讨论时，直接使用 `x user-replies`；不要把该需求改成关键词搜索或某一条帖子的评论。
+`x user-posts` 是账号作品列表；`x user-replies` 是账号发出的回复；`x comments` 是某条原帖收到的评论。只选择用户需要的入口。
+先处理明确给定的账号和一页结果；需要更多样本时按用户指定的上限续页。结果较少或失败时说明已取得的范围，不推断没有互动。
 
 ## 输出建议
 
-优先输出可直接复盘的结果：相关样本和主要角度，并标出下一步可继续追问的问题。
+优先输出可直接复盘的结果：相关样本和主要角度、创作者资料、创作者内容证据，并标出下一步可继续追问的问题。
 
-先把可见证据和你的判断分开写；当用户需要可追溯结论时，保留有用的内容 ID、链接、标题或描述、作者、数据指标和发布时间。
+分别列出账号作品和账号发出的回复；保留原始内容链接、时间及可见上下文，缺失字段注明未返回。
+按话题归纳回复样本，区分账号原话和分析判断；不从少量回复推断完整社交关系或私下立场。
 X / Twitter 搜索结果中，如果返回了 `media_items[].cover_image_url` 或 `media_items[].video_url`，要原样保留。用户要保存 X 媒体时，每次把一个返回的媒体 URL 传给 `npx -y socialdatax-skills@latest x download-media --url "<media_url>" --output-dir <directory> --pretty`；这个本地保存命令不需要 `SOCIALDATAX_API_KEY`。如果 CLI 进程没有继承用户本地代理，就加 `--proxy "http://127.0.0.1:7890"`，或设置 `HTTP_PROXY` / `HTTPS_PROXY` / `ALL_PROXY`。如果搜索结果没有媒体字段，先用 X 详情作为下载前的兜底。
 
 ## MCP 工具
@@ -61,8 +98,15 @@ X / Twitter 搜索结果中，如果返回了 `media_items[].cover_image_url` �
 与上面 direct CLI 命令对应的 MCP 工具：
 
 - `x_search_posts`
-
-不要只因为某一页 `items` 为空就判断没有更多结果。
+- `x_get_user_info_by_username`
+- `x_get_user_info_by_user_id`
+- `x_get_user_info_by_profile_url`
+- `x_get_user_posts_by_username`
+- `x_get_user_posts_by_user_id`
+- `x_get_user_posts_by_profile_url`
+- `x_get_user_replies_by_username`
+- `x_get_user_replies_by_user_id`
+- `x_get_user_replies_by_profile_url`
 
 ## 安全边界
 
@@ -70,7 +114,7 @@ X / Twitter 搜索结果中，如果返回了 `media_items[].cover_image_url` �
 
 ## 示例结果
 
-- 示例展示格式，不代表固定字段：内容样本=标题/作者/链接或 ID；判断=相关原因和下一步。
+- 示例展示格式，不代表固定字段：内容样本=标题/作者/链接或 ID、账号=昵称/ID/简介/粉丝信号、账号内容=标题/发布时间/互动信号；判断=相关原因和下一步。
 
 ## 异常处理
 

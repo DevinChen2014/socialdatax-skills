@@ -1,6 +1,6 @@
 ---
 name: "media-detail"
-description: "Read structured social media content details and metrics from content IDs, URLs, short links, or share text for supported platforms including Xiaohongshu / XHS / RedNote, Douyin, Kuaishou, Bilibili, Zhihu, Instagram, X / Twitter, YouTube, TikTok, Weibo, Toutiao, and WeChat Channels. For WeChat Official Account articles, read article details, body text, and statistics from article links. Supports XHS 蒲公英 / Pugongying commercial note details when requested. Also use this skill for 百度贴吧 / Baidu Tieba thread and forum details, XHS and Douyin product details, and WeChat Channels share links from object IDs. Also supports Haokan / 好看视频."
+description: "Read structured social media content details and metrics from content IDs, URLs, short links, or share text for supported platforms including Xiaohongshu / XHS / RedNote, Douyin, Kuaishou, Bilibili, Zhihu, Instagram, X / Twitter, YouTube, TikTok, Weibo, Toutiao, and WeChat Channels. For WeChat Official Account articles, read article details, body text, and statistics from article links. Supports XHS 蒲公英 / Pugongying commercial note details when requested. Also use this skill for 百度贴吧 / Baidu Tieba thread and forum details, XHS and Douyin product details, and WeChat Channels share links from object IDs. Also supports Haokan / 好看视频. Also identify the sharer separately from the note author from Xiaohongshu / XHS note share short links or complete share text."
 source_client: "socialdatax-skills"
 source_platform: "github"
 source_skill: "media-detail"
@@ -24,7 +24,7 @@ metadata:
 
 # Media Detail
 
-Use this skill when the user provides an mp.weixin.qq.com article link and wants WeChat Official Account article body text or reading/engagement statistics. For other supported content links, short links, share text, or content IDs, use it for structured details or interaction metrics where supported. For explicit XHS 蒲公英 / Pugongying commercial note requests, choose the commercial detail route (20 points per successful call; failures are not charged). Also use this skill for 百度贴吧 / Baidu Tieba thread and forum details, XHS and Douyin product details, and WeChat Channels share links from object IDs. Also supports Haokan / 好看视频.
+Use this skill when the user provides an mp.weixin.qq.com article link and wants WeChat Official Account article body text or reading/engagement statistics. For other supported content links, short links, share text, or content IDs, use it for structured details or interaction metrics where supported. For explicit XHS 蒲公英 / Pugongying commercial note requests, choose the commercial detail route (20 points per successful call; failures are not charged). Also use this skill for 百度贴吧 / Baidu Tieba thread and forum details, XHS and Douyin product details, and WeChat Channels share links from object IDs. Also supports Haokan / 好看视频. When asked who shared an XHS note, use share-info to identify the sharer separately from the author.
 
 Current platform support:
 
@@ -44,6 +44,7 @@ Current platform support:
 - Xiaohongshu / XHS 蒲公英 / Pugongying single-note commercial details through `xhs_pgy_get_note_detail_by_note_id` or `xhs_pgy_get_note_detail_by_note_url`.
 - Also use this skill for 百度贴吧 / Baidu Tieba thread and forum details, XHS and Douyin product details, and WeChat Channels share links from object IDs.
 - Haokan / 好看视频 video details by video ID or video page URL.
+- Xiaohongshu / XHS share information: sharer, note summary and author from note share short links or complete share text.
 
 ## API Key
 
@@ -202,6 +203,11 @@ npx -y socialdatax-skills@latest haokan detail \
 npx -y socialdatax-skills@latest haokan detail \
   --url "<video_url>" --pretty --source-client socialdatax-skills \
   --source-platform github --source-skill media-detail
+
+npx -y socialdatax-skills@latest xhs share-info \
+  --share-text "<note_share_short_url_or_full_share_text>" --pretty \
+  --source-client socialdatax-skills --source-platform github \
+  --source-skill media-detail
 ```
 
 Optional arguments:
@@ -242,6 +248,8 @@ Choose exactly one input: the complete `--note-id`, or `--url` with the original
 If the user asks only for exposure, reads or pricing without establishing the 蒲公英 commercial scope, clarify that scope and the 20-point successful-call cost before calling. Do not ask again when the conversation has already established this scope.
 Use `npx -y socialdatax-skills@latest <platform> <action> --help` for exact flags and values. Paginated commands require the complete returned `next_page_token`. Do not modify, truncate, redact, mask, omit, normalize, rebuild, generate, or replace the middle with ellipses. Commands without `--page-token`, including suggestions and first-page-only searches, do not support pagination.
 Haokan / 好看视频: choose either `--video-id` or `--url` (video page URL); do not combine them. Detail is not paginated and does not provide a transcript.
+When the user asks who shared an XHS note, use `xhs share-info --share-text` with the original share short link or complete share text. The sharer and note author are separate roles; do not treat the author as the sharer.
+Share information does not include the sharing time or a forwarding chain. Use `xhs detail` separately only when the full note content is requested.
 
 ## Safety Boundary
 
@@ -251,7 +259,7 @@ Platform detail access is read-only. It uses `SOCIALDATAX_API_KEY` from the user
 
 MCP tools matching the direct CLI commands above:
 
-- XHS: `xhs_get_note_detail_by_note_id`, `xhs_get_note_detail_by_note_url`, `xhs_pgy_get_note_detail_by_note_id`, `xhs_pgy_get_note_detail_by_note_url`, `xhs_get_product_detail_by_sku_id`, `xhs_get_product_detail_by_url`
+- XHS: `xhs_get_note_detail_by_note_id`, `xhs_get_note_detail_by_note_url`, `xhs_pgy_get_note_detail_by_note_id`, `xhs_pgy_get_note_detail_by_note_url`, `xhs_get_product_detail_by_sku_id`, `xhs_get_product_detail_by_url`, `xhs_get_share_info`
 - DOUYIN: `douyin_get_video_detail_by_aweme_id`, `douyin_get_video_detail_by_url`, `douyin_get_product_detail_by_product_id`, `douyin_get_product_detail_by_url`
 - KUAISHOU: `kuaishou_get_video_detail_by_photo_id`, `kuaishou_get_video_detail_by_url`
 - BILIBILI: `bilibili_get_content_detail_by_id`, `bilibili_get_content_detail_by_url`

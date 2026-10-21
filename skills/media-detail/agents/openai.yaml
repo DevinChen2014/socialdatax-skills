@@ -1,7 +1,7 @@
 interface:
   display_name: "Media Detail"
   short_description: "Read content details"
-  default_prompt: "Use $media-detail to read WeChat Official Account article details, body text, and statistics. For supported XHS, Douyin, Kuaishou, Bilibili, Zhihu, Instagram, X / Twitter, YouTube, TikTok, Weibo, Toutiao, and WeChat Channels content, read structured details and metrics. When requested, use the XHS 蒲公英 commercial detail route; successful calls cost 20 points and failures are not charged. Also supports Haokan / 好看视频."
+  default_prompt: "Use $media-detail to read WeChat Official Account article details, body text, and statistics. For supported XHS, Douyin, Kuaishou, Bilibili, Zhihu, Instagram, X / Twitter, YouTube, TikTok, Weibo, Toutiao, and WeChat Channels content, read structured details and metrics. When requested, use the XHS 蒲公英 commercial detail route; successful calls cost 20 points and failures are not charged. Also supports Haokan / 好看视频. For XHS share short links or full share text, identify the sharer separately from the note author when requested."
 
 policy:
   allow_implicit_invocation: true
