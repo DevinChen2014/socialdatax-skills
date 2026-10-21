@@ -695,6 +695,53 @@ test("extended capability commands route to their public MCP tools", async () =>
   }
 });
 
+test("XHS share-info preserves share text, response data and attribution", async () => {
+  const response = { marker: "分享信息", nested: { value: null } };
+  for (const shareText of [
+    "https://xhslink.com/a/example",
+    "  分享一篇笔记\nhttps://xhslink.com/a/example?x=1&y=2  ",
+  ]) {
+    const { result, toolCalls, toolCallSourceClientHeaders, toolCallSourcePlatformHeaders,
+      toolCallSourceSkillHeaders } = await runCliWithMockMcp([
+      "xhs", "share-info", "--share-text", shareText,
+      "--source-client", "socialdatax-skills", "--source-platform", "npm",
+      "--source-skill", "media-detail",
+    ], {}, () => response);
+    assert.equal(result.status, 0, result.stderr);
+    assert.deepEqual(toolCalls, [{
+      name: "xhs_get_share_info", arguments: { share_text: shareText },
+    }]);
+    assert.deepEqual(JSON.parse(result.stdout), {
+      platform: "xhs", tool: "xhs_get_share_info",
+      arguments: { share_text: shareText }, data: response,
+    });
+    assert.deepEqual(toolCallSourceClientHeaders, ["socialdatax-skills"]);
+    assert.deepEqual(toolCallSourcePlatformHeaders, ["npm"]);
+    assert.deepEqual(toolCallSourceSkillHeaders, ["media-detail"]);
+  }
+});
+
+test("XHS share-info validates input before authentication and documents its scope", () => {
+  for (const [args, expected] of [
+    [[], /Missing --share-text/],
+    [["--share-text"], /requires a non-empty value/],
+    [["--share-text", " "], /requires a non-empty value/],
+    [["--share-text", "https://xhslink.com/a/example", "--pages", "2"], /Unsupported option --pages/],
+  ]) {
+    const result = runCli(["xhs", "share-info", ...args]);
+    assert.equal(result.status, 1);
+    assert.match(result.stderr, expected);
+    assert.doesNotMatch(result.stderr, /Missing API Key/);
+  }
+  const help = runCli(["xhs", "share-info", "--help"]);
+  assert.equal(help.status, 0, help.stderr);
+  assert.match(help.stdout, /xhs_get_share_info/);
+  assert.match(help.stdout, /--share-text/);
+  assert.match(help.stdout, /完整内容.*笔记详情工具/);
+  assert.match(help.stdout, /不包含分享时间/);
+  assert.doesNotMatch(help.stdout, /--page-token|--pages|--all/);
+});
+
 test("weibo user-suggestions routes once and preserves candidate data and attribution", async () => {
   const payload = { items: [{
     user_id: "123", name: "摄影", avatar_url: null,
@@ -954,14 +1001,14 @@ test("public package version metadata stays aligned", () => {
   const cli = readFileSync(cliPath, "utf8");
   const versionPattern = escapeRegExp(packageJson.version);
 
-  assert.equal(packageJson.version, "0.2.56");
+  assert.equal(packageJson.version, "0.2.57");
   assert.equal(packageLock.version, packageJson.version);
   assert.equal(packageLock.packages[""].version, packageJson.version);
   assert.match(
     cli,
     new RegExp(`const PACKAGE_VERSION = "${versionPattern}";`)
   );
-  assert.match(readme, /Package capability version: `0\.2\.56`/);
+  assert.match(readme, /Package capability version: `0\.2\.57`/);
 });
 
 test("publish script reads npm auth token from user npmrc", async () => {

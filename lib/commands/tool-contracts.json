@@ -305,8 +305,18 @@
       }
     }
   },
+  "xhs_get_share_info": {
+    "description": "根据小红书笔记分享短链接或完整分享文案获取分享人、笔记摘要及作者。\n\n需要笔记完整内容时，使用笔记详情工具；分享信息不包含分享时间。",
+    "parameters": {
+      "share_text": {
+        "minLength": 1,
+        "type": "string",
+        "required": true
+      }
+    }
+  },
   "xhs_get_user_id_by_encrypted_user_id": {
-    "description": "根据完整加密用户 ID 获取稳定 user_id。",
+    "description": "根据完整加密用户 ID 获取稳定 user_id。\n仅需单独转换 ID 时使用；查询用户信息或作品可直接使用已有用户 ID 或主页链接，无需先调用本工具。",
     "parameters": {
       "encrypted_user_id": {
         "type": "string",

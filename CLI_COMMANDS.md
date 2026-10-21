@@ -18,6 +18,7 @@ Set `SOCIALDATAX_API_KEY` in the environment for hosted requests. Obtain or mana
 | --- | --- |
 | Find accounts or channels | `user-search`; YouTube `channel-search` |
 | Refine a query | `search-suggestions`; Instagram `tag-search` |
+| Identify a note's sharer, summary and author | `xhs share-info` |
 | Product research | XHS / Douyin `product-search`, `product-detail`; XHS review commands |
 | Creator commercial analytics | XHS `pgy-creator-*` |
 | Official Account articles and accounts | WeChat `article-search`, `mp-account-info`, `mp-account-articles`, `article-comments`, `article-replies` |
@@ -233,6 +234,8 @@ npx -y socialdatax-skills@latest xhs topic-notes --url "<topic_url>" --pretty
 
 #### `xhs resolve-user-id`
 
+Use this only to convert an encrypted user ID on its own. For user information or posts, pass the existing user ID or profile URL directly to `xhs user-info` or `xhs user-posts`; no separate conversion is needed.
+
 ```sh
 npx -y socialdatax-skills@latest xhs resolve-user-id --encrypted-user-id "<encrypted_user_id>" --pretty
 ```
@@ -240,6 +243,18 @@ npx -y socialdatax-skills@latest xhs resolve-user-id --encrypted-user-id "<encry
 | Flag | Required | Type / accepted values | Default / constraints |
 | --- | --- | --- | --- |
 | `--encrypted-user-id` | yes | string | — |
+
+#### `xhs share-info`
+
+Read the sharer, note summary and author from a Xiaohongshu / XHS note share short link or complete share text. Use `xhs detail` for the full note content. Share information does not include the sharing time.
+
+```sh
+npx -y socialdatax-skills@latest xhs share-info --share-text "<note_share_short_url_or_full_share_text>" --pretty
+```
+
+| Flag | Required | Type / accepted values | Default / constraints |
+| --- | --- | --- | --- |
+| `--share-text` | yes | string | non-empty; preserve the complete share text |
 
 ### Douyin (douyin)
 

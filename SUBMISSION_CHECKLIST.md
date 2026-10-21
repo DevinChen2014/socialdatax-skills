@@ -2,8 +2,17 @@
 
 Use this checklist before syncing this listing to the public `socialdatax-skills` repository or publishing the unified npm skill installer package. Do not submit this package as a unified MCP registry entry unless a real aggregate MCP endpoint exists.
 
-- npm latest: `socialdatax-skills@0.2.56`, published and verified on `2026-10-20`.
-- Legacy npm wrapper: `social-media-insights-skills@0.2.56`, published and verified on `2026-10-20`; its registry dependency and installed `doctor --json` both resolve to `socialdatax-skills@0.2.56`.
+- npm latest: `socialdatax-skills@0.2.57`, published and verified on `2026-10-21`.
+- Legacy npm wrapper: `social-media-insights-skills@0.2.57`, published and verified on `2026-10-21`; its registry dependency and installed `doctor --json` both resolve to `socialdatax-skills@0.2.57`.
+
+## 2026-10-21 XHS share information CLI release
+
+- Released both packages at `0.2.57`. Added `xhs share-info --share-text` for a note share short link or complete share text. Updated `xhs resolve-user-id` guidance: user information and posts accept the existing ID or profile URL directly, without a separate conversion call.
+- Commands: `node scripts/publish_socialdatax_skills.mjs`, then `SOCIALDATAX_NPM_VIEW_ATTEMPTS=12 SOCIALDATAX_NPM_VIEW_RETRY_MS=30000 node scripts/publish_social_media_insights_skills.mjs` after the primary registry propagation exceeded the paired wait. All checks enabled: 439 primary tests and 7 wrapper tests passed; `make public-listing-check ENV=local` passed 912 checks with no warnings or failures. CLI contracts match 110 registered tools.
+- At `2026-10-21T04:16:29Z`, both public npm latest tags resolved to `0.2.57`. A fresh registry installation matched all 29 primary-package files byte for byte, and the primary tarball integrity matched the local release pack. Both installed CLIs passed doctor, share-info help, resolver guidance, empty-input validation and missing-key checks; the wrapper pins the exact primary dependency. CLI SHA-256: `dd45aaf28b47995021c8e7f42ff8fb16f84453b65424bfc37f9e2ebbb5dd1f3d`.
+- Hosted XHS tool metadata matched both CLI contracts before publication. No paid business calls were made.
+
+- GitHub CLI source synchronized to `0.2.57`; standalone public-package smoke passed 1/1 and pack dry-run contained 33 files. Doctor, command help, empty-input and missing-key checks passed. The ten GitHub-attributed skills, catalog, ModelScope source files and standalone test-runner layout were preserved.
 
 ## 2026-10-20 dependency repair authorization guidance release
 

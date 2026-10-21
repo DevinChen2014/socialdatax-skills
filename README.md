@@ -2,7 +2,7 @@
 
 This public package provides the unified skill installer and direct CLI helper for SocialDataX services.
 
-See [CLI_COMMANDS.md](./CLI_COMMANDS.md) for complete direct CLI usage for user search, search suggestions, product search and reviews, XHS 蒲公英 creator analytics, WeChat Official Account / 公众号 article and account workflows, 百度贴吧 / Baidu Tieba, `account balance`, `docs search`, `docs operation`, `docs openapi`, and Bilibili / Zhihu / Instagram / X / TikTok / YouTube transcripts. Each entry lists its input variants, accepted flags, filters, and pagination.
+See [CLI_COMMANDS.md](./CLI_COMMANDS.md) for complete direct CLI usage for user search, search suggestions, product search and reviews, XHS 分享信息 / share information and 蒲公英 creator analytics, WeChat Official Account / 公众号 article and account workflows, 百度贴吧 / Baidu Tieba, `account balance`, `docs search`, `docs operation`, `docs openapi`, and Bilibili / Zhihu / Instagram / X / TikTok / YouTube transcripts. Each entry lists its input variants, accepted flags, filters, and pagination.
 
 The current public tools support 小红书 / Xiaohongshu / XHS / RedNote, 抖音 / Douyin, 快手 / Kuaishou / Kwai, Bilibili / 哔哩哔哩 / B站, 微博 / Weibo, 今日头条 / Toutiao, 百度贴吧 / Baidu Tieba, 视频号 / WeChat Channels, 知乎 / Zhihu, Instagram, X / Twitter, YouTube, and TikTok content research and analysis workflows, plus WeChat Official Account / 微信公众号 article search, account profiles, account article lists, article details, statistics, comments and replies, XHS / Douyin / Kuaishou / Weibo / X / Twitter local media download, WeChat Channels local media decrypt/save, Bilibili local video download, and 敏感词检测 / 违禁词检查 text checks. The public skill layer is intentionally named by capability so supported services can evolve without changing the installation model.
 
@@ -95,7 +95,7 @@ Common search phrases for this skill package:
 - Reserved future SocialDataX namespace names for existing platform listings without draft files yet: `com.socialdatax/kuaishou-insights`, `com.socialdatax/bilibili-insights`, `com.socialdatax/weibo-insights`, `com.socialdatax/wechat-channels-insights`, `com.socialdatax/zhihu-insights`, `com.socialdatax/instagram-insights`, `com.socialdatax/x-insights`, `com.socialdatax/youtube-insights`, and `com.socialdatax/tiktok-insights`.
 - Hosted endpoints without a repo-tracked standalone listing: Toutiao / 今日头条, Haokan / 好看视频, and Sensitive Words Check.
 - Unified MCP registry name: none; this package installs skills and calls explicit hosted MCP entries.
-- Package capability version: `0.2.56`
+- Package capability version: `0.2.57`
 
 ## XHS 蒲公英 / Pugongying commercial note details
 
