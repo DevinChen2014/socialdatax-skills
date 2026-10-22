@@ -114,6 +114,9 @@ test("public package has valid runtime syntax and self-consistent skills", () =>
   const sourcePlatforms = new Set();
   for (const slug of skillSlugs) {
     const skill = readFileSync(join(skillsRoot, slug, "SKILL.md"), "utf8");
+    for (const [, reference] of skill.matchAll(/\]\((references\/[^)]+\.md)\)/g)) {
+      assert.ok(existsSync(join(skillsRoot, slug, reference)), `${slug} must ship ${reference}`);
+    }
     assert.match(skill, new RegExp(`^name: "${slug}"$`, "m"));
     assert.match(skill, /^source_client: "socialdatax-skills"$/m);
     const sourcePlatform = skill.match(/^source_platform: "([^"]+)"$/m)?.[1];
