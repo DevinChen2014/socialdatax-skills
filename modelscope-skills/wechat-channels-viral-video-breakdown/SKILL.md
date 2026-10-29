@@ -114,7 +114,7 @@ npx -y socialdatax-skills@latest wechat replies \
 - CLI 退出码为 1 且输出 `partial: true` 时，保留 `data.items` 和错误，明确结果不完整。此时按以下续页规则恢复，不适用原命令重跑建议；错误解决后（包括充值后），仅用非空的 `data.next_page_token` 和原查询条件继续。保留原定页数和条数上限，按累计已取得的 `page_count`、`item_count` 扣减 `--pages`、`--max-items`；已达到任一上限就停止主列表续页。空令牌不代表取完，不要从第一页自动重跑；因重复令牌中断时，先排查原因。
 - 使用 `--include-replies` 时，`replies_partial` 表示该评论回复不完整，`replies_pending` 表示尚未展开。先用该平台回复命令、对应评论标识及可用的 `replies_next_page_token` 补齐；尚未展开或首个回复请求失败时，修正错误后从该评论的首批回复开始，重复令牌错误则先排查。仅在主评论仍有剩余额度时，才用外层 `data.next_page_token` 继续；补齐已取得评论的回复不增加主评论页数；两类令牌不能混用，不把回复预览当成完整回复。
 - 提交或查询异常：保留错误信息，先检查 `SOCIALDATAX_API_KEY`、输入链接或 ID、以及 `job_id` 是否完整。
-- 如果返回 `insufficient_balance` 或“积分不足”：不要重复提交或反复查询；把错误里的充值链接原样展示给用户，并提醒用户充值后继续执行刚才同一条命令。
+- 如果返回 `insufficient_balance` 或“积分不足”：不要重复提交或反复查询；展示错误中的官方充值链接（https://socialdatax.com/dashboard/billing，可带渠道参数）；若没有该链接，使用 https://socialdatax.com/dashboard/billing。充值后继续刚才失败的调用；已有任务或部分结果时，按对应任务查询、分页续查规则恢复。
 - 如果用户已经充值但仍提示余额不足：确认当前环境变量 `SOCIALDATAX_API_KEY` 是否来自刚充值的同一个账号；必要时重新复制官网后台的 API Key。
 - 如果提交失败且没有返回 `data.job_id`，确认参数和 API Key 后可以重新提交；如果已经拿到 `data.job_id`，后续异常只查询同一个任务，不要重复提交视频。
 - 任务失败：优先展示 `data.error.message` 或 `data.message`；只有 `data.error.retryable` 是 `true` 时才建议稍后重试。
@@ -123,6 +123,6 @@ npx -y socialdatax-skills@latest wechat replies \
 
 - 没结果：确认视频号视频链接、分享文本或 job_id 完整。
 - 结果太多：先基于当前视频详情、口播文稿和必要评论样本拆解；不需要回复证据时不要扩大调用范围。
-- 调用失败：如果已有 `job_id`，只查询同一个任务；如果没有 `job_id`，先确认 `SOCIALDATAX_API_KEY` 和输入格式；如果是 `insufficient_balance` 或“积分不足”，按错误里的充值链接充值后继续原命令，不要反复重试。
+- 调用失败：如果已有 `job_id`，只查询同一个任务；如果没有 `job_id`，先确认 `SOCIALDATAX_API_KEY` 和输入格式；如果是 `insufficient_balance` 或“积分不足”，按上述官方充值链接说明完成充值后，按上述恢复规则继续，不要反复重试。
 - 担心账号安全：这是只读能力，不登录、不发帖、不点赞、不评论。
 - 想继续分析：把最相关的 1-3 条结果发回来，继续缩小范围。
