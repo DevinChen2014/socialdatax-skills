@@ -26,7 +26,7 @@ import {
 export { decryptWechatMediaCommand };
 
 const PACKAGE_NAME = "socialdatax-skills";
-const PACKAGE_VERSION = "0.2.58";
+const PACKAGE_VERSION = "0.2.59";
 const PACKAGE_SPEC = `${PACKAGE_NAME}@latest`;
 const LOG_PREFIX = `[${PACKAGE_NAME}]`;
 const MIN_NODE_VERSION = "20.18.1";
@@ -969,6 +969,14 @@ const PLATFORMS = {
           "Read XHS 蒲公英 / Pugongying commercial note details from a note URL, short link or share text; 20 points per successful call, failures are not charged.",
       },
       {
+        name: "xhs_get_note_share_link_by_note_id",
+        description: "根据小红书笔记 ID 获取完整分享内容和分享短链接。",
+      },
+      {
+        name: "xhs_get_note_share_link_by_note_url",
+        description: "根据小红书笔记链接、短链接或分享文案获取完整分享内容和分享短链接。",
+      },
+      {
         name: "xhs_get_note_comments_by_note_id",
         description:
           "Fetch paginated first-level comments by note ID.",
@@ -1474,6 +1482,14 @@ const PLATFORMS = {
       "WECHAT_MCP_UPSTREAM_URL",
     ],
     tools: [
+      {
+        name: "wechat_search_mp_image_posts",
+        description: "按关键词搜索公众号贴图，支持综合、最新、最热排序和分页。",
+      },
+      {
+        name: "wechat_get_mp_account_image_posts_by_account_id",
+        description: "根据公众号账号 ID 获取发布的贴图列表，支持分页。",
+      },
       {
         name: "wechat_get_hot_search_list",
         description: "Fetch the current WeChat Channels / 视频号 hot-search list.",
