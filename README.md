@@ -940,10 +940,137 @@ Version `0.2.50` adds `weibo user-suggestions --keyword "摄影"` for a few sear
 
 For agents that can execute shell commands, use the direct CLI. This is the recommended default for installed skills:
 
-For installed AI clients, persist `SOCIALDATAX_API_KEY` in the client Secret or user environment. The `export` below is only for a one-off shell run.
+First identify where the CLI actually executes, then use persistent
+configuration in that environment:
+
+- **Local Agent:** use the client's documented persistent Secret / env that
+  injects `SOCIALDATAX_API_KEY` into Agent command processes.
+- **Remote Agent:** configure the remote client, host or service running the
+  commands, reload its execution process as documented, and check there. A
+  successful local check does not establish remote access.
+- **Container or cloud sandbox Agent:** use the platform's persistent Secret /
+  environment injection into the actual CLI container or sandbox. Recreate or
+  reload it as documented and check inside it. Host-machine configuration does
+  not replace sandbox injection. If unsupported, explain the limitation and use
+  a platform-supported authentication route without bypassing isolation.
+
+For local WorkBuddy, the verified project-local option is to merge
+`{"env":{"SOCIALDATAX_API_KEY":"<YOUR_API_KEY>"}}` into
+`.codebuddy/settings.local.json` in the current trusted workspace. Preserve
+existing settings and env entries. Have the user enter the key locally; keep
+this file out of version control. This configuration is workspace-scoped, and
+other clients may use different configuration mechanisms.
+
+Skill loading itself does not require a Key or local `node`/`npm`: this keeps
+setup instructions and authenticated MCP-only workflows available. The metadata
+retains the primary Key configuration field and optional installer. CLI
+dependencies and credentials are still required when executing CLI data calls.
+
+If a check returns false, diagnose the client configuration before OS fallback:
+verify host, workspace and configuration scope, workspace trust, correct fields
+and preservation of existing settings, injection into the command process,
+and the documented reload or full process restart. MCP-server-only env does not
+establish direct CLI access. Recheck in the original execution environment after
+fixing these. A failed check alone does not establish unsupported persistence;
+use the documented user/service environment fallback only when the client does
+not support persistence or those checks have been exhausted. Do not overwrite
+a working setup or ask the user to obtain another Key just because inheritance
+failed.
+
+For OS fallback on the actual execution host, Windows provides user environment variables in its system
+Environment Variables settings. On macOS, `launchctl setenv` applies to the
+current login session; it does not by itself provide persistence across a
+computer restart. Reload and recheck after login/restart. Follow the OS's
+documented setup, fully quit the AI client (including background processes),
+then reopen it. Remote services reload according to their documented runtime;
+sandboxes still require platform injection. A separate terminal's temporary `export`, a shell startup file
+alone, or just closing the client window does not prove Agent inheritance.
+See [Windows environment variable behavior](https://learn.microsoft.com/en-us/windows-server/administration/windows-commands/setx)
+and [Apple's launchctl reference](https://github.com/apple-oss-distributions/launchd/blob/main/man/launchctl.1).
+
+For the macOS session fallback, the user can run this in their own local
+terminal and enter the key at the hidden prompt, keeping its literal value out
+of shell history. It sets only the current login-session environment:
 
 ```bash
-export SOCIALDATAX_API_KEY="<SOCIALDATAX_API_KEY>"
+bash -c '
+if ! IFS= read -r -s -p "API Key: " sdx_setup_key; then
+  printf "\nError: API Key input failed; environment was not changed.\n" >&2
+  unset sdx_setup_key
+  exit 1
+fi
+printf "\n"
+if [ -z "${sdx_setup_key//[[:space:]]/}" ]; then
+  printf "Error: API Key is empty; environment was not changed.\n" >&2
+  unset sdx_setup_key
+  exit 1
+fi
+launchctl setenv SOCIALDATAX_API_KEY "$sdx_setup_key" >/dev/null 2>&1
+sdx_setup_status=$?
+unset sdx_setup_key
+if [ "$sdx_setup_status" -ne 0 ]; then
+  printf "Error: launchctl setenv failed (exit %s); configuration is incomplete.\n" "$sdx_setup_status" >&2
+  exit "$sdx_setup_status"
+fi
+printf "Session environment set. Fully quit and reopen the client, then run the Agent check.\n"
+'
+```
+
+Input failure, empty/whitespace-only input and `launchctl` failure produce an
+explicit error on stderr and a nonzero exit status; the Key is not printed.
+A successful setup message only confirms the session variable was set, so the
+Agent check below is still required.
+
+Before data calls, and again after any configuration change, run this through
+the **Agent's command tool in the actual CLI execution environment and target workspace**, without setting the
+variable inside the probe:
+
+```bash
+node -e "console.log(JSON.stringify({apiKeyReadable:Boolean(['SOCIALDATAX_API_KEY','SOCIAL_MEDIA_MCP_API_KEY'].map(name=>process.env[name]?.trim()).find(Boolean))}))"
+```
+
+The probe follows CLI lookup: trimmed primary variable first, then the legacy
+variable for existing configurations. New setup always uses
+`SOCIALDATAX_API_KEY`. Report only the boolean. If false, stop data calls and
+diagnose in the order above. If true, resume the original
+request to verify authentication; the probe does not validate the key or
+available credits. Do not expose real keys in chat, logs, screenshots, command
+history or Skill files. OS fallback has been tested on macOS with WorkBuddy
+5.9.3; Windows and older client versions still require verification.
+Already authenticated hosted MCP access does not require a local CLI variable.
+An unavailable command tool or missing Node.js is an execution-environment
+issue, not evidence that a Key is missing.
+
+For a one-off terminal run, this Bash example reads the Key without echoing it
+and executes one command in the same child process. The Key is not included as
+a literal in shell history or saved as client configuration. Run it in your own
+interactive terminal; it does not configure an installed Agent or persist after
+the command exits. Replace the final `npx` command for another operation.
+
+```bash
+bash -c '
+if ! IFS= read -r -s -p "API Key: " sdx_setup_key; then
+  printf "\nError: API Key input failed; command was not run.\n" >&2
+  unset sdx_setup_key
+  exit 1
+fi
+printf "\n"
+if [ -z "${sdx_setup_key//[[:space:]]/}" ]; then
+  printf "Error: API Key is empty; command was not run.\n" >&2
+  unset sdx_setup_key
+  exit 1
+fi
+export SOCIALDATAX_API_KEY="$sdx_setup_key"
+unset sdx_setup_key
+exec npx -y socialdatax-skills@latest xhs search --keyword "露营" --pretty
+'
+```
+
+For an Agent configured through the persistent setup above, command examples
+are below; run only the command needed for the user's task. These examples do
+not configure credentials themselves.
+
+```bash
 npx -y socialdatax-skills@latest xhs search --keyword "露营" --pretty
 npx -y socialdatax-skills@latest douyin search --keyword "露营" --pretty
 npx -y socialdatax-skills@latest kuaishou search --keyword "露营" --pretty
