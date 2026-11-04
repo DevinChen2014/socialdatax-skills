@@ -27,7 +27,7 @@ import {
 export { decryptWechatMediaCommand };
 
 const PACKAGE_NAME = "socialdatax-skills";
-const PACKAGE_VERSION = "0.2.62";
+const PACKAGE_VERSION = "0.2.63";
 const PACKAGE_SPEC = `${PACKAGE_NAME}@latest`;
 const LOG_PREFIX = `[${PACKAGE_NAME}]`;
 const MIN_NODE_VERSION = "20.18.1";
@@ -823,7 +823,7 @@ const WECHAT_DIRECT_ACTION_OPTIONS = {
     "durationRange",
     "pretty",
   ],
-  detail: ["encryptedObjectId", "url", "pretty"],
+  detail: ["encryptedObjectId", "objectId", "url", "pretty"],
   article: ["url", "pretty"],
   "article-stats": ["url", "pretty"],
   comments: [
@@ -3270,6 +3270,9 @@ function printHelp() {
   console.log("");
   console.log(`  npx -y ${PACKAGE_SPEC} bilibili download-media --url "<bilibili_video_url_or_share_text>" --output-dir ./downloads --pretty`);
   console.log("      Fetch Bilibili download links, save DASH tracks locally, and merge them with ffmpeg. Legacy alias: bilibili download.");
+  console.log(`  npx -y ${PACKAGE_SPEC} hongguo search --keyword "<keyword>" --content-types '["comic"]' --pages 2 --pretty`);
+  console.log(`  npx -y ${PACKAGE_SPEC} hongguo series-detail --series-id "<series_id>" --pretty`);
+  console.log(`  npx -y ${PACKAGE_SPEC} hongguo series-detail --url "<series_share_url_or_text>" --pretty`);
   console.log(`  npx -y ${PACKAGE_SPEC} hongguo download-media --video-id "<video_id>" --definition 720p --output-dir ./downloads --pretty`);
   console.log(`  npx -y ${PACKAGE_SPEC} hongguo download-media --url "<episode_share_url_or_text>" --output episode.mp4 --pretty`);
   console.log("      Fetch one episode, download and locally decrypt with FFmpeg. Omit --definition to use the first returned stream.");
@@ -3362,6 +3365,7 @@ function printHelp() {
   console.log("      Call the WeChat Channels / 视频号 video search tool directly and print JSON.");
   console.log("");
   console.log(`  npx -y ${PACKAGE_SPEC} wechat detail --encrypted-object-id "<encrypted_object_id>" --pretty`);
+  console.log(`  npx -y ${PACKAGE_SPEC} wechat detail --object-id "<object_id>" --pretty`);
   console.log("      Call the WeChat Channels / 视频号 video detail tool directly and print JSON.");
   console.log("");
   console.log(`  npx -y ${PACKAGE_SPEC} wechat detail --url "<wechat_work_url_or_share_text>" --pretty`);
@@ -3887,7 +3891,7 @@ async function runKuaishouDirectCommand(args) {
 async function runHongguoDirectCommand(args) {
   const { options, positional } = parseCommandArgs(args);
   if (shouldPrintDirectHelp(options, positional)) { printHelp(); return; }
-  if (positional[0] !== "download-media") throw new Error("Use hongguo download-media.");
+  if (positional[0] !== "download-media") throw new Error("Use hongguo search, hongguo series-detail, or hongguo download-media.");
   if (positional.length > 1) throw new Error(`Unexpected argument: ${positional[1]}`);
   const flags = ["videoId", "url", "definition", "output", "outputDir", "ffmpegPath", "pretty"];
   validateKnownOptions(options, allowedDirectOptions(flags));
@@ -4992,16 +4996,11 @@ function buildWechatOperation(action, options) {
     case "detail":
       return buildDirectOperation(
         "detail",
-        buildOneOfCall(options, {
-          idOption: "encryptedObjectId",
-          urlOption: "url",
-          idTool: "wechat_get_video_detail_by_encrypted_object_id",
-          urlTool: "wechat_get_video_detail_by_url",
-          idArgument: "encrypted_object_id",
-          urlArgument: "url",
-          idDisplay: "--encrypted-object-id",
-          urlDisplay: "--url",
-        }),
+        buildExactlyOneCall(options, { choices: [
+          { option: "encryptedObjectId", argument: "encrypted_object_id", tool: "wechat_get_video_detail_by_encrypted_object_id", display: "--encrypted-object-id" },
+          { option: "objectId", argument: "object_id", tool: "wechat_get_video_detail_by_object_id", display: "--object-id" },
+          { option: "url", argument: "url", tool: "wechat_get_video_detail_by_url", display: "--url" },
+        ] }),
         PLATFORMS.wechat
       );
     case "article":
@@ -6889,6 +6888,11 @@ function recordPaginatedItemDedupeKeys(itemDedupeState, dedupeKeys) {
 }
 
 function paginatedItemDedupeKeys(operation, item) {
+  if (operation.platform.id === "wechat" &&
+      ["image-post-search", "mp-account-image-posts"].includes(operation.operation)) {
+    const articleUrl = itemStringField(item, "article_url");
+    return articleUrl ? [`${operation.operation}:wechat:article_url:${articleUrl}`] : [];
+  }
   if (operation.operation === "user-search") {
     const userId = itemStringField(item, "user_id");
     return userId ? [`${operation.operation}:${operation.platform.id}:user_id:${userId}`] : [];
@@ -6922,6 +6926,12 @@ function shouldDeduplicateContentItems(operation) {
 
 function contentItemId(operation, item) {
   switch (operation.platform.id) {
+    case "hongguo": {
+      const field = item?.type === "series" ? "series_id"
+        : item?.type === "image_text" ? "post_id" : undefined;
+      const id = field && itemStringField(item, field);
+      return id ? `${field}:${id}` : undefined;
+    }
     case "tieba":
       return itemStringField(item, "thread_id");
     case "xhs":

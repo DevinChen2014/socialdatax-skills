@@ -11,6 +11,40 @@ function call(platform, action, options) {
   return buildExtendedCall(definition, options);
 }
 
+test("new share, image-post and Hongguo commands preserve selectors and pagination", () => {
+  const url = "https://example.com/share?a=1&b=2";
+  for (const [options, tool, args] of [
+    [{ noteId: "note-1" }, "xhs_get_note_share_link_by_note_id", { note_id: "note-1" }],
+    [{ url }, "xhs_get_note_share_link_by_note_url", { note_url: url }],
+  ]) assert.deepEqual(call("xhs", "share-link", options), { tool, toolArguments: args });
+  assert.throws(() => call("xhs", "share-link", { noteId: "id", url }), /exactly one/);
+  assert.deepEqual(call("wechat", "image-post-search", { keyword: "露营", sortType: "hot", pageToken: "opaque+%==" }), {
+    tool: "wechat_search_mp_image_posts", toolArguments: { keyword: "露营", sort_type: "hot", page_token: "opaque+%==" },
+  });
+  assert.deepEqual(call("wechat", "mp-account-image-posts", { accountId: "account-1", pageToken: "next" }), {
+    tool: "wechat_get_mp_account_image_posts_by_account_id", toolArguments: { account_id: "account-1", page_token: "next" },
+  });
+  assert.deepEqual(call("hongguo", "search", { keyword: "剧集", contentTypes: '["comic","image_text"]', pageToken: "next" }), {
+    tool: "hongguo_search_general", toolArguments: { keyword: "剧集", content_types: ["comic", "image_text"], page_token: "next" },
+  });
+  assert.deepEqual(call("hongguo", "series-detail", { seriesId: "123" }), {
+    tool: "hongguo_get_series_detail_by_series_id", toolArguments: { series_id: "123" },
+  });
+  assert.deepEqual(call("hongguo", "series-detail", { url }), {
+    tool: "hongguo_get_series_detail_by_url", toolArguments: { url },
+  });
+  assert.throws(() => call("hongguo", "series-detail", { seriesId: "123", url }), /exactly one/);
+  assert.throws(() => call("hongguo", "series-detail", { seriesId: "abc" }), /format/);
+});
+
+test("Hongguo content filters validate JSON arrays before connecting", () => {
+  assert.deepEqual(call("hongguo", "search", { keyword: "剧集", contentTypes: "[]" }).toolArguments.content_types, []);
+  for (const value of ["comic", '"comic"', "{}", "true", '["invalid"]', '[1]', '["comic","comic","comic","comic","comic","comic","comic"]']) {
+    assert.throws(() => call("hongguo", "search", { keyword: "剧集", contentTypes: value }), /--content-types/);
+  }
+  assert.match(extendedHelp("hongguo", "search"), /JSON/);
+});
+
 test("new search routes preserve the exact keyword and continuation token", () => {
   const keyword = "露营 + 摄影";
   const pageToken = "opaque+%2F==中文";

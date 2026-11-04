@@ -1618,5 +1618,122 @@
         "required": false
       }
     }
+  },
+  "xhs_get_note_share_link_by_note_id": {
+    "description": "根据小红书笔记 ID 获取完整分享内容和分享短链接。已有笔记链接时使用按链接获取分享链接工具。",
+    "parameters": {
+      "note_id": {
+        "minLength": 1,
+        "type": "string",
+        "required": true
+      }
+    }
+  },
+  "xhs_get_note_share_link_by_note_url": {
+    "description": "根据小红书笔记链接、短链接或分享文案获取完整分享内容和分享短链接。已有 note_id 时使用按 ID 获取分享链接工具。",
+    "parameters": {
+      "note_url": {
+        "minLength": 1,
+        "type": "string",
+        "required": true
+      }
+    }
+  },
+  "wechat_search_mp_image_posts": {
+    "description": "按关键词搜索公众号贴图，支持综合、最新、最热排序与分页。\n\n将结果的 article_url 作为 url 传给 wechat_get_mp_article_detail_by_url 获取正文和全部图片，\n或传给 wechat_get_mp_article_comments_by_url 获取评论。搜索卡片可能包含正文片段，精确标题和发布时间以详情为准。",
+    "parameters": {
+      "keyword": {
+        "maxLength": 100,
+        "minLength": 1,
+        "type": "string",
+        "required": true
+      },
+      "page_token": {
+        "default": "",
+        "type": "string",
+        "required": false
+      },
+      "sort_type": {
+        "default": "general",
+        "enum": [
+          "general",
+          "time_descending",
+          "hot"
+        ],
+        "type": "string",
+        "required": false
+      }
+    }
+  },
+  "wechat_get_mp_account_image_posts_by_account_id": {
+    "description": "根据公众号账号 ID 获取发布的贴图列表；account_id 可从详情的 account.account_id 复用。\n\n返回的 article_url 可继续用于公众号文章详情和评论工具；普通文章列表请用 wechat_get_mp_account_articles_by_account_id。",
+    "parameters": {
+      "account_id": {
+        "type": "string",
+        "required": true
+      },
+      "page_token": {
+        "default": "",
+        "type": "string",
+        "required": false
+      }
+    }
+  },
+  "hongguo_search_general": {
+    "description": "按关键词综合搜索红果剧集、影片和图文帖子，支持内容类型筛选和分页；返回精简业务信息，聚合结果已展开。不提供独立剧集或视频页签搜索，也不解析播放地址。",
+    "parameters": {
+      "keyword": {
+        "maxLength": 200,
+        "minLength": 1,
+        "type": "string",
+        "required": true
+      },
+      "content_types": {
+        "default": [],
+        "items": {
+          "enum": [
+            "live_action",
+            "comic",
+            "ai_drama",
+            "film_tv",
+            "short_video",
+            "image_text"
+          ],
+          "type": "string"
+        },
+        "maxItems": 6,
+        "type": "array",
+        "required": false
+      },
+      "page_token": {
+        "default": "",
+        "maxLength": 524288,
+        "type": "string",
+        "required": false
+      }
+    }
+  },
+  "hongguo_get_series_detail_by_series_id": {
+    "description": "按series_id获取红果剧集详情和完整分集列表；ID可来自红果搜索结果。持有分享链接或整段分享文案时使用 hongguo_get_series_detail_by_url。不提供播放或下载地址。",
+    "parameters": {
+      "series_id": {
+        "maxLength": 19,
+        "minLength": 1,
+        "pattern": "^[1-9][0-9]{0,18}$",
+        "type": "string",
+        "required": true
+      }
+    }
+  },
+  "hongguo_get_series_detail_by_url": {
+    "description": "使用红果剧集分享链接或整段分享文案获取详情和完整分集列表；已有series_id时使用 hongguo_get_series_detail_by_series_id。不提供播放或下载地址。",
+    "parameters": {
+      "url": {
+        "maxLength": 8192,
+        "minLength": 1,
+        "type": "string",
+        "required": true
+      }
+    }
   }
 }

@@ -95,7 +95,7 @@ Common search phrases for this skill package:
 - Reserved future SocialDataX namespace names for existing platform listings without draft files yet: `com.socialdatax/kuaishou-insights`, `com.socialdatax/bilibili-insights`, `com.socialdatax/weibo-insights`, `com.socialdatax/wechat-channels-insights`, `com.socialdatax/zhihu-insights`, `com.socialdatax/instagram-insights`, `com.socialdatax/x-insights`, `com.socialdatax/youtube-insights`, and `com.socialdatax/tiktok-insights`.
 - Hosted endpoints without a repo-tracked standalone listing: Toutiao / 今日头条, Haokan / 好看视频, and Sensitive Words Check.
 - Unified MCP registry name: none; this package installs skills and calls explicit hosted MCP entries.
-- Package capability version: `0.2.62`
+- Package capability version: `0.2.63`
 
 ## XHS 蒲公英 / Pugongying commercial note details
 
@@ -219,6 +219,7 @@ npx -y socialdatax-skills@latest toutiao user-posts --profile-url "<profile_url_
 npx -y socialdatax-skills@latest wechat hot-search --pretty
 npx -y socialdatax-skills@latest wechat search --keyword "露营" --pretty
 npx -y socialdatax-skills@latest wechat detail --encrypted-object-id "<encrypted_object_id>" --pretty
+npx -y socialdatax-skills@latest wechat detail --object-id "<object_id>" --pretty
 npx -y socialdatax-skills@latest wechat detail --url "<wechat_work_url_or_share_text>" --pretty
 npx -y socialdatax-skills@latest wechat download-media --media-url "<video.video_url>" --output video.mp4
 npx -y socialdatax-skills@latest wechat article --url "<mp_article_url_or_share_text>" --pretty
@@ -1120,6 +1121,9 @@ The canonical command is `download-media`. Bilibili still accepts `download`, an
 ```bash
 npx -y socialdatax-skills@latest bilibili download-media --url "<bilibili_video_url_or_share_text>" --output-dir ./downloads
 npx -y socialdatax-skills@latest wechat download-media --media-url "<video.video_url>" --output video.mp4
+npx -y socialdatax-skills@latest hongguo search --keyword "<keyword>" --content-types '["comic"]' --pages 2 --pretty
+npx -y socialdatax-skills@latest hongguo series-detail --series-id "<series_id>" --pretty
+npx -y socialdatax-skills@latest hongguo series-detail --url "<series_share_url_or_text>" --pretty
 npx -y socialdatax-skills@latest hongguo download-media --video-id "<episodes[].video_id>" --definition 720p --output-dir ./downloads
 npx -y socialdatax-skills@latest hongguo download-media --url "<episode_share_url_or_text>" --output episode.mp4
 ```

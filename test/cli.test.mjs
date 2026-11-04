@@ -10,6 +10,7 @@ import {
   mkdirSync,
   mkdtempSync,
   readFileSync,
+  readdirSync,
   rmSync,
   symlinkSync,
   writeFileSync,
@@ -30,6 +31,7 @@ import {
 } from "../cli.mjs";
 import { downloadBilibiliVideoFromManifest } from "../lib/media/bilibili-download.mjs";
 import { downloadPlatformMediaFromUrl } from "../lib/media/platform-download.mjs";
+import { withoutCredentialProbe } from "./credential-copy-fixture.mjs";
 
 const packageDir = dirname(dirname(fileURLToPath(import.meta.url)));
 const cliPath = join(packageDir, "cli.mjs");
@@ -647,6 +649,7 @@ async function runCliWithMockMcp(
       SOCIAL_MEDIA_WEIBO_MCP_UPSTREAM_URL: `http://127.0.0.1:${address.port}/mcp`,
       SOCIAL_MEDIA_TOUTIAO_MCP_UPSTREAM_URL: `http://127.0.0.1:${address.port}/mcp`,
       SOCIAL_MEDIA_WECHAT_MCP_UPSTREAM_URL: `http://127.0.0.1:${address.port}/mcp`,
+      SOCIALDATAX_HONGGUO_MCP_UPSTREAM_URL: `http://127.0.0.1:${address.port}/mcp`,
       SOCIALDATAX_SENSITIVE_CHECK_MCP_UPSTREAM_URL: `http://127.0.0.1:${address.port}/mcp`,
       SOCIALDATAX_TIEBA_MCP_UPSTREAM_URL: `http://127.0.0.1:${address.port}/mcp`,
       SOCIALDATAX_HAOKAN_MCP_UPSTREAM_URL: `http://127.0.0.1:${address.port}/mcp`,
@@ -1001,14 +1004,14 @@ test("public package version metadata stays aligned", () => {
   const cli = readFileSync(cliPath, "utf8");
   const versionPattern = escapeRegExp(packageJson.version);
 
-  assert.equal(packageJson.version, "0.2.59");
+  assert.equal(packageJson.version, "0.2.63");
   assert.equal(packageLock.version, packageJson.version);
   assert.equal(packageLock.packages[""].version, packageJson.version);
   assert.match(
     cli,
     new RegExp(`const PACKAGE_VERSION = "${versionPattern}";`)
   );
-  assert.match(readme, /Package capability version: `0\.2\.58`/);
+  assert.match(readme, new RegExp(`Package capability version: \x60${versionPattern}\x60`));
 });
 
 test("publish script reads npm auth token from user npmrc", async () => {
@@ -1136,7 +1139,7 @@ test("public docs and doctor report only advertise the SocialDataX API key", () 
   const legacySharedApiKeyEnv = ["SOCIAL", "MEDIA", "MCP", "API", "KEY"].join("_");
 
   assert.doesNotMatch(readme, new RegExp(legacyXhsApiKeyEnv));
-  assert.doesNotMatch(readme, new RegExp(legacySharedApiKeyEnv));
+  assert.doesNotMatch(withoutCredentialProbe(readme), new RegExp(legacySharedApiKeyEnv));
 
   const result = runCli(["doctor", "--json"]);
   assert.equal(result.status, 0, result.stderr);
@@ -2835,7 +2838,7 @@ test("xhs download-media reports expired or unavailable links", async () => {
   }
 });
 
-test("bilibili download saves dash tracks and merges them with ffmpeg", async () => {
+for (const downloadAction of ["download", "download-media"]) test(`bilibili ${downloadAction} saves dash tracks and merges them with ffmpeg`, async () => {
   const tempDir = mkdtempSync(join(tmpdir(), "sdx-bilibili-download-"));
   const outputDir = join(tempDir, "downloads");
   const outputPath = join(outputDir, "bilibili-output.mp4");
@@ -2901,7 +2904,7 @@ test("bilibili download saves dash tracks and merges them with ffmpeg", async ()
     const { result, toolCalls } = await runCliWithMockMcp(
       [
         "bilibili",
-        "download",
+        downloadAction,
         "--url",
         "https://www.bilibili.com/video/BV1test",
         "--output",
@@ -2971,7 +2974,7 @@ test("bilibili download saves dash tracks and merges them with ffmpeg", async ()
 
     const payload = JSON.parse(result.stdout);
     assert.equal(payload.platform, "bilibili");
-    assert.equal(payload.action, "download");
+    assert.equal(payload.action, downloadAction);
     assert.equal(payload.bvid, "BV1test");
     assert.equal(payload.selected_quality, "1080P 高清");
     assert.equal(payload.output_path, outputPath);
@@ -3516,7 +3519,7 @@ test("cli still runs when invoked through an npm-style symlink", () => {
     assert.match(result.stdout, /weibo download-media --url "<weibo_media_url>" --output-dir \.\/downloads/);
     assert.match(result.stdout, /x download-media --url "<x_media_url>" --output-dir \.\/downloads/);
     assert.match(result.stdout, /wechat transcript --encrypted-object-id/);
-    assert.match(result.stdout, /wechat decrypt-media --media-url/);
+    assert.match(result.stdout, /wechat download-media --media-url/);
     assert.match(result.stdout, /sensitive-check text --text/);
   } finally {
     rmSync(destination, { recursive: true, force: true });
@@ -3544,6 +3547,7 @@ test("npm pack only includes public skill package files", () => {
     "lib/commands/tool-contracts.json",
     "lib/media/bilibili-download.mjs",
     "lib/media/common.mjs",
+    "lib/media/hongguo-download.mjs",
     "lib/media/platform-download.mjs",
     "lib/media/wechat-decrypt.mjs",
     "package.json",
@@ -3645,7 +3649,7 @@ test("aggregate content research skill documents safe SocialDataX entrypoints", 
   assert.match(skill, /Weibo|微博/);
   assert.match(skill, /WeChat Channels|视频号/);
   assert.doesNotMatch(skill, /52choujiang\.com\/assistant/);
-  assert.doesNotMatch(skill, /SOCIAL_MEDIA_MCP_API_KEY/);
+  assert.doesNotMatch(withoutCredentialProbe(skill), /SOCIAL_MEDIA_MCP_API_KEY/);
 });
 
 test("media search skill documents X media download from returned media items", () => {
@@ -4280,7 +4284,7 @@ test("transcript direct commands require exactly one entrypoint", () => {
   );
 });
 
-test("wechat decrypt-media downloads and decrypts a detail media URL without API key", async () => {
+for (const command of ["decrypt-media", "download-media"]) test(`wechat ${command} downloads and decrypts a detail media URL without API key`, async () => {
   const encryptedMedia = Buffer.from(
     "9924d87a25344af3eb492e0b51154bdc66892d7461696c",
     "hex"
@@ -4308,6 +4312,7 @@ test("wechat decrypt-media downloads and decrypts a detail media URL without API
   try {
     const result = await decryptWechatMediaCommand(
       {
+        command,
         mediaUrl: "https://wxapp.tc.qq.com/251/20302/stodownload?k=330933460",
         output: outputPath,
       },
@@ -4329,7 +4334,7 @@ test("wechat decrypt-media downloads and decrypts a detail media URL without API
     assert.deepEqual(readFileSync(outputPath), plaintextMedia);
     assert.deepEqual(result, {
       platform: "wechat",
-      action: "decrypt-media",
+      action: command,
       output_path: outputPath,
       decrypted: true,
       bytes_written: plaintextMedia.length,
@@ -7283,6 +7288,96 @@ test("weibo user commands map profile urls and user ids", async () => {
       page_token: "next",
     },
   });
+});
+
+test("new public commands use existing MCP transport and attribution", async () => {
+  const cases = [
+    [["xhs", "share-link", "--note-id", "note-1"], "xhs_get_note_share_link_by_note_id", { note_id: "note-1" }],
+    [["xhs", "share-link", "--url", "https://example.com/n?a=1&b=2"], "xhs_get_note_share_link_by_note_url", { note_url: "https://example.com/n?a=1&b=2" }],
+    [["wechat", "image-post-search", "--keyword", "露营", "--sort-type", "hot", "--page-token", "opaque+%=="], "wechat_search_mp_image_posts", { keyword: "露营", sort_type: "hot", page_token: "opaque+%==" }],
+    [["wechat", "mp-account-image-posts", "--account-id", "acct", "--page-token", "next"], "wechat_get_mp_account_image_posts_by_account_id", { account_id: "acct", page_token: "next" }],
+    [["wechat", "detail", "--object-id", "123"], "wechat_get_video_detail_by_object_id", { object_id: "123" }],
+    [["hongguo", "search", "--keyword", "剧集", "--content-types", '["comic"]'], "hongguo_search_general", { keyword: "剧集", content_types: ["comic"] }],
+    [["hongguo", "series-detail", "--series-id", "123"], "hongguo_get_series_detail_by_series_id", { series_id: "123" }],
+    [["hongguo", "series-detail", "--url", "https://example.com/share"], "hongguo_get_series_detail_by_url", { url: "https://example.com/share" }],
+  ];
+  for (const [args, name, expected] of cases) {
+    const r = await runCliWithMockMcp([...args, "--source-client", "socialdatax-skills", "--source-platform", "npm", "--source-skill", "media-detail"]);
+    assert.equal(r.result.status, 0, r.result.stderr);
+    assert.deepEqual(r.toolCalls[0], { name, arguments: expected });
+    assert.equal(r.toolCallSourceSkillHeaders[0], "media-detail");
+  }
+});
+
+test("new paginated commands preserve filters across the token chain", async () => {
+  for (const [args, filters] of [
+    [["hongguo", "search", "--keyword", "剧集", "--content-types", '["comic"]'], { keyword: "剧集", content_types: ["comic"] }],
+    [["wechat", "image-post-search", "--keyword", "露营", "--sort-type", "hot"], { keyword: "露营", sort_type: "hot" }],
+    [["wechat", "mp-account-image-posts", "--account-id", "acct"], { account_id: "acct" }],
+  ]) {
+    const r = await runCliWithMockMcp([...args, "--pages", "2"], {}, (_call, page) => ({
+      items: [{ id: `item-${page}` }], next_page_token: page === 1 ? "opaque+%==" : "",
+    }));
+    assert.equal(r.result.status, 0, r.result.stderr);
+    assert.equal(r.toolCalls.length, 2);
+    assert.deepEqual(r.toolCalls[0].arguments, filters);
+    assert.deepEqual(r.toolCalls[1].arguments, { ...filters, page_token: "opaque+%==" });
+  }
+});
+
+test("Hongguo search deduplicates within and across pages before the item limit", async () => {
+  const series = { type: "series", series_id: "1", title: "剧集一" };
+  const post = { type: "image_text", post_id: "1", title: "帖子一" };
+  const secondSeries = { type: "series", series_id: "2", title: "剧集二" };
+  const r = await runCliWithMockMcp([
+    "hongguo", "search", "--keyword", "剧集", "--pages", "2", "--max-items", "3",
+  ], {}, (_call, page) => ({
+    items: page === 1 ? [series, series, post] : [series, post, secondSeries],
+    next_page_token: page === 1 ? "next" : "",
+  }));
+  assert.equal(r.result.status, 0, r.result.stderr);
+  assert.equal(r.toolCalls.length, 2);
+  assert.deepEqual(JSON.parse(r.result.stdout).data.items, [series, post, secondSeries]);
+});
+
+for (const [action, args] of [
+  ["image-post-search", ["--keyword", "摄影"]],
+  ["mp-account-image-posts", ["--account-id", "acct"]],
+]) {
+  test(`wechat ${action} deduplicates complete links before the item limit`, async () => {
+    const one = { article_url: "https://mp.weixin.qq.com/s?mid=1&idx=1", title: "贴图一" };
+    const two = { article_url: "https://mp.weixin.qq.com/s?mid=1&idx=2", title: "贴图二" };
+    const three = { article_url: "https://mp.weixin.qq.com/s?mid=2&idx=1", title: "贴图三" };
+    const r = await runCliWithMockMcp([
+      "wechat", action, ...args, "--pages", "2", "--max-items", "3",
+    ], {}, (_call, page) => ({
+      items: page === 1 ? [one, one, two] : [one, three],
+      next_page_token: page === 1 ? "next" : "",
+    }));
+    assert.equal(r.result.status, 0, r.result.stderr);
+    assert.equal(r.toolCalls.length, 2);
+    assert.deepEqual(JSON.parse(r.result.stdout).data.items, [one, two, three]);
+  });
+
+  test(`wechat ${action} preserves results without usable links`, async () => {
+    const items = [
+      { article_url: "", title: "贴图一" }, { title: "贴图二" },
+      { article_url: "", title: "贴图三" }, { article_url: "https://mp.weixin.qq.com/s/one", title: "贴图四" },
+    ];
+    const r = await runCliWithMockMcp(["wechat", action, ...args, "--pages", "2"], {}, (_call, page) => ({
+      items: items.slice((page - 1) * 2, page * 2), next_page_token: page === 1 ? "next" : "",
+    }));
+    assert.equal(r.result.status, 0, r.result.stderr);
+    assert.deepEqual(JSON.parse(r.result.stdout).data.items, items);
+  });
+}
+
+test("wechat detail rejects mixed old and new identifiers before connecting", () => {
+  for (const other of ["--url", "--encrypted-object-id"]) {
+    const r = runCli(["wechat", "detail", "--object-id", "123", other, "other"]);
+    assert.notEqual(r.status, 0);
+    assert.match(r.stderr, /exactly one/);
+  }
 });
 
 test("wechat direct commands map public Video Channels operations", async () => {
@@ -10971,7 +11066,7 @@ test("direct CLI README examples include public bilibili actions", () => {
     'bilibili user-articles --profile-url "<profile_url_or_share_text>"',
     'bilibili user-dynamics --user-id "<user_id>"',
     'bilibili user-dynamics --profile-url "<profile_url_or_share_text>"',
-    'bilibili download --url "<bilibili_video_url_or_share_text>" --output-dir ./downloads',
+    'bilibili download-media --url "<bilibili_video_url_or_share_text>" --output-dir ./downloads',
   ]) {
     assert.match(readme, new RegExp(escapeRegExp(example)));
   }
@@ -11130,7 +11225,7 @@ test("direct CLI README examples include public weibo, toutiao, and wechat actio
     'wechat search --keyword "露营"',
     'wechat detail --encrypted-object-id "<encrypted_object_id>"',
     'wechat detail --url "<wechat_work_url_or_share_text>"',
-    'wechat decrypt-media --media-url "<video.video_url>" --output video.mp4',
+    'wechat download-media --media-url "<video.video_url>" --output video.mp4',
     'wechat article --url "<mp_article_url_or_share_text>"',
     'wechat article-stats --url "<mp_article_url_or_share_text>"',
     'wechat comments --object-id "<object_id>" --object-nonce-id "<object_nonce_id>"',
@@ -11205,7 +11300,7 @@ test("direct CLI docs keep search pagination platform-specific", () => {
   assert.match(help.stdout, /bilibili user-videos --profile-url "<profile_url_or_share_text>"/);
   assert.match(help.stdout, /bilibili user-articles --profile-url "<profile_url_or_share_text>"/);
   assert.match(help.stdout, /bilibili user-dynamics --profile-url "<profile_url_or_share_text>"/);
-  assert.match(help.stdout, /bilibili download --url "<bilibili_video_url_or_share_text>" --output-dir \.\/downloads/);
+  assert.match(help.stdout, /bilibili download-media --url "<bilibili_video_url_or_share_text>" --output-dir \.\/downloads/);
   assert.match(help.stdout, /--content-id <content_id>/);
   assert.match(help.stdout, /--max-wait-seconds <seconds>/);
   assert.match(
@@ -12014,4 +12109,38 @@ test("Haokan content pagination deduplicates video IDs before applying item limi
     assert.deepEqual(JSON.parse(result.stdout).data.items.map((item) => item.video_id), ["1", "2", "3"]);
     assert.equal(toolCalls.length, 2);
   }
+});
+
+for (const [flag, value, tool, argument] of [
+  ['--video-id', '7680520351972854808', 'hongguo_get_video_download_links_by_video_id', 'video_id'],
+  ['--url', '漫剧分享 https://novelquickapp.com/s/WqCuJHd7dz4/', 'hongguo_get_video_download_links_by_video_url', 'video_url'],
+]) test(`hongguo download-media ${flag} uses MCP once, carries attribution and saves locally`, async () => {
+  const dir = mkdtempSync(join(tmpdir(), 'sdx-hongguo-cli-'));
+  const ffmpeg = join(dir, 'ffmpeg.cjs');
+  writeFileSync(ffmpeg, '#!/usr/bin/env node\nconst fs=require("fs");const args=process.argv.slice(2);if(!args.includes("-version")&&!args.includes("null"))fs.writeFileSync(args.at(-1),"decrypted-fixture");\n');
+  chmodSync(ffmpeg, 0o755);
+  const media = createServer((_req, res) => res.writeHead(200, { 'content-length': '9' }).end('encrypted'));
+  await listenHttpServer(media);
+  try {
+    const output = join(dir, 'episode.mp4');
+    const { result, toolCalls, toolCallSourceClientHeaders, toolCallSourcePlatformHeaders, toolCallSourceSkillHeaders } = await runCliWithMockMcp([
+      'hongguo', 'download-media', flag, value, '--output', output, '--ffmpeg-path', ffmpeg,
+      '--source-client', 'socialdatax-skills', '--source-platform', 'npm', '--source-skill', 'media-detail',
+    ], {}, () => ({ video_id: '7680520351972854808', streams: [{
+      definition: '360p', download_url: httpServerUrl(media), backup_download_url: null,
+      encryption_method: 'cenc-aes-ctr', decryption_key: '00112233445566778899aabbccddeeff',
+    }], points: { cost: 10, balance: 90 } }));
+    assert.equal(result.status, 0, result.stderr);
+    assert.equal(toolCalls.length, 1);
+    assert.deepEqual(toolCalls[0], { name: tool, arguments: { [argument]: value } });
+    assert.deepEqual(toolCallSourceClientHeaders, ['socialdatax-skills']);
+    assert.deepEqual(toolCallSourcePlatformHeaders, ['npm']);
+    assert.deepEqual(toolCallSourceSkillHeaders, ['media-detail']);
+    const data = JSON.parse(result.stdout);
+    assert.equal(data.action, 'download-media'); assert.equal(data.definition, '360p');
+    assert.deepEqual(data.points, { cost: 10, balance: 90 });
+    assert.equal(readFileSync(output, 'utf8'), 'decrypted-fixture');
+    assert.doesNotMatch(result.stdout + result.stderr, /00112233445566778899aabbccddeeff|download_url|decryption_key/);
+    assert.deepEqual(readdirSync(dir).sort(), ['episode.mp4', 'ffmpeg.cjs']);
+  } finally { await closeHttpServer(media); rmSync(dir, { recursive: true, force: true }); }
 });

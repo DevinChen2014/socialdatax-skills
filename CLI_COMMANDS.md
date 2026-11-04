@@ -8,9 +8,31 @@ Set `SOCIALDATAX_API_KEY` in the environment for hosted requests. Obtain or mana
 
 - All commands accept `--pretty`, `--source-client`, `--source-platform`, and `--source-skill`. Installed skills supply attribution automatically; preserve it when adapting their examples.
 - A command with multiple input variants accepts exactly one variant, for example `--sku-id` or `--url`, or transcript `--url`, content ID, or `--job-id`. Required flags in the tables apply to that variant.
-- Only variants listing `--page-token` support `--pages <n>` and `--max-items <n>`. These variants also accept `--all` except `tieba search` and `haokan search`, which requires bounded `--pages` instead. Omit the token for the first page; pass the full returned `next_page_token` unchanged to continue with the same search/filter inputs. An empty token ends pagination. `--all` follows the available token chain and does not guarantee complete platform-wide results.
+- Only variants listing `--page-token` support `--pages <n>` and `--max-items <n>`. These variants also accept `--all` except `tieba search`, `haokan search`, and `hongguo search`, which require bounded `--pages` instead. Omit the token for the first page; pass the full returned `next_page_token` unchanged to continue with the same search/filter inputs. An empty token ends pagination. `--all` follows the available token chain and does not guarantee complete platform-wide results.
 - Boolean filters take `true` or `false`. Nullable integer filters accept `null` or an integer. Omitted optional flags use the shown service default.
+- Array filters use JSON, for example `--content-types '["comic","image_text"]'`.
+
 - Transcript commands also accept positive `--max-wait-seconds <seconds>`. They poll the same job; when interrupted or the wait window ends, continue with `transcript --job-id "<job_id>"`. Do not resubmit an unfinished job.
+
+## Share links, Official Account image posts, and Hongguo
+
+```bash
+npx -y socialdatax-skills@latest xhs share-link --note-id "<note_id>" --pretty
+npx -y socialdatax-skills@latest xhs share-link --url "<complete_note_url_or_share_text>" --pretty
+npx -y socialdatax-skills@latest wechat detail --object-id "<object_id>" --pretty
+npx -y socialdatax-skills@latest wechat image-post-search --keyword "<keyword>" --sort-type hot --pages 2 --pretty
+npx -y socialdatax-skills@latest wechat mp-account-image-posts --account-id "<account_id>" --pages 2 --pretty
+npx -y socialdatax-skills@latest hongguo search --keyword "<keyword>" --content-types '["comic","image_text"]' --pages 2 --pretty
+npx -y socialdatax-skills@latest hongguo series-detail --series-id "<series_id>" --pretty
+npx -y socialdatax-skills@latest hongguo series-detail --url "<series_share_url_or_text>" --pretty
+```
+
+- `xhs share-link` accepts exactly one of `--note-id` or `--url`. Preserve complete returned links, including query parameters.
+- `wechat detail` accepts exactly one of `--object-id`, `--encrypted-object-id`, or `--url`; existing encrypted-ID and URL inputs remain supported.
+- `wechat image-post-search` searches Official Account image posts, distinct from video search and article search. `--sort-type` accepts `general` (default), `time_descending`, or `hot`. `wechat mp-account-image-posts` lists an account's image posts.
+- `hongguo search` uses the general search tab, not separate series/video tabs. Optional `--content-types` accepts a JSON array of up to six values: `live_action`, `comic`, `ai_drama`, `film_tv`, `short_video`, `image_text`. Omit it or pass `[]` for no type filter. Search results may contain series, films, short videos and image-text posts.
+- Both image-post commands and `hongguo search` support `--page-token`, `--pages`, and `--max-items`; preserve the full continuation token and original filters. Hongguo search requires bounded `--pages` rather than `--all`.
+- `hongguo series-detail` accepts exactly one of `--series-id` or `--url` and returns details with the episode list. Share links/text follow the service's supported formats. It does not download video; use `hongguo download-media` for a selected episode.
 
 ## Choose a command
 
@@ -19,6 +41,9 @@ Set `SOCIALDATAX_API_KEY` in the environment for hosted requests. Obtain or mana
 | Find accounts or channels | `user-search`; YouTube `channel-search` |
 | Refine a query | `search-suggestions`; Instagram `tag-search` |
 | Identify a note's sharer, summary and author | `xhs share-info` |
+| Get a note share link | `xhs share-link` |
+| Official Account image posts | `wechat image-post-search`, `wechat mp-account-image-posts` |
+| Hongguo search and series details | `hongguo search`, `hongguo series-detail` |
 | Product research | XHS / Douyin `product-search`, `product-detail`; XHS review commands |
 | Creator commercial analytics | XHS `pgy-creator-*` |
 | Official Account articles and accounts | WeChat `article-search`, `mp-account-info`, `mp-account-articles`, `article-comments`, `article-replies` |
