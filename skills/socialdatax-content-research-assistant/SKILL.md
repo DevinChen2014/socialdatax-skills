@@ -12,7 +12,7 @@ metadata:
     primaryEnv: "SOCIALDATAX_API_KEY"
     install:
       - kind: "node"
-        package: "socialdatax-skills@0.2.58"
+        package: "socialdatax-skills@0.2.62"
         bins: []
     emoji: "🔎"
     homepage: "https://socialdatax.com/ai?from=github"
@@ -40,9 +40,9 @@ Use `SOCIALDATAX_API_KEY` for SocialDataX requests. The only official website fo
 Prefer the direct CLI when the agent can run shell commands. It does not require MCP server configuration:
 
 ```bash
-npx -y socialdatax-skills@0.2.58 xhs search --keyword "<keyword>" --pretty --source-client socialdatax-skills --source-platform github --source-skill socialdatax-content-research-assistant
-npx -y socialdatax-skills@0.2.58 douyin search --keyword "<keyword>" --pretty --source-client socialdatax-skills --source-platform github --source-skill socialdatax-content-research-assistant
-npx -y socialdatax-skills@0.2.58 bilibili download --url "<bilibili_video_url_or_share_text>" --output-dir ./downloads --pretty --source-client socialdatax-skills --source-platform github --source-skill socialdatax-content-research-assistant
+npx -y socialdatax-skills@0.2.62 xhs search --keyword "<keyword>" --pretty --source-client socialdatax-skills --source-platform github --source-skill socialdatax-content-research-assistant
+npx -y socialdatax-skills@0.2.62 douyin search --keyword "<keyword>" --pretty --source-client socialdatax-skills --source-platform github --source-skill socialdatax-content-research-assistant
+npx -y socialdatax-skills@0.2.62 bilibili download-media --url "<bilibili_video_url_or_share_text>" --output-dir ./downloads --pretty --source-client socialdatax-skills --source-platform github --source-skill socialdatax-content-research-assistant
 ```
 
 For hot topics, content URLs, profile URLs, comment review, Bilibili reaction review, Weibo liker/repost review, creator facts, creator content lists, or short-drama series, call the matching `socialdatax-skills` platform subcommand instead of forcing every request through keyword research.
@@ -99,9 +99,21 @@ Optional arguments:
 ## Choose The Narrowest Entry
 Use the most specific direct CLI command for the user's task instead of forcing every request through keyword research. The command prints JSON with `platform`, `tool`, `arguments`, and `data`.
 When the selected command exposes `--since-days`, pass it with bounded `--pages` for recent content; otherwise use documented publish-time filters where available, or fetch bounded pages and filter returned `publish_time` values in the analysis.
-Use `npx -y socialdatax-skills@0.2.58 <platform> <action> --help` for exact flags and values. Paginated commands require the complete returned `next_page_token`. Do not modify, truncate, redact, mask, omit, normalize, rebuild, generate, or replace the middle with ellipses. Commands without `--page-token`, including suggestions and first-page-only searches, do not support pagination.
+Use `npx -y socialdatax-skills@0.2.62 <platform> <action> --help` for exact flags and values. Paginated commands require the complete returned `next_page_token`. Do not modify, truncate, redact, mask, omit, normalize, rebuild, generate, or replace the middle with ellipses. Commands without `--page-token`, including suggestions and first-page-only searches, do not support pagination.
 - Haokan / 好看视频: use video/user search, search suggestions, hot-search terms, video details, comments/replies, creator profiles and creator videos. Video URLs and profile URLs are different inputs; do not combine an ID and URL in one call. Video search uses bounded `--pages`; suggestions, hot-search and detail/profile commands do not paginate. Comment replies require the parent `comment_id`; previews are not complete replies. Haokan does not support `--include-replies`, `--since-days` or transcripts.
 X creator replies: use `x user-replies` for replies authored by the creator, including self-replies; use `x comments` or `x replies` for discussions under a post. Choose exactly one of `--user-id`, `--username`, or `--profile-url`. Keep identity and the full returned token unchanged; `user-posts` tokens cannot be reused. An empty page with a nonempty token can continue. `--since-days` is not supported.
+
+For Hongguo single-episode downloads, use hongguo download-media with --video-id or --url (exactly one), and --output or --output-dir (exactly one). It requires SOCIALDATAX_API_KEY for one resource request and local FFmpeg for download/decryption. Supported share links are novelquickapp.com comic-drama episode links or full share text. Optional --definition selects an exact quality; otherwise the first returned stream is used. Return the local path, episode ID, quality, file size and request points; do not print decryption keys or signed media URLs.
+
+### FFmpeg Setup
+
+Run `ffmpeg -version` in the environment that executes the CLI (including the container or remote machine, if used). If it prints a version successfully, use the existing installation. Otherwise install FFmpeg for that environment:
+
+- macOS with Homebrew installed: `brew install ffmpeg` ([Homebrew package](https://formulae.brew.sh/formula/ffmpeg)).
+- Debian/Ubuntu: run `sudo apt update`, then `sudo apt install ffmpeg`.
+- Windows: download a prebuilt Windows package linked from the [FFmpeg download page](https://ffmpeg.org/download.html#build-windows), extract it and add its `bin` directory to PATH, or pass the path to `ffmpeg.exe` with `--ffmpeg-path`.
+
+After installation, rerun `ffmpeg -version` from the CLI environment. If FFmpeg is outside PATH, check it using its full executable path and pass that same path with `--ffmpeg-path "<absolute_path_to_ffmpeg>"`.
 
 ## Safety Boundary
 

@@ -221,6 +221,8 @@ npx -y socialdatax-skills@latest douyin user-posts --sec-user-id "<sec_user_id>"
 npx -y socialdatax-skills@latest kuaishou user-posts --user-id "<user_id>" --since-days 30 --pretty --source-client socialdatax-skills --source-platform modelscope --source-skill socialdatax-content-research-assistant
 npx -y socialdatax-skills@latest weibo user-posts --user-id "<user_id>" --since-days 30 --pretty --source-client socialdatax-skills --source-platform modelscope --source-skill socialdatax-content-research-assistant
 npx -y socialdatax-skills@latest wechat user-posts --user-id "<v2_finder_user_id>" --since-days 30 --pretty --source-client socialdatax-skills --source-platform modelscope --source-skill socialdatax-content-research-assistant
+npx -y socialdatax-skills@latest hongguo download-media --video-id "<video_id>" --output-dir ./downloads --pretty --source-client socialdatax-skills --source-platform modelscope --source-skill socialdatax-content-research-assistant
+npx -y socialdatax-skills@latest hongguo download-media --url "<episode_share_url_or_text>" --output episode.mp4 --pretty --source-client socialdatax-skills --source-platform modelscope --source-skill socialdatax-content-research-assistant
 ```
 
 遇到热榜、内容链接、主页链接、评论分析、Bilibili 互动分析、微博点赞/转发分析、创作者资料、创作者内容列表或短剧合集这类任务时，直接调用对应平台的 `socialdatax-skills` 子命令，不要一律退回关键词搜索。
@@ -272,6 +274,18 @@ npx -y socialdatax-skills@latest wechat user-posts --user-id "<v2_finder_user_id
 - 好看视频 / Haokan：用 `search` 找视频、`user-search` 找账号，`search-suggestions` 返回联想词，`hot-search` 返回热词而非热门视频。可读取详情、评论、用户资料和作品列表。视频 ID 与视频链接二选一，用户 ID 与主页链接二选一。视频搜索用有限 `--pages`，不支持 `--all`；联想词、热词、详情和用户资料不分页。评论中的回复只是预览，完整回复用 `replies` 加一级 `comment_id` 分页读取。不支持 `--include-replies`、`--since-days` 或口播转文字。
 - X 博主发出的回复（含自回复）使用 `x user-replies`；帖子下的评论使用 `x comments` / `x replies`。用户 ID、用户名和主页链接三选一；翻页保持定位方式和完整令牌不变，不混用 `user-posts` 令牌。空页有令牌时可继续，不支持 `--since-days`。
 
+For Hongguo single-episode downloads, use hongguo download-media with --video-id or --url (exactly one), and --output or --output-dir (exactly one). It requires SOCIALDATAX_API_KEY for one resource request and local FFmpeg for download/decryption. Supported share links are novelquickapp.com comic-drama episode links or full share text. Optional --definition selects an exact quality; otherwise the first returned stream is used. Return the local path, episode ID, quality, file size and request points; do not print decryption keys or signed media URLs.
+
+### FFmpeg Setup
+
+Run `ffmpeg -version` in the environment that executes the CLI (including the container or remote machine, if used). If it prints a version successfully, use the existing installation. Otherwise install FFmpeg for that environment:
+
+- macOS with Homebrew installed: `brew install ffmpeg` ([Homebrew package](https://formulae.brew.sh/formula/ffmpeg)).
+- Debian/Ubuntu: run `sudo apt update`, then `sudo apt install ffmpeg`.
+- Windows: download a prebuilt Windows package linked from the [FFmpeg download page](https://ffmpeg.org/download.html#build-windows), extract it and add its `bin` directory to PATH, or pass the path to `ffmpeg.exe` with `--ffmpeg-path`.
+
+After installation, rerun `ffmpeg -version` from the CLI environment. If FFmpeg is outside PATH, check it using its full executable path and pass that same path with `--ffmpeg-path "<absolute_path_to_ffmpeg>"`.
+
 ## 输出建议
 
 优先输出可直接复盘的结果：榜单信号、相关样本和主要角度、单条内容事实、评论主题和反馈线索、候选账号、创作者资料、创作者内容证据、互动记录，并标出下一步可继续追问的问题。
@@ -300,6 +314,7 @@ npx -y socialdatax-skills@latest wechat user-posts --user-id "<v2_finder_user_id
 - TOUTIAO: `toutiao_get_hot_search_list`, `toutiao_search_posts`, `toutiao_get_post_detail_by_post_id`, `toutiao_get_post_comments_by_post_id`, `toutiao_get_user_info_by_user_id`, `toutiao_get_user_posts_by_user_id`, `toutiao_get_post_detail_by_url`, `toutiao_get_post_comments_by_url`, `toutiao_get_user_info_by_profile_url`, `toutiao_get_user_posts_by_profile_url`, `toutiao_get_post_comment_replies_by_comment_id`
 - WECHAT: `wechat_get_hot_search_list`, `wechat_search_videos`, `wechat_get_video_detail_by_encrypted_object_id`, `wechat_get_mp_article_detail_by_url`, `wechat_get_mp_article_stats_by_url`, `wechat_get_video_comments_by_object_id`, `wechat_get_user_info_by_user_id`, `wechat_get_user_posted_videos_by_user_id`, `wechat_get_video_share_url_by_object_id`, `wechat_get_video_detail_by_url`, `wechat_get_video_comments_by_url`, `wechat_get_video_comment_replies_by_comment_id`, `wechat_get_user_info_by_url`, `wechat_get_user_posted_videos_by_url`
 - HAOKAN: `haokan_search_videos`, `haokan_search_users`, `haokan_search_suggestions`, `haokan_get_hot_search_list`, `haokan_get_video_detail_by_video_id`, `haokan_get_video_detail_by_url`, `haokan_get_video_comments_by_video_id`, `haokan_get_video_comments_by_url`, `haokan_get_comment_replies_by_video_id`, `haokan_get_comment_replies_by_url`, `haokan_get_user_info_by_user_id`, `haokan_get_user_info_by_url`, `haokan_get_user_posted_videos_by_user_id`, `haokan_get_user_posted_videos_by_profile_url`
+- HONGGUO: `hongguo_get_video_download_links_by_video_id`, `hongguo_get_video_download_links_by_video_url`
 
 上面自动列出的 MCP 工具名就是事实源；根据用户的平台和任务，优先选择最贴近的那个工具。
 搜索翻页时，第一页不要传 `page_token`；继续同一条链路时，只能传完整返回的 `next_page_token`，后续续页都继续用 `page_token`。

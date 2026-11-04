@@ -59,7 +59,7 @@ npx -y socialdatax-skills@latest x detail \
   --post-url "<x_post_url_or_share_text>" --pretty --source-client socialdatax-skills \
   --source-platform modelscope --source-skill socialdatax-media-save-organizer
 
-npx -y socialdatax-skills@latest bilibili download \
+npx -y socialdatax-skills@latest bilibili download-media \
   --url "<bilibili_video_url_or_share_text>" --output-dir "<directory>" --pretty \
   --source-client socialdatax-skills --source-platform modelscope \
   --source-skill socialdatax-media-save-organizer

@@ -1150,3 +1150,5 @@ npx -y socialdatax-skills@latest docs openapi --pretty
 ```
 
 No command-specific parameters.
+
+Hongguo single-episode downloads use `hongguo download-media --video-id "<video_id>" --output-dir ./downloads` or `--url "<episode_share_url_or_text>"`. See [local video downloads](README.md#local-video-downloads) for FFmpeg, quality selection and billing. Bilibili and WeChat also use `download-media`; legacy `bilibili download` and `wechat decrypt-media` remain supported.

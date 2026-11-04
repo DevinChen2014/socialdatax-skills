@@ -570,7 +570,7 @@
     }
   },
   "wechat_search_mp_articles": {
-    "description": "按搜索词查找微信公众号文章，支持排序、发布时间筛选和分页；不要传文章链接或公众号账号 ID。\n\n读取全文时，将结果的 article_url 作为 url 传给 wechat_get_mp_article_detail_by_url；\n查看指定公众号发布的文章请用 wechat_get_mp_account_articles_by_account_id。",
+    "description": "按搜索词查找微信公众号文章，支持排序、发布时间筛选和分页；不要传文章链接或公众号账号 ID。\n\n读取全文时，将结果的 article_url 作为 url 传给 wechat_get_mp_article_detail_by_url；\n查看指定公众号发布的文章请用 wechat_get_mp_account_articles_by_account_id。\n搜索卡片的展示标题和发布时间可能与详情不同，精确值以详情为准。",
     "parameters": {
       "keyword": {
         "maxLength": 100,
@@ -1156,6 +1156,7 @@
           "youtube",
           "toutiao",
           "haokan",
+          "hongguo",
           "media_transcript"
         ],
         "type": "string",

@@ -212,6 +212,16 @@ npx -y socialdatax-skills@latest xhs share-info \
   --share-text "<note_share_short_url_or_full_share_text>" --pretty \
   --source-client socialdatax-skills --source-platform github \
   --source-skill media-detail
+
+npx -y socialdatax-skills@latest hongguo download-media \
+  --video-id "<video_id>" --output-dir ./downloads --pretty \
+  --source-client socialdatax-skills --source-platform github \
+  --source-skill media-detail
+
+npx -y socialdatax-skills@latest hongguo download-media \
+  --url "<episode_share_url_or_text>" --output episode.mp4 --pretty \
+  --source-client socialdatax-skills --source-platform github \
+  --source-skill media-detail
 ```
 
 Optional arguments:
@@ -255,6 +265,18 @@ Haokan / 好看视频: choose either `--video-id` or `--url` (video page URL); d
 When the user asks who shared an XHS note, use `xhs share-info --share-text` with the original share short link or complete share text. The sharer and note author are separate roles; do not treat the author as the sharer.
 Share information does not include the sharing time or a forwarding chain. Use `xhs detail` separately only when the full note content is requested.
 
+For Hongguo single-episode downloads, use hongguo download-media with --video-id or --url (exactly one), and --output or --output-dir (exactly one). It requires SOCIALDATAX_API_KEY for one resource request and local FFmpeg for download/decryption. Supported share links are novelquickapp.com comic-drama episode links or full share text. Optional --definition selects an exact quality; otherwise the first returned stream is used. Return the local path, episode ID, quality, file size and request points; do not print decryption keys or signed media URLs.
+
+### FFmpeg Setup
+
+Run `ffmpeg -version` in the environment that executes the CLI (including the container or remote machine, if used). If it prints a version successfully, use the existing installation. Otherwise install FFmpeg for that environment:
+
+- macOS with Homebrew installed: `brew install ffmpeg` ([Homebrew package](https://formulae.brew.sh/formula/ffmpeg)).
+- Debian/Ubuntu: run `sudo apt update`, then `sudo apt install ffmpeg`.
+- Windows: download a prebuilt Windows package linked from the [FFmpeg download page](https://ffmpeg.org/download.html#build-windows), extract it and add its `bin` directory to PATH, or pass the path to `ffmpeg.exe` with `--ffmpeg-path`.
+
+After installation, rerun `ffmpeg -version` from the CLI environment. If FFmpeg is outside PATH, check it using its full executable path and pass that same path with `--ffmpeg-path "<absolute_path_to_ffmpeg>"`.
+
 ## Safety Boundary
 
 Platform detail access is read-only. It uses `SOCIALDATAX_API_KEY` from the user's environment at runtime for SocialDataX detail requests. Generated Skill files do not contain API keys. It does not read local browser data or perform login, posting, liking, commenting, or account changes. The optional XHS, Douyin, Kuaishou, Weibo, and X / Twitter local save commands write only to the requested local `--output` path or `--output-dir` directory and do not require `SOCIALDATAX_API_KEY`. The optional WeChat Channels / 视频号 local save command writes only to the user-provided `--output` file, decrypts when needed, and does not require `SOCIALDATAX_API_KEY`.
@@ -277,6 +299,7 @@ MCP tools matching the direct CLI commands above:
 - WECHAT: `wechat_get_video_detail_by_encrypted_object_id`, `wechat_get_video_detail_by_url`, `wechat_get_mp_article_detail_by_url`, `wechat_get_mp_article_stats_by_url`, `wechat_get_video_share_url_by_object_id`
 - BAIDU: `baidu_tieba_get_forum_detail`, `baidu_tieba_get_post_detail_by_thread_id`, `baidu_tieba_get_post_detail_by_url`
 - HAOKAN: `haokan_get_video_detail_by_video_id`, `haokan_get_video_detail_by_url`
+- HONGGUO: `hongguo_get_video_download_links_by_video_id`, `hongguo_get_video_download_links_by_video_url`
 
 If MCP tools are already available in the current agent, use one of these tools:
 - `xhs_get_note_detail_by_note_id`: use when the full `note_id` is already known; do not pass only a prefix.
@@ -325,7 +348,7 @@ For Weibo detail, include `post_id`, content, author, media, interaction counts,
 For Toutiao detail, include `post_id`, content, author, media, interaction counts, publish time, and post URL when available.
 When the user wants to save Weibo media after detail, pass each returned `image_urls[]` or `video.video_url` to `npx -y socialdatax-skills@latest weibo download-media --url "<media_url>" --output-dir <directory> --pretty`; this local save command does not require `SOCIALDATAX_API_KEY`.
 For WeChat Channels / 视频号 detail, preserve `object_id` and `object_nonce_id` because comments and replies need both values.
-When the user wants to save a WeChat Channels / 视频号 video after detail, pass the returned `video.video_url` to `npx -y socialdatax-skills@latest wechat decrypt-media --media-url "<video.video_url>" --output <file>`; this local save command decrypts when needed and does not require `SOCIALDATAX_API_KEY`.
+When the user wants to save a WeChat Channels / 视频号 video after detail, pass the returned `video.video_url` to `npx -y socialdatax-skills@latest wechat download-media --media-url "<video.video_url>" --output <file>`; this local save command decrypts when needed and does not require `SOCIALDATAX_API_KEY`.
 For WeChat Official Account / 微信公众号 article detail, include article title, account, publish time, body text, image URLs, linked articles, and embedded video cards when present.
 For WeChat Official Account / 微信公众号 article statistics, include only returned reading, likes, shares, collections, comments, and wow counts; preserve null values and do not infer missing metrics.
 Label XHS 蒲公英 / Pugongying results as commercial note data, distinct from ordinary public note metrics; do not present ordinary note details as a successful commercial result.

@@ -95,7 +95,7 @@ Common search phrases for this skill package:
 - Reserved future SocialDataX namespace names for existing platform listings without draft files yet: `com.socialdatax/kuaishou-insights`, `com.socialdatax/bilibili-insights`, `com.socialdatax/weibo-insights`, `com.socialdatax/wechat-channels-insights`, `com.socialdatax/zhihu-insights`, `com.socialdatax/instagram-insights`, `com.socialdatax/x-insights`, `com.socialdatax/youtube-insights`, and `com.socialdatax/tiktok-insights`.
 - Hosted endpoints without a repo-tracked standalone listing: Toutiao / 今日头条, Haokan / 好看视频, and Sensitive Words Check.
 - Unified MCP registry name: none; this package installs skills and calls explicit hosted MCP entries.
-- Package capability version: `0.2.58`
+- Package capability version: `0.2.62`
 
 ## XHS 蒲公英 / Pugongying commercial note details
 
@@ -184,7 +184,7 @@ npx -y socialdatax-skills@latest bilibili user-articles --user-id "<user_id>" --
 npx -y socialdatax-skills@latest bilibili user-articles --profile-url "<profile_url_or_share_text>" --pretty
 npx -y socialdatax-skills@latest bilibili user-dynamics --user-id "<user_id>" --pretty
 npx -y socialdatax-skills@latest bilibili user-dynamics --profile-url "<profile_url_or_share_text>" --pretty
-npx -y socialdatax-skills@latest bilibili download --url "<bilibili_video_url_or_share_text>" --output-dir ./downloads --pretty
+npx -y socialdatax-skills@latest bilibili download-media --url "<bilibili_video_url_or_share_text>" --output-dir ./downloads --pretty
 npx -y socialdatax-skills@latest weibo hot-search --pretty
 npx -y socialdatax-skills@latest weibo search --keyword "露营" --pretty
 npx -y socialdatax-skills@latest weibo detail --post-id "<post_id>" --pretty
@@ -220,7 +220,7 @@ npx -y socialdatax-skills@latest wechat hot-search --pretty
 npx -y socialdatax-skills@latest wechat search --keyword "露营" --pretty
 npx -y socialdatax-skills@latest wechat detail --encrypted-object-id "<encrypted_object_id>" --pretty
 npx -y socialdatax-skills@latest wechat detail --url "<wechat_work_url_or_share_text>" --pretty
-npx -y socialdatax-skills@latest wechat decrypt-media --media-url "<video.video_url>" --output video.mp4
+npx -y socialdatax-skills@latest wechat download-media --media-url "<video.video_url>" --output video.mp4
 npx -y socialdatax-skills@latest wechat article --url "<mp_article_url_or_share_text>" --pretty
 npx -y socialdatax-skills@latest wechat article-stats --url "<mp_article_url_or_share_text>" --pretty
 npx -y socialdatax-skills@latest wechat comments --object-id "<object_id>" --object-nonce-id "<object_nonce_id>" --pretty
@@ -282,7 +282,7 @@ npx -y socialdatax-skills@latest tiktok user-posts --profile-url "<profile_url_o
 npx -y socialdatax-skills@latest sensitive-check text --text "<content>" --platform xhs --pretty
 ```
 
-Most direct CLI commands print a JSON envelope with `platform`, `tool`, `arguments`, and `data`. `sensitive-check` prints `platform`, `tool`, and `data` only; it does not echo the original text in CLI output. `wechat decrypt-media` is a local save command: pass the `video.video_url` returned by WeChat detail and an `--output` file path. It saves the media locally, decrypts when needed, and does not require `SOCIALDATAX_API_KEY`. `xhs/douyin/kuaishou/weibo download-media` is also local: pass one media URL returned by detail and either `--output <file>` or `--output-dir <directory>`. `x download-media` accepts one X media URL returned by search or detail. These local commands write through a `.part` file, resume partial downloads when the server supports range requests, skip an already existing output file, and infer common image/video/audio extensions in `--output-dir` mode. X / Twitter media URLs are served from overseas CDN domains such as `pbs.twimg.com` and `video.twimg.com`; if the local download times out, make the CLI process use a proxy with `--proxy "http://127.0.0.1:7890"` or `HTTP_PROXY` / `HTTPS_PROXY` / `ALL_PROXY`, then retry.
+Most direct CLI commands print a JSON envelope with `platform`, `tool`, `arguments`, and `data`. `sensitive-check` prints `platform`, `tool`, and `data` only; it does not echo the original text in CLI output. `wechat download-media` is a local save command: pass the `video.video_url` returned by WeChat detail and an `--output` file path. It saves the media locally, decrypts when needed, and does not require `SOCIALDATAX_API_KEY`. `xhs/douyin/kuaishou/weibo download-media` is also local: pass one media URL returned by detail and either `--output <file>` or `--output-dir <directory>`. `x download-media` accepts one X media URL returned by search or detail. These local commands write through a `.part` file, resume partial downloads when the server supports range requests, skip an already existing output file, and infer common image/video/audio extensions in `--output-dir` mode. X / Twitter media URLs are served from overseas CDN domains such as `pbs.twimg.com` and `video.twimg.com`; if the local download times out, make the CLI process use a proxy with `--proxy "http://127.0.0.1:7890"` or `HTTP_PROXY` / `HTTPS_PROXY` / `ALL_PROXY`, then retry.
 
 
 The following six platforms also support direct CLI transcripts. Pass exactly one URL, content ID, or existing job ID:
@@ -486,7 +486,7 @@ npx -y socialdatax-skills@latest kuaishou search --keyword "露营" --pretty
 npx -y socialdatax-skills@latest kuaishou transcript --photo-id "<photo_id>" --pretty
 npx -y socialdatax-skills@latest kuaishou download-media --url "<kuaishou_media_url>" --output-dir ./downloads --pretty
 npx -y socialdatax-skills@latest bilibili search-videos --keyword "露营" --pretty
-npx -y socialdatax-skills@latest bilibili download --url "<bilibili_video_url_or_share_text>" --output-dir ./downloads --pretty
+npx -y socialdatax-skills@latest bilibili download-media --url "<bilibili_video_url_or_share_text>" --output-dir ./downloads --pretty
 npx -y socialdatax-skills@latest weibo hot-search --pretty
 npx -y socialdatax-skills@latest weibo search --keyword "露营" --pretty
 npx -y socialdatax-skills@latest weibo transcript --post-id "<post_id>" --pretty
@@ -835,6 +835,7 @@ Version `0.2.50` adds `weibo user-suggestions --keyword "摄影"` for a few sear
 | `wechat_get_hot_search_list` | Fetch the current WeChat Channels / 视频号 hot-search list. |
 | `wechat_search_videos` | Search WeChat Channels / 视频号 videos by keyword with optional `page_token` continuation and filters; do not pass `page`. |
 | `wechat_get_video_detail_by_encrypted_object_id` | Fetch structured WeChat Channels video details when encrypted_object_id is already known. |
+| `wechat_get_video_detail_by_object_id` | Fetch WeChat Channels work details when a numeric object_id is already known. |
 | `wechat_get_video_detail_by_url` | Resolve a WeChat Channels / 视频号 video or image-post link or share text into structured work details. |
 | `wechat_get_mp_article_detail_by_url` | Fetch WeChat Official Account / 微信公众号 article detail and body text from an article link or share text. |
 | `wechat_get_mp_article_stats_by_url` | Fetch WeChat Official Account / 微信公众号 article reading and engagement statistics from an article link or share text. |
@@ -1111,3 +1112,18 @@ The files in this public repository are released under the MIT License. The lice
 ## Source repository maintenance
 
 For maintainers working in the SocialDataX service source repository, check the extended command handler contracts with `uv run --locked --env-file env.local python scripts/sync_socialdatax_cli_contracts.py`. The default mode checks for drift; append `--write` to regenerate the contract file after an intentional handler change. This maintenance script is in the service source repository and is not included in the npm package.
+
+## Local video downloads
+
+The canonical command is `download-media`. Bilibili still accepts `download`, and WeChat Channels still accepts `decrypt-media`; their existing flags and legacy JSON `action` values remain compatible. The canonical commands return `action: "download-media"`.
+
+```bash
+npx -y socialdatax-skills@latest bilibili download-media --url "<bilibili_video_url_or_share_text>" --output-dir ./downloads
+npx -y socialdatax-skills@latest wechat download-media --media-url "<video.video_url>" --output video.mp4
+npx -y socialdatax-skills@latest hongguo download-media --video-id "<episodes[].video_id>" --definition 720p --output-dir ./downloads
+npx -y socialdatax-skills@latest hongguo download-media --url "<episode_share_url_or_text>" --output episode.mp4
+```
+
+Hongguo accepts exactly one of `--video-id` or `--url`, and exactly one of `--output` or `--output-dir`. It currently resolves novelquickapp.com comic-drama episode shares. It requires `SOCIALDATAX_API_KEY` to request episode resources and FFmpeg for local CENC MP4 decryption; `--ffmpeg-path` selects the executable. Only the resource request consumes API points. The command checks FFmpeg and the output directory before requesting resources, then downloads, decrypts and fully validates decoding locally. Omit `--definition` to choose the first returned stream; an unavailable explicit label fails without silently choosing another quality.
+
+Hongguo refuses to overwrite existing output files and removes temporary files after success or failure. Its JSON contains `platform`, `action`, `video_id`, `definition`, `output_path`, `output_bytes` and the resource request's `points`, with no decryption key or signed resource URL. Under `--output-dir`, the filename is `<video_id>-<definition>.mp4`; the local download limit is 2 GiB and the download, decryption and full decoding validation timeouts are 10 minutes each. Links can expire; a failed local download does not reverse a successful API resource request.

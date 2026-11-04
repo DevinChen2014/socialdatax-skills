@@ -18,6 +18,7 @@ import {
 } from "./lib/media/bilibili-download.mjs";
 import { downloadPlatformMediaFromUrl } from "./lib/media/platform-download.mjs";
 import { decryptWechatMediaCommand } from "./lib/media/wechat-decrypt.mjs";
+import { buildHongguoDownloadRequest, downloadHongguoVideo } from "./lib/media/hongguo-download.mjs";
 import {
   EXTENDED_COMMANDS, TOOL_CONTRACTS, buildExtendedCall, extendedCommandOptions,
   extendedHelp, findExtendedCommand,
@@ -26,7 +27,7 @@ import {
 export { decryptWechatMediaCommand };
 
 const PACKAGE_NAME = "socialdatax-skills";
-const PACKAGE_VERSION = "0.2.60";
+const PACKAGE_VERSION = "0.2.62";
 const PACKAGE_SPEC = `${PACKAGE_NAME}@latest`;
 const LOG_PREFIX = `[${PACKAGE_NAME}]`;
 const MIN_NODE_VERSION = "20.18.1";
@@ -436,6 +437,7 @@ const BILIBILI_DIRECT_ACTION_OPTIONS = {
     "maxItems",
     "pretty",
   ],
+  "download-media": ["url", "output", "outputDir", "ffmpegPath", "keepTracks", "pretty"],
   download: ["url", "output", "outputDir", "ffmpegPath", "keepTracks", "pretty"],
 };
 const BILIBILI_DIRECT_ACTION_NAMES = Object.keys(BILIBILI_DIRECT_ACTION_OPTIONS).join(", ");
@@ -858,9 +860,10 @@ const WECHAT_DIRECT_ACTION_OPTIONS = {
     "pretty",
   ],
   transcript: ["url", "encryptedObjectId", "jobId", "maxWaitSeconds", "pretty"],
+  "download-media": ["mediaUrl", "output", "pretty"],
   "decrypt-media": ["mediaUrl", "output", "pretty"],
 };
-const WECHAT_LOCAL_DIRECT_ACTIONS = new Set(["decrypt-media"]);
+const WECHAT_LOCAL_DIRECT_ACTIONS = new Set(["download-media", "decrypt-media"]);
 const WECHAT_DIRECT_ACTION_NAMES = Object.keys(WECHAT_DIRECT_ACTION_OPTIONS).join(", ");
 const WECHAT_SEARCH_SORT_TYPES = [
   "all",
@@ -1504,6 +1507,10 @@ const PLATFORMS = {
         description: "Fetch structured video details when encrypted_object_id is already known.",
       },
       {
+        name: "wechat_get_video_detail_by_object_id",
+        description: "Fetch WeChat Channels work details when a numeric object_id is already known.",
+      },
+      {
         name: "wechat_get_video_detail_by_url",
         description:
           "Resolve a WeChat Channels / 视频号 video or image-post link or share text into structured work details.",
@@ -1859,6 +1866,18 @@ const PLATFORMS = {
       },
     ],
   },
+  hongguo: {
+    id: "hongguo", displayName: "红果 / Hongguo", status: "public",
+    endpoint: "https://mcp.socialdatax.com/hongguo/mcp", apiKeyEnv: API_KEY_ENV_NAMES,
+    upstreamEnv: ["SOCIALDATAX_HONGGUO_MCP_UPSTREAM_URL", "SOCIAL_MEDIA_MCP_UPSTREAM_URL"],
+    tools: [
+      { name: "hongguo_search_general", description: "Search Hongguo content with optional content-type filters and pagination." },
+      { name: "hongguo_get_series_detail_by_series_id", description: "Get Hongguo series details and the complete episode list by series_id." },
+      { name: "hongguo_get_series_detail_by_url", description: "Get Hongguo series details and the complete episode list from a share URL or share text." },
+      { name: "hongguo_get_video_download_links_by_video_id", description: "Get encrypted single-episode resources and decryption information by video_id." },
+      { name: "hongguo_get_video_download_links_by_video_url", description: "Get the shared Hongguo episode resources from a supported share URL or share text." },
+    ],
+  },
   "sensitive-check": {
     id: "sensitive-check",
     displayName: "Sensitive Words Check / 敏感词检测",
@@ -1940,6 +1959,8 @@ async function main() {
       await runDouyinDirectCommand(cliArgs.slice(1));
     } else if (command === "kuaishou") {
       await runKuaishouDirectCommand(cliArgs.slice(1));
+    } else if (command === "hongguo") {
+      await runHongguoDirectCommand(cliArgs.slice(1));
     } else if (command === "bilibili") {
       await runBilibiliDirectCommand(cliArgs.slice(1));
     } else if (command === "weibo") {
@@ -2257,7 +2278,7 @@ function validateBilibiliDirectActionOptions(action, options) {
 
   validateKnownOptions(options, allowedDirectOptions(allowedOptions));
   validateDirectMetaOptions(options);
-  if (action === "download") {
+  if (action === "download" || action === "download-media") {
     validateFlagOption(options, "pretty", "--pretty");
     validateFlagOption(options, "keepTracks", "--keep-tracks");
     for (const key of allowedOptions) {
@@ -2266,13 +2287,13 @@ function validateBilibiliDirectActionOptions(action, options) {
       }
     }
     if (!options.url) {
-      throw new Error("Missing --url for bilibili download.");
+      throw new Error(`Missing --url for bilibili ${action}.`);
     }
     if (!options.output && !options.outputDir) {
-      throw new Error("Missing --output or --output-dir for bilibili download.");
+      throw new Error(`Missing --output or --output-dir for bilibili ${action}.`);
     }
     if (options.output && options.outputDir) {
-      throw new Error("Use only one of --output or --output-dir for bilibili download.");
+      throw new Error(`Use only one of --output or --output-dir for bilibili ${action}.`);
     }
     return;
   }
@@ -3247,8 +3268,11 @@ function printHelp() {
   console.log(`  npx -y ${PACKAGE_SPEC} bilibili user-dynamics --profile-url "<profile_url_or_share_text>" --pretty`);
   console.log("      Call the Bilibili creator dynamics tool from a profile link or share text.");
   console.log("");
-  console.log(`  npx -y ${PACKAGE_SPEC} bilibili download --url "<bilibili_video_url_or_share_text>" --output-dir ./downloads --pretty`);
-  console.log("      Fetch Bilibili download links, save DASH tracks locally, and merge them with ffmpeg.");
+  console.log(`  npx -y ${PACKAGE_SPEC} bilibili download-media --url "<bilibili_video_url_or_share_text>" --output-dir ./downloads --pretty`);
+  console.log("      Fetch Bilibili download links, save DASH tracks locally, and merge them with ffmpeg. Legacy alias: bilibili download.");
+  console.log(`  npx -y ${PACKAGE_SPEC} hongguo download-media --video-id "<video_id>" --definition 720p --output-dir ./downloads --pretty`);
+  console.log(`  npx -y ${PACKAGE_SPEC} hongguo download-media --url "<episode_share_url_or_text>" --output episode.mp4 --pretty`);
+  console.log("      Fetch one episode, download and locally decrypt with FFmpeg. Omit --definition to use the first returned stream.");
   console.log("");
   console.log(`  npx -y ${PACKAGE_SPEC} weibo hot-search --pretty`);
   console.log("      Call the Weibo hot-search list tool directly and print JSON.");
@@ -3343,8 +3367,8 @@ function printHelp() {
   console.log(`  npx -y ${PACKAGE_SPEC} wechat detail --url "<wechat_work_url_or_share_text>" --pretty`);
   console.log("      Call the WeChat Channels / 视频号 work detail tool from a video or image-post link or share text.");
   console.log("");
-  console.log(`  npx -y ${PACKAGE_SPEC} wechat decrypt-media --media-url "<video.video_url>" --output video.mp4`);
-  console.log("      Save the WeChat Channels / 视频号 media URL returned by detail and locally decrypt when needed.");
+  console.log(`  npx -y ${PACKAGE_SPEC} wechat download-media --media-url "<video.video_url>" --output video.mp4`);
+  console.log("      Save the WeChat Channels / 视频号 media URL returned by detail and locally decrypt when needed. Legacy alias: wechat decrypt-media.");
   console.log("");
   console.log(`  npx -y ${PACKAGE_SPEC} wechat article --url "<mp_article_url_or_share_text>" --pretty`);
   console.log("      Call the WeChat Official Account / 微信公众号 article detail tool from an article link or share text.");
@@ -3556,15 +3580,15 @@ function printHelp() {
   console.log("      For x download-media, pass one media URL returned by search or detail.");
   console.log("      For Douyin detail/comments, pass a content page link, not video.play_url.");
   console.log("  --media-url <video.video_url>");
-  console.log("      WeChat detail result media URL for local decrypt-media download.");
+  console.log("      WeChat detail result media URL for local download-media.");
   console.log("  --output <file>");
-  console.log("      Output file path for local decrypt-media, download-media, or Bilibili download.");
+  console.log("      Output file path for download-media; legacy download/decrypt-media aliases remain supported.");
   console.log("  --output-dir <directory>");
-  console.log("      Directory for download-media or Bilibili download output when --output is omitted.");
+  console.log("      Directory for download-media output when --output is omitted (WeChat requires --output).");
   console.log("  --proxy <http-or-https-proxy-url>");
   console.log("      Proxy for local download-media requests; otherwise HTTPS_PROXY, HTTP_PROXY, or ALL_PROXY is used when set.");
   console.log("  --ffmpeg-path <path>");
-  console.log("      ffmpeg executable path for Bilibili download; defaults to ffmpeg.");
+  console.log("      FFmpeg executable path for Bilibili or Hongguo download-media; defaults to ffmpeg.");
   console.log("  --keep-tracks");
   console.log("      Keep the downloaded Bilibili video and audio track files after merge.");
   console.log("  --note-id <note_id>");
@@ -3860,6 +3884,26 @@ async function runKuaishouDirectCommand(args) {
   process.stdout.write("\n");
 }
 
+async function runHongguoDirectCommand(args) {
+  const { options, positional } = parseCommandArgs(args);
+  if (shouldPrintDirectHelp(options, positional)) { printHelp(); return; }
+  if (positional[0] !== "download-media") throw new Error("Use hongguo download-media.");
+  if (positional.length > 1) throw new Error(`Unexpected argument: ${positional[1]}`);
+  const flags = ["videoId", "url", "definition", "output", "outputDir", "ffmpegPath", "pretty"];
+  validateKnownOptions(options, allowedDirectOptions(flags));
+  validateDirectMetaOptions(options);
+  validateFlagOption(options, "pretty", "--pretty");
+  for (const key of flags.filter(key => key !== "pretty")) requireOptionValue(options, key, `--${toKebabCase(key)}`);
+  buildHongguoDownloadRequest(options);
+  ensureSupportedNodeVersion();
+  const data = await downloadHongguoVideo(options, {
+    getLinks: request => callDirectOperation(attachDirectMetadata(
+      buildDirectOperation("download-media", request, PLATFORMS.hongguo), options,
+    )),
+  });
+  process.stdout.write(JSON.stringify(data, null, options.pretty ? 2 : 0) + "\n");
+}
+
 async function runBilibiliDirectCommand(args) {
   const { options, positional } = parseCommandArgs(args);
   if (shouldPrintDirectHelp(options, positional)) {
@@ -3877,7 +3921,7 @@ async function runBilibiliDirectCommand(args) {
   }
   validateBilibiliDirectActionOptions(action, options);
 
-  if (action === "download") {
+  if (action === "download" || action === "download-media") {
     await assertBilibiliDownloadLocalPreflight(options);
     const operation = attachDirectMetadata(
       buildBilibiliOperation(action, options),
@@ -3885,6 +3929,7 @@ async function runBilibiliDirectCommand(args) {
     );
     const manifest = await callDirectOperation(operation);
     const data = await downloadBilibiliVideoFromManifest(manifest, options);
+    data.action = action;
     process.stdout.write(JSON.stringify(data, null, options.pretty ? 2 : 0));
     process.stdout.write("\n");
     return;
@@ -4054,8 +4099,8 @@ async function runWechatDirectCommand(args) {
   }
   validateWechatDirectActionOptions(action, options);
 
-  if (action === "decrypt-media") {
-    const data = await decryptWechatMediaCommand(options);
+  if (WECHAT_LOCAL_DIRECT_ACTIONS.has(action)) {
+    const data = await decryptWechatMediaCommand({ ...options, command: action });
     process.stdout.write(JSON.stringify(data, null, options.pretty ? 2 : 0));
     process.stdout.write("\n");
     return;
@@ -4688,12 +4733,13 @@ function buildBilibiliOperation(action, options) {
         }),
         PLATFORMS.bilibili
       );
+    case "download-media":
     case "download":
       if (!options.url) {
-        throw new Error("Missing --url for bilibili download.");
+        throw new Error(`Missing --url for bilibili ${action}.`);
       }
       return buildDirectOperation(
-        "download",
+        action,
         {
           tool: "bilibili_get_video_download_links",
           toolArguments: {
