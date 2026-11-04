@@ -95,7 +95,7 @@ Common search phrases for this skill package:
 - Reserved future SocialDataX namespace names for existing platform listings without draft files yet: `com.socialdatax/kuaishou-insights`, `com.socialdatax/bilibili-insights`, `com.socialdatax/weibo-insights`, `com.socialdatax/wechat-channels-insights`, `com.socialdatax/zhihu-insights`, `com.socialdatax/instagram-insights`, `com.socialdatax/x-insights`, `com.socialdatax/youtube-insights`, and `com.socialdatax/tiktok-insights`.
 - Hosted endpoints without a repo-tracked standalone listing: Toutiao / 今日头条, Haokan / 好看视频, and Sensitive Words Check.
 - Unified MCP registry name: none; this package installs skills and calls explicit hosted MCP entries.
-- Package capability version: `0.2.63`
+- Package capability version: `0.2.64`
 
 ## XHS 蒲公英 / Pugongying commercial note details
 
@@ -149,6 +149,7 @@ npx -y socialdatax-skills@latest douyin user-series --profile-url "<profile_url_
 npx -y socialdatax-skills@latest douyin transcript --url "<douyin_content_url_or_share_text>" --pretty
 npx -y socialdatax-skills@latest douyin transcript --aweme-id "<aweme_id>" --pretty
 npx -y socialdatax-skills@latest douyin transcript --job-id "<job_id>" --pretty
+npx -y socialdatax-skills@latest douyin transcript --job-id "<job_id>" --srt-output ./video.srt --pretty
 npx -y socialdatax-skills@latest douyin download-media --url "<douyin_media_url>" --output-dir ./downloads --pretty
 npx -y socialdatax-skills@latest kuaishou hot-search --pretty
 npx -y socialdatax-skills@latest kuaishou search --keyword "露营" --pretty
@@ -332,6 +333,8 @@ For commands that accept `--page-token`, continue only with the complete returne
 Search pagination uses `--page-token` when continuing with a returned `next_page_token`. Omit `--page-token` on the first search request and pass the complete returned `next_page_token` only when continuing the same search chain.
 
 Transcript commands submit a bounded video speech-to-text job or check an existing job. Pass exactly one entrypoint for each call: URL/share text, platform content ID, or `--job-id`. Direct CLI transcript commands wait and poll the same job by default; completed get-job responses return transcript plus content context, not summary.
+
+Add `--srt-output ./video.srt` to any supported platform's `transcript` command to export its successful timed segments as UTF-8 subtitles. JSON output is unchanged. The parent directory must exist and be writable; existing files are not overwritten. Unfinished or failed jobs do not create a file. If waiting ends, continue with the same `--job-id` and `--srt-output`; missing or invalid timing is reported as an export error with the job JSON preserved, without inventing timestamps or resubmitting the video.
 
 Generated Agent Skill examples include `--source-client socialdatax-skills --source-platform <marketplace> --source-skill <skill-slug>` so SocialDataX can attribute authenticated direct data CLI usage to the current marketplace Skill. Keep those values unchanged when running commands from a Skill; omit them for ad hoc CLI use. Authenticated direct data CLI commands also accept `SOCIALDATAX_SOURCE_CLIENT`, `SOCIALDATAX_SOURCE_PLATFORM`, and `SOCIALDATAX_SOURCE_SKILL` as environment-variable fallbacks.
 

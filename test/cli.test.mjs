@@ -805,6 +805,170 @@ test("XHS video search has no separate public CLI command", async () => {
   assert.deepEqual(toolCalls, []);
 });
 
+test("transcript SRT export writes timed UTF-8 cues on all eleven platforms without changing JSON", async () => {
+  const tempDir = mkdtempSync(join(tmpdir(), "socialdatax-srt-"));
+  const data = { job_id: "existing-job", status: "succeeded", is_terminal: true,
+    transcript: { text: "你好。下一句。", segments: [
+      { start_ms: 5, end_ms: 1234, text: "你好。\r\n\r\n第二行" },
+      { start_ms: 3_661_002, end_ms: 3_662_010, text: "下一句。" },
+    ] } };
+  try {
+    for (const platform of ["xhs", "douyin", "kuaishou", "weibo", "wechat", "bilibili", "zhihu", "instagram", "x", "tiktok", "youtube"]) {
+      const output = join(tempDir, `${platform} 字幕.srt`);
+      const { result, toolCalls } = await runCliWithMockMcp(
+        [platform, "transcript", "--job-id", "existing-job", "--srt-output", output], {}, () => data);
+      assert.equal(result.status, 0, result.stderr);
+      assert.deepEqual(JSON.parse(result.stdout).data, data);
+      assert.equal(readFileSync(output, "utf8"),
+        "1\n00:00:00,005 --> 00:00:01,234\n你好。\n第二行\n\n2\n01:01:01,002 --> 01:01:02,010\n下一句。\n\n");
+      assert.deepEqual(toolCalls, [{ name: `${platform}_get_video_speech_text_job`, arguments: { job_id: "existing-job" } }]);
+    }
+  } finally { rmSync(tempDir, { recursive: true, force: true }); }
+});
+
+test("transcript SRT export waits on the same submitted job before writing", async () => {
+  const tempDir = mkdtempSync(join(tmpdir(), "socialdatax-srt-"));
+  const output = join(tempDir, "video.srt");
+  try {
+    const { result, toolCalls } = await runCliWithMockMcp([
+      "youtube", "transcript", "--video-id", "abcdefghijk", "--srt-output", output,
+    ], {}, (_call, count) => {
+      assert.equal(existsSync(output), false);
+      return count === 1
+        ? { job_id: "submitted-job", status: "running", is_terminal: false, next_poll_after_seconds: 0 }
+        : { job_id: "submitted-job", status: "succeeded", is_terminal: true,
+            transcript: { text: "完成", segments: [{ start_ms: 0, end_ms: 1000, text: "完成" }] } };
+    });
+    assert.equal(result.status, 0, result.stderr);
+    assert.equal(toolCalls.length, 2);
+    assert.equal(toolCalls[1].name, "youtube_get_video_speech_text_job");
+    assert.deepEqual(toolCalls[1].arguments, { job_id: "submitted-job" });
+    assert.equal(readFileSync(output, "utf8"), "1\n00:00:00,000 --> 00:00:01,000\n完成\n\n");
+  } finally { rmSync(tempDir, { recursive: true, force: true }); }
+});
+
+test("transcript SRT export rejects invalid output paths before making a paid request", async () => {
+  const tempDir = mkdtempSync(join(tmpdir(), "socialdatax-srt-"));
+  const existing = join(tempDir, "existing.srt");
+  writeFileSync(existing, "keep me");
+  try {
+    for (const output of [existing, tempDir, join(tempDir, "missing", "video.srt"), "", " ", true]) {
+      const args = ["douyin", "transcript", "--job-id", "existing-job"];
+      args.push(output === "" ? "--srt-output=" : "--srt-output");
+      if (output !== true && output !== "") args.push(output);
+      const { result, toolCalls } = await runCliWithMockMcp(args);
+      assert.equal(result.status, 1, result.stderr);
+      assert.match(result.stderr, /srt-output/i);
+      assert.deepEqual(toolCalls, []);
+    }
+    assert.equal(readFileSync(existing, "utf8"), "keep me");
+  } finally { rmSync(tempDir, { recursive: true, force: true }); }
+});
+
+test("transcript SRT export preserves successful job data when timing is unavailable or invalid", async () => {
+  const tempDir = mkdtempSync(join(tmpdir(), "socialdatax-srt-"));
+  const output = join(tempDir, "video.srt");
+  try {
+    for (const segments of [[], [{ start_ms: 0, end_ms: 0, text: "x" }],
+      [{ start_ms: -1, end_ms: 1000, text: "x" }], [{ start_ms: 0, end_ms: 1000, text: "  " }],
+      [{ start_ms: "0", end_ms: 1000, text: "x" }]]) {
+      const data = { job_id: "existing-job", status: "succeeded", is_terminal: true,
+        transcript: { text: "有文稿", segments } };
+      const { result } = await runCliWithMockMcp([
+        "douyin", "transcript", "--job-id", "existing-job", "--srt-output", output,
+      ], {}, () => data);
+      assert.equal(result.status, 1, result.stderr);
+      assert.match(result.stderr, /SRT/);
+      assert.deepEqual(JSON.parse(result.stdout).data, data);
+      assert.equal(existsSync(output), false);
+    }
+  } finally { rmSync(tempDir, { recursive: true, force: true }); }
+});
+
+test("transcript SRT export rejects an unwritable directory before submitting a job", {
+  skip: process.platform === "win32" || process.getuid?.() === 0,
+}, async () => {
+  const tempDir = mkdtempSync(join(tmpdir(), "socialdatax-srt-permissions-"));
+  const output = join(tempDir, "video.srt");
+  chmodSync(tempDir, 0o500);
+  try {
+    const { result, toolCalls } = await runCliWithMockMcp([
+      "douyin", "transcript", "--url", "https://www.douyin.com/video/test",
+      "--srt-output", output,
+    ], {}, () => ({ job_id: "submitted-job", status: "succeeded", is_terminal: true,
+      transcript: { text: "完成", segments: [{ start_ms: 0, end_ms: 1000, text: "完成" }] } }));
+    assert.equal(result.status, 1, result.stderr);
+    assert.deepEqual(toolCalls, []);
+    assert.equal(existsSync(output), false);
+  } finally {
+    chmodSync(tempDir, 0o700);
+    rmSync(tempDir, { recursive: true, force: true });
+  }
+});
+
+test("transcript SRT export does not create a file for failed or unfinished jobs", async () => {
+  const tempDir = mkdtempSync(join(tmpdir(), "socialdatax-srt-"));
+  const output = join(tempDir, "video.srt");
+  try {
+    for (const data of [
+      { job_id: "existing-job", status: "failed", is_terminal: true, error: { message: "no speech" } },
+      { job_id: "existing-job", status: "running", is_terminal: false, next_poll_after_seconds: 5 },
+    ]) {
+      const { result } = await runCliWithMockMcp([
+        "douyin", "transcript", "--job-id", "existing-job", "--max-wait-seconds", "1", "--srt-output", output,
+      ], {}, () => data);
+      assert.equal(result.status, 0, result.stderr);
+      assert.deepEqual(JSON.parse(result.stdout).data, data);
+      assert.match(result.stderr, /SRT.*not exported/);
+      assert.equal(existsSync(output), false);
+    }
+  } finally { rmSync(tempDir, { recursive: true, force: true }); }
+});
+
+test("transcript SRT export preserves a file created during the request and retains the job result", async () => {
+  const tempDir = mkdtempSync(join(tmpdir(), "socialdatax-srt-"));
+  const output = join(tempDir, "video.srt");
+  const data = { job_id: "existing-job", status: "succeeded", is_terminal: true,
+    transcript: { text: "完成", segments: [{ start_ms: 0, end_ms: 1000, text: "完成" }] } };
+  try {
+    const { result } = await runCliWithMockMcp([
+      "youtube", "transcript", "--job-id", "existing-job", "--srt-output", output,
+    ], {}, () => { writeFileSync(output, "keep me"); return data; });
+    assert.equal(result.status, 1, result.stderr);
+    assert.match(result.stderr, /SRT export failed/);
+    assert.deepEqual(JSON.parse(result.stdout).data, data);
+    assert.equal(readFileSync(output, "utf8"), "keep me");
+  } finally { rmSync(tempDir, { recursive: true, force: true }); }
+});
+
+test("SRT export failure recovery never suggests resubmitting the original URL command", {
+  skip: process.platform === "win32" || process.getuid?.() === 0,
+}, async () => {
+  const tempDir = mkdtempSync(join(tmpdir(), "socialdatax-srt-recovery-"));
+  const output = join(tempDir, "video.srt");
+  const data = { job_id: "submitted-job", status: "succeeded", is_terminal: true,
+    transcript: { text: "完成", segments: [{ start_ms: 0, end_ms: 1000, text: "完成" }] } };
+  try {
+    for (const [platform, url] of [
+      ["douyin", "https://www.douyin.com/video/test"],
+      ["youtube", "https://www.youtube.com/watch?v=abcdefghijk"],
+    ]) {
+      chmodSync(tempDir, 0o700);
+      const { result, toolCalls } = await runCliWithMockMcp([
+        platform, "transcript", "--url", url, "--srt-output", output,
+      ], {}, () => { chmodSync(tempDir, 0o500); return data; });
+      assert.equal(result.status, 1, result.stderr);
+      assert.equal(toolCalls.length, 1);
+      assert.deepEqual(JSON.parse(result.stdout).data, data);
+      assert.match(result.stderr, /existing --job-id/);
+      assert.doesNotMatch(result.stderr, /retry the same command|重试原命令/);
+    }
+  } finally {
+    chmodSync(tempDir, 0o700);
+    rmSync(tempDir, { recursive: true, force: true });
+  }
+});
+
 test("extended transcript commands query existing jobs on all six platforms", async () => {
   for (const platform of ["bilibili", "zhihu", "instagram", "x", "tiktok", "youtube"]) {
     const { result, toolCalls } = await runCliWithMockMcp([platform, "transcript", "--job-id", "existing-job"], {},
@@ -1004,7 +1168,7 @@ test("public package version metadata stays aligned", () => {
   const cli = readFileSync(cliPath, "utf8");
   const versionPattern = escapeRegExp(packageJson.version);
 
-  assert.equal(packageJson.version, "0.2.63");
+  assert.equal(packageJson.version, "0.2.64");
   assert.equal(packageLock.version, packageJson.version);
   assert.equal(packageLock.packages[""].version, packageJson.version);
   assert.match(
@@ -3549,6 +3713,7 @@ test("npm pack only includes public skill package files", () => {
     "lib/media/common.mjs",
     "lib/media/hongguo-download.mjs",
     "lib/media/platform-download.mjs",
+    "lib/media/transcript-srt.mjs",
     "lib/media/wechat-decrypt.mjs",
     "package.json",
     "skills/media-comments/SKILL.md",

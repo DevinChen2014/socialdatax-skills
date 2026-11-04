@@ -12,7 +12,7 @@ metadata:
     primaryEnv: "SOCIALDATAX_API_KEY"
     install:
       - kind: "node"
-        package: "socialdatax-skills@0.2.63"
+        package: "socialdatax-skills@0.2.64"
         bins: []
     emoji: "🔎"
     homepage: "https://socialdatax.com/ai?from=github"
@@ -40,9 +40,9 @@ Use `SOCIALDATAX_API_KEY` for SocialDataX requests. The only official website fo
 Prefer the direct CLI when the agent can run shell commands. It does not require MCP server configuration:
 
 ```bash
-npx -y socialdatax-skills@0.2.63 xhs search --keyword "<keyword>" --pretty --source-client socialdatax-skills --source-platform github --source-skill socialdatax-content-research-assistant
-npx -y socialdatax-skills@0.2.63 douyin search --keyword "<keyword>" --pretty --source-client socialdatax-skills --source-platform github --source-skill socialdatax-content-research-assistant
-npx -y socialdatax-skills@0.2.63 bilibili download-media --url "<bilibili_video_url_or_share_text>" --output-dir ./downloads --pretty --source-client socialdatax-skills --source-platform github --source-skill socialdatax-content-research-assistant
+npx -y socialdatax-skills@0.2.64 xhs search --keyword "<keyword>" --pretty --source-client socialdatax-skills --source-platform github --source-skill socialdatax-content-research-assistant
+npx -y socialdatax-skills@0.2.64 douyin search --keyword "<keyword>" --pretty --source-client socialdatax-skills --source-platform github --source-skill socialdatax-content-research-assistant
+npx -y socialdatax-skills@0.2.64 bilibili download-media --url "<bilibili_video_url_or_share_text>" --output-dir ./downloads --pretty --source-client socialdatax-skills --source-platform github --source-skill socialdatax-content-research-assistant
 ```
 
 For hot topics, content URLs, profile URLs, comment review, Bilibili reaction review, Weibo liker/repost review, creator facts, creator content lists, or short-drama series, call the matching `socialdatax-skills` platform subcommand instead of forcing every request through keyword research.
@@ -99,7 +99,7 @@ Optional arguments:
 ## Choose The Narrowest Entry
 Use the most specific direct CLI command for the user's task instead of forcing every request through keyword research. The command prints JSON with `platform`, `tool`, `arguments`, and `data`.
 When the selected command exposes `--since-days`, pass it with bounded `--pages` for recent content; otherwise use documented publish-time filters where available, or fetch bounded pages and filter returned `publish_time` values in the analysis.
-Use `npx -y socialdatax-skills@0.2.63 <platform> <action> --help` for exact flags and values. Paginated commands require the complete returned `next_page_token`. Do not modify, truncate, redact, mask, omit, normalize, rebuild, generate, or replace the middle with ellipses. Commands without `--page-token`, including suggestions and first-page-only searches, do not support pagination.
+Use `npx -y socialdatax-skills@0.2.64 <platform> <action> --help` for exact flags and values. Paginated commands require the complete returned `next_page_token`. Do not modify, truncate, redact, mask, omit, normalize, rebuild, generate, or replace the middle with ellipses. Commands without `--page-token`, including suggestions and first-page-only searches, do not support pagination.
 - Haokan / 好看视频: use video/user search, search suggestions, hot-search terms, video details, comments/replies, creator profiles and creator videos. Video URLs and profile URLs are different inputs; do not combine an ID and URL in one call. Video search uses bounded `--pages`; suggestions, hot-search and detail/profile commands do not paginate. Comment replies require the parent `comment_id`; previews are not complete replies. Haokan does not support `--include-replies`, `--since-days` or transcripts.
 X creator replies: use `x user-replies` for replies authored by the creator, including self-replies; use `x comments` or `x replies` for discussions under a post. Choose exactly one of `--user-id`, `--username`, or `--profile-url`. Keep identity and the full returned token unchanged; `user-posts` tokens cannot be reused. An empty page with a nonempty token can continue. `--since-days` is not supported.
 

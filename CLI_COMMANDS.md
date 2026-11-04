@@ -13,6 +13,12 @@ Set `SOCIALDATAX_API_KEY` in the environment for hosted requests. Obtain or mana
 - Array filters use JSON, for example `--content-types '["comic","image_text"]'`.
 
 - Transcript commands also accept positive `--max-wait-seconds <seconds>`. They poll the same job; when interrupted or the wait window ends, continue with `transcript --job-id "<job_id>"`. Do not resubmit an unfinished job.
+- All eleven supported platform `transcript` commands accept `--srt-output <file>` to save returned timed segments as UTF-8 SRT after success. Standard output remains the original JSON; the saved path is reported on stderr. The parent directory must exist and be writable, and existing files are never overwritten. Failed or unfinished jobs produce no subtitle file; unfinished jobs can continue with the same `--job-id` and `--srt-output`. Missing or invalid timing causes an export error while preserving the job JSON; do not resubmit the video to retry a local export failure.
+
+```bash
+npx -y socialdatax-skills@latest douyin transcript --url "<video_url_or_share_text>" --srt-output ./video.srt --pretty
+npx -y socialdatax-skills@latest douyin transcript --job-id "<existing_job_id>" --srt-output ./video.srt --pretty
+```
 
 ## Share links, Official Account image posts, and Hongguo
 

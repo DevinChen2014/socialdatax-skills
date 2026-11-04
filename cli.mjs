@@ -18,6 +18,7 @@ import {
 } from "./lib/media/bilibili-download.mjs";
 import { downloadPlatformMediaFromUrl } from "./lib/media/platform-download.mjs";
 import { decryptWechatMediaCommand } from "./lib/media/wechat-decrypt.mjs";
+import { saveTranscriptSrt, validateSrtOutputPath } from "./lib/media/transcript-srt.mjs";
 import { buildHongguoDownloadRequest, downloadHongguoVideo } from "./lib/media/hongguo-download.mjs";
 import {
   EXTENDED_COMMANDS, TOOL_CONTRACTS, buildExtendedCall, extendedCommandOptions,
@@ -27,7 +28,7 @@ import {
 export { decryptWechatMediaCommand };
 
 const PACKAGE_NAME = "socialdatax-skills";
-const PACKAGE_VERSION = "0.2.63";
+const PACKAGE_VERSION = "0.2.64";
 const PACKAGE_SPEC = `${PACKAGE_NAME}@latest`;
 const LOG_PREFIX = `[${PACKAGE_NAME}]`;
 const MIN_NODE_VERSION = "20.18.1";
@@ -177,7 +178,7 @@ const XHS_DIRECT_ACTION_OPTIONS = {
     "sinceDays",
     "pretty",
   ],
-  transcript: ["url", "noteId", "jobId", "maxWaitSeconds", "pretty"],
+  transcript: ["url", "noteId", "jobId", "maxWaitSeconds", "srtOutput", "pretty"],
   "download-media": ["url", "output", "outputDir", "proxy", "pretty"],
 };
 const XHS_DIRECT_ACTION_NAMES = Object.keys(XHS_DIRECT_ACTION_OPTIONS).join(", ");
@@ -199,6 +200,7 @@ const XHS_OPTION_DISPLAY_NAMES = {
   userId: "--user-id",
   jobId: "--job-id",
   maxWaitSeconds: "--max-wait-seconds",
+  srtOutput: "--srt-output",
   output: "--output",
   outputDir: "--output-dir",
   proxy: "--proxy",
@@ -269,7 +271,7 @@ const DOUYIN_DIRECT_ACTION_OPTIONS = {
     "pretty",
   ],
   "user-series": ["secUserId", "profileUrl", "pageToken", "pages", "all", "maxItems", "pretty"],
-  transcript: ["url", "awemeId", "jobId", "maxWaitSeconds", "pretty"],
+  transcript: ["url", "awemeId", "jobId", "maxWaitSeconds", "srtOutput", "pretty"],
   "download-media": ["url", "output", "outputDir", "proxy", "pretty"],
 };
 const DOUYIN_DIRECT_ACTION_NAMES = Object.keys(DOUYIN_DIRECT_ACTION_OPTIONS).join(", ");
@@ -301,6 +303,7 @@ const DOUYIN_OPTION_DISPLAY_NAMES = {
   secUserId: "--sec-user-id",
   jobId: "--job-id",
   maxWaitSeconds: "--max-wait-seconds",
+  srtOutput: "--srt-output",
   output: "--output",
   outputDir: "--output-dir",
   proxy: "--proxy",
@@ -341,7 +344,7 @@ const KUAISHOU_DIRECT_ACTION_OPTIONS = {
     "sinceDays",
     "pretty",
   ],
-  transcript: ["url", "photoId", "jobId", "maxWaitSeconds", "pretty"],
+  transcript: ["url", "photoId", "jobId", "maxWaitSeconds", "srtOutput", "pretty"],
   "download-media": ["url", "output", "outputDir", "proxy", "pretty"],
 };
 const KUAISHOU_DIRECT_ACTION_NAMES = Object.keys(KUAISHOU_DIRECT_ACTION_OPTIONS).join(", ");
@@ -360,6 +363,7 @@ const KUAISHOU_OPTION_DISPLAY_NAMES = {
   userId: "--user-id",
   jobId: "--job-id",
   maxWaitSeconds: "--max-wait-seconds",
+  srtOutput: "--srt-output",
   output: "--output",
   outputDir: "--output-dir",
   proxy: "--proxy",
@@ -736,7 +740,7 @@ const WEIBO_DIRECT_ACTION_OPTIONS = {
     "sinceDays",
     "pretty",
   ],
-  transcript: ["postUrl", "postId", "jobId", "maxWaitSeconds", "pretty"],
+  transcript: ["postUrl", "postId", "jobId", "maxWaitSeconds", "srtOutput", "pretty"],
   "download-media": ["url", "output", "outputDir", "proxy", "pretty"],
 };
 const WEIBO_DIRECT_ACTION_NAMES = Object.keys(WEIBO_DIRECT_ACTION_OPTIONS).join(", ");
@@ -756,6 +760,7 @@ const WEIBO_OPTION_DISPLAY_NAMES = {
   userId: "--user-id",
   jobId: "--job-id",
   maxWaitSeconds: "--max-wait-seconds",
+  srtOutput: "--srt-output",
   url: "--url",
   output: "--output",
   outputDir: "--output-dir",
@@ -859,7 +864,7 @@ const WECHAT_DIRECT_ACTION_OPTIONS = {
     "sinceDays",
     "pretty",
   ],
-  transcript: ["url", "encryptedObjectId", "jobId", "maxWaitSeconds", "pretty"],
+  transcript: ["url", "encryptedObjectId", "jobId", "maxWaitSeconds", "srtOutput", "pretty"],
   "download-media": ["mediaUrl", "output", "pretty"],
   "decrypt-media": ["mediaUrl", "output", "pretty"],
 };
@@ -896,6 +901,7 @@ const WECHAT_OPTION_DISPLAY_NAMES = {
   mediaUrl: "--media-url",
   output: "--output",
   maxWaitSeconds: "--max-wait-seconds",
+  srtOutput: "--srt-output",
 };
 const SENSITIVE_CHECK_DIRECT_ACTION_OPTIONS = {
   text: ["text", "platform", "pretty"],
@@ -2032,7 +2038,7 @@ async function runExtendedDirectCommand(platformId, { options, positional }, def
 
 export function formatCliErrorMessage(error) {
   const message = error?.message || String(error);
-  if (error?.structuredContent) {
+  if (error?.structuredContent || error?.srtExportFailed) {
     return message;
   }
   if (isLocalDependencyInstallError(message)) {
@@ -2516,6 +2522,10 @@ function validateDirectTranscriptOptions(action, options) {
       options.maxWaitSeconds,
       "--max-wait-seconds"
     );
+  }
+  if (options.srtOutput !== undefined &&
+      (typeof options.srtOutput !== "string" || !options.srtOutput.trim())) {
+    throw new Error("--srt-output requires a non-empty file path.");
   }
 }
 
@@ -3629,6 +3639,8 @@ function printHelp() {
   console.log("      Stop after collecting this many primary items.");
   console.log("  --since-days <1-365>");
   console.log("      Only for XHS, Douyin, Kuaishou, Weibo, and WeChat Channels search and creator content-list commands. Use platform publish-time filters where documented for other search commands.");
+  console.log("  --srt-output <file>");
+  console.log("      Save successful transcript segments as UTF-8 SRT; keep JSON output. Parent directory must exist and be writable; existing files are not overwritten.");
   console.log("  --max-wait-seconds <seconds>");
   console.log("      Maximum wait time for transcript submit or job lookup commands.");
   console.log("  --include-replies");
@@ -6517,7 +6529,30 @@ async function callDirectOperationWithOptions(operation, options) {
     return callPaginatedDirectOperation(operation, options);
   }
   if (operation.operation === "transcript") {
-    return callTranscriptDirectOperation(operation, options);
+    const outputPath = options.srtOutput === undefined
+      ? undefined : resolve(expandHome(options.srtOutput));
+    if (outputPath) await validateSrtOutputPath(outputPath);
+    const data = await callTranscriptDirectOperation(operation, options);
+    if (outputPath) {
+      if (data?.status === "succeeded") {
+        try {
+          await saveTranscriptSrt(data, outputPath);
+          console.error(`${LOG_PREFIX} SRT saved: ${outputPath}`);
+        } catch (error) {
+          error.partialOutput = { platform: operation.platform.id,
+            tool: operation.tool, arguments: operation.arguments, data };
+          error.srtExportFailed = true;
+          error.message = `SRT export failed: ${error.message} Retry with the existing --job-id, not a new video submission.`;
+          throw error;
+        }
+      } else {
+        const continuation = !isTerminalTranscriptData(data)
+          ? ` Continue with transcript --job-id "${readTranscriptJobId(data, operation) || "<job_id>"}" --srt-output <file>.`
+          : "";
+        console.error(`${LOG_PREFIX} SRT not exported: transcript status ${data?.status || "unknown"}.${continuation}`);
+      }
+    }
+    return data;
   }
   return callDirectOperation(operation);
 }
