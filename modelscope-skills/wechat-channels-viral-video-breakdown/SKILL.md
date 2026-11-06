@@ -60,6 +60,14 @@ npx -y socialdatax-skills@latest wechat replies \
 
 执行 direct CLI 示例时，尖括号内容是占位符；不要把原始用户输入拼成整段 shell 字符串。能直接调用子进程时使用参数数组；必须走 shell 时先做 shell 转义。
 
+### 导出 SRT 字幕（direct CLI）
+- 用户需要字幕文件时，使用 CLI 0.2.64 或更新版本，在上方对应平台的 `transcript` 命令末尾追加 `--srt-output ./video.srt`；保留原有来源归因参数。该选项也适用于本 Skill 已列出的 URL、内容 ID 和任务查询入口，不扩展平台范围。
+- 先确认保存路径：父目录必须已存在且可写，目标文件不能已存在；CLI 不会覆盖已有文件。任务成功且返回有效时间分段时，CLI 写入 UTF-8 SRT，标准输出仍保留原始 JSON；以实际文件和保存成功提示确认导出完成。
+- 任务尚未完成时，沿用对应平台的 `transcript --job-id <job_id>` 示例并追加相同的 `--srt-output ./video.srt`，不要重新提交视频。
+- 路径预检失败且尚无 job_id 时，还没有提交转写任务；修正路径后继续原命令。已有 job_id 时，路径或文件写入错误不代表转写失败：保留已返回的 JSON，解决本地保存问题后用同一 job_id 重试。
+- 若返回的时间分段缺失或无效，保留 JSON 并说明无法生成 SRT，停止重复查询，不补造时间戳，也不重新提交视频。
+- `--srt-output` 只在 direct CLI 中执行本地保存，不是 hosted MCP 工具参数。若 MCP 已提交任务，需要导出时可在 CLI 中查询对应平台的同一 job_id；不能执行 CLI 时说明尚未生成本地 SRT 文件，不要重复提交任务。
+
 ## 参数说明
 
 文案提取 / 转写：
