@@ -852,14 +852,17 @@ test("transcript SRT export rejects invalid output paths before making a paid re
   const existing = join(tempDir, "existing.srt");
   writeFileSync(existing, "keep me");
   try {
-    for (const output of [existing, tempDir, join(tempDir, "missing", "video.srt"), "", " ", true]) {
-      const args = ["douyin", "transcript", "--job-id", "existing-job"];
-      args.push(output === "" ? "--srt-output=" : "--srt-output");
-      if (output !== true && output !== "") args.push(output);
-      const { result, toolCalls } = await runCliWithMockMcp(args);
-      assert.equal(result.status, 1, result.stderr);
-      assert.match(result.stderr, /srt-output/i);
-      assert.deepEqual(toolCalls, []);
+    for (const entrypoint of [["--url", "https://www.douyin.com/video/12345"], ["--job-id", "existing-job"]]) {
+      for (const output of [existing, tempDir, join(tempDir, "missing", "video.srt"), "", " ", true]) {
+        const args = ["douyin", "transcript", ...entrypoint];
+        args.push(output === "" ? "--srt-output=" : "--srt-output");
+        if (output !== true && output !== "") args.push(output);
+        const { result, toolCalls } = await runCliWithMockMcp(args);
+        assert.equal(result.status, 1, result.stderr);
+        assert.match(result.stderr, /srt-output/i);
+        assert.equal(result.stdout, "");
+        assert.deepEqual(toolCalls, []);
+      }
     }
     assert.equal(readFileSync(existing, "utf8"), "keep me");
   } finally { rmSync(tempDir, { recursive: true, force: true }); }
@@ -869,18 +872,22 @@ test("transcript SRT export preserves successful job data when timing is unavail
   const tempDir = mkdtempSync(join(tmpdir(), "socialdatax-srt-"));
   const output = join(tempDir, "video.srt");
   try {
-    for (const segments of [[], [{ start_ms: 0, end_ms: 0, text: "x" }],
-      [{ start_ms: -1, end_ms: 1000, text: "x" }], [{ start_ms: 0, end_ms: 1000, text: "  " }],
-      [{ start_ms: "0", end_ms: 1000, text: "x" }]]) {
-      const data = { job_id: "existing-job", status: "succeeded", is_terminal: true,
-        transcript: { text: "有文稿", segments } };
-      const { result } = await runCliWithMockMcp([
-        "douyin", "transcript", "--job-id", "existing-job", "--srt-output", output,
-      ], {}, () => data);
-      assert.equal(result.status, 1, result.stderr);
-      assert.match(result.stderr, /SRT/);
-      assert.deepEqual(JSON.parse(result.stdout).data, data);
-      assert.equal(existsSync(output), false);
+    for (const platform of ["douyin", "youtube"]) {
+      for (const segments of [[], [{ start_ms: 0, end_ms: 0, text: "x" }],
+        [{ start_ms: -1, end_ms: 1000, text: "x" }], [{ start_ms: 0, end_ms: 1000, text: "  " }],
+        [{ start_ms: "0", end_ms: 1000, text: "x" }]]) {
+        const data = { job_id: "existing-job", status: "succeeded", is_terminal: true,
+          transcript: { text: "有文稿", segments } };
+        const { result } = await runCliWithMockMcp([
+          platform, "transcript", "--job-id", "existing-job", "--srt-output", output,
+        ], {}, () => data);
+        assert.equal(result.status, 1, result.stderr);
+        assert.match(result.stderr, /SRT/);
+        assert.doesNotMatch(result.stderr, /retry|existing --job-id|重试原命令/i);
+        assert.match(result.stderr, /do not query|stop querying/i);
+        assert.deepEqual(JSON.parse(result.stdout).data, data);
+        assert.equal(existsSync(output), false);
+      }
     }
   } finally { rmSync(tempDir, { recursive: true, force: true }); }
 });
@@ -1168,7 +1175,7 @@ test("public package version metadata stays aligned", () => {
   const cli = readFileSync(cliPath, "utf8");
   const versionPattern = escapeRegExp(packageJson.version);
 
-  assert.equal(packageJson.version, "0.2.64");
+  assert.equal(packageJson.version, "0.2.66");
   assert.equal(packageLock.version, packageJson.version);
   assert.equal(packageLock.packages[""].version, packageJson.version);
   assert.match(
@@ -4244,6 +4251,69 @@ test("transcript direct CLI polls the same job until terminal by default", async
   assert.equal(payload.data.status, "succeeded");
   assert.equal(payload.data.is_terminal, true);
   assert.equal(payload.data.transcript.text, "口播内容");
+});
+
+test("transcript polling failures preserve the latest job and stop on all eleven platforms", async () => {
+  const errorDetails = { code: "rate_limited", message: "Polling rate limit", retry_after: 10 };
+  for (const platform of ["xhs", "douyin", "kuaishou", "weibo", "wechat", "bilibili", "zhihu", "instagram", "x", "tiktok", "youtube"]) {
+    const lastJob = { status: "running", is_terminal: false, next_poll_after_seconds: 0, progress: 40 };
+    const { result, toolCalls } = await runCliWithMockMcp(
+      [platform, "transcript", "--job-id", "existing-job"], {},
+      (_call, index) => index === 1 ? { ...lastJob, job_id: "existing-job", progress: 20 } : lastJob,
+      { mcpToolError: errorDetails.message, mcpToolErrorStructured: errorDetails, mcpToolErrorAt: 3 }
+    );
+    assert.equal(result.status, 1, result.stderr);
+    assert.match(result.stdout, /existing-job/);
+    const payload = JSON.parse(result.stdout);
+    assert.equal(payload.partial, true);
+    assert.equal(payload.platform, platform);
+    assert.equal(payload.tool, `${platform}_get_video_speech_text_job`);
+    assert.deepEqual(payload.arguments, { job_id: "existing-job" });
+    assert.deepEqual(payload.data, { ...lastJob, job_id: "existing-job" });
+    assert.deepEqual(payload.error, errorDetails);
+    assert.match(result.stderr, /Polling rate limit/);
+    assert.match(result.stderr, /--job-id/);
+    assert.doesNotMatch(result.stderr, /retry the same command|重试原命令/i);
+    assert.deepEqual(toolCalls, Array.from({ length: 3 }, () => ({
+      name: `${platform}_get_video_speech_text_job`, arguments: { job_id: "existing-job" },
+    })));
+  }
+});
+
+test("transcript polling failures after submission retain the job with and without SRT export", async () => {
+  const tempDir = mkdtempSync(join(tmpdir(), "socialdatax-poll-recovery-"));
+  try {
+    for (const [platform, url] of [["douyin", "https://v.douyin.com/a1"], ["youtube", "https://www.youtube.com/watch?v=abcdefghijk"]]) {
+      for (const withSrt of [false, true]) {
+        const output = join(tempDir, `${platform}.srt`);
+        const errorDetails = withSrt ? {
+          code: "insufficient_balance", message: "Polling balance unavailable", billing_url: "https://socialdatax.com/dashboard/billing",
+        } : undefined;
+        const message = errorDetails?.message ?? "Polling unavailable";
+        const job = { job_id: "submitted-job", status: "running", is_terminal: false, next_poll_after_seconds: 0 };
+        const args = [platform, "transcript", "--url", url];
+        if (withSrt) args.push("--srt-output", output);
+        const { result, toolCalls } = await runCliWithMockMcp(args, {}, () => job, {
+          mcpToolError: message, mcpToolErrorStructured: errorDetails, mcpToolErrorAt: 2,
+        });
+        assert.equal(result.status, 1, result.stderr);
+        assert.match(result.stdout, /submitted-job/);
+        const payload = JSON.parse(result.stdout);
+        assert.equal(payload.partial, true);
+        assert.deepEqual(payload.data, job);
+        assert.deepEqual(payload.arguments, { job_id: "submitted-job" });
+        if (errorDetails) assert.deepEqual(payload.error, errorDetails);
+        else assert.match(payload.error.message, /Polling unavailable/);
+        assert.match(result.stderr, new RegExp(message));
+        assert.match(result.stderr, /--job-id/);
+        assert.doesNotMatch(result.stderr, /retry the same command|重试原命令/i);
+        assert.equal(toolCalls.length, 2);
+        assert.match(toolCalls[0].name, /submit_video_speech_text/);
+        assert.deepEqual(toolCalls[1], { name: `${platform}_get_video_speech_text_job`, arguments: { job_id: "submitted-job" } });
+        assert.equal(existsSync(output), false);
+      }
+    }
+  } finally { rmSync(tempDir, { recursive: true, force: true }); }
 });
 
 test("transcript direct CLI returns the last job when follow-up reaches max wait", async () => {
@@ -7465,12 +7535,78 @@ test("new public commands use existing MCP transport and attribution", async () 
     [["hongguo", "search", "--keyword", "剧集", "--content-types", '["comic"]'], "hongguo_search_general", { keyword: "剧集", content_types: ["comic"] }],
     [["hongguo", "series-detail", "--series-id", "123"], "hongguo_get_series_detail_by_series_id", { series_id: "123" }],
     [["hongguo", "series-detail", "--url", "https://example.com/share"], "hongguo_get_series_detail_by_url", { url: "https://example.com/share" }],
+    [["hongguo", "comments", "--series-id", "123", "--page-token", "  opaque+003=/  "], "hongguo_get_series_comments_by_series_id", { series_id: "123", page_token: "  opaque+003=/  " }],
+    [["hongguo", "comments", "--url", "点击链接打开👉https://novelquickapp.com/s/836Rt1LxwF4/\n打开红果免费看全集~", "--page-token", " 003 "], "hongguo_get_series_comments_by_url", { url: "点击链接打开👉https://novelquickapp.com/s/836Rt1LxwF4/\n打开红果免费看全集~", page_token: " 003 " }],
+    [["hongguo", "replies", "--series-id", "123", "--comment-id", "456", "--level", "3", "--page-token", "003"], "hongguo_get_series_comment_replies_by_comment_id", { series_id: "123", comment_id: "456", page_token: "003", level: 3 }],
   ];
   for (const [args, name, expected] of cases) {
     const r = await runCliWithMockMcp([...args, "--source-client", "socialdatax-skills", "--source-platform", "npm", "--source-skill", "media-detail"]);
     assert.equal(r.result.status, 0, r.result.stderr);
     assert.deepEqual(r.toolCalls[0], { name, arguments: expected });
     assert.equal(r.toolCallSourceSkillHeaders[0], "media-detail");
+  }
+});
+
+test("Hongguo review example from general help can request a continuation page", async () => {
+  const help = runCli(["--help"]);
+  assert.equal(help.status, 0, help.stderr);
+  const example = help.stdout.split("\n").find(line => line.includes("hongguo comments --series-id "));
+  assert.ok(example);
+  const args = example.slice(example.indexOf("hongguo")).trim().split(/\s+/)
+    .map(value => value.replace(/^"|"$/g, ""))
+    .map(value => value === "<series_id>" ? "123" : /^<.*>$/.test(value) ? "next-token" : value);
+  const result = await runCliWithMockMcp(args, {}, () => ({
+    items: [], next_page_token: "", comment_count: null,
+    points: { cost: 10, balance: 90 },
+  }));
+  assert.equal(result.result.status, 0, result.result.stderr);
+  assert.deepEqual(result.toolCalls, [{
+    name: "hongguo_get_series_comments_by_series_id",
+    arguments: { series_id: "123", page_token: "next-token" },
+  }]);
+});
+
+test("Hongguo review commands preserve business output without implicit pagination", async () => {
+  const pageToken = '  {"offset":"003"}  ';
+  for (const args of [
+    ["hongguo", "comments", "--series-id", "123", "--page-token", pageToken],
+    ["hongguo", "comments", "--url", "https://novelquickapp.com/s/836Rt1LxwF4/", "--page-token", pageToken],
+    ["hongguo", "replies", "--series-id", "123", "--comment-id", "456", "--level", "3", "--page-token", pageToken],
+  ]) {
+    const response = { items: [], next_page_token: pageToken, [args[1] === "comments" ? "comment_count" : "reply_count"]: null, points: { cost: 10, balance: 90 } };
+    const r = await runCliWithMockMcp(args, {}, () => response);
+    assert.equal(r.result.status, 0, r.result.stderr);
+    assert.equal(r.toolCalls.length, 1);
+    assert.equal(r.toolCalls[0].arguments.page_token, pageToken);
+    assert.deepEqual(JSON.parse(r.result.stdout).data, response);
+  }
+});
+
+test("Hongguo comments and replies reuse public CLI page collection", async () => {
+  const cases = [
+    [["hongguo", "comments", "--series-id", "123", "--pages", "2"], { series_id: "123" }],
+    [["hongguo", "comments", "--url", "分享 https://novelquickapp.com/s/836Rt1LxwF4/", "--all"], { url: "分享 https://novelquickapp.com/s/836Rt1LxwF4/" }],
+    [["hongguo", "replies", "--series-id", "123", "--comment-id", "456", "--level", "3", "--pages", "2"], { series_id: "123", comment_id: "456", level: 3 }],
+  ];
+  for (const [args, identity] of cases) {
+    const r = await runCliWithMockMcp(args, {}, (_call,page) => ({ items: [{ series_id: "123", comment_id: String(page), content: "测试", reply_count: 3, ...(args[1] === "replies" ? { parent_comment_id: "456", root_comment_id: "789", reply_to_comment_id: "456" } : {}) }], next_page_token: page === 1 ? "opaque+token==" : "", [args[1] === "comments" ? "comment_count" : "reply_count"]: 20, points: { cost: 10, balance: 90-page*10 } }));
+    assert.equal(r.result.status,0,r.result.stderr);
+    assert.equal(r.toolCalls.length,2);
+    assert.deepEqual(r.toolCalls[0].arguments,identity);
+    assert.deepEqual(r.toolCalls[1].arguments,{...identity,page_token:"opaque+token=="});
+    const data=JSON.parse(r.result.stdout).data;
+    assert.equal(data.page_count,2);
+    assert.deepEqual(data.items.map(item=>item.comment_id),['1','2']);
+    assert.deepEqual(data.items.map(item=>item.series_id),['123','123']);
+    assert.deepEqual(data.items.map(item=>item.reply_count),[3,3]);
+    assert.equal(data[args[1] === "comments" ? "comment_count" : "reply_count"],20);
+    assert.equal(Object.hasOwn(data,'total_comment_count'),false);
+    assert.equal(Object.hasOwn(data,'total_reply_count'),false);
+    assert.equal(Object.hasOwn(data,'series_id'),false);
+    assert.equal(Object.hasOwn(data,'comment_id'),false);
+    assert.equal(Object.hasOwn(data,'level'),false);
+    if(args[1] === 'replies') assert.deepEqual(data.items.map(item=>item.parent_comment_id),['456','456']);
+    assert.equal(data.next_page_token,'');
   }
 });
 
@@ -11134,7 +11270,9 @@ test("douyin comment pagination docs only expose next_page_token continuation", 
     /For Douyin comments and replies, continue only when `next_page_token` is non-empty; an empty string provides no continuation token and does not establish complete comment or reply coverage\./
   );
   assert.doesNotMatch(douyinWorkflows, /has_more|total_count/);
-  assert.doesNotMatch(commentsSkill, /has_more|total_count/);
+  const otherPlatformGuidance = commentsSkill.split("\n")
+    .filter((line) => !/\bHongguo\b/i.test(line)).join("\n");
+  assert.doesNotMatch(otherPlatformGuidance, /has_more|total_count/);
   assert.doesNotMatch(openclawCommentsSkill, /has_more|total_count/);
   for (const skillText of [commentsSkill, openclawCommentsSkill]) {
     assert.match(skillText, /use `image_urls` for attached pictures/);

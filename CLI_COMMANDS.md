@@ -12,7 +12,7 @@ Set `SOCIALDATAX_API_KEY` in the environment for hosted requests. Obtain or mana
 - Boolean filters take `true` or `false`. Nullable integer filters accept `null` or an integer. Omitted optional flags use the shown service default.
 - Array filters use JSON, for example `--content-types '["comic","image_text"]'`.
 
-- Transcript commands also accept positive `--max-wait-seconds <seconds>`. They poll the same job; when interrupted or the wait window ends, continue with `transcript --job-id "<job_id>"`. Do not resubmit an unfinished job.
+- Transcript commands also accept positive `--max-wait-seconds <seconds>`. They poll the same job; when interrupted or the wait window ends, continue with `transcript --job-id "<job_id>"`. Do not resubmit an unfinished job. If a later poll fails, the CLI exits with status 1 and prints `partial: true`, the latest task result with `data.job_id`, and the original error. Resolve the error before continuing the same job with the same options.
 - All eleven supported platform `transcript` commands accept `--srt-output <file>` to save returned timed segments as UTF-8 SRT after success. Standard output remains the original JSON; the saved path is reported on stderr. The parent directory must exist and be writable, and existing files are never overwritten. Failed or unfinished jobs produce no subtitle file; unfinished jobs can continue with the same `--job-id` and `--srt-output`. Missing or invalid timing causes an export error while preserving the job JSON; do not resubmit the video to retry a local export failure.
 
 ```bash
@@ -21,6 +21,18 @@ npx -y socialdatax-skills@latest douyin transcript --job-id "<existing_job_id>" 
 ```
 
 ## Share links, Official Account image posts, and Hongguo
+
+Comments accept exactly one of `--series-id` or `--url` (a series share URL or full share text). Replies still require `--series-id` and `--comment-id`; use `data.items[].series_id` and `data.items[].comment_id` returned by comments, including the URL entrypoint.
+
+Hongguo whole-series reviews and replies use public page-token pagination, one page per API/MCP call. Single-episode video comments are not supported:
+
+```bash
+npx -y socialdatax-skills@latest hongguo comments --series-id "<series_id>" --pretty
+npx -y socialdatax-skills@latest hongguo comments --url "<series_share_url_or_text>" --pretty
+npx -y socialdatax-skills@latest hongguo replies --series-id "<series_id>" --comment-id "<comment_id>" --level 2 --pretty
+```
+
+Business fields are in `data.items`: reviews provide `series_id`, `comment_id`, `content`, `author`, `create_time`, `like_count`, `reply_count` and `rating`; replies also identify the root review and reply target. Each item includes `series_id` and its own `comment_id`; reply items also include `parent_comment_id` for the list parent. Pass the complete `data.next_page_token` unchanged as `--page-token`, preserving the series/reply context. An empty token ends pagination; `data.comment_count` or `data.reply_count` can be null and must not determine completion; `data.items[].reply_count` is the reply count of that item. `--level 3` takes a parent reply ID for nested replies. CLI `--pages` and `--all` reuse the existing collector; `--include-replies` is not supported.
 
 ```bash
 npx -y socialdatax-skills@latest xhs share-link --note-id "<note_id>" --pretty

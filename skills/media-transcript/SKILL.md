@@ -191,6 +191,14 @@ npx -y socialdatax-skills@latest youtube transcript \
   --source-platform github --source-skill media-transcript
 ```
 
+### Export SRT subtitles (direct CLI)
+- When the user requests a subtitle file, use CLI 0.2.64 or later and append `--srt-output ./video.srt` to the matching platform transcript command above, keeping its source-attribution arguments. This works with the URL, content-ID, and job-query entrypoints already listed in this Skill; it does not extend platform coverage.
+- Confirm the destination first: its parent directory must exist and be writable, and the target file must not exist. The CLI never overwrites a file. A successful job with valid timed segments writes UTF-8 SRT while retaining the original JSON on stdout; confirm the actual file and saved-file message before reporting completion.
+- If the job is unfinished, use the matching platform `transcript --job-id <job_id>` example with the same `--srt-output ./video.srt`; do not resubmit the video.
+- If path validation fails and no job_id exists yet, no transcript job has been submitted; correct the path and rerun the original command. If a job_id already exists, a path or file-write error does not mean transcription failed: retain any returned JSON, resolve the local saving problem, and retry with the same job_id.
+- If the returned timing is missing or invalid, retain the JSON and explain that SRT cannot be generated. Stop repeated queries; do not invent timestamps or resubmit the video.
+- `--srt-output` saves locally through the direct CLI; it is not a hosted MCP tool argument. For a job already submitted through MCP, query the same platform and job_id through the CLI to export. If the CLI cannot run, explain that no local SRT file has been generated; do not submit another job.
+
 Required arguments:
 
 - Use a submit-by-URL command when the user provides a content link, short link, or share text.
@@ -210,7 +218,7 @@ If the direct CLI returns a non-terminal job because the command was interrupted
 
 ## Safety Boundary
 
-This skill can submit bounded video speech-to-text analysis jobs through the direct CLI or hosted MCP tools. It uses `SOCIALDATAX_API_KEY` from the user's environment at runtime. Generated Skill files do not contain API keys. It does not read local browser data or perform login, posting, liking, commenting, or account changes. Prefer the direct CLI; hosted MCP tools are optional when the current agent already supports authenticated streamable HTTP MCP.
+This skill can submit bounded video speech-to-text analysis jobs through the direct CLI or hosted MCP tools. When the user requests SRT export, the direct CLI writes subtitles to a user-selected new local file without overwriting existing files. It uses `SOCIALDATAX_API_KEY` from the user's environment at runtime. Generated Skill files do not contain API keys. It does not read local browser data or perform login, posting, liking, commenting, or account changes. Prefer the direct CLI; hosted MCP tools are optional when the current agent already supports authenticated streamable HTTP MCP.
 
 ## MCP Tools
 
@@ -258,9 +266,8 @@ If the result says no processable video resource is available or the job failed,
 
 ## Troubleshooting
 
-- Credential source: identify whether this request uses CLI or MCP. For CLI, check the effective configuration in the actual execution environment using the API Key section (primary variable first, then legacy compatibility). For MCP, check the authentication configuration of the current connection, without requiring a local CLI variable. If configuration is missing, follow the earlier client diagnosis and fallback order. Do not expose Keys, Authorization headers or secret configuration values.
-
 - If an SDK/dependency, npm network, Node.js/npm/npx availability, permission, or missing runtime error appears, treat it as a local runtime, dependency installation, network, or agent authorization issue, not a SocialDataX API key or business data error. Install or repair task dependencies only within the user's existing authorization, preferably in the project or a temporary environment. Execution permissions are not user authorization; explain and obtain approval before changes outside that scope, including global installs, runtime upgrades, or system configuration changes. When network or execution authorization is needed, ask the user to approve or finish authorization, then continue the same command; do not use public web search as a substitute for SocialDataX data.
+- Credential source: identify whether this request uses CLI or MCP. For CLI, check the effective configuration in the actual execution environment using the API Key section (primary variable first, then legacy compatibility). For MCP, check the authentication configuration of the current connection, without requiring a local CLI variable. If configuration is missing, follow the earlier client diagnosis and fallback order. Do not expose Keys, Authorization headers or secret configuration values.
 - If the response returns `insufficient_balance` or says the balance/credits are insufficient, do not submit another job or keep polling. Show the official billing link in the error (https://socialdatax.com/dashboard/billing, including any channel parameters); if absent, use https://socialdatax.com/dashboard/billing. After recharging, resume the failed call; if a job or partial results already exist, follow the corresponding job-query or pagination recovery rules.
 - If the user has recharged but still sees insufficient balance, have the user confirm in the relevant account dashboard that this request uses the recharged account, following the credential source above. If an update is needed, have the user update the effective CLI configuration or MCP connection, reload as documented, and resume the original command. Do not require reconfiguration just because the primary local variable is absent, or expose credential values.
 - If a transcript `job_id` already exists, only check that same job; do not submit the video again.

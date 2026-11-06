@@ -28,7 +28,7 @@ import {
 export { decryptWechatMediaCommand };
 
 const PACKAGE_NAME = "socialdatax-skills";
-const PACKAGE_VERSION = "0.2.64";
+const PACKAGE_VERSION = "0.2.66";
 const PACKAGE_SPEC = `${PACKAGE_NAME}@latest`;
 const LOG_PREFIX = `[${PACKAGE_NAME}]`;
 const MIN_NODE_VERSION = "20.18.1";
@@ -83,7 +83,7 @@ const AVAILABLE_SKILLS = [
   {
     name: "media-comments",
     summary:
-      "Fetch and analyze comments/replies for XHS, Douyin, Kuaishou, Bilibili, Weibo, Toutiao, Baidu Tieba, WeChat Channels, Zhihu, Instagram, X / Twitter, YouTube, and TikTok, plus Official Account comments and XHS product reviews.",
+      "Fetch and analyze comments/replies for XHS, Douyin, Kuaishou, Bilibili, Weibo, Toutiao, Baidu Tieba, WeChat Channels, Zhihu, Instagram, X / Twitter, YouTube, TikTok, and Hongguo series reviews/replies, plus Official Account comments and XHS product reviews.",
     emoji: "💬",
   },
   {
@@ -1050,6 +1050,10 @@ const PLATFORMS = {
     ],
     tools: [
       {
+        name: "douyin_get_video_statistics",
+        description: "Read play and interaction statistics for up to 50 Douyin work IDs.",
+      },
+      {
         name: "douyin_get_hot_search_list",
         description: "Fetch the current Douyin main hot search list.",
       },
@@ -1877,6 +1881,9 @@ const PLATFORMS = {
     endpoint: "https://mcp.socialdatax.com/hongguo/mcp", apiKeyEnv: API_KEY_ENV_NAMES,
     upstreamEnv: ["SOCIALDATAX_HONGGUO_MCP_UPSTREAM_URL", "SOCIAL_MEDIA_MCP_UPSTREAM_URL"],
     tools: [
+      { name: "hongguo_get_series_comments_by_series_id", description: "Read one page of Hongguo whole-series review business fields; continue with its complete next_page_token." },
+      { name: "hongguo_get_series_comments_by_url", description: "Read one page of whole-series review business fields from a series share URL or full share text." },
+      { name: "hongguo_get_series_comment_replies_by_comment_id", description: "Read Hongguo whole-series review replies or nested replies with level 2 or 3 and public page tokens." },
       { name: "hongguo_search_general", description: "Search Hongguo content with optional content-type filters and pagination." },
       { name: "hongguo_get_series_detail_by_series_id", description: "Get Hongguo series details and the complete episode list by series_id." },
       { name: "hongguo_get_series_detail_by_url", description: "Get Hongguo series details and the complete episode list from a share URL or share text." },
@@ -3283,6 +3290,11 @@ function printHelp() {
   console.log(`  npx -y ${PACKAGE_SPEC} hongguo search --keyword "<keyword>" --content-types '["comic"]' --pages 2 --pretty`);
   console.log(`  npx -y ${PACKAGE_SPEC} hongguo series-detail --series-id "<series_id>" --pretty`);
   console.log(`  npx -y ${PACKAGE_SPEC} hongguo series-detail --url "<series_share_url_or_text>" --pretty`);
+  console.log(`  npx -y ${PACKAGE_SPEC} hongguo comments --series-id "<series_id>" --page-token "<page_token>" --pretty`);
+  console.log(`  npx -y ${PACKAGE_SPEC} hongguo replies --series-id "<series_id>" --comment-id "<comment_id>" --level 2 --pretty`);
+  console.log(`  npx -y ${PACKAGE_SPEC} hongguo comments --url "<series_share_url_or_text>" --pretty`);
+  console.log("  Comments require exactly one of --series-id or --url; replies still require --series-id and --comment-id.");
+  console.log("  Hongguo reviews use --page-token paging, one page per API call; --pages or --all collect pages, and --level 3 reads nested replies. --include-replies is not supported. Single-episode video comments are not supported.");
   console.log(`  npx -y ${PACKAGE_SPEC} hongguo download-media --video-id "<video_id>" --definition 720p --output-dir ./downloads --pretty`);
   console.log(`  npx -y ${PACKAGE_SPEC} hongguo download-media --url "<episode_share_url_or_text>" --output episode.mp4 --pretty`);
   console.log("      Fetch one episode, download and locally decrypt with FFmpeg. Omit --definition to use the first returned stream.");
@@ -3903,7 +3915,7 @@ async function runKuaishouDirectCommand(args) {
 async function runHongguoDirectCommand(args) {
   const { options, positional } = parseCommandArgs(args);
   if (shouldPrintDirectHelp(options, positional)) { printHelp(); return; }
-  if (positional[0] !== "download-media") throw new Error("Use hongguo search, hongguo series-detail, or hongguo download-media.");
+  if (positional[0] !== "download-media") throw new Error("Use hongguo search, hongguo series-detail, hongguo comments, hongguo replies, or hongguo download-media.");
   if (positional.length > 1) throw new Error(`Unexpected argument: ${positional[1]}`);
   const flags = ["videoId", "url", "definition", "output", "outputDir", "ffmpegPath", "pretty"];
   validateKnownOptions(options, allowedDirectOptions(flags));
@@ -6542,7 +6554,10 @@ async function callDirectOperationWithOptions(operation, options) {
           error.partialOutput = { platform: operation.platform.id,
             tool: operation.tool, arguments: operation.arguments, data };
           error.srtExportFailed = true;
-          error.message = `SRT export failed: ${error.message} Retry with the existing --job-id, not a new video submission.`;
+          const recovery = error.code === "ERR_SRT_TIMING"
+            ? "Do not query this completed job again."
+            : "Retry with the existing --job-id, not a new video submission.";
+          error.message = `SRT export failed: ${error.message} ${recovery}`;
           throw error;
         }
       } else {
@@ -6606,6 +6621,15 @@ async function callTranscriptDirectOperation(operation, options) {
       if (isMcpRequestTimeoutError(error)) {
         break;
       }
+      error.partialOutput = {
+        platform: operation.platform.id,
+        tool: currentOperation.tool,
+        arguments: currentOperation.arguments,
+        partial: true,
+        error: error.structuredContent ?? { message: error.message },
+        data: { ...data, job_id: jobId },
+      };
+      error.message = `${error.message} Resolve the error, then resume this job with ${operation.platform.id} transcript --job-id using the saved job_id and the same options; do not resubmit the video.`;
       throw error;
     }
     jobId = readTranscriptJobId(data, operation) || jobId;
