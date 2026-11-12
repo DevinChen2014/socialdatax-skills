@@ -34,6 +34,7 @@
     "./modelscope-skills/kuaishou-content-research",
     "./modelscope-skills/kuaishou-topic-analysis",
     "./modelscope-skills/kuaishou-trend-insights",
+    "./modelscope-skills/product-demand-evidence",
     "./modelscope-skills/socialdatax-content-calendar-research",
     "./modelscope-skills/socialdatax-content-research-assistant",
     "./modelscope-skills/socialdatax-creator-research",
