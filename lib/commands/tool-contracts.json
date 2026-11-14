@@ -183,7 +183,7 @@
     }
   },
   "xhs_pgy_get_creator_notes_performance": {
-    "description": "根据完整 user_id 获取小红书蒲公英创作者笔记表现，包括笔记数量、曝光/阅读/互动中位数、互动率、视频完播率、图文 3 秒阅读率、内容标签和笔记明细。\n查询日常或合作笔记表现及最近明细时使用；商业汇总与成本参考使用商业概览工具，资料和报价使用创作者档案工具。\n视频完播相关字段仅在 video_note_count 大于 0 时用于表现判断；图文 3 秒阅读率仅在统计范围内有图文笔记时用于表现判断；其他情况下 0 值不表示对应表现为 0%。\n固定近30日、图文＋视频、全流量，不支持自选日期或笔记类型；明细最多 15 篇，不是全量列表。仅 notes[] 内的 *_benchmark_rate 是相较于平台中位数的相对差异，允许负数和超过 1，不能当作排名比例；汇总层同名字段仍是平台返回的 0 到 1 对比值，计算方式未公开，不能混用。\n成功返回表现字段和 points；成功调用扣减 20 积分，失败不扣费。",
+    "description": "根据完整 user_id 获取小红书蒲公英创作者笔记表现，包括笔记数量、曝光/阅读/互动中位数、互动率、视频完播率、图文 3 秒阅读率、内容标签和笔记明细。\n查询日常或合作笔记表现及最近明细时使用；商业汇总与成本参考使用商业概览工具，资料和报价使用创作者档案工具。\n视频完播相关字段仅在 video_note_count 大于 0 时用于表现判断；图文 3 秒阅读率仅在统计范围内有图文笔记时用于表现判断；其他情况下 0 值不表示对应表现为 0%。\n可选近30/90日、图文/视频/全部、自然/全流量，默认近30日、全部类型、全流量；返回回显统计条件，不支持自定起止日期。明细最多 15 篇，不是全量列表。仅 notes[] 内的 *_benchmark_rate 是相较于平台中位数的相对差异，允许负数和超过 1，不能当作排名比例；汇总层同名字段仍是平台返回的 0 到 1 对比值，计算方式未公开，不能混用。\n成功返回表现字段和 points；成功调用扣减 20 积分，失败不扣费。",
     "parameters": {
       "user_id": {
         "pattern": "^[0-9a-f]{24}$",
@@ -195,6 +195,34 @@
         "enum": [
           "daily",
           "cooperation"
+        ],
+        "type": "string",
+        "required": false
+      },
+      "period_days": {
+        "default": 30,
+        "enum": [
+          30,
+          90
+        ],
+        "type": "integer",
+        "required": false
+      },
+      "note_type": {
+        "default": "all",
+        "enum": [
+          "all",
+          "image",
+          "video"
+        ],
+        "type": "string",
+        "required": false
+      },
+      "traffic_scope": {
+        "default": "all",
+        "enum": [
+          "all",
+          "organic"
         ],
         "type": "string",
         "required": false
@@ -222,7 +250,7 @@
     }
   },
   "xhs_pgy_get_creator_metrics_trend": {
-    "description": "根据完整 user_id 获取小红书蒲公英创作者曝光、阅读、互动中位数及预估成本的日期趋势和概览。\n观察指标随时间变化时使用；中位数按 note_scope 选择日常或合作笔记，固定图文＋视频、近30日、全流量，不支持自选日期。合作口径包含进店指标，日常口径的进店字段为 null；输出回显口径，不能混用。\n返回指标不是每日新增量或累计总量，不可跨日期求和；可能缺少日期，不补零。\n成本估算口径见字段说明，不代表实际成交成本；按图文/视频拆分的成本及商业汇总使用商业概览工具，逐篇表现使用笔记表现工具。\n成功直接返回业务字段和 points；成功调用扣减 20 积分，失败不扣费。",
+    "description": "根据完整 user_id 获取小红书蒲公英创作者曝光、阅读、互动中位数及预估成本的日期趋势和概览。\n观察指标随时间变化时使用；中位数按 note_scope 选择日常或合作笔记，可选近30/90日、图文/视频/全部、自然/全流量，默认近30日、全部类型、全流量。合作口径包含进店指标，日常口径的进店字段为 null；输出回显统计条件，不能混用。\n不支持自定起止日期；90日统计窗口不保证返回90个日点。返回指标不是每日新增量或累计总量，不可跨日期求和；可能缺少日期，不补零。\n成本估算口径见字段说明，不代表实际成交成本。查看某种笔记类型的成本趋势时，设置 note_type；需要商业汇总或在同一份汇总中并列查看图文和视频成本时，使用商业概览工具。逐篇表现使用笔记表现工具。\n成功直接返回业务字段和 points；成功调用扣减 20 积分，失败不扣费。",
     "parameters": {
       "user_id": {
         "pattern": "^[0-9a-f]{24}$",
@@ -234,6 +262,34 @@
         "enum": [
           "daily",
           "cooperation"
+        ],
+        "type": "string",
+        "required": false
+      },
+      "period_days": {
+        "default": 30,
+        "enum": [
+          30,
+          90
+        ],
+        "type": "integer",
+        "required": false
+      },
+      "note_type": {
+        "default": "all",
+        "enum": [
+          "all",
+          "image",
+          "video"
+        ],
+        "type": "string",
+        "required": false
+      },
+      "traffic_scope": {
+        "default": "all",
+        "enum": [
+          "all",
+          "organic"
         ],
         "type": "string",
         "required": false
@@ -1733,6 +1789,207 @@
         "minLength": 1,
         "type": "string",
         "required": true
+      }
+    }
+  },
+  "hongguo_get_series_comments_by_series_id": {
+    "description": "读取红果整剧剧评列表，一次返回一页剧评业务字段、作者、评分及next_page_token，不读取单集视频评论。series_id可来自搜索或剧集详情；有分享链接或分享文案时使用hongguo_get_series_comments_by_url；读取评论下的回复时使用hongguo_get_series_comment_replies_by_comment_id。",
+    "parameters": {
+      "series_id": {
+        "maxLength": 19,
+        "minLength": 1,
+        "pattern": "^[1-9][0-9]{0,18}$",
+        "type": "string",
+        "required": true
+      },
+      "page_token": {
+        "default": "",
+        "maxLength": 524288,
+        "type": "string",
+        "required": false
+      }
+    }
+  },
+  "hongguo_get_series_comments_by_url": {
+    "description": "按整剧分享链接或包含链接的整段分享文案读取一页红果整剧剧评，返回items与分页信息，条目包含整剧ID，不读取单集视频评论。续页保持同一剧集并将next_page_token原样作为page_token传回；已有series_id时使用hongguo_get_series_comments_by_series_id。剧评回复使用同一条目中的series_id和comment_id。",
+    "parameters": {
+      "url": {
+        "maxLength": 8192,
+        "minLength": 1,
+        "type": "string",
+        "required": true
+      },
+      "page_token": {
+        "default": "",
+        "maxLength": 524288,
+        "type": "string",
+        "required": false
+      }
+    }
+  },
+  "hongguo_get_series_comment_replies_by_comment_id": {
+    "description": "读取红果整剧剧评回复，一次返回一页回复正文、作者、根剧评及回复目标和分页信息，不读取单集视频评论。level=2读取主评论下的回复，level=3读取父回复下的楼中楼；保持剧集、评论或父回复及层级不变续页。",
+    "parameters": {
+      "series_id": {
+        "maxLength": 19,
+        "minLength": 1,
+        "pattern": "^[1-9][0-9]{0,18}$",
+        "type": "string",
+        "required": true
+      },
+      "comment_id": {
+        "maxLength": 19,
+        "minLength": 1,
+        "pattern": "^[1-9][0-9]{0,18}$",
+        "type": "string",
+        "required": true
+      },
+      "page_token": {
+        "default": "",
+        "maxLength": 524288,
+        "type": "string",
+        "required": false
+      },
+      "level": {
+        "default": 2,
+        "maximum": 3,
+        "minimum": 2,
+        "type": "integer",
+        "required": false
+      }
+    }
+  },
+  "hongguo_get_video_comments_by_video_id": {
+    "description": "按video_id读取一页红果视频评论，支持剧集单集及独立视频，返回正文、作者、计数及next_page_token。剧集分集ID可来自剧集详情的分集列表；有单集分享链接或整段分享文案时使用hongguo_get_video_comments_by_video_url。整剧评分剧评使用hongguo_get_series_comments_by_series_id。回复使用返回的video_id和主评论comment_id调用hongguo_get_video_comment_replies_by_comment_id。",
+    "parameters": {
+      "video_id": {
+        "maxLength": 19,
+        "minLength": 1,
+        "pattern": "^[1-9][0-9]{0,18}$",
+        "type": "string",
+        "required": true
+      },
+      "page_token": {
+        "default": "",
+        "maxLength": 524288,
+        "type": "string",
+        "required": false
+      }
+    }
+  },
+  "hongguo_get_video_comments_by_video_url": {
+    "description": "按红果单集分享链接或包含链接的整段文案读取分享时对应分集的评论。需链接明确包含单集信息；不默认第一集。返回items和next_page_token，条目含video_id，可用于续页或读取回复；整剧剧评使用hongguo_get_series_comments_by_url。",
+    "parameters": {
+      "video_url": {
+        "maxLength": 8192,
+        "minLength": 1,
+        "type": "string",
+        "required": true
+      },
+      "page_token": {
+        "default": "",
+        "maxLength": 524288,
+        "type": "string",
+        "required": false
+      }
+    }
+  },
+  "hongguo_get_video_comment_replies_by_comment_id": {
+    "description": "读取红果视频主评论下的一页回复，支持剧集单集及独立视频。video_id和comment_id来自视频评论条目；返回回复正文、作者、回复目标及next_page_token。不接收level；整剧剧评及楼中楼使用hongguo_get_series_comment_replies_by_comment_id。续页保持同一视频和主评论，原样传回page_token。",
+    "parameters": {
+      "video_id": {
+        "maxLength": 19,
+        "minLength": 1,
+        "pattern": "^[1-9][0-9]{0,18}$",
+        "type": "string",
+        "required": true
+      },
+      "comment_id": {
+        "maxLength": 19,
+        "minLength": 1,
+        "pattern": "^[1-9][0-9]{0,18}$",
+        "type": "string",
+        "required": true
+      },
+      "page_token": {
+        "default": "",
+        "maxLength": 524288,
+        "type": "string",
+        "required": false
+      }
+    }
+  },
+  "douyin_get_product_reviews_by_product_id": {
+    "description": "根据 product_id 读取抖音商品评价，包含初评、追评、图片、视频和商家回复，可用于了解买家体验和商品反馈。已有完整商品 ID 时直接使用；只有商品链接或分享文案时使用 douyin_get_product_reviews_by_url。未指定分类时查询全部评价。支持的分类见 review_category 参数说明，可直接查询，无需先请求首屏。review_categories 只返回平台实际提供且支持筛选的分类，category 可原样传入 review_category；名称和数量沿用平台，不补全未展示的选项。每页最多 20 条初评主记录，追评不单独计数；返回的评价集合总数可能少于商品页面总评价数。review_tags 仅提供标签名称和数量统计，用于了解买家关注点，不支持按标签筛选。分类和标签的数量采用商品页面统计口径，不是当前筛选结果内的分组数量。分类和标签统计仅首屏且平台提供时返回，续页省略。",
+    "parameters": {
+      "product_id": {
+        "type": "string",
+        "required": true
+      },
+      "page_token": {
+        "default": "",
+        "type": "string",
+        "required": false
+      },
+      "sort_type": {
+        "default": "general",
+        "enum": [
+          "general",
+          "time_descending"
+        ],
+        "type": "string",
+        "required": false
+      },
+      "review_category": {
+        "default": "",
+        "enum": [
+          "",
+          "all",
+          "positive",
+          "neutral",
+          "negative",
+          "with_media",
+          "with_additional_reviews"
+        ],
+        "type": "string",
+        "required": false
+      }
+    }
+  },
+  "douyin_get_product_reviews_by_url": {
+    "description": "根据抖音商品链接或分享文案读取商品评价，包含初评、追评、图片、视频和商家回复，可用于了解买家体验和商品反馈。已有完整 product_id 时使用 douyin_get_product_reviews_by_product_id。未指定分类时查询全部评价。支持的分类见 review_category 参数说明，可直接查询，无需先请求首屏。review_categories 只返回平台实际提供且支持筛选的分类，category 可原样传入 review_category；名称和数量沿用平台，不补全未展示的选项。每页最多 20 条初评主记录，追评不单独计数；返回的评价集合总数可能少于商品页面总评价数。review_tags 仅提供标签名称和数量统计，用于了解买家关注点，不支持按标签筛选。分类和标签的数量采用商品页面统计口径，不是当前筛选结果内的分组数量。分类和标签统计仅首屏且平台提供时返回，续页省略。",
+    "parameters": {
+      "url": {
+        "type": "string",
+        "required": true
+      },
+      "page_token": {
+        "default": "",
+        "type": "string",
+        "required": false
+      },
+      "sort_type": {
+        "default": "general",
+        "enum": [
+          "general",
+          "time_descending"
+        ],
+        "type": "string",
+        "required": false
+      },
+      "review_category": {
+        "default": "",
+        "enum": [
+          "",
+          "all",
+          "positive",
+          "neutral",
+          "negative",
+          "with_media",
+          "with_additional_reviews"
+        ],
+        "type": "string",
+        "required": false
       }
     }
   }

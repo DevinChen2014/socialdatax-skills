@@ -11,6 +11,7 @@ import {
 import { homedir } from "node:os";
 import { dirname, join, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
+import { API_KEY_ENV_NAMES, resolveApiKey, runAuth } from "./lib/auth.mjs";
 
 import {
   assertBilibiliFfmpegAvailable,
@@ -28,14 +29,12 @@ import {
 export { decryptWechatMediaCommand };
 
 const PACKAGE_NAME = "socialdatax-skills";
-const PACKAGE_VERSION = "0.2.66";
+const PACKAGE_VERSION = "0.2.70";
 const PACKAGE_SPEC = `${PACKAGE_NAME}@latest`;
 const LOG_PREFIX = `[${PACKAGE_NAME}]`;
 const MIN_NODE_VERSION = "20.18.1";
 const HOMEPAGE_URL = "https://socialdatax.com";
 const PRIMARY_API_KEY_ENV = "SOCIALDATAX_API_KEY";
-const LEGACY_API_KEY_ENV = "SOCIAL_MEDIA_MCP_API_KEY";
-const API_KEY_ENV_NAMES = [PRIMARY_API_KEY_ENV, LEGACY_API_KEY_ENV];
 const SOURCE_CLIENT_ENV = "SOCIALDATAX_SOURCE_CLIENT";
 const SOURCE_PLATFORM_ENV = "SOCIALDATAX_SOURCE_PLATFORM";
 const SOURCE_SKILL_ENV = "SOCIALDATAX_SOURCE_SKILL";
@@ -1881,6 +1880,9 @@ const PLATFORMS = {
     endpoint: "https://mcp.socialdatax.com/hongguo/mcp", apiKeyEnv: API_KEY_ENV_NAMES,
     upstreamEnv: ["SOCIALDATAX_HONGGUO_MCP_UPSTREAM_URL", "SOCIAL_MEDIA_MCP_UPSTREAM_URL"],
     tools: [
+      { name: "hongguo_get_video_comments_by_video_id", description: "Read single-episode comments using video_id; distinct from whole-series reviews." },
+      { name: "hongguo_get_video_comments_by_video_url", description: "Read comments on the shared episode from a single-episode URL or share text." },
+      { name: "hongguo_get_video_comment_replies_by_comment_id", description: "Read single-episode root-comment replies with video_id and comment_id; no level parameter." },
       { name: "hongguo_get_series_comments_by_series_id", description: "Read one page of Hongguo whole-series review business fields; continue with its complete next_page_token." },
       { name: "hongguo_get_series_comments_by_url", description: "Read one page of whole-series review business fields from a series share URL or full share text." },
       { name: "hongguo_get_series_comment_replies_by_comment_id", description: "Read Hongguo whole-series review replies or nested replies with level 2 or 3 and public page tokens." },
@@ -1960,7 +1962,9 @@ async function main() {
       await runExtendedDirectCommand(extendedPlatform, parsed, extended);
       return;
     }
-    if (command === "install") {
+    if (command === "auth") {
+      await runAuth(cliArgs.slice(1));
+    } else if (command === "install") {
       await installSkills(cliArgs.slice(1));
     } else if (command === "list") {
       listSkills();
@@ -2125,7 +2129,7 @@ function parseCommandArgs(args) {
     }
 
     const next = args[index + 1];
-    if (next && !next.startsWith("--")) {
+    if (next !== undefined && !next.startsWith("--")) {
       options[key] = next;
       index += 1;
     } else {
@@ -2872,7 +2876,7 @@ async function installSkills(args) {
   console.log("Data calls do not perform login, posting, editing, liking, commenting, or account actions.");
   console.log("Configure your API Key before making authenticated calls:");
   console.log(
-    `  Persist ${PRIMARY_API_KEY_ENV} in the target AI client Secret or user environment; do not rely on a temporary shell export.`
+    `  Run npx -y ${PACKAGE_SPEC} auth login in your own terminal; then auth status in the Agent execution environment. Do not paste the Key into chat.`
   );
   printInstalledSkillAttributionNote();
 }
@@ -3116,6 +3120,10 @@ function printHelp() {
   }
   console.log("");
   console.log("Commands:");
+  console.log(`  npx -y ${PACKAGE_SPEC} auth login`);
+  console.log("      Save an API Key locally through hidden input in your own terminal.");
+  console.log(`  npx -y ${PACKAGE_SPEC} auth status`);
+  console.log("      Check the effective CLI credential source without printing the Key or calling a paid tool.");
   console.log(`  npx -y ${PACKAGE_SPEC} xhs search --keyword "露营" --pretty`);
   console.log("      Call the XHS search tool directly and print JSON.");
   console.log("");
@@ -3293,8 +3301,11 @@ function printHelp() {
   console.log(`  npx -y ${PACKAGE_SPEC} hongguo comments --series-id "<series_id>" --page-token "<page_token>" --pretty`);
   console.log(`  npx -y ${PACKAGE_SPEC} hongguo replies --series-id "<series_id>" --comment-id "<comment_id>" --level 2 --pretty`);
   console.log(`  npx -y ${PACKAGE_SPEC} hongguo comments --url "<series_share_url_or_text>" --pretty`);
+  console.log(`  npx -y ${PACKAGE_SPEC} hongguo video-comments --video-id "<video_id>" --pages 2 --pretty`);
+  console.log(`  npx -y ${PACKAGE_SPEC} hongguo video-comments --url "<episode_share_url_or_text>" --pretty`);
+  console.log(`  npx -y ${PACKAGE_SPEC} hongguo video-replies --video-id "<video_id>" --comment-id "<comment_id>" --page-token "<page_token>" --pretty`);
   console.log("  Comments require exactly one of --series-id or --url; replies still require --series-id and --comment-id.");
-  console.log("  Hongguo reviews use --page-token paging, one page per API call; --pages or --all collect pages, and --level 3 reads nested replies. --include-replies is not supported. Single-episode video comments are not supported.");
+  console.log("  Hongguo whole-series reviews use comments/replies; --level 3 reads nested review replies. Single-episode comments use video-comments/video-replies, with no level parameter. Both use --page-token, --pages or --all; --include-replies is not supported.");
   console.log(`  npx -y ${PACKAGE_SPEC} hongguo download-media --video-id "<video_id>" --definition 720p --output-dir ./downloads --pretty`);
   console.log(`  npx -y ${PACKAGE_SPEC} hongguo download-media --url "<episode_share_url_or_text>" --output episode.mp4 --pretty`);
   console.log("      Fetch one episode, download and locally decrypt with FFmpeg. Omit --definition to use the first returned stream.");
@@ -3915,7 +3926,7 @@ async function runKuaishouDirectCommand(args) {
 async function runHongguoDirectCommand(args) {
   const { options, positional } = parseCommandArgs(args);
   if (shouldPrintDirectHelp(options, positional)) { printHelp(); return; }
-  if (positional[0] !== "download-media") throw new Error("Use hongguo search, hongguo series-detail, hongguo comments, hongguo replies, or hongguo download-media.");
+  if (positional[0] !== "download-media") throw new Error("Use hongguo search, series-detail, comments, replies, video-comments, video-replies, or download-media.");
   if (positional.length > 1) throw new Error(`Unexpected argument: ${positional[1]}`);
   const flags = ["videoId", "url", "definition", "output", "outputDir", "ffmpegPath", "pretty"];
   validateKnownOptions(options, allowedDirectOptions(flags));
@@ -4013,7 +4024,7 @@ async function assertBilibiliDownloadLocalPreflight(options) {
   }
 
   ensureSupportedNodeVersion();
-  readDirectApiKey(PLATFORMS.bilibili);
+  readDirectApiKey();
   await assertBilibiliFfmpegAvailable(options.ffmpegPath || "ffmpeg");
 }
 
@@ -6947,6 +6958,10 @@ function recordPaginatedItemDedupeKeys(itemDedupeState, dedupeKeys) {
 }
 
 function paginatedItemDedupeKeys(operation, item) {
+  if (operation.operation === "product-reviews") {
+    const reviewId = itemStringField(item, "review_id");
+    return reviewId ? [`review:${reviewId}`] : [];
+  }
   if (operation.platform.id === "wechat" &&
       ["image-post-search", "mp-account-image-posts"].includes(operation.operation)) {
     const articleUrl = itemStringField(item, "article_url");
@@ -6976,7 +6991,7 @@ function paginatedItemDedupeKeys(operation, item) {
 }
 
 function shouldDeduplicateCommentItems(operation) {
-  return ["comments", "replies", "sub-comments"].includes(operation.operation);
+  return ["comments", "replies", "sub-comments", "video-comments", "video-replies"].includes(operation.operation);
 }
 
 function shouldDeduplicateContentItems(operation) {
@@ -7112,6 +7127,8 @@ function mergeParentContextData(current, pageData) {
       "object_nonce_id",
       "video_url",
       "reply_token",
+      "review_categories",
+      "review_tags",
     ]),
   };
 }
@@ -7395,7 +7412,7 @@ async function callMcpBackend(
 ) {
   ensureSupportedNodeVersion();
   const { platform, tool } = operation;
-  const apiKey = readDirectApiKey(platform);
+  const apiKey = readDirectApiKey();
   const { Client, StreamableHTTPClientTransport } = await loadMcpSdkModules();
   const upstreamUrl = resolveUpstreamUrl(platform);
   const client = new Client(
@@ -7513,8 +7530,8 @@ function mcpRequestTimeoutError(timeoutMs) {
   return error;
 }
 
-function readDirectApiKey(platform) {
-  const apiKey = readFirstEnv(platform.apiKeyEnv);
+function readDirectApiKey() {
+  const { apiKey } = resolveApiKey();
   if (!apiKey) {
     throw new Error(
       `Missing API Key. Set ${PRIMARY_API_KEY_ENV} before running direct CLI calls.`

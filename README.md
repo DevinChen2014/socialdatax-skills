@@ -95,7 +95,7 @@ Common search phrases for this skill package:
 - Reserved future SocialDataX namespace names for existing platform listings without draft files yet: `com.socialdatax/kuaishou-insights`, `com.socialdatax/bilibili-insights`, `com.socialdatax/weibo-insights`, `com.socialdatax/wechat-channels-insights`, `com.socialdatax/zhihu-insights`, `com.socialdatax/instagram-insights`, `com.socialdatax/x-insights`, `com.socialdatax/youtube-insights`, and `com.socialdatax/tiktok-insights`.
 - Hosted endpoints without a repo-tracked standalone listing: Toutiao / 今日头条, Haokan / 好看视频, and Sensitive Words Check.
 - Unified MCP registry name: none; this package installs skills and calls explicit hosted MCP entries.
-- Package capability version: `0.2.66`
+- Package capability version: `0.2.70`
 
 ## XHS 蒲公英 / Pugongying commercial note details
 
@@ -106,11 +106,11 @@ npx -y socialdatax-skills@latest xhs pgy-detail --note-id "<note_id>" --pretty
 npx -y socialdatax-skills@latest xhs pgy-detail --url "<note_url_or_share_text>" --pretty
 ```
 
-Configure `SOCIALDATAX_API_KEY` before running these commands. Choose exactly one input: the complete note ID, or the original note URL, short link or share text. Each successful call costs **20 points**; failed calls are not charged. Use this route for requested 蒲公英 commercial details. Ordinary `xhs detail` stays on the public note-detail route and does not automatically switch to commercial data. Only notes from creators enrolled in 蒲公英 are eligible. When MCP structured code is `pgy_commercial_data_unavailable` (HTTP numeric code `1009`), the product treats this explicit no-commercial-data outcome as not enrolled: "该笔记所属博主未入驻蒲公英，无法查询蒲公英数据。本次查询失败，不扣费。" Use the structured code, not message text or internal reason_code, to identify this outcome. The CLI exits with status 1 and writes a JSON object containing only `code` and `message` to stderr for this outcome; stdout remains empty. Other errors retain their existing output format. Stop without retrying the other ID/URL route. Timeouts, service outages, authentication errors, insufficient balance, invalid inputs and unexplained empty responses retain their actual error or unresolved status; do not label them as not enrolled.
+Configure `SOCIALDATAX_API_KEY` before running these commands. Choose exactly one input: the complete note ID, or the original note URL, short link or share text. Each successful call costs **20 points**; failed calls are not charged. Use this route for requested 蒲公英 commercial details. Ordinary `xhs detail` stays on the public note-detail route and does not automatically switch to commercial data. Only notes from creators enrolled in 蒲公英 are eligible. When MCP structured code is `pgy_commercial_data_unavailable` (HTTP numeric code `1009`), show the returned commercial-data-unavailable message: "当前无法获取该笔记的蒲公英商业数据。请确认笔记可正常访问。本次查询未成功，不扣费。" Use the structured code, not message text or internal reason_code, to identify this outcome. The CLI exits with status 1 and writes a JSON object containing only `code` and `message` to stderr for this outcome; stdout remains empty. Other errors retain their existing output format. Stop without retrying the other ID/URL route. Timeouts, service outages, authentication errors, insufficient balance, invalid inputs and unexplained empty responses retain their actual error or unresolved status; do not classify them as this commercial-data-unavailable outcome.
 
 ## Direct CLI
 
-For most skill users, no MCP client configuration is required. Install the skills, set `SOCIALDATAX_API_KEY`, and let the agent run the direct `npx` commands.
+For most skill users, no MCP client configuration is required. Install the skills, run `auth login` locally if needed, and let the agent run the direct `npx` commands.
 
 Examples:
 
@@ -402,7 +402,7 @@ npx -y socialdatax-skills@latest doctor
 npx -y socialdatax-skills@latest doctor --json
 ```
 
-The public package declares no npm lifecycle scripts such as `preinstall`, `install`, or `postinstall`. The installer copies Skill files only, does not save API keys, and does not change MCP server configuration. Authenticated data calls require `SOCIALDATAX_API_KEY` at runtime, do not read local browser data, and do not perform account actions.
+The public package declares no npm lifecycle scripts such as `preinstall`, `install`, or `postinstall`. The installer copies Skill files only, does not save API keys, and does not change MCP server configuration. Authenticated data calls use environment credentials or the user's explicitly saved local CLI credential, do not read local browser data, and do not perform account actions.
 
 ## Platform Names
 
@@ -945,131 +945,48 @@ Version `0.2.50` adds `weibo user-suggestions --keyword "摄影"` for a few sear
 
 For agents that can execute shell commands, use the direct CLI. This is the recommended default for installed skills:
 
-First identify where the CLI actually executes, then use persistent
-configuration in that environment:
-
-- **Local Agent:** use the client's documented persistent Secret / env that
-  injects `SOCIALDATAX_API_KEY` into Agent command processes.
-- **Remote Agent:** configure the remote client, host or service running the
-  commands, reload its execution process as documented, and check there. A
-  successful local check does not establish remote access.
-- **Container or cloud sandbox Agent:** use the platform's persistent Secret /
-  environment injection into the actual CLI container or sandbox. Recreate or
-  reload it as documented and check inside it. Host-machine configuration does
-  not replace sandbox injection. If unsupported, explain the limitation and use
-  a platform-supported authentication route without bypassing isolation.
-
-For local WorkBuddy, the verified project-local option is to merge
-`{"env":{"SOCIALDATAX_API_KEY":"<YOUR_API_KEY>"}}` into
-`.codebuddy/settings.local.json` in the current trusted workspace. Preserve
-existing settings and env entries. Have the user enter the key locally; keep
-this file out of version control. This configuration is workspace-scoped, and
-other clients may use different configuration mechanisms.
-
-Skill loading itself does not require a Key or local `node`/`npm`: this keeps
-setup instructions and authenticated MCP-only workflows available. The metadata
-retains the primary Key configuration field and optional installer. CLI
-dependencies and credentials are still required when executing CLI data calls.
-
-If a check returns false, diagnose the client configuration before OS fallback:
-verify host, workspace and configuration scope, workspace trust, correct fields
-and preservation of existing settings, injection into the command process,
-and the documented reload or full process restart. MCP-server-only env does not
-establish direct CLI access. Recheck in the original execution environment after
-fixing these. A failed check alone does not establish unsupported persistence;
-use the documented user/service environment fallback only when the client does
-not support persistence or those checks have been exhausted. Do not overwrite
-a working setup or ask the user to obtain another Key just because inheritance
-failed.
-
-For OS fallback on the actual execution host, Windows provides user environment variables in its system
-Environment Variables settings. On macOS, `launchctl setenv` applies to the
-current login session; it does not by itself provide persistence across a
-computer restart. Reload and recheck after login/restart. Follow the OS's
-documented setup, fully quit the AI client (including background processes),
-then reopen it. Remote services reload according to their documented runtime;
-sandboxes still require platform injection. A separate terminal's temporary `export`, a shell startup file
-alone, or just closing the client window does not prove Agent inheritance.
-See [Windows environment variable behavior](https://learn.microsoft.com/en-us/windows-server/administration/windows-commands/setx)
-and [Apple's launchctl reference](https://github.com/apple-oss-distributions/launchd/blob/main/man/launchctl.1).
-
-For the macOS session fallback, the user can run this in their own local
-terminal and enter the key at the hidden prompt, keeping its literal value out
-of shell history. It sets only the current login-session environment:
+Check credentials through the Agent's command tool in the environment that actually runs the CLI:
 
 ```bash
-bash -c '
-if ! IFS= read -r -s -p "API Key: " sdx_setup_key; then
-  printf "\nError: API Key input failed; environment was not changed.\n" >&2
-  unset sdx_setup_key
-  exit 1
-fi
-printf "\n"
-if [ -z "${sdx_setup_key//[[:space:]]/}" ]; then
-  printf "Error: API Key is empty; environment was not changed.\n" >&2
-  unset sdx_setup_key
-  exit 1
-fi
-launchctl setenv SOCIALDATAX_API_KEY "$sdx_setup_key" >/dev/null 2>&1
-sdx_setup_status=$?
-unset sdx_setup_key
-if [ "$sdx_setup_status" -ne 0 ]; then
-  printf "Error: launchctl setenv failed (exit %s); configuration is incomplete.\n" "$sdx_setup_status" >&2
-  exit "$sdx_setup_status"
-fi
-printf "Session environment set. Fully quit and reopen the client, then run the Agent check.\n"
-'
+npx -y socialdatax-skills@latest auth status
 ```
 
-Input failure, empty/whitespace-only input and `launchctl` failure produce an
-explicit error on stderr and a nonzero exit status; the Key is not printed.
-A successful setup message only confirms the session variable was set, so the
-Agent check below is still required.
+This makes no paid request and prints only `apiKeyReadable` and source
+`environment`, `file`, or `null`. Reuse working configuration. A permission,
+malformed-file or runtime error is not a missing-Key result.
 
-Before data calls, and again after any configuration change, run this through
-the **Agent's command tool in the actual CLI execution environment and target workspace**, without setting the
-variable inside the probe:
+If credentials are missing, obtain an API Key at <https://socialdatax.com/ai?from=npm>.
+In your own interactive terminal, run:
 
 ```bash
-node -e "console.log(JSON.stringify({apiKeyReadable:Boolean(['SOCIALDATAX_API_KEY','SOCIAL_MEDIA_MCP_API_KEY'].map(name=>process.env[name]?.trim()).find(Boolean))}))"
+npx -y socialdatax-skills@latest auth login
 ```
 
-The probe follows CLI lookup: trimmed primary variable first, then the legacy
-variable for existing configurations. New setup always uses
-`SOCIALDATAX_API_KEY`. Report only the boolean. If false, stop data calls and
-diagnose in the order above. If true, resume the original
-request to verify authentication; the probe does not validate the key or
-available credits. Do not expose real keys in chat, logs, screenshots, command
-history or Skill files. OS fallback has been tested on macOS with WorkBuddy
-5.9.3; Windows and older client versions still require verification.
-Already authenticated hosted MCP access does not require a local CLI variable.
-An unavailable command tool or missing Node.js is an execution-environment
-issue, not evidence that a Key is missing.
+Enter the Key at the hidden prompt, never in AI chat or as a command argument.
+The CLI saves it to the current user's `~/.config/socialdatax/credentials.json`.
+Unix files are mode 600; Windows uses a private current-user ACL and fails to
+save if it cannot restrict permissions. The Agent should not read this file.
+Each subsequent CLI invocation reads it without client-specific settings,
+shell profiles or system environment changes.
 
-For a one-off terminal run, this Bash example reads the Key without echoing it
-and executes one command in the same child process. The Key is not included as
-a literal in shell history or saved as client configuration. Run it in your own
-interactive terminal; it does not configure an installed Agent or persist after
-the command exits. Replace the final `npx` command for another operation.
+Nonempty `SOCIALDATAX_API_KEY` takes priority, followed by the existing legacy
+variable, then the saved file. Saving a file does not override an environment
+Key. After local entry, check `auth status` again in the same environment as the
+business command; if false, stop and check the OS user, home and file access.
+True means readable credentials, not valid authentication or available credits;
+resume the original request to verify those without an extra paid probe.
 
-```bash
-bash -c '
-if ! IFS= read -r -s -p "API Key: " sdx_setup_key; then
-  printf "\nError: API Key input failed; command was not run.\n" >&2
-  unset sdx_setup_key
-  exit 1
-fi
-printf "\n"
-if [ -z "${sdx_setup_key//[[:space:]]/}" ]; then
-  printf "Error: API Key is empty; command was not run.\n" >&2
-  unset sdx_setup_key
-  exit 1
-fi
-export SOCIALDATAX_API_KEY="$sdx_setup_key"
-unset sdx_setup_key
-exec npx -y socialdatax-skills@latest xhs search --keyword "露营" --pretty
-'
-```
+Remote/container commands use that execution host's user configuration. Use
+interactive login there only when it has an interactive terminal and persistent
+home; otherwise use its platform-supported Secret/environment injection.
+A local configuration does not transfer to a remote host or sandbox. Explain
+access/persistence limits rather than copying the Key into a project or bypassing
+isolation. Existing authenticated MCP connections retain their own authentication.
+
+For persistence acceptance, fully quit the AI client and background execution
+processes, reopen and recheck before the original request. Normal use does not
+require repeated restarts or entry. Loading a Skill itself requires neither a Key
+nor Node/npm; CLI execution still requires Node.js/npm and command access.
 
 For an Agent configured through the persistent setup above, command examples
 are below; run only the command needed for the user's task. These examples do
@@ -1096,6 +1013,12 @@ MCP client configuration belongs to repo-tracked platform MCP listings when thos
 Aily is treated as an OpenClaw / AgentSkills ecosystem channel for this package. Use the OpenClaw skill install flow for now; a dedicated `--target aily` will be added only after its official skill import or package format is confirmed.
 
 ## API Key
+
+For persistent CLI use, run `npx -y socialdatax-skills@latest auth login` in your own interactive terminal. Enter the Key at its hidden prompt, never in AI chat or a command argument. It saves the Key in your home directory at `.config/socialdatax/credentials.json` (`apiKey` field, Unix mode 600). This is a local plaintext credential file; keep it private. The installer never creates it automatically.
+
+On Windows, the same commands use `%USERPROFILE%\.config\socialdatax\credentials.json`. Login uses the system Windows PowerShell ACL APIs to restrict only the CLI credential directory and file to the current user's SID, without inherited grants. It verifies the ACL before committing the new credential. File-based reads reject an unverified or broadened ACL; `auth login` can repair the CLI's own credential permissions. An unavailable PowerShell or unsupported filesystem is an error, not a successful save. No administrator elevation, execution-policy change, or recursive permission changes to the user profile are performed.
+
+Run `npx -y socialdatax-skills@latest auth status` from the Agent's actual command environment to check the effective source without exposing the Key or making a paid request. A non-empty `SOCIALDATAX_API_KEY` takes priority, then the legacy shared environment variable, then the saved file. Empty environment values do not block the file fallback. Every CLI invocation reloads the file, so this does not depend on GUI clients loading shell startup files. The terminal and Agent must use the same OS user/home and have permission to access the file. Readability alone does not prove valid authentication or sufficient credits.
 
 Request or manage API access from the product website:
 

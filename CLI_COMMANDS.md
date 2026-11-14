@@ -24,15 +24,18 @@ npx -y socialdatax-skills@latest douyin transcript --job-id "<existing_job_id>" 
 
 Comments accept exactly one of `--series-id` or `--url` (a series share URL or full share text). Replies still require `--series-id` and `--comment-id`; use `data.items[].series_id` and `data.items[].comment_id` returned by comments, including the URL entrypoint.
 
-Hongguo whole-series reviews and replies use public page-token pagination, one page per API/MCP call. Single-episode video comments are not supported:
+Hongguo whole-series reviews use `comments`/`replies`; single-episode video comments use separate `video-comments`/`video-replies` commands. Each API/MCP call returns one page:
 
 ```bash
 npx -y socialdatax-skills@latest hongguo comments --series-id "<series_id>" --pretty
 npx -y socialdatax-skills@latest hongguo comments --url "<series_share_url_or_text>" --pretty
 npx -y socialdatax-skills@latest hongguo replies --series-id "<series_id>" --comment-id "<comment_id>" --level 2 --pretty
+npx -y socialdatax-skills@latest hongguo video-comments --video-id "<video_id>" --pages 2 --pretty
+npx -y socialdatax-skills@latest hongguo video-comments --url "<episode_share_url_or_text>" --pretty
+npx -y socialdatax-skills@latest hongguo video-replies --video-id "<video_id>" --comment-id "<comment_id>" --pages 2 --pretty
 ```
 
-Business fields are in `data.items`: reviews provide `series_id`, `comment_id`, `content`, `author`, `create_time`, `like_count`, `reply_count` and `rating`; replies also identify the root review and reply target. Each item includes `series_id` and its own `comment_id`; reply items also include `parent_comment_id` for the list parent. Pass the complete `data.next_page_token` unchanged as `--page-token`, preserving the series/reply context. An empty token ends pagination; `data.comment_count` or `data.reply_count` can be null and must not determine completion; `data.items[].reply_count` is the reply count of that item. `--level 3` takes a parent reply ID for nested replies. CLI `--pages` and `--all` reuse the existing collector; `--include-replies` is not supported.
+Business fields are in `data.items`: reviews provide `series_id`, `comment_id`, `content`, `author`, `create_time`, `like_count`, `reply_count` and `rating`; replies also identify the root review and reply target. Each item includes `series_id` and its own `comment_id`; reply items also include `parent_comment_id` for the list parent. Pass the complete `data.next_page_token` unchanged as `--page-token`, preserving the series/reply context. An empty token ends pagination; `data.comment_count` or `data.reply_count` can be null and must not determine completion; `data.items[].reply_count` is the reply count of that item. `--level 3` takes a parent reply ID for nested replies. CLI `--pages` and `--all` reuse the existing collector; `--include-replies` is not supported. Single-episode comments have the same business fields except `rating`, and include `video_id`. `video-replies` requires `video_id` and the root video `comment_id` and does not accept `--level`; keep the series, video and root comment unchanged for continuation. Do not mix whole-series and video tokens. HTTP/MCP preserve native duplicate rows; the CLI collector deduplicates by `comment_id`.
 
 ```bash
 npx -y socialdatax-skills@latest xhs share-link --note-id "<note_id>" --pretty
@@ -62,7 +65,7 @@ npx -y socialdatax-skills@latest hongguo series-detail --url "<series_share_url_
 | Get a note share link | `xhs share-link` |
 | Official Account image posts | `wechat image-post-search`, `wechat mp-account-image-posts` |
 | Hongguo search and series details | `hongguo search`, `hongguo series-detail` |
-| Product research | XHS / Douyin `product-search`, `product-detail`; XHS review commands |
+| Product research | XHS / Douyin `product-search`, `product-detail`, `product-reviews`; XHS review reply commands |
 | Creator commercial analytics | XHS `pgy-creator-*` |
 | Official Account articles and accounts | WeChat `article-search`, `mp-account-info`, `mp-account-articles`, `article-comments`, `article-replies` |
 | Tieba communities and discussions | `tieba` forum, search, detail, comment and user commands below |
@@ -153,6 +156,8 @@ npx -y socialdatax-skills@latest xhs product-detail --url "<url>" --pretty
 
 #### `xhs product-reviews`
 
+When merging multiple pages, the CLI removes duplicate `review_id` values and keeps the first record encountered. Deduplication only applies within that CLI run.
+
 ```sh
 npx -y socialdatax-skills@latest xhs product-reviews --sku-id "<sku_id>" --pretty
 ```
@@ -199,13 +204,18 @@ npx -y socialdatax-skills@latest xhs pgy-creator-profile --user-id "<user_id>" -
 #### `xhs pgy-creator-notes-performance`
 
 ```sh
-npx -y socialdatax-skills@latest xhs pgy-creator-notes-performance --user-id "<user_id>" --pretty
+npx -y socialdatax-skills@latest xhs pgy-creator-notes-performance --user-id "<user_id>" --period-days 30 --note-type all --traffic-scope all --pretty
 ```
 
 | Flag | Required | Type / accepted values | Default / constraints |
 | --- | --- | --- | --- |
 | `--user-id` | yes | string | pattern: ^[0-9a-f]{24}$ |
 | `--note-scope` | no | daily,cooperation | default: "daily" |
+| `--period-days` | no | 30,90 | default: 30 |
+| `--note-type` | no | all,image,video | default: "all" |
+| `--traffic-scope` | no | all,organic | default: "all" |
+
+The response echoes all statistics selectors. Only these two PGY creator commands accept the three filters; a 90-day window does not guarantee 90 trend points.
 
 #### `xhs pgy-creator-fans-profile`
 
@@ -230,13 +240,18 @@ npx -y socialdatax-skills@latest xhs pgy-creator-fans-summary --user-id "<user_i
 #### `xhs pgy-creator-metrics-trend`
 
 ```sh
-npx -y socialdatax-skills@latest xhs pgy-creator-metrics-trend --user-id "<user_id>" --pretty
+npx -y socialdatax-skills@latest xhs pgy-creator-metrics-trend --user-id "<user_id>" --period-days 30 --note-type all --traffic-scope all --pretty
 ```
 
 | Flag | Required | Type / accepted values | Default / constraints |
 | --- | --- | --- | --- |
 | `--user-id` | yes | string | pattern: ^[0-9a-f]{24}$ |
 | `--note-scope` | no | daily,cooperation | default: "daily" |
+| `--period-days` | no | 30,90 | default: 30 |
+| `--note-type` | no | all,image,video | default: "all" |
+| `--traffic-scope` | no | all,organic | default: "all" |
+
+The response echoes all statistics selectors. Only these two PGY creator commands accept the three filters; a 90-day window does not guarantee 90 trend points.
 
 #### `xhs pgy-creator-commercial-overview`
 
@@ -365,6 +380,44 @@ npx -y socialdatax-skills@latest douyin product-detail --url "<url>" --pretty
 | Flag | Required | Type / accepted values | Default / constraints |
 | --- | --- | --- | --- |
 | `--url` | yes | string | — |
+
+#### `douyin product-reviews`
+
+Read initial reviews, follow-ups, images, videos, and merchant replies. Each page contains up to 20 initial review records, with follow-ups nested in `additional_reviews` and not counted separately in `items` or `total_review_count`; the returned review collection may be smaller than the product page total.
+
+When merging multiple pages, the CLI removes duplicate `review_id` values and keeps the first record encountered. Deduplication only applies within that CLI run; `total_review_count` remains the platform-reported collection total. For full collection, use `--sort-type time_descending`.
+
+Input variant: `--product-id`.
+
+```sh
+npx -y socialdatax-skills@latest douyin product-reviews --product-id "<product_id>" --review-category negative --sort-type time_descending --pretty
+```
+
+| Flag | Required | Type / accepted values | Default / constraints |
+| --- | --- | --- | --- |
+| `--product-id` | yes | string | — |
+| `--page-token` | no | string | default: ""; pass `next_page_token` unchanged with the same product, category and sort; clear it when any changes |
+| `--sort-type` | no | general,time_descending | default: "general"; `time_descending` orders initial reviews newest first by initial review time; follow-ups do not change their order |
+| `--review-category` | no | string | default: "" (no category filter); accepts `all`, `positive`, `neutral`, `negative`, `with_media` (images/videos), `with_additional_reviews` (follow-ups); numeric IDs are rejected |
+
+Supported category names can be used directly without a preliminary request. When no category is specified, all reviews are returned. `review_tags` provides tag names and counts only, to show buyer concerns; tag filtering is not supported. Keep product, sort and category unchanged with `--page-token`; clear the token when changing a selector. Category and tag counts use the product page’s statistics; they are not grouped counts within the current filtered result. Category/tag statistics are omitted on later pages. When present, `review_categories` and `review_tags` are arrays; each category entry uses a supported semantic name in `category`, which can be passed unchanged to `--review-category`. Only supported categories actually provided by the platform are included. These fields never return null.
+
+Input variant: `--url`.
+
+```sh
+npx -y socialdatax-skills@latest douyin product-reviews --url "<product_url_or_share_text>" --pretty
+```
+
+| Flag | Required | Type / accepted values | Default / constraints |
+| --- | --- | --- | --- |
+| `--url` | yes | string | — |
+| `--page-token` | no | string | default: ""; keep the same product, category and sort; clear it when any changes |
+| `--sort-type` | no | general,time_descending | default: "general"; `time_descending` orders initial reviews newest first by initial review time; follow-ups do not change their order |
+| `--review-category` | no | string | default: "" (no category filter); accepts `all`, `positive`, `neutral`, `negative`, `with_media` (images/videos), `with_additional_reviews` (follow-ups); numeric IDs are rejected |
+
+Supported category names can be used directly without a preliminary request. `review_categories[].category` uses the same supported values; only categories actually provided by the platform are included. Category and tag counts use the product page’s statistics; they are not grouped counts within the current filtered result. Category and tag statistics are omitted on later pages. Use the supported semantic values above; numeric IDs and Chinese display names are not accepted. Media categories include media in initial reviews or follow-ups; additional-review categories return full parent reviews with follow-ups nested in `additional_reviews`.
+
+Category selection is limited to the supported values above. Do not invent entries or counts for categories missing from `review_categories`.
 
 #### `douyin user-info`
 
