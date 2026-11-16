@@ -2,7 +2,7 @@
 
 This reference covers the additional direct CLI commands for discovery, products, creator analytics, WeChat Official Accounts, Baidu Tieba, Haokan, account points, API documentation, and six more transcript platforms. See [README](./README.md) for installation and the existing content, comment, creator, download, and transcript commands.
 
-Set `SOCIALDATAX_API_KEY` in the environment for hosted requests. Obtain or manage your key at <https://socialdatax.com>. Run commands with `npx -y socialdatax-skills@latest`; use `<platform> <action> --help` to inspect the installed version. Angle-bracket values are placeholders: replace them with the user’s keyword, returned ID, URL or token.
+For hosted requests, use existing `SOCIALDATAX_API_KEY` credentials or run `auth login` in your own terminal; `auth status` checks the effective environment/private-file source without a paid call. Obtain or manage your key at <https://socialdatax.com>. Run commands with `npx -y socialdatax-skills@latest`; use `<platform> <action> --help` to inspect the installed version. Angle-bracket values are placeholders: replace them with the user’s keyword, returned ID, URL or token.
 
 ## Shared options and input rules
 
@@ -77,7 +77,7 @@ npx -y socialdatax-skills@latest hongguo series-detail --url "<series_share_url_
 
 XHS `search-images` returns individual images with associated notes. Search video notes with `xhs search --note-type video`; this search command also supports sort and publish-time filters. `topic-notes` accepts a page ID or topic URL. Product reviews require a full SKU ID; reply commands use review IDs returned by the preceding review/reply list.
 
-For XHS Pugongying creator commands, use the 24-character lowercase hexadecimal creator user ID. `--note-scope daily|cooperation` selects daily or cooperation notes on the commands that expose it. These commands provide commercial analytics; the existing `pgy-detail` command reads commercial note details.
+For XHS Pugongying nickname discovery, use `pgy-creator-search --keyword "<nickname>"`; it does not accept a creator ID or profile URL as its search term. Other XHS Pugongying creator commands use the 24-character lowercase hexadecimal creator user ID. `--note-scope daily|cooperation` selects daily or cooperation notes on the commands that expose it. These commands provide commercial analytics; the existing `pgy-detail` command reads commercial note details.
 
 Tieba `search-suggestions` returns forum suggestions, not posts or users, and has no pagination. `user-search` is also first-page only. Use an exact `forum_name` returned by discovery for `forum-detail`, `forum-posts`, or `forum-search`; featured-only forum browsing uses default sorting. `detail` and `comments` accept a thread ID or post URL. Replies require both thread and comment IDs. User commands accept either a user ID or profile URL.
 
@@ -190,6 +190,19 @@ npx -y socialdatax-skills@latest xhs product-review-reply-replies --review-id "<
 | --- | --- | --- | --- |
 | `--review-id` | yes | string | — |
 | `--page-token` | no | string | default: "" |
+
+#### `xhs pgy-creator-search`
+
+```sh
+npx -y socialdatax-skills@latest xhs pgy-creator-search --keyword "你好竹子" --pretty
+```
+
+| Flag | Required | Type / accepted values | Default / constraints |
+| --- | --- | --- | --- |
+| `--keyword` | yes | nonempty nickname search string | not guaranteed exact matching |
+| `--page-token` | no | string | default: ""; pass the complete returned token with the same keyword |
+
+Each successful request, including empty results, costs 20 points; failed requests are not charged. A command defaults to one page. Explicit `--pages` or `--all` requests additional pages at 20 points per successful page. End only when `next_page_token` is empty; fewer than 20 items can still have a next page. Hidden, unknown-visibility or missing CNY quotes return null; visible zero is preserved and does not mean free collaboration. Use ordinary `user-search` for ordinary accounts, and `pgy-creator-profile` with a returned full `user_id` for detailed creator data.
 
 #### `xhs pgy-creator-profile`
 

@@ -117,7 +117,7 @@
     }
   },
   "xhs_get_product_reviews": {
-    "description": "根据小红书商品 sku_id 获取商品评价；已有该 ID 时直接使用，否则可从 xhs_search_products 获取；支持 sort_type、has_image 和 page_token 翻页。继续翻页时必须将返回的完整 next_page_token 原样作为 page_token 传回，不得截断、缩写、掩码或用省略号替换中间内容；不支持商品链接、spu_id 或搜索词。",
+    "description": "根据小红书商品 sku_id 获取商品评价；已有该 ID 时直接使用，否则可从 xhs_search_products 获取；支持 sort_type、has_image 和 page_token 翻页。返回当前可获取的评价，不保证覆盖商品展示的全部评价。继续翻页时必须将返回的完整 next_page_token 原样作为 page_token 传回，不得截断、缩写、掩码或用省略号替换中间内容；不支持商品链接、spu_id 或搜索词。",
     "parameters": {
       "sku_id": {
         "type": "string",
@@ -1213,6 +1213,7 @@
           "toutiao",
           "haokan",
           "hongguo",
+          "dewu",
           "media_transcript"
         ],
         "type": "string",
@@ -1988,6 +1989,21 @@
           "with_media",
           "with_additional_reviews"
         ],
+        "type": "string",
+        "required": false
+      }
+    }
+  },
+  "xhs_pgy_search_creators": {
+    "description": "按昵称搜索小红书蒲公英商业达人，返回用户 ID、昵称、小红书号、头像、商业笔记数和图文/视频报价。\n普通账号搜索使用用户搜索工具；取得 user_id 后可用蒲公英创作者档案工具查看详细资料。\nkeyword 为昵称搜索词，不保证严格精确匹配。首次省略 page_token，续页原样传回 next_page_token；为空表示结束，每次最多20条，不保证跨页快照不变。\n报价单位为人民币元，隐藏或缺失为 null，可见零值保留但不表示免费。\n成功（含空结果）扣减20积分，失败不扣费；返回 items、next_page_token 和 points。",
+    "parameters": {
+      "keyword": {
+        "minLength": 1,
+        "type": "string",
+        "required": true
+      },
+      "page_token": {
+        "default": "",
         "type": "string",
         "required": false
       }

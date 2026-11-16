@@ -95,7 +95,7 @@ Common search phrases for this skill package:
 - Reserved future SocialDataX namespace names for existing platform listings without draft files yet: `com.socialdatax/kuaishou-insights`, `com.socialdatax/bilibili-insights`, `com.socialdatax/weibo-insights`, `com.socialdatax/wechat-channels-insights`, `com.socialdatax/zhihu-insights`, `com.socialdatax/instagram-insights`, `com.socialdatax/x-insights`, `com.socialdatax/youtube-insights`, and `com.socialdatax/tiktok-insights`.
 - Hosted endpoints without a repo-tracked standalone listing: Toutiao / 今日头条, Haokan / 好看视频, and Sensitive Words Check.
 - Unified MCP registry name: none; this package installs skills and calls explicit hosted MCP entries.
-- Package capability version: `0.2.71`
+- Package capability version: `0.2.73`
 
 ## XHS 蒲公英 / Pugongying commercial note details
 
@@ -706,6 +706,7 @@ Current Sensitive Words Check workflows include:
 | `xhs_search_notes` | Search Xiaohongshu / 小红书 notes by keyword with optional sort, note type, and publish-time filters. |
 | `xhs_get_note_detail_by_note_url` | Resolve a shared XHS link, short link, or share text into structured note details. |
 | `xhs_get_note_detail_by_note_id` | Fetch structured note details when the caller already has a note ID. |
+| `xhs_pgy_search_creators` | Search PGY commercial creators by nickname with `xhs pgy-creator-search --keyword "<nickname>"`; supports `--page-token`. Each successful page, including empty results, costs 20 points; failures are not charged. Hidden/missing quotes are null; visible zero is preserved and does not mean free collaboration. |
 | `xhs_pgy_get_note_detail_by_note_id` | Read 蒲公英 commercial note details by full note ID; 20 points per successful call, failures are not charged. |
 | `xhs_pgy_get_note_detail_by_note_url` | Read 蒲公英 commercial note details from a note URL, short link or share text; 20 points per successful call, failures are not charged. |
 | `xhs_get_note_comments_by_note_id` | Fetch paginated first-level comments when the caller already has a note ID; accepts optional comment `sort_type`. |
@@ -955,7 +956,7 @@ This makes no paid request and prints only `apiKeyReadable` and source
 `environment`, `file`, or `null`. Reuse working configuration. A permission,
 malformed-file or runtime error is not a missing-Key result.
 
-If credentials are missing, obtain an API Key at <https://socialdatax.com/ai?from=github>.
+If credentials are missing, obtain an API Key at <https://socialdatax.com/ai?from=npm>.
 In your own interactive terminal, run:
 
 ```bash
@@ -1014,7 +1015,7 @@ Aily is treated as an OpenClaw / AgentSkills ecosystem channel for this package.
 
 ## API Key
 
-`auth login --stdin` requires SocialDataX CLI 0.2.71 or newer.
+`auth login --stdin` requires SocialDataX CLI 0.2.73 or newer.
 
 When upgrading Skills, run `auth status` first and reuse existing readable credentials. Existing client Secrets or shell/user environment settings continue working when they supply the same environment variables to the CLI; existing private credential files keep their format and path. An upgrade does not require re-entering the Key, rerunning login, or migrating environment credentials into a file. Only configure credentials when missing, invalid, or explicitly changing the Key.
 
@@ -1026,7 +1027,7 @@ Run `npx -y socialdatax-skills@latest auth status` from the Agent's actual comma
 
 Request or manage API access from the product website:
 
-<https://socialdatax.com/ai?from=github>
+<https://socialdatax.com/ai?from=npm>
 
 Use the key as a Bearer token in the `Authorization` request header. Do not commit real API keys to code, docs, issues, or screenshots.
 
