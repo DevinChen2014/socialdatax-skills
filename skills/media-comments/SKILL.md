@@ -1,6 +1,6 @@
 ---
 name: "media-comments"
-description: "Fetch and analyze comments/replies for supported SocialDataX public platforms. This version is backed by hosted platform MCP services and supports Xiaohongshu / XHS / RedNote, Douyin, Kuaishou, Bilibili, Zhihu, Instagram, X / Twitter, YouTube, TikTok, Weibo, Toutiao, and WeChat Channels. Also use this skill for 百度贴吧 / Baidu Tieba comments and replies, XHS product reviews and nested review replies, WeChat Official Account / 公众号 article comments and replies, and Weibo liker/repost lists by post URL. Also supports Haokan / 好看视频."
+description: "Fetch and analyze comments/replies for supported SocialDataX public platforms. This version is backed by hosted platform MCP services and supports Xiaohongshu / XHS / RedNote, Douyin, Kuaishou, Bilibili, Zhihu, Instagram, X / Twitter, YouTube, TikTok, Weibo, Toutiao, and WeChat Channels. Also use this skill for 百度贴吧 / Baidu Tieba comments and replies, XHS product reviews and nested review replies, WeChat Official Account / 公众号 article comments and replies, and Weibo liker/repost lists by post URL. Also supports Haokan / 好看视频. Also supports Hongguo / 红果 whole-series reviews, single-episode video comments and their replies."
 source_client: "socialdatax-skills"
 source_platform: "github"
 source_skill: "media-comments"
@@ -39,21 +39,22 @@ Current platform support:
 - WeChat Channels / 视频号 videos through the `wechat_get_video_comments_by_*` and `wechat_get_video_comment_replies_by_comment_id` tools.
 - Also use this skill for 百度贴吧 / Baidu Tieba comments and replies, XHS product reviews and nested review replies, WeChat Official Account / 公众号 article comments and replies, and Weibo liker/repost lists by post URL.
 - Haokan / 好看视频 top-level comments and paginated replies by video ID or video page URL.
+- Hongguo / 红果 whole-series reviews and replies, including nested replies, through `hongguo_get_series_comments_by_series_id`, `hongguo_get_series_comments_by_url` and `hongguo_get_series_comment_replies_by_comment_id`. Single-episode comments and replies use hongguo_get_video_comments_by_video_id, hongguo_get_video_comments_by_video_url and hongguo_get_video_comment_replies_by_comment_id.
 
 ## API Key
 
 Use `SOCIALDATAX_API_KEY` for SocialDataX requests. The only official website for requesting or managing API access is <https://socialdatax.com/ai?from=github>. If a user asks where to get a key, provide only this URL; do not infer alternate domains.
 获取或管理 API Key：访问 <https://socialdatax.com/ai?from=github>，按官网的 API Key 申请/管理入口操作。环境变量名固定使用 `SOCIALDATAX_API_KEY`；不要引导用户使用其他域名。
-- Before a CLI call requiring an API Key, run `npx -y socialdatax-skills@latest auth status` in the actual execution environment. It makes no paid request and reports only `apiKeyReadable` and source `environment` / `file` / `null`, never the Key. Reuse working configuration; handle command, permission and malformed-file errors as reported instead of treating every failure as a missing Key. Authenticated hosted MCP keeps its current connection authentication and needs no separate local CLI setup.
-- If missing, have the user obtain a Key from the official URL above and run `npx -y socialdatax-skills@latest auth login` in their own local terminal, entering it at the hidden prompt. The CLI saves it under that terminal user's home at `.config/socialdatax/credentials.json`, with mode 600 on Unix or a private current-user ACL on Windows; saving fails if permissions cannot be restricted. Never put the Key in AI chat, model-captured input, logs, screenshots, command history, Skill files or version control. The Agent must not read or display credential-file content.
-- Each CLI invocation reads the private user file without depending on a client loading shell configuration or changing client/system settings. A nonempty `SOCIALDATAX_API_KEY` has priority, then the existing legacy variable, then the file. Saving a file does not replace an effective environment credential. For authentication failures, check the actual source/account and have the user correct it locally while preserving other configuration.
-- After local entry, rerun `auth status` in the same environment as the business command. If false, stop business calls and check the OS user, home directory and file access. True only means readable credentials; authentication and results are determined by the original business response, without an extra paid call solely to check configuration.
-- Remote/container CLI runs use the remote/container user's configuration; a local file does not transfer automatically. Use interactive login there only with an interactive terminal and persistent home; otherwise use the deployment platform's supported Secret/environment injection. Explain persistence or sandbox limits without copying Keys into chat, project files or temporary command arguments, or bypassing isolation.
-- When persistence acceptance is requested, fully quit the client and background execution processes, reopen, recheck, then resume the original request. Normal use reuses verified configuration without repeated restarts or entry.
+- Before a CLI call requiring an API Key, run `npx -y socialdatax-skills@latest auth status` in the actual execution environment. It makes no paid request and reports only `apiKeyReadable` and source `environment` / `file` / `null`, never the Key. For installation or upgrades, reuse readable existing credentials without known authentication failures unless the user explicitly requests a different Key; do not require login again, migrate credentials, or overwrite their configuration; handle command, permission and malformed-file errors as reported instead of treating every failure as a missing Key. Authenticated hosted MCP keeps its current connection authentication and needs no separate local CLI setup.
+- Enter a Key only for first-time setup, missing or invalid credentials, or an explicit Key change. When the user has already supplied a Key in the installation prompt or current conversation and authorized configuration, send it as stdin to `npx -y socialdatax-skills@latest auth login --stdin` for persistent CLI storage; do not request duplicate manual entry, pass it as a CLI argument, or write it to a temporary script file. Otherwise direct the user to the official URL above and hidden input with `npx -y socialdatax-skills@latest auth login` in their local terminal, without asking them to send it in chat. The CLI saves it under the execution user's home at `.config/socialdatax/credentials.json`, Unix mode 600 or a private current-user ACL on Windows. Do not repeat the Key in replies, output logs, screenshots, command examples, Skill files or version control. The Agent must not read or display credential-file content.
+- Each CLI invocation reads the private user file without depending on a client loading shell configuration or changing client/system settings. A nonempty `SOCIALDATAX_API_KEY` has priority, then the existing legacy variable, then the file. Saving a file does not replace an effective environment credential or prove the selected Key is effective. If the CLI warns about a different environment Key, report the actual source without silently deleting or changing existing environment settings. For authentication failures, check the actual source/account and have the user correct it locally while preserving other configuration.
+- After saving, rerun `auth status` in the same environment as the business command. If false, stop business calls and check the OS user, home directory and file access. True only means readable credentials; authentication and results are determined by the original business response, without an extra paid call solely to check configuration.
+- Remote/container CLI runs use that runtime user's configuration; a local file does not transfer automatically. Persist credentials there only with a persistent home; without an already authorized Key, interactive user login is also needed. Otherwise use existing platform-supported Secret/environment injection. If persistence is unavailable or sandbox-blocked, report the actual limit without copying the Key to additional chats, projects or temporary files, or bypassing isolation.
+- When persistence acceptance is needed, finish configuration and installation first, then ask the user to fully quit the client and its background execution processes, reopen, and check from a new session before resuming the original request. Do not terminate the client hosting the current task. Normal use reuses verified configuration without repeated restarts or entry.
 
 ## Preferred Direct CLI
 
-Prefer the direct CLI when the agent can run shell commands. It does not require MCP server configuration:
+Prefer the direct CLI when the agent can run commands. It uses existing environment credentials or the private local CLI configuration described above and does not require MCP server setup:
 
 ```bash
 npx -y socialdatax-skills@latest xhs comments \
@@ -295,6 +296,32 @@ npx -y socialdatax-skills@latest haokan replies \
   --url "<video_url>" --comment-id "<comment_id>" --pretty \
   --source-client socialdatax-skills --source-platform github \
   --source-skill media-comments
+
+npx -y socialdatax-skills@latest hongguo comments \
+  --series-id "<series_id>" --pretty --source-client socialdatax-skills \
+  --source-platform github --source-skill media-comments
+
+npx -y socialdatax-skills@latest hongguo comments \
+  --url "<series_share_url_or_text>" --pretty --source-client socialdatax-skills \
+  --source-platform github --source-skill media-comments
+
+npx -y socialdatax-skills@latest hongguo replies \
+  --series-id "<series_id>" --comment-id "<comment_id>" --pretty \
+  --source-client socialdatax-skills --source-platform github \
+  --source-skill media-comments
+
+npx -y socialdatax-skills@latest hongguo video-comments \
+  --video-id "<video_id>" --pretty --source-client socialdatax-skills \
+  --source-platform github --source-skill media-comments
+
+npx -y socialdatax-skills@latest hongguo video-comments \
+  --url "<episode_share_url_or_text>" --pretty --source-client socialdatax-skills \
+  --source-platform github --source-skill media-comments
+
+npx -y socialdatax-skills@latest hongguo video-replies \
+  --video-id "<video_id>" --comment-id "<comment_id>" --pretty \
+  --source-client socialdatax-skills --source-platform github \
+  --source-skill media-comments
 ```
 
 Optional arguments:
@@ -330,18 +357,20 @@ Optional arguments:
 - Toutiao `--url <toutiao_content_url_or_share_text>`: use for a content URL, short link, or share text for first-level comments; replies require `--comment-id <comment_id>`.
 - WeChat Channels / 视频号 `--object-id <object_id>` and `--object-nonce-id <object_nonce_id>`: use together when both values are already known and should anchor the comment thread.
 - WeChat Channels / 视频号 `--url <wechat_video_url_or_share_text>`: use for a WeChat Channels video link or share text for first-level comments.
+- Hongguo `--series-id <series_id>` identifies the whole series. For replies, --comment-id is the main review ID at --level 2 (default), or the parent reply ID at --level 3; --page-token takes the complete returned next_page_token unchanged.
 - `--source-client socialdatax-skills --source-platform github --source-skill media-comments`: usage attribution for this Agent Skill; keep these values unchanged when running examples from this Skill.
 
 Use one first-level comment entrypoint shown in the CLI example at a time; do not mix multiple content identifiers in one command. For reply commands, use the platform-specific reply identifiers shown in the CLI example.
 
 The command prints JSON with `platform`, `tool`, `arguments`, and `data`. Multi-page output keeps merged primary comments in `data.items` and adds `page_count`, `item_count`, and the next-page marker. On platforms that support `--include-replies`, each first-level comment includes `replies`, `replies_page_count`, and `replies_next_page_token`.
-Use `npx -y socialdatax-skills@latest <platform> <action> --help` for exact flags and values. Paginated commands require the complete returned `next_page_token`. Do not modify, truncate, redact, mask, omit, normalize, rebuild, generate, or replace the middle with ellipses. Commands without `--page-token`, including suggestions and first-page-only searches, do not support pagination.
+Use `npx -y socialdatax-skills@latest <platform> <action> --help` for exact flags and values. For commands exposing `--page-token`, use the complete returned `next_page_token`. Do not modify, truncate, redact, mask, omit, normalize, rebuild, generate, or replace the middle with ellipses. Commands without `--page-token` do not support pagination.
 Haokan / 好看视频: choose either `--video-id` or `--url`. `comments` returns top-level comments with reply previews; use `replies` with the parent `comment_id` to page through replies. `--include-replies` is not supported. Preserve the token and the same video/comment inputs when continuing.
 For replies authored by an X creator rather than comments under a post, use `media-user-posts` with `x user-replies`.
+Hongguo returns one page per API/MCP call. For reviews choose --series-id or --url (a series share URL or full share text); replies still require series_id and comment_id. Use items[].series_id and items[].comment_id for replies, or a parent reply ID with --level 3 for nested replies. CLI output uses data.items for business fields and data.next_page_token for pagination. Each review or review reply item contains its series_id and own comment_id; reply items also contain parent_comment_id for the list parent. Pass the complete next_page_token unchanged as --page-token, keeping the same series and reply context; an empty token ends pagination. The outer comment_count or reply_count may be null and must not determine completion; items[].reply_count is the reply count of that item. CLI --pages and --all reuse the common page collector; Hongguo does not support --include-replies. For video comments (episodes or independent videos) use hongguo video-comments with --video-id, or --url with a supported episode share URL/text. Use hongguo video-replies with video_id and the root comment_id; no level parameter. Video items include video_id and their own comment_id, without series_id or rating. Keep the video context unchanged for page_token; do not mix series and video tokens. Native duplicate rows are preserved by HTTP/MCP; CLI --pages/--all deduplicates by comment_id.
 
 ## Safety Boundary
 
-This skill is read-only. CLI calls use existing environment credentials or the user’s explicitly saved private local credential file. Generated Skill files do not contain API keys. It does not read local browser data or perform login, posting, liking, commenting, or account changes.
+This skill is read-only. CLI calls use existing environment credentials or the user's explicitly saved private local credential file. Generated Skill files do not contain API keys. It does not read local browser data or perform login, posting, liking, commenting, or account changes.
 
 ## MCP Tools
 
@@ -361,6 +390,7 @@ MCP tools matching the direct CLI commands above:
 - WECHAT: `wechat_get_video_comments_by_object_id`, `wechat_get_video_comments_by_url`, `wechat_get_video_comment_replies_by_comment_id`, `wechat_get_mp_article_comments_by_url`, `wechat_get_mp_article_comment_replies_by_url`
 - BAIDU: `baidu_tieba_get_post_comment_replies`, `baidu_tieba_get_post_comments_by_thread_id`, `baidu_tieba_get_post_comments_by_url`
 - HAOKAN: `haokan_get_video_comments_by_video_id`, `haokan_get_video_comments_by_url`, `haokan_get_comment_replies_by_video_id`, `haokan_get_comment_replies_by_url`
+- HONGGUO: `hongguo_get_series_comments_by_series_id`, `hongguo_get_series_comments_by_url`, `hongguo_get_series_comment_replies_by_comment_id`, `hongguo_get_video_comments_by_video_id`, `hongguo_get_video_comments_by_video_url`, `hongguo_get_video_comment_replies_by_comment_id`
 
 If MCP tools are already available in the current agent, use one of these tools:
 - `xhs_get_note_comments_by_note_id`: use when the full `note_id` is known; do not pass only a prefix; optional `sort_type` accepts `default`, `time_descending`, or `like_count_descending`.
@@ -403,6 +433,7 @@ If MCP tools are already available in the current agent, use one of these tools:
 - `wechat_get_video_comments_by_url`: use for WeChat Channels / 视频号 video links or share text.
 - `wechat_get_video_comment_replies_by_comment_id`: use when object_id, object_nonce_id, and first-level comment ID are known.
 - For WeChat Channels / 视频号 comments and replies, continue only when `next_page_token` is non-empty; an empty string provides no continuation token and does not establish complete comment or reply coverage.
+Hongguo: use `hongguo_get_series_comments_by_series_id` for an ID or `hongguo_get_series_comments_by_url` for a share URL/text, and `hongguo_get_series_comment_replies_by_comment_id` for replies. Responses provide items and next_page_token; continue with the complete unchanged page_token only when next_page_token is non-empty, preserving series_id and the reply comment_id/level. Use items[].series_id and items[].comment_id for replies. Reply items include parent_comment_id for the list parent; comment_id identifies the reply itself. For video comments (episodes or independent videos) use `hongguo_get_video_comments_by_video_id` with video_id, or `hongguo_get_video_comments_by_video_url` with a supported episode share URL/text. For replies use `hongguo_get_video_comment_replies_by_comment_id` with video_id and the root comment_id; no level parameter. Video items include video_id and their own comment_id, without series_id or rating. Keep video context unchanged with page_token; do not mix series and video tokens. Each item includes video_id. Counts and pagination follow the same rules as series reviews. Native duplicate rows are preserved; CLI --pages/--all deduplicates by comment_id.
 
 ## Output Guidance
 
@@ -416,11 +447,10 @@ For Toutiao comments, preserve the first-level `comment_id`; reply commands use 
 
 ## Troubleshooting
 
+- If SocialDataX CLI or its dependencies are missing, or an npm network, Node.js/npm/npx availability, permission, or missing runtime error appears, treat it as a local runtime, dependency installation, network, or agent authorization issue, not a SocialDataX API key or business data error. Install or repair task dependencies only within the user's existing authorization, preferably in the project or a temporary environment. Execution permissions are not user authorization; explain and obtain approval before changes outside that scope, including global installs, runtime upgrades, or system configuration changes. When network or execution authorization is needed, ask the user to approve or finish authorization, then continue the same command; do not use public web search as a substitute for SocialDataX data.
 - Credential source: identify whether this request uses CLI or MCP. For CLI, run `auth status` in the actual execution environment to identify environment or local-file credentials. For MCP, check the authentication configuration of the current connection, without requiring a local CLI variable. If configuration is missing, follow the API Key section for user-entered hidden local login. Do not expose Keys, Authorization headers or secret configuration values.
-
-- If an SDK/dependency, npm network, Node.js/npm/npx availability, permission, or missing runtime error appears, treat it as a local runtime, dependency installation, network, or agent authorization issue, not a SocialDataX API key or business data error. Install or repair task dependencies only within the user's existing authorization, preferably in the project or a temporary environment. Execution permissions are not user authorization; explain and obtain approval before changes outside that scope, including global installs, runtime upgrades, or system configuration changes. When network or execution authorization is needed, ask the user to approve or finish authorization, then continue the same command; do not use public web search as a substitute for SocialDataX data.
 - If the CLI exits with status 1 and prints `partial: true`, preserve `data.items` and the error, and report incomplete results. This recovery rule overrides advice to rerun the original command. After resolving the error (including insufficient balance), resume only with a non-empty `data.next_page_token` and the same query parameters. Keep the original page and item limits: subtract cumulative `page_count` and `item_count` from the respective `--pages` and `--max-items` limits, if set. Stop parent-list pagination when either limit is reached. An empty token does not mean completion. Do not restart from the first page; investigate repeated-token errors before continuing.
 - With `--include-replies`, `replies_partial` marks incomplete replies and `replies_pending` marks comments not yet expanded. Finish those comments with the platform reply command, its required comment identifiers and any non-empty `replies_next_page_token`. For pending comments or a failed first reply request, resolve the error before starting that comment from its first reply page; investigate repeated-token errors first. Then use the outer `data.next_page_token` only if the parent-comment budget remains; finishing replies under retained comments does not add parent-comment pages. Never interchange parent and reply tokens or treat reply previews as complete.
-- For non-balance network or API errors, preserve the error message, check the effective credential source above, parameters, and link or ID format, then retry once when appropriate.
+- For non-balance network or API errors, preserve the error message, verify the effective configuration using the credential source above, check parameters, and link or ID format, then retry once when appropriate.
 - If the response returns `insufficient_balance` or says the balance/credits are insufficient, do not retry repeatedly. Show the official billing link in the error (https://socialdatax.com/dashboard/billing, including any channel parameters); if absent, use https://socialdatax.com/dashboard/billing. After recharging, resume the failed call; if a job or partial results already exist, follow the corresponding job-query or pagination recovery rules.
 - If the user has recharged but still sees insufficient balance, have the user confirm in the relevant account dashboard that this request uses the recharged account, following the credential source above. If an update is needed, have the user update the effective CLI configuration or MCP connection, reload as documented, and resume the original command. Do not require reconfiguration just because the primary local variable is absent, or expose credential values.

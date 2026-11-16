@@ -95,7 +95,7 @@ Common search phrases for this skill package:
 - Reserved future SocialDataX namespace names for existing platform listings without draft files yet: `com.socialdatax/kuaishou-insights`, `com.socialdatax/bilibili-insights`, `com.socialdatax/weibo-insights`, `com.socialdatax/wechat-channels-insights`, `com.socialdatax/zhihu-insights`, `com.socialdatax/instagram-insights`, `com.socialdatax/x-insights`, `com.socialdatax/youtube-insights`, and `com.socialdatax/tiktok-insights`.
 - Hosted endpoints without a repo-tracked standalone listing: Toutiao / 今日头条, Haokan / 好看视频, and Sensitive Words Check.
 - Unified MCP registry name: none; this package installs skills and calls explicit hosted MCP entries.
-- Package capability version: `0.2.70`
+- Package capability version: `0.2.71`
 
 ## XHS 蒲公英 / Pugongying commercial note details
 
@@ -106,7 +106,7 @@ npx -y socialdatax-skills@latest xhs pgy-detail --note-id "<note_id>" --pretty
 npx -y socialdatax-skills@latest xhs pgy-detail --url "<note_url_or_share_text>" --pretty
 ```
 
-Configure `SOCIALDATAX_API_KEY` before running these commands. Choose exactly one input: the complete note ID, or the original note URL, short link or share text. Each successful call costs **20 points**; failed calls are not charged. Use this route for requested 蒲公英 commercial details. Ordinary `xhs detail` stays on the public note-detail route and does not automatically switch to commercial data. Only notes from creators enrolled in 蒲公英 are eligible. When MCP structured code is `pgy_commercial_data_unavailable` (HTTP numeric code `1009`), show the returned commercial-data-unavailable message: "当前无法获取该笔记的蒲公英商业数据。请确认笔记可正常访问。本次查询未成功，不扣费。" Use the structured code, not message text or internal reason_code, to identify this outcome. The CLI exits with status 1 and writes a JSON object containing only `code` and `message` to stderr for this outcome; stdout remains empty. Other errors retain their existing output format. Stop without retrying the other ID/URL route. Timeouts, service outages, authentication errors, insufficient balance, invalid inputs and unexplained empty responses retain their actual error or unresolved status; do not classify them as this commercial-data-unavailable outcome.
+Reuse existing CLI credentials before running these commands; configure them only if missing or invalid. Choose exactly one input: the complete note ID, or the original note URL, short link or share text. Each successful call costs **20 points**; failed calls are not charged. Use this route for requested 蒲公英 commercial details. Ordinary `xhs detail` stays on the public note-detail route and does not automatically switch to commercial data. Only notes from creators enrolled in 蒲公英 are eligible. When MCP structured code is `pgy_commercial_data_unavailable` (HTTP numeric code `1009`), show the returned commercial-data-unavailable message: "当前无法获取该笔记的蒲公英商业数据。请确认笔记可正常访问。本次查询未成功，不扣费。" Use the structured code, not message text or internal reason_code, to identify this outcome. The CLI exits with status 1 and writes a JSON object containing only `code` and `message` to stderr for this outcome; stdout remains empty. Other errors retain their existing output format. Stop without retrying the other ID/URL route. Timeouts, service outages, authentication errors, insufficient balance, invalid inputs and unexplained empty responses retain their actual error or unresolved status; do not classify them as this commercial-data-unavailable outcome.
 
 ## Direct CLI
 
@@ -955,14 +955,14 @@ This makes no paid request and prints only `apiKeyReadable` and source
 `environment`, `file`, or `null`. Reuse working configuration. A permission,
 malformed-file or runtime error is not a missing-Key result.
 
-If credentials are missing, obtain an API Key at <https://socialdatax.com/ai?from=npm>.
+If credentials are missing, obtain an API Key at <https://socialdatax.com/ai?from=github>.
 In your own interactive terminal, run:
 
 ```bash
 npx -y socialdatax-skills@latest auth login
 ```
 
-Enter the Key at the hidden prompt, never in AI chat or as a command argument.
+Enter the Key at the hidden prompt; do not pass it as a command argument. If you have already supplied a Key to the AI and authorized local configuration (such as the website AI setup prompt), it can send the Key through standard input to `npx -y socialdatax-skills@latest auth login --stdin` instead, without duplicate manual entry. The CLI does not echo it. Do not repeat it in replies or logs, or save it in temporary script files.
 The CLI saves it to the current user's `~/.config/socialdatax/credentials.json`.
 Unix files are mode 600; Windows uses a private current-user ACL and fails to
 save if it cannot restrict permissions. The Agent should not read this file.
@@ -1014,15 +1014,19 @@ Aily is treated as an OpenClaw / AgentSkills ecosystem channel for this package.
 
 ## API Key
 
-For persistent CLI use, run `npx -y socialdatax-skills@latest auth login` in your own interactive terminal. Enter the Key at its hidden prompt, never in AI chat or a command argument. It saves the Key in your home directory at `.config/socialdatax/credentials.json` (`apiKey` field, Unix mode 600). This is a local plaintext credential file; keep it private. The installer never creates it automatically.
+`auth login --stdin` requires SocialDataX CLI 0.2.71 or newer.
+
+When upgrading Skills, run `auth status` first and reuse existing readable credentials. Existing client Secrets or shell/user environment settings continue working when they supply the same environment variables to the CLI; existing private credential files keep their format and path. An upgrade does not require re-entering the Key, rerunning login, or migrating environment credentials into a file. Only configure credentials when missing, invalid, or explicitly changing the Key.
+
+For persistent CLI use, run `npx -y socialdatax-skills@latest auth login` in your own interactive terminal. Enter the Key at its hidden prompt, never as a command argument. For an already supplied Key with explicit configuration authorization, the AI may use `auth login --stdin` instead; do not ask for duplicate manual entry or echo the Key. It saves the Key in your home directory at `.config/socialdatax/credentials.json` (`apiKey` field, Unix mode 600). This is a local plaintext credential file; keep it private. The installer never creates it automatically.
 
 On Windows, the same commands use `%USERPROFILE%\.config\socialdatax\credentials.json`. Login uses the system Windows PowerShell ACL APIs to restrict only the CLI credential directory and file to the current user's SID, without inherited grants. It verifies the ACL before committing the new credential. File-based reads reject an unverified or broadened ACL; `auth login` can repair the CLI's own credential permissions. An unavailable PowerShell or unsupported filesystem is an error, not a successful save. No administrator elevation, execution-policy change, or recursive permission changes to the user profile are performed.
 
-Run `npx -y socialdatax-skills@latest auth status` from the Agent's actual command environment to check the effective source without exposing the Key or making a paid request. A non-empty `SOCIALDATAX_API_KEY` takes priority, then the legacy shared environment variable, then the saved file. Empty environment values do not block the file fallback. Every CLI invocation reloads the file, so this does not depend on GUI clients loading shell startup files. The terminal and Agent must use the same OS user/home and have permission to access the file. Readability alone does not prove valid authentication or sufficient credits.
+Run `npx -y socialdatax-skills@latest auth status` from the Agent's actual command environment to check the effective source without exposing the Key or making a paid request. A non-empty `SOCIALDATAX_API_KEY` takes priority, then the legacy shared environment variable, then the saved file. Empty environment values do not block the file fallback. Login warns without revealing either Key when a different effective environment Key still takes precedence; a successful save does not mean the selected Key is active. Every CLI invocation reloads the file, so this does not depend on GUI clients loading shell startup files. The terminal and Agent must use the same OS user/home and have permission to access the file. Readability alone does not prove valid authentication or sufficient credits.
 
 Request or manage API access from the product website:
 
-<https://socialdatax.com/ai?from=npm>
+<https://socialdatax.com/ai?from=github>
 
 Use the key as a Bearer token in the `Authorization` request header. Do not commit real API keys to code, docs, issues, or screenshots.
 
@@ -1054,6 +1058,6 @@ npx -y socialdatax-skills@latest hongguo download-media --video-id "<episodes[].
 npx -y socialdatax-skills@latest hongguo download-media --url "<episode_share_url_or_text>" --output episode.mp4
 ```
 
-Hongguo accepts exactly one of `--video-id` or `--url`, and exactly one of `--output` or `--output-dir`. It currently resolves novelquickapp.com comic-drama episode shares. It requires `SOCIALDATAX_API_KEY` to request episode resources and FFmpeg for local CENC MP4 decryption; `--ffmpeg-path` selects the executable. Only the resource request consumes API points. The command checks FFmpeg and the output directory before requesting resources, then downloads, decrypts and fully validates decoding locally. Omit `--definition` to choose the first returned stream; an unavailable explicit label fails without silently choosing another quality.
+Hongguo accepts exactly one of `--video-id` or `--url`, and exactly one of `--output` or `--output-dir`. It currently resolves novelquickapp.com comic-drama episode shares. It requires readable CLI credentials (existing environment configuration or the private credential file) to request episode resources and FFmpeg for local CENC MP4 decryption; `--ffmpeg-path` selects the executable. Only the resource request consumes API points. The command checks FFmpeg and the output directory before requesting resources, then downloads, decrypts and fully validates decoding locally. Omit `--definition` to choose the first returned stream; an unavailable explicit label fails without silently choosing another quality.
 
 Hongguo refuses to overwrite existing output files and removes temporary files after success or failure. Its JSON contains `platform`, `action`, `video_id`, `definition`, `output_path`, `output_bytes` and the resource request's `points`, with no decryption key or signed resource URL. Under `--output-dir`, the filename is `<video_id>-<definition>.mp4`; the local download limit is 2 GiB and the download, decryption and full decoding validation timeouts are 10 minutes each. Links can expire; a failed local download does not reverse a successful API resource request.

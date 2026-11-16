@@ -29,7 +29,7 @@ import {
 export { decryptWechatMediaCommand };
 
 const PACKAGE_NAME = "socialdatax-skills";
-const PACKAGE_VERSION = "0.2.70";
+const PACKAGE_VERSION = "0.2.71";
 const PACKAGE_SPEC = `${PACKAGE_NAME}@latest`;
 const LOG_PREFIX = `[${PACKAGE_NAME}]`;
 const MIN_NODE_VERSION = "20.18.1";
@@ -2872,11 +2872,14 @@ async function installSkills(args) {
   console.log("No API key was stored by this installer.");
   console.log("No MCP server configuration was changed.");
   console.log("Installed files are Skill files only.");
-  console.log(`Authenticated data calls require ${PRIMARY_API_KEY_ENV} at runtime.`);
+  console.log(`Authenticated data calls require an environment Key or a private CLI credential at runtime.`);
   console.log("Data calls do not perform login, posting, editing, liking, commenting, or account actions.");
-  console.log("Configure your API Key before making authenticated calls:");
+  console.log("Check existing credentials before configuring an API Key:");
   console.log(
-    `  Run npx -y ${PACKAGE_SPEC} auth login in your own terminal; then auth status in the Agent execution environment. Do not paste the Key into chat.`
+    `  Run npx -y ${PACKAGE_SPEC} auth status in the Agent execution environment. Reuse readable existing credentials; Skill upgrades do not require login or credential migration.`
+  );
+  console.log(
+    `  Only when credentials are missing, invalid, or the user explicitly requests a Key change, run npx -y ${PACKAGE_SPEC} auth login in your own terminal, or npx -y ${PACKAGE_SPEC} auth login --stdin for an already provided and authorized Key.`
   );
   printInstalledSkillAttributionNote();
 }
@@ -3086,7 +3089,7 @@ function printDoctor(args) {
   console.log("- some commands submit bounded analysis jobs such as video speech-to-text transcript.");
   console.log("- no login, posting, editing, liking, commenting, or other account actions.");
   console.log("- no local browser data access.");
-  console.log(`- requires ${PRIMARY_API_KEY_ENV} only when making authenticated data calls.`);
+  console.log("- requires a readable API Key from existing environment configuration or a private CLI credential only when making authenticated data calls.");
   console.log("");
   console.log("Hosted MCP entries:");
   for (const platform of report.platforms) {
@@ -3120,8 +3123,8 @@ function printHelp() {
   }
   console.log("");
   console.log("Commands:");
-  console.log(`  npx -y ${PACKAGE_SPEC} auth login`);
-  console.log("      Save an API Key locally through hidden input in your own terminal.");
+  console.log(`  npx -y ${PACKAGE_SPEC} auth login [--stdin]`);
+  console.log("      Save an API Key privately through hidden terminal input, or explicit --stdin for authorized automation; never pass it as an argument.");
   console.log(`  npx -y ${PACKAGE_SPEC} auth status`);
   console.log("      Check the effective CLI credential source without printing the Key or calling a paid tool.");
   console.log(`  npx -y ${PACKAGE_SPEC} xhs search --keyword "露营" --pretty`);
@@ -7534,7 +7537,7 @@ function readDirectApiKey() {
   const { apiKey } = resolveApiKey();
   if (!apiKey) {
     throw new Error(
-      `Missing API Key. Set ${PRIMARY_API_KEY_ENV} before running direct CLI calls.`
+      `Missing API Key. Set ${PRIMARY_API_KEY_ENV} before running direct CLI calls. Alternatively, run npx -y ${PACKAGE_SPEC} auth login to save a private CLI credential. Check npx -y ${PACKAGE_SPEC} auth status in the actual execution environment before reconfiguring.`
     );
   }
   return apiKey;
