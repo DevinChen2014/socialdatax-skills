@@ -1,6 +1,6 @@
 interface:
   display_name: "YouTube内容研究"
-  short_description: "YouTube内容研究"
+  short_description: "社媒数据助手 SocialDataX · YouTube内容研究"
   default_prompt: "当用户请求匹配 YouTube内容研究 这个 SocialDataX skill 时，使用 $youtube-content-research。"
 
 policy:

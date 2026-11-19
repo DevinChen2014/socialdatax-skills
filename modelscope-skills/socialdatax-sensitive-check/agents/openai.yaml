@@ -1,6 +1,6 @@
 interface:
   display_name: "敏感词检测与违禁词检查"
-  short_description: "敏感词检测与违禁词检查"
+  short_description: "社媒数据助手 SocialDataX · 敏感词检测与违禁词检查"
   default_prompt: "当用户请求匹配 敏感词检测与违禁词检查 这个 SocialDataX skill 时，使用 $socialdatax-sensitive-check。"
 
 policy:

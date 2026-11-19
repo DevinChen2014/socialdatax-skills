@@ -1,6 +1,6 @@
 interface:
   display_name: "直播带货话术"
-  short_description: "直播带货话术"
+  short_description: "社媒数据助手 SocialDataX · 直播带货话术"
   default_prompt: "当用户请求匹配 直播带货话术 这个 SocialDataX skill 时，使用 $ecommerce-live-sales-script。"
 
 policy:

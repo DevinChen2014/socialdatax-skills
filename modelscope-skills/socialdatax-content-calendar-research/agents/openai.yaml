@@ -1,6 +1,6 @@
 interface:
   display_name: "SocialDataX 内容日历研究"
-  short_description: "SocialDataX 内容日历研究"
+  short_description: "社媒数据助手 SocialDataX 内容日历研究"
   default_prompt: "当用户请求匹配 SocialDataX 内容日历研究 这个 SocialDataX skill 时，使用 $socialdatax-content-calendar-research。"
 
 policy:

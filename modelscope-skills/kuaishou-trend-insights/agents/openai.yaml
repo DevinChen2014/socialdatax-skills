@@ -1,6 +1,6 @@
 interface:
   display_name: "快手趋势洞察"
-  short_description: "快手趋势洞察"
+  short_description: "社媒数据助手 SocialDataX · 快手趋势洞察"
   default_prompt: "当用户请求匹配 快手趋势洞察 这个 SocialDataX skill 时，使用 $kuaishou-trend-insights。"
 
 policy:

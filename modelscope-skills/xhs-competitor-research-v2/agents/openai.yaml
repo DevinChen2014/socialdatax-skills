@@ -1,6 +1,6 @@
 interface:
   display_name: "小红书竞品研究"
-  short_description: "对比小红书竞品内容和账号策略"
+  short_description: "社媒数据助手 SocialDataX · 对比小红书竞品内容和账号策略"
   default_prompt: "当用户需要对比小红书 / Xiaohongshu / XHS / RedNote 竞品内容、账号定位或内容策略模式时，使用 $xhs-competitor-research-v2。"
 
 policy:

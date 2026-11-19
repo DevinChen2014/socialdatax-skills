@@ -1,6 +1,6 @@
 interface:
   display_name: "微信公众号文章阅读"
-  short_description: "面向 Codex、Claude 等 AI 工具的微信公众号正文阅读、总结与问答"
+  short_description: "社媒数据助手 SocialDataX · 面向 Codex、Claude 等 AI 工具的微信公众号正文阅读、总结与问答"
   default_prompt: "使用 $wechat-mp-article-extract 阅读我提供的公众号文章链接，先确认取得正文，再按我的问题回答并保留原文链接。"
 
 policy:

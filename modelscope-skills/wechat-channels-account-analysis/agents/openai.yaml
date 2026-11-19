@@ -1,6 +1,6 @@
 interface:
   display_name: "视频号账号分析"
-  short_description: "视频号账号分析"
+  short_description: "社媒数据助手 SocialDataX · 视频号账号分析"
   default_prompt: "当用户请求匹配 视频号账号分析 这个 SocialDataX skill 时，使用 $wechat-channels-account-analysis。"
 
 policy:

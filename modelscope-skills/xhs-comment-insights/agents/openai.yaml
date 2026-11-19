@@ -1,6 +1,6 @@
 interface:
   display_name: "小红书评论分析与需求挖掘"
-  short_description: "分析小红书评论、用户反馈、痛点和需求"
+  short_description: "社媒数据助手 SocialDataX · 分析小红书评论、用户反馈、痛点和需求"
   default_prompt: "当用户需要分析小红书 / Xiaohongshu / XHS / RedNote 评论、用户反馈、痛点、购买顾虑、FAQ 或需求线索时，使用 $xhs-comment-insights。"
 
 policy:

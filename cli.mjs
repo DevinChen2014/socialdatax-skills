@@ -29,7 +29,7 @@ import {
 export { decryptWechatMediaCommand };
 
 const PACKAGE_NAME = "socialdatax-skills";
-const PACKAGE_VERSION = "0.2.73";
+const PACKAGE_VERSION = "0.2.77";
 const PACKAGE_SPEC = `${PACKAGE_NAME}@latest`;
 const LOG_PREFIX = `[${PACKAGE_NAME}]`;
 const MIN_NODE_VERSION = "20.18.1";
@@ -1195,7 +1195,7 @@ const PLATFORMS = {
       {
         name: "kuaishou_get_user_posted_videos_by_profile_url",
         description:
-          "Fetch a paginated list of works published by a creator from a profile link, short link, or share text that resolves directly to a non-empty user_id; for live/fw-user profile shares, call creator profile first and use the returned non-empty user_id.",
+          "Fetch a paginated list of works published by a creator from a profile link, short link, or share text that resolves directly to a non-empty user_id; fw/user shares with a 3x-prefixed or numeric user_id in the path can be used directly; for live profiles or shares without a directly usable user_id, call creator profile first and use the returned non-empty user_id.",
       },
       {
         name: "kuaishou_submit_video_speech_text_by_video_url",
@@ -7409,6 +7409,17 @@ function buildRepliesOperationForComment(platform, comment, parentArguments, par
   }
 }
 
+function directCliUserAgent() {
+  // Check presence only; never read or transmit the conversation ID.
+  const codex = Object.hasOwn(process.env, "CODEX_THREAD_ID");
+  const claudeCode = process.env.CLAUDECODE === "1";
+  let hostHint = "unknown";
+  if (codex !== claudeCode) {
+    hostHint = codex ? "codex" : "claude-code";
+  }
+  return `${PACKAGE_NAME}/${PACKAGE_VERSION} (host-hint=${hostHint})`;
+}
+
 async function callMcpBackend(
   operation,
   { requestDeadlineMs, requestTimeoutMs, preserveRequestTimeout = false } = {}
@@ -7424,6 +7435,7 @@ async function callMcpBackend(
   );
   const headers = {
     Authorization: `Bearer ${apiKey}`,
+    "User-Agent": directCliUserAgent(),
   };
   const sourceAttribution = operation.sourceAttribution || {};
   if (sourceAttribution.sourceClient) {

@@ -1,6 +1,6 @@
 interface:
   display_name: "Media User Info"
-  short_description: "Retrieve creator profiles"
+  short_description: "社媒数据助手 SocialDataX · Retrieve creator profiles"
   default_prompt: "Use $media-user-info to retrieve creator profile information from platform-supported XHS, Douyin, Kuaishou, Bilibili, Zhihu, Instagram, X / Twitter, YouTube, TikTok, Weibo, Toutiao, or WeChat Channels user IDs, usernames, channel URLs, profile URLs, short links, or share text. Supported input forms vary by platform. Also supports Haokan / 好看视频."
 
 policy:

@@ -1,6 +1,6 @@
 interface:
   display_name: "知乎热门选题"
-  short_description: "知乎热门选题"
+  short_description: "社媒数据助手 SocialDataX · 知乎热门选题"
   default_prompt: "当用户请求匹配 知乎热门选题 这个 SocialDataX skill 时，使用 $zhihu-content-research。"
 
 policy:

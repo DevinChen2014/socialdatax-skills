@@ -1,6 +1,6 @@
 interface:
   display_name: "微博选题分析"
-  short_description: "微博选题分析"
+  short_description: "社媒数据助手 SocialDataX · 微博选题分析"
   default_prompt: "当用户请求匹配 微博选题分析 这个 SocialDataX skill 时，使用 $weibo-topic-analysis。"
 
 policy:

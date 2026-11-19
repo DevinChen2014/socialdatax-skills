@@ -1,6 +1,6 @@
 interface:
   display_name: "抖音电商选品研究"
-  short_description: "抖音电商选品研究"
+  short_description: "社媒数据助手 SocialDataX · 抖音电商选品研究"
   default_prompt: "当用户请求匹配 抖音电商选品研究 这个 SocialDataX skill 时，使用 $douyin-product-research。"
 
 policy:

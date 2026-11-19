@@ -1,6 +1,6 @@
 interface:
   display_name: "今日头条内容研究"
-  short_description: "今日头条内容研究"
+  short_description: "社媒数据助手 SocialDataX · 今日头条内容研究"
   default_prompt: "当用户请求匹配 今日头条内容研究 这个 SocialDataX skill 时，使用 $toutiao-content-research。"
 
 policy:

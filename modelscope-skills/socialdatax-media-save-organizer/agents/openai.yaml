@@ -1,6 +1,6 @@
 interface:
   display_name: "社媒素材保存整理"
-  short_description: "社媒素材保存整理"
+  short_description: "社媒数据助手 SocialDataX · 社媒素材保存整理"
   default_prompt: "当用户请求匹配 社媒素材保存整理 这个 SocialDataX skill 时，使用 $socialdatax-media-save-organizer。"
 
 policy:

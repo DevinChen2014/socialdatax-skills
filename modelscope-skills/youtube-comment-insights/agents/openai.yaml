@@ -1,6 +1,6 @@
 interface:
   display_name: "YouTube评论分析与需求挖掘"
-  short_description: "YouTube评论分析与需求挖掘"
+  short_description: "社媒数据助手 SocialDataX · YouTube评论分析与需求挖掘"
   default_prompt: "当用户请求匹配 YouTube评论分析与需求挖掘 这个 SocialDataX skill 时，使用 $youtube-comment-insights。"
 
 policy:
