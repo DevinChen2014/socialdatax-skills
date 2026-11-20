@@ -61,14 +61,6 @@ npx -y socialdatax-skills@latest wechat replies \
 
 执行 direct CLI 示例时，尖括号内容是占位符；不要把原始用户输入拼成整段 shell 字符串。能直接调用子进程时使用参数数组；必须走 shell 时先做 shell 转义。
 
-### 导出 SRT 字幕（direct CLI）
-- 用户需要字幕文件时，使用 CLI 0.2.64 或更新版本，在上方对应平台的 `transcript` 命令末尾追加 `--srt-output ./video.srt`；保留原有来源归因参数。该选项也适用于本 Skill 已列出的 URL、内容 ID 和任务查询入口，不扩展平台范围。
-- 先确认保存路径：父目录必须已存在且可写，目标文件不能已存在；CLI 不会覆盖已有文件。任务成功且返回有效时间分段时，CLI 写入 UTF-8 SRT，标准输出仍保留原始 JSON；以实际文件和保存成功提示确认导出完成。
-- 任务尚未完成时，沿用对应平台的 `transcript --job-id <job_id>` 示例并追加相同的 `--srt-output ./video.srt`，不要重新提交视频。
-- 路径预检失败且尚无 job_id 时，还没有提交转写任务；修正路径后继续原命令。已有 job_id 时，路径或文件写入错误不代表转写失败：保留已返回的 JSON，解决本地保存问题后用同一 job_id 重试。
-- 若返回的时间分段缺失或无效，保留 JSON 并说明无法生成 SRT，停止重复查询，不补造时间戳，也不重新提交视频。
-- `--srt-output` 只在 direct CLI 中执行本地保存，不是 hosted MCP 工具参数。若 MCP 已提交任务，需要导出时可在 CLI 中查询对应平台的同一 job_id；不能执行 CLI 时说明尚未生成本地 SRT 文件，不要重复提交任务。
-
 ## 参数说明
 
 文案提取 / 转写：
@@ -127,7 +119,7 @@ npx -y socialdatax-skills@latest wechat replies \
 ## 异常处理
 
 - 如果出现 SocialDataX CLI 或其依赖缺失、npm 网络、Node.js/npm/npx 不可用或执行权限错误：这是本地运行环境、依赖安装、网络或 AI 平台授权问题，不是 SocialDataX API Key 或业务数据返回错误。仅在用户已授权的范围内安装或修复本任务所需依赖，优先使用项目目录或临时环境。环境执行权限不等于用户授权；超出授权范围时，先说明具体改动并征得同意，包括全局安装、运行时升级或系统配置变更。需要网络或执行授权时提醒用户同意或完成授权；处理后继续原命令；不要改用公开网页搜索替代 SocialDataX 数据。
-- 凭证来源排查：先确认本次调用使用 CLI 还是 MCP。CLI 在实际执行环境中用 `auth status` 确认环境或本地文件来源；MCP 检查当前连接实际使用的鉴权配置，不要求另设本地 CLI 变量。配置缺失时按「API Key 获取」由用户本地隐藏录入；不要输出 Key、Authorization header 或秘密配置值。
+- 凭证来源排查：先确认本次调用使用 CLI 还是 MCP。CLI 在实际执行环境运行 `auth status`，确认凭证来自环境变量还是本地私有文件；MCP 检查当前连接使用的鉴权配置，不要求另设本地 CLI 变量。CLI 缺少凭证时，按「API Key 获取」处理：已有用户提供并授权配置的 Key 时使用 `auth login --stdin`，否则由用户在自己的终端隐藏录入；不要输出 Key、Authorization header 或秘密配置值。
 - CLI 退出码为 1 且输出 `partial: true` 时，保留 `data.items` 和错误，明确结果不完整。此时按以下续页规则恢复，不适用原命令重跑建议；错误解决后（包括充值后），仅用非空的 `data.next_page_token` 和原查询条件继续。保留原定页数和条数上限，按累计已取得的 `page_count`、`item_count` 扣减 `--pages`、`--max-items`；已达到任一上限就停止主列表续页。空令牌不代表取完，不要从第一页自动重跑；因重复令牌中断时，先排查原因。
 - 使用 `--include-replies` 时，`replies_partial` 表示该评论回复不完整，`replies_pending` 表示尚未展开。先用该平台回复命令、对应评论标识及可用的 `replies_next_page_token` 补齐；尚未展开或首个回复请求失败时，修正错误后从该评论的首批回复开始，重复令牌错误则先排查。仅在主评论仍有剩余额度时，才用外层 `data.next_page_token` 继续；补齐已取得评论的回复不增加主评论页数；两类令牌不能混用，不把回复预览当成完整回复。
 - 提交或查询异常：保留错误信息，按上述实际凭证来源核对配置，并检查输入链接或 ID、以及 `job_id` 是否完整。

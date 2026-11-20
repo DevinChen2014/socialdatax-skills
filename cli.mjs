@@ -29,7 +29,7 @@ import {
 export { decryptWechatMediaCommand };
 
 const PACKAGE_NAME = "socialdatax-skills";
-const PACKAGE_VERSION = "0.2.77";
+const PACKAGE_VERSION = "0.2.78";
 const PACKAGE_SPEC = `${PACKAGE_NAME}@latest`;
 const LOG_PREFIX = `[${PACKAGE_NAME}]`;
 const MIN_NODE_VERSION = "20.18.1";
@@ -1016,6 +1016,22 @@ const PLATFORMS = {
         name: "xhs_get_user_posted_notes_by_profile_url",
         description:
           "Fetch creator notes from a profile link, short link, or share text.",
+      },
+      {
+        name: "xhs_get_user_live_schedules_by_user_id",
+        description: "根据用户 ID 读取该主播已发布的直播预告，返回计划时间和预约人数。只读取信息，不执行预约操作。",
+      },
+      {
+        name: "xhs_get_user_live_schedules_by_profile_url",
+        description: "根据主播主页链接、短链接或分享文案读取其已发布的直播预告，返回计划时间和预约人数。只读取信息，不执行预约操作。",
+      },
+      {
+        name: "xhs_get_user_live_history_by_user_id",
+        description: "根据用户 ID 读取该用户作为主播的历史直播记录，返回开播时间和讲解商品数。支持 page_token 翻页；历史记录不保证可播放回放。",
+      },
+      {
+        name: "xhs_get_user_live_history_by_profile_url",
+        description: "根据主播主页链接、短链接或分享文案读取其历史直播记录，返回开播时间和讲解商品数。支持 page_token 翻页；历史记录不保证可播放回放。",
       },
       {
         name: "xhs_submit_video_speech_text_by_note_url",
