@@ -21,6 +21,7 @@ import { downloadPlatformMediaFromUrl } from "./lib/media/platform-download.mjs"
 import { decryptWechatMediaCommand } from "./lib/media/wechat-decrypt.mjs";
 import { saveTranscriptSrt, validateSrtOutputPath } from "./lib/media/transcript-srt.mjs";
 import { buildHongguoDownloadRequest, downloadHongguoVideo } from "./lib/media/hongguo-download.mjs";
+import { LIVE_PHOTO_API_URL, runLivePhotoJob } from "./lib/media/live-photo.mjs";
 import {
   EXTENDED_COMMANDS, TOOL_CONTRACTS, buildExtendedCall, extendedCommandOptions,
   extendedHelp, findExtendedCommand,
@@ -29,7 +30,7 @@ import {
 export { decryptWechatMediaCommand };
 
 const PACKAGE_NAME = "socialdatax-skills";
-const PACKAGE_VERSION = "0.2.78";
+const PACKAGE_VERSION = "0.2.79";
 const PACKAGE_SPEC = `${PACKAGE_NAME}@latest`;
 const LOG_PREFIX = `[${PACKAGE_NAME}]`;
 const MIN_NODE_VERSION = "20.18.1";
@@ -90,6 +91,11 @@ const AVAILABLE_SKILLS = [
     summary:
       "Submit and check video speech-to-text transcript jobs for XHS, Douyin, Kuaishou, Weibo, and WeChat Channels, plus Bilibili, Zhihu, Instagram, X / Twitter, TikTok, and YouTube through direct CLI commands or hosted MCP tools.",
     emoji: "🎙️",
+  },
+  {
+    name: "media-live-photo",
+    summary: "Generate Apple Live Photo and Android Motion Photo files from one image.",
+    emoji: "📷",
   },
   {
     name: "media-user-info",
@@ -1986,6 +1992,8 @@ async function main() {
       listSkills();
     } else if (command === "doctor" || command === "verify") {
       printDoctor(cliArgs.slice(1));
+    } else if (command === "live-photo") {
+      await runLivePhotoDirectCommand(parsed);
     } else if (command === "xhs") {
       await runXhsDirectCommand(cliArgs.slice(1));
     } else if (command === "douyin") {
@@ -2041,6 +2049,50 @@ async function main() {
     }
     process.exitCode = 1;
   }
+}
+
+async function runLivePhotoDirectCommand({ options, positional }) {
+  if (shouldPrintDirectHelp(options, positional) || !positional.length) {
+    console.log("live-photo generate (--file <JPEG/PNG> | --url <image URL> | --image-id <image_id>) [--effect push|pan|diagonal] [--strength low|medium] [--pretty]");
+    console.log("live-photo get --job-id <job_id> [--pretty]");
+    return;
+  }
+  const [action] = positional;
+  if (positional.length !== 1 || !["generate", "get"].includes(action)) {
+    throw new Error("Use live-photo generate or live-photo get.");
+  }
+  const fields = action === "generate" ? ["file", "url", "imageId", "effect", "strength"] : ["jobId"];
+  validateKnownOptions(options, allowedDirectOptions([...fields, "pretty"]));
+  validateFlagOption(options, "pretty", "--pretty");
+  for (const field of fields) {
+    requireOptionValue(options, field, `--${toKebabCase(field)}`);
+    if (options[field] !== undefined && !options[field].trim()) {
+      throw new Error(`Missing value for --${toKebabCase(field)}.`);
+    }
+  }
+  if (action === "generate" &&
+      [options.file, options.url, options.imageId].filter(Boolean).length !== 1) {
+    throw new Error("Provide exactly one of --file, --url, or --image-id.");
+  }
+  if (action === "get" && !options.jobId) throw new Error("Missing --job-id.");
+  if (options.effect && !["push", "pan", "diagonal"].includes(options.effect)) {
+    throw new Error("--effect must be push, pan, or diagonal.");
+  }
+  if (options.strength && !["low", "medium"].includes(options.strength)) {
+    throw new Error("--strength must be low or medium.");
+  }
+  ensureSupportedNodeVersion();
+  const data = await runLivePhotoJob({
+    ...options, file: options.file ? resolve(expandHome(options.file)) : undefined,
+    jobId: options.jobId?.trim(),
+  }, {
+    baseUrl: readFirstEnv(["SOCIALDATAX_LIVE_PHOTO_API_URL"]) || LIVE_PHOTO_API_URL,
+    headers: directRequestHeaders(resolveSourceAttribution(options)),
+    onSubmitted: (jobId) => {
+      console.error(`${LOG_PREFIX} Live Photo job ${JSON.stringify(jobId)} submitted. Use live-photo get --job-id with this ID to resume.`);
+    },
+  });
+  console.log(JSON.stringify(data, null, options.pretty ? 2 : 0));
 }
 
 async function runExtendedDirectCommand(platformId, { options, positional }, definition) {
@@ -3143,6 +3195,8 @@ function printHelp() {
   console.log("      Save an API Key privately through hidden terminal input, or explicit --stdin for authorized automation; never pass it as an argument.");
   console.log(`  npx -y ${PACKAGE_SPEC} auth status`);
   console.log("      Check the effective CLI credential source without printing the Key or calling a paid tool.");
+  console.log(`  npx -y ${PACKAGE_SPEC} live-photo --help`);
+  console.log("      Generate Apple and Android Live Photos from an image or resume an existing job.");
   console.log(`  npx -y ${PACKAGE_SPEC} xhs search --keyword "露营" --pretty`);
   console.log("      Call the XHS search tool directly and print JSON.");
   console.log("");
@@ -7436,24 +7490,11 @@ function directCliUserAgent() {
   return `${PACKAGE_NAME}/${PACKAGE_VERSION} (host-hint=${hostHint})`;
 }
 
-async function callMcpBackend(
-  operation,
-  { requestDeadlineMs, requestTimeoutMs, preserveRequestTimeout = false } = {}
-) {
-  ensureSupportedNodeVersion();
-  const { platform, tool } = operation;
-  const apiKey = readDirectApiKey();
-  const { Client, StreamableHTTPClientTransport } = await loadMcpSdkModules();
-  const upstreamUrl = resolveUpstreamUrl(platform);
-  const client = new Client(
-    { name: PACKAGE_NAME, version: PACKAGE_VERSION },
-    { capabilities: {} }
-  );
+function directRequestHeaders(sourceAttribution = {}) {
   const headers = {
-    Authorization: `Bearer ${apiKey}`,
+    Authorization: `Bearer ${readDirectApiKey()}`,
     "User-Agent": directCliUserAgent(),
   };
-  const sourceAttribution = operation.sourceAttribution || {};
   if (sourceAttribution.sourceClient) {
     headers[SOURCE_CLIENT_HEADER] = sourceAttribution.sourceClient;
   }
@@ -7463,6 +7504,22 @@ async function callMcpBackend(
   if (sourceAttribution.sourceSkill) {
     headers[SOURCE_SKILL_HEADER] = sourceAttribution.sourceSkill;
   }
+  return headers;
+}
+
+async function callMcpBackend(
+  operation,
+  { requestDeadlineMs, requestTimeoutMs, preserveRequestTimeout = false } = {}
+) {
+  ensureSupportedNodeVersion();
+  const { platform, tool } = operation;
+  const headers = directRequestHeaders(operation.sourceAttribution || {});
+  const { Client, StreamableHTTPClientTransport } = await loadMcpSdkModules();
+  const upstreamUrl = resolveUpstreamUrl(platform);
+  const client = new Client(
+    { name: PACKAGE_NAME, version: PACKAGE_VERSION },
+    { capabilities: {} }
+  );
   const transport = new StreamableHTTPClientTransport(new URL(upstreamUrl), {
     requestInit: {
       headers,

@@ -95,7 +95,7 @@ Common search phrases for this skill package:
 - Reserved future SocialDataX namespace names for existing platform listings without draft files yet: `com.socialdatax/kuaishou-insights`, `com.socialdatax/bilibili-insights`, `com.socialdatax/weibo-insights`, `com.socialdatax/wechat-channels-insights`, `com.socialdatax/zhihu-insights`, `com.socialdatax/instagram-insights`, `com.socialdatax/x-insights`, `com.socialdatax/youtube-insights`, and `com.socialdatax/tiktok-insights`.
 - Hosted endpoints without a repo-tracked standalone listing: Toutiao / 今日头条, Haokan / 好看视频, and Sensitive Words Check.
 - Unified MCP registry name: none; this package installs skills and calls explicit hosted MCP entries.
-- Package capability version: `0.2.78`
+- Package capability version: `0.2.79`
 
 ## XHS 蒲公英 / Pugongying commercial note details
 
@@ -521,6 +521,7 @@ Available skills:
 
 - `socialdatax-content-research-assistant`: combine SocialDataX search, detail, comment, creator profile, and creator content workflows for cross-platform content research across XHS, Douyin, Kuaishou, Bilibili, Weibo, Toutiao, WeChat Channels, Zhihu, Instagram, X / Twitter, YouTube, and TikTok; also reads WeChat Official Account article link details and statistics.
 - `media-search`: search social media content by keyword; supports XHS notes, Douyin works, Kuaishou works, Bilibili videos/articles, Weibo and Toutiao posts, WeChat Channels videos, Zhihu content, Instagram posts, X / Twitter posts, YouTube videos, and TikTok posts.
+- `media-live-photo`: generate an Apple Live Photo ZIP, Android Motion Photo JPG, and MP4 preview from one image. The CLI accepts a local file, direct image URL, or uploaded image ID.
 - `media-detail`: supports requested XHS 蒲公英 / Pugongying commercial note details (20 points per successful call; failures are not charged). Read WeChat Official Account article details, body text, and statistics from article links. Read structured content details and metrics for XHS notes, Douyin works, Kuaishou works, Bilibili content, Weibo and Toutiao posts, WeChat Channels videos and image posts, Zhihu content, Instagram posts, X / Twitter posts, YouTube videos, and TikTok posts.
 - `media-comments`: fetch and analyze comments/replies for XHS, Douyin, Kuaishou, Bilibili, Weibo, Toutiao, WeChat Channels, Zhihu, Instagram, X / Twitter, YouTube, and TikTok.
 - `media-transcript`: submit and check video 口播转文字 / speech-to-text transcript jobs; supports XHS, Douyin, Kuaishou, Weibo, and WeChat Channels through direct CLI commands or hosted MCP tools, plus Bilibili, Zhihu independent videos and video answers, Instagram regular video posts/Reels, X / Twitter video posts, TikTok, and YouTube through direct CLI commands or hosted MCP tools. Instagram photo and carousel posts and Zhihu plain answers without video are not processable.

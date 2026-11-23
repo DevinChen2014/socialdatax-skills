@@ -20,6 +20,17 @@ npx -y socialdatax-skills@latest douyin transcript --url "<video_url_or_share_te
 npx -y socialdatax-skills@latest douyin transcript --job-id "<existing_job_id>" --srt-output ./video.srt --pretty
 ```
 
+## Live Photos
+
+Use `live-photo generate` with one of `--file`, `--url`, or `--image-id`. Optional effects are `push`, `pan`, and `diagonal`, with strength `low` or `medium`. A successful generation costs 1 point and returns an Apple JPG/MOV ZIP, an Android Motion Photo JPG, and an MP4 preview.
+
+```bash
+npx -y socialdatax-skills@latest live-photo generate --file ./photo.jpg --pretty
+npx -y socialdatax-skills@latest live-photo get --job-id "<job_id>" --pretty
+```
+
+The CLI prints the `job_id` of a newly submitted pending task to stderr before polling for up to 60 seconds. Use that ID to query the same task if the wait ends, a query fails, or you interrupt the command.
+
 ## Share links, Official Account image posts, and Hongguo
 
 Comments accept exactly one of `--series-id` or `--url` (a series share URL or full share text). Replies still require `--series-id` and `--comment-id`; use `data.items[].series_id` and `data.items[].comment_id` returned by comments, including the URL entrypoint.

@@ -15,6 +15,7 @@ const expectedSkillsByPlatform = {
   npm: [
     "media-comments",
     "media-detail",
+    "media-live-photo",
     "media-search",
     "media-transcript",
     "media-user-info",
@@ -26,6 +27,7 @@ const expectedSkillsByPlatform = {
     "douyin-video-copy-extract",
     "media-comments",
     "media-detail",
+    "media-live-photo",
     "media-search",
     "media-transcript",
     "media-user-info",

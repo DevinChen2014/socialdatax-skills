@@ -1,0 +1,7 @@
+interface:
+  display_name: "Media Live Photo"
+  short_description: "社媒数据助手 SocialDataX · 单张照片生成双端实况图"
+  default_prompt: "Use $media-live-photo to turn one image into an Apple Live Photo and Android Motion Photo and return both downloads."
+
+policy:
+  allow_implicit_invocation: true

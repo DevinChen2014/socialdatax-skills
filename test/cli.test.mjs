@@ -3719,6 +3719,7 @@ test("npm pack only includes public skill package files", () => {
     "lib/media/bilibili-download.mjs",
     "lib/media/common.mjs",
     "lib/media/hongguo-download.mjs",
+    "lib/media/live-photo.mjs",
     "lib/media/platform-download.mjs",
     "lib/media/transcript-srt.mjs",
     "lib/media/wechat-decrypt.mjs",
@@ -3727,6 +3728,8 @@ test("npm pack only includes public skill package files", () => {
     "skills/media-comments/agents/openai.yaml",
     "skills/media-detail/SKILL.md",
     "skills/media-detail/agents/openai.yaml",
+    "skills/media-live-photo/SKILL.md",
+    "skills/media-live-photo/agents/openai.yaml",
     "skills/media-search/SKILL.md",
     "skills/media-search/agents/openai.yaml",
     "skills/media-transcript/SKILL.md",
@@ -12037,7 +12040,7 @@ test("install dry-run previews all skills under custom parent", () => {
 
   assert.equal(result.status, 0);
   assert.equal(result.stderr, "");
-  assert.match(result.stdout, /Dry run: would install 8 skills for openclaw/);
+  assert.match(result.stdout, /Dry run: would install 9 skills for openclaw/);
   assert.match(result.stdout, /media-search/);
   assert.match(result.stdout, /media-transcript/);
   assert.match(result.stdout, /media-user-posts/);
@@ -12065,7 +12068,7 @@ test("install dry-run expands tilde before appending skills under custom parent"
 
     assert.equal(result.status, 0);
     assert.equal(result.stderr, "");
-    assert.match(result.stdout, /Dry run: would install 8 skills for custom/);
+    assert.match(result.stdout, /Dry run: would install 9 skills for custom/);
     assert.match(result.stdout, new RegExp(escapeRegExp(homedir())));
     assert.match(result.stdout, new RegExp(escapeRegExp(expectedParent)));
     assert.doesNotMatch(result.stdout, /~[\\/]/);
